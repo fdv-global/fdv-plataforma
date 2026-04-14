@@ -10,7 +10,7 @@
 html {
   min-height: 100vh;
   background:
-    linear-gradient(rgba(12, 18, 20, 0.80), rgba(12, 18, 20, 0.80)),
+    linear-gradient(rgba(15, 21, 23, 0.45), rgba(15, 21, 23, 0.45)),
     url('fdv-wallpaper.png') center / cover fixed;
   background-color: #0c1214;
 }
@@ -43,8 +43,8 @@ h1, h2, h3, h4,
 /* ── 5. Header glassmorphism ───────────────────────────────── */
 .app-header {
   background: rgba(14, 21, 23, 0.76) !important;
-  backdrop-filter: blur(22px) saturate(1.5) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(1.5) !important;
+  backdrop-filter: blur(28px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.5) !important;
   border-bottom: 1px solid rgba(206, 146, 33, 0.22) !important;
   box-shadow:
     0 1px 0 rgba(206, 146, 33, 0.08),
@@ -166,7 +166,7 @@ h1, h2, h3, h4,
   background: rgba(24, 33, 35, 0.62) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
-  border: 1px solid rgba(206, 146, 33, 0.12) !important;
+  border: 1px solid rgba(206, 146, 33, 0.35) !important;
 }
 .stat-card.accent-gold    { border-color: rgba(206,146,33,.28) !important; }
 .stat-card.accent-green   { border-color: rgba(76,175,142,.22) !important; }
@@ -311,6 +311,7 @@ h1, h2, h3, h4,
 .page-title-block h1 {
   font-weight: 700 !important;
   letter-spacing: -0.025em !important;
+  text-shadow: 0 0 30px rgba(206, 146, 33, 0.3) !important;
 }
 
 /* ── 20. Versículo estático (sorteado por sessão) ──────────── */
@@ -320,7 +321,7 @@ h1, h2, h3, h4,
   left: 0;
   right: 0;
   z-index: 98;
-  height: 30px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -334,11 +335,12 @@ h1, h2, h3, h4,
 .ticker-verso {
   font-family: 'Red Hat Display', sans-serif;
   font-style: italic;
-  font-size: 11.5px;
-  font-weight: 400;
-  color: rgba(206, 146, 33, 0.84);
+  font-size: 16px;
+  font-weight: 500;
+  color: #FFD700;
   letter-spacing: 0.02em;
   text-align: center;
+  text-shadow: 0 0 20px rgba(206, 146, 33, 0.8);
   user-select: none;
   padding: 0 32px;
   white-space: nowrap;
@@ -358,3 +360,36 @@ h1, h2, h3, h4,
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(206,146,33,.22); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(206,146,33,.40); }
+
+/* ── 22. Sub-nav — glassmorphism pronunciado ───────────────── */
+.sub-nav {
+  background: rgba(28, 37, 39, 0.70) !important;
+  border: 1px solid rgba(206, 146, 33, 0.25) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+
+/* ── 23. Botão Novo Lead — impactante ──────────────────────── */
+#btn-novo-lead,
+#btn-novo-lead-sub {
+  padding: 14px 28px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  border-radius: 30px !important;
+  background: linear-gradient(135deg, #CE9221, #DDC79E) !important;
+  color: #0f1517 !important;
+  border: none !important;
+  box-shadow: 0 4px 20px rgba(206, 146, 33, 0.4) !important;
+  transition: transform 180ms cubic-bezier(.34,1.42,.64,1),
+              box-shadow 180ms ease !important;
+}
+#btn-novo-lead:hover,
+#btn-novo-lead-sub:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 8px 28px rgba(206, 146, 33, 0.55) !important;
+}
+#btn-novo-lead:active,
+#btn-novo-lead-sub:active {
+  transform: scale(0.97) !important;
+  box-shadow: 0 2px 8px rgba(206, 146, 33, 0.3) !important;
+}
