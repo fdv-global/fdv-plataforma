@@ -47,6 +47,7 @@
     <button class="nav-link active" data-tab="agendamentos">Agendamentos</button>
     <button class="nav-link" data-tab="closer">Closer</button>
     <button class="nav-link" data-tab="relatorios">Relatórios</button>
+    <button class="nav-link" data-tab="whatsapp">WhatsApp</button>
   </nav>
   <div class="header-right">
     <div class="user-info">
@@ -317,6 +318,44 @@
   </div>
   <div id="relatorios-content"></div>
 </div><!-- /tab-relatorios -->
+
+<!-- ===== TAB: WHATSAPP ===== -->
+<div id="tab-whatsapp" class="tab-panel" style="display:none">
+
+  <div class="page-top">
+    <div class="page-title-block">
+      <h1>WhatsApp</h1>
+      <p>Instâncias conectadas e central de chats</p>
+    </div>
+    <button class="btn-primary" id="btn-nova-instancia">+ Conectar número</button>
+  </div>
+
+  <div class="sub-nav">
+    <button class="sub-link active" data-sub="instancias">Instâncias</button>
+    <button class="sub-link" data-sub="chats">Central de Chats</button>
+  </div>
+
+  <!-- ─── SUB: INSTÂNCIAS ─── -->
+  <div id="sub-instancias" class="sub-panel">
+    <div class="stats-grid" id="wa-stats"></div>
+    <div class="wa-instances-grid" id="wa-instances-grid">
+      <div class="loading-layer" id="wa-loading" style="position:static;background:none;padding:48px 0">
+        <div class="spinner"></div>
+        <span>Carregando instâncias…</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SUB: CENTRAL DE CHATS ─── -->
+  <div id="sub-chats" class="sub-panel" style="display:none">
+    <div class="empty-state">
+      <div class="empty-ico">💬</div>
+      <h3>Central de chats em breve</h3>
+      <p>Esta seção será implementada na próxima etapa.</p>
+    </div>
+  </div>
+
+</div><!-- /tab-whatsapp -->
 
 </main>
 
@@ -611,6 +650,109 @@
     <div class="modal-footer">
       <button class="btn-ghost" id="novo-lead-cancelar">Cancelar</button>
       <button class="btn-confirm" id="btn-salvar-lead">Cadastrar Lead</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL QR CODE ===== -->
+<div class="modal-backdrop" id="qr-backdrop">
+  <div class="modal modal--qr" role="dialog" aria-modal="true" aria-labelledby="qr-title">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="qr-title">Conectar número</h2>
+        <p class="modal-subtitle" id="qr-subtitle">Preencha os dados da instância</p>
+      </div>
+      <button class="modal-close" id="qr-close" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- STEP 1: Formulário nova instância -->
+      <div id="qr-step-form">
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="qr-display-name">Nome de exibição <span class="req">*</span></label>
+            <input type="text" id="qr-display-name" class="form-ctrl" placeholder="Ex: Captação Principal">
+          </div>
+          <div class="form-group">
+            <label for="qr-instance-name">ID da instância <span class="req">*</span></label>
+            <input type="text" id="qr-instance-name" class="form-ctrl" placeholder="Ex: fdv-captacao">
+          </div>
+        </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="qr-responsavel">Responsável</label>
+            <select id="qr-responsavel" class="form-ctrl">
+              <option value="">Selecione…</option>
+              <option value="muy">Muyane</option>
+              <option value="fernanda">Fernanda</option>
+              <option value="thomaz">Thomaz</option>
+              <option value="tati">Tati</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="qr-funil">Funil que atende</label>
+            <select id="qr-funil" class="form-ctrl">
+              <option value="">Selecione…</option>
+              <option value="captacao">Captação</option>
+              <option value="closer">Closer</option>
+              <option value="pos-venda">Pós-venda</option>
+              <option value="geral">Geral</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: QR Code -->
+      <div id="qr-step-qr" style="display:none">
+        <div class="qr-instruction">
+          <span class="qr-instruction-ico">📱</span>
+          <div>
+            <strong>Abra o WhatsApp no celular</strong>
+            <p>Vá em <em>Dispositivos conectados → Conectar dispositivo</em> e escaneie o QR abaixo.</p>
+          </div>
+        </div>
+
+        <!-- carregando -->
+        <div id="qr-state-loading" class="qr-state">
+          <div class="spinner"></div>
+          <span>Gerando QR Code…</span>
+        </div>
+        <!-- aguardando scan -->
+        <div id="qr-state-waiting" class="qr-state" style="display:none">
+          <div class="qr-image-wrap">
+            <img id="qr-img" src="" alt="QR Code" class="qr-img">
+            <div class="qr-timer-ring">
+              <span id="qr-timer-count" class="qr-timer-num">60</span>
+              <span class="qr-timer-label">seg</span>
+            </div>
+          </div>
+        </div>
+        <!-- conectado -->
+        <div id="qr-state-connected" class="qr-state" style="display:none">
+          <div class="qr-result-ico qr-result-ico--ok">✓</div>
+          <strong>Conectado com sucesso!</strong>
+          <p id="qr-connected-phone" style="color:var(--t2);font-size:13px;margin-top:6px"></p>
+        </div>
+        <!-- expirado -->
+        <div id="qr-state-expired" class="qr-state" style="display:none">
+          <div class="qr-result-ico qr-result-ico--warn">⏱</div>
+          <strong>QR expirado</strong>
+          <p style="color:var(--t2);font-size:13px;margin-top:6px">O código expirou. Gere um novo para continuar.</p>
+          <button class="btn-ghost btn-sm" id="btn-regenerate-qr" style="margin-top:14px">Gerar novo QR</button>
+        </div>
+        <!-- erro -->
+        <div id="qr-state-error" class="qr-state" style="display:none">
+          <div class="qr-result-ico qr-result-ico--err">✕</div>
+          <strong>Erro ao conectar</strong>
+          <p id="qr-error-msg" style="color:var(--t2);font-size:13px;margin-top:6px">Não foi possível conectar. Tente novamente.</p>
+          <button class="btn-ghost btn-sm" id="btn-retry-qr" style="margin-top:14px">Tentar novamente</button>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="qr-cancelar">Cancelar</button>
+      <button class="btn-confirm" id="qr-confirmar">Avançar →</button>
     </div>
   </div>
 </div>

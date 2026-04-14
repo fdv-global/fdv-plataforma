@@ -31,6 +31,9 @@ const firebaseConfig = {
   appId:             '1:774662000211:web:61adc52edfdd339c0d00a6'
 };
 
+// ─── EVOLUTION API ───────────────────────────────────────────────────
+const EVOLUTION_API_URL = 'http://localhost:8080';
+
 // ─── DEMO DATA ───────────────────────────────────────────────────────
 const DEMO = [
   { id:'d1',  nome:'Ana Carolina Silva',    celular:'(11) 99876-5432', origem:'Instagram', profissao:'Professora',       renda:'R$ 4.500',  datachegada:'2026-04-01', status:'aguardando', etiquetas:['Bom'] },
@@ -81,6 +84,15 @@ let dragLeadId    = null;
 let cal = { step: 1, closer: null, leadSnap: null };
 let agendaCalYear  = 0;
 let agendaCalMonth = 0;
+
+// WhatsApp state
+let waInstances        = [];
+let waInstancesLoaded  = false;
+let activeWaSub        = 'instancias';
+let qrInstanceId       = null;
+let qrTimerInterval    = null;
+let qrPollingInterval  = null;
+let qrSecondsLeft      = 60;
 
 const ETIQUETAS_DEFAULT = ['Super Lead', 'Bom', 'Neutro', 'Frio'];
 
@@ -218,6 +230,7 @@ function switchTab(tab) {
   if      (tab === 'agendamentos') renderActiveSub();
   else if (tab === 'closer')       renderKanban();
   else if (tab === 'relatorios')   renderRelatorios();
+  else if (tab === 'whatsapp')     { if (!waInstancesLoaded) loadWaInstances(); else renderInstancias(); }
 }
 
 function switchSub(sub) {
@@ -245,6 +258,7 @@ function renderAll() {
   if      (activeTab === 'agendamentos') renderActiveSub();
   else if (activeTab === 'closer')       renderKanban();
   else if (activeTab === 'relatorios')   renderRelatorios();
+  else if (activeTab === 'whatsapp')     renderInstancias();
 }
 
 // ─── LEADS LIST ──────────────────────────────────────────────────────
@@ -1638,6 +1652,279 @@ function toast(msg, type = 'ok') {
   setTimeout(() => { el.style.animation='toastOut .25s ease forwards'; setTimeout(()=>el.remove(),250); }, 3500);
 }
 
+// ─── WHATSAPP / EVOLUTION API ────────────────────────────────────────
+
+const WA_RESPONSAVEIS = {
+  muy:      { name: 'Muyane',   color: '#CE9221', bg: 'rgba(206,146,33,.12)' },
+  fernanda: { name: 'Fernanda', color: '#CE9221', bg: 'rgba(206,146,33,.12)' },
+  thomaz:   { name: 'Thomaz',   color: '#4db5c8', bg: 'rgba(77,181,200,.12)' },
+  tati:     { name: 'Tati',     color: '#4caf8e', bg: 'rgba(76,175,142,.12)' },
+};
+const WA_FUNILS = { captacao: 'Captação', closer: 'Closer', 'pos-venda': 'Pós-venda', geral: 'Geral' };
+
+function loadWaInstances() {
+  if (!isLive) {
+    waInstances = []; waInstancesLoaded = true; renderInstancias(); return;
+  }
+  onSnapshot(collection(db, 'whatsapp_instances'), snap => {
+    waInstances = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    waInstancesLoaded = true;
+    if (activeTab === 'whatsapp' && activeWaSub === 'instancias') renderInstancias();
+  }, err => console.error('[FDV] whatsapp_instances:', err.code));
+}
+
+function switchWaSub(sub) {
+  activeWaSub = sub;
+  document.querySelectorAll('#tab-whatsapp .sub-panel').forEach(p => p.style.display = 'none');
+  const panel = $('sub-' + sub); if (panel) panel.style.display = '';
+  document.querySelectorAll('#tab-whatsapp .sub-link[data-sub]').forEach(l =>
+    l.classList.toggle('active', l.dataset.sub === sub)
+  );
+  if (sub === 'instancias') renderInstancias();
+}
+
+function renderInstancias() {
+  const grid    = $('wa-instances-grid');
+  const loading = $('wa-loading');
+  if (!grid) return;
+  if (!waInstancesLoaded) { if (loading) loading.style.display = ''; return; }
+  if (loading) loading.style.display = 'none';
+  renderWaStats();
+  if (waInstances.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="empty-ico">📱</div>
+      <h3>Nenhuma instância configurada</h3>
+      <p>Clique em "+ Conectar número" para adicionar seu primeiro número WhatsApp.</p>
+    </div>`; return;
+  }
+  grid.innerHTML = waInstances.map(renderInstanceCard).join('');
+}
+
+function renderWaStats() {
+  const el = $('wa-stats'); if (!el) return;
+  const total      = waInstances.length;
+  const connected  = waInstances.filter(i => i.status === 'connected').length;
+  const discon     = waInstances.filter(i => i.status === 'disconnected').length;
+  const awaiting   = waInstances.filter(i => i.status === 'awaiting_qr').length;
+  el.innerHTML = `
+    <div class="stat-card"><div class="stat-top"><span class="stat-label">Total</span><span class="stat-icon">◈</span></div><strong class="stat-num">${total}</strong><span class="stat-sub">instâncias</span></div>
+    <div class="stat-card accent-green"><div class="stat-top"><span class="stat-label">Conectadas</span><span class="stat-icon">◉</span></div><strong class="stat-num">${connected}</strong><span class="stat-sub">online</span></div>
+    <div class="stat-card accent-marsala"><div class="stat-top"><span class="stat-label">Desconectadas</span><span class="stat-icon">✕</span></div><strong class="stat-num">${discon}</strong><span class="stat-sub">offline</span></div>
+    <div class="stat-card accent-gold"><div class="stat-top"><span class="stat-label">Aguardando QR</span><span class="stat-icon">◷</span></div><strong class="stat-num">${awaiting}</strong><span class="stat-sub">escanear</span></div>`;
+}
+
+function renderInstanceCard(inst) {
+  const resp = WA_RESPONSAVEIS[inst.responsavel] || { name: inst.responsavel || '—', color: '#8fa0a2', bg: 'rgba(143,160,162,.12)' };
+  const funil = WA_FUNILS[inst.funil] || inst.funil || '—';
+  const ST = {
+    connected:    { label: 'Conectado',     cls: 'wa-status--connected' },
+    disconnected: { label: 'Desconectado',  cls: 'wa-status--disconnected' },
+    awaiting_qr:  { label: 'Aguardando QR', cls: 'wa-status--awaiting' },
+  };
+  const st = ST[inst.status] || { label: inst.status || '—', cls: '' };
+  const lastAct = inst.lastActivity
+    ? new Date(inst.lastActivity.seconds ? inst.lastActivity.seconds * 1000 : inst.lastActivity)
+        .toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
+    : 'Nunca';
+  const actionBtn = inst.status === 'connected'
+    ? `<button class="btn-ghost btn-sm wa-btn-disconnect" data-id="${esc(inst.id)}">Desconectar</button>`
+    : `<button class="btn-primary btn-sm wa-btn-reconnect" data-id="${esc(inst.id)}">Reconectar</button>`;
+  return `<div class="wa-instance-card">
+    <div class="wa-inst-header">
+      <div class="wa-inst-name-wrap">
+        <span class="wa-inst-icon">📱</span>
+        <div>
+          <div class="wa-inst-name">${esc(inst.displayName || inst.instanceName)}</div>
+          <div class="wa-inst-id">${esc(inst.instanceName)}</div>
+        </div>
+      </div>
+      <span class="wa-status ${st.cls}">${st.label}</span>
+    </div>
+    <div class="wa-inst-meta">
+      <div class="wa-inst-meta-item">
+        <span class="wa-inst-meta-lbl">Responsável</span>
+        <span class="wa-inst-chip" style="color:${resp.color};background:${resp.bg};border-color:${resp.color}40">${esc(resp.name)}</span>
+      </div>
+      <div class="wa-inst-meta-item">
+        <span class="wa-inst-meta-lbl">Funil</span>
+        <span class="wa-inst-chip">${esc(funil)}</span>
+      </div>
+      <div class="wa-inst-meta-item">
+        <span class="wa-inst-meta-lbl">Número</span>
+        <span class="wa-inst-phone">${esc(inst.phoneNumber || '—')}</span>
+      </div>
+      <div class="wa-inst-meta-item">
+        <span class="wa-inst-meta-lbl">Última atividade</span>
+        <span class="wa-inst-phone">${lastAct}</span>
+      </div>
+    </div>
+    <div class="wa-inst-actions">
+      ${actionBtn}
+      <button class="btn-ghost btn-sm wa-btn-delete" data-id="${esc(inst.id)}" style="color:var(--marsala)">Excluir</button>
+    </div>
+  </div>`;
+}
+
+// ── QR Modal ──────────────────────────────────────────────────────────
+
+function openQRModal(instanceId = null) {
+  qrInstanceId = instanceId;
+  stopQRTimer(); stopQRPolling();
+  if (instanceId) {
+    const inst = waInstances.find(i => i.id === instanceId);
+    $('qr-title').textContent    = `Reconectar — ${inst?.displayName || 'instância'}`;
+    $('qr-subtitle').textContent = inst?.instanceName || '';
+    $('qr-confirmar').style.display = 'none';
+    qrGoToStep('qr');
+    triggerQRGenerate(inst?.instanceName);
+  } else {
+    $('qr-title').textContent    = 'Conectar número';
+    $('qr-subtitle').textContent = 'Preencha os dados da instância';
+    $('qr-display-name').value = ''; $('qr-instance-name').value = '';
+    $('qr-responsavel').value  = ''; $('qr-funil').value = '';
+    $('qr-confirmar').style.display = '';
+    $('qr-confirmar').textContent   = 'Avançar →';
+    qrGoToStep('form');
+  }
+  $('qr-backdrop').classList.add('open');
+}
+
+function closeQRModal() {
+  $('qr-backdrop').classList.remove('open');
+  stopQRTimer(); stopQRPolling(); qrInstanceId = null;
+}
+
+function qrGoToStep(step) {
+  $('qr-step-form').style.display = step === 'form' ? '' : 'none';
+  $('qr-step-qr').style.display   = step === 'qr'   ? '' : 'none';
+  if (step === 'qr') $('qr-subtitle').textContent = 'Escaneie com o WhatsApp';
+}
+
+function setQRState(state) {
+  ['loading','waiting','connected','expired','error'].forEach(s => {
+    const el = $(`qr-state-${s}`); if (el) el.style.display = s === state ? '' : 'none';
+  });
+}
+
+async function confirmQRStep() {
+  if ($('qr-step-form').style.display !== 'none') {
+    const displayName  = $('qr-display-name').value.trim();
+    const instanceName = $('qr-instance-name').value.trim().toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+    if (!displayName || !instanceName) { toast('Preencha nome e ID da instância.','err'); return; }
+    const btn = $('qr-confirmar');
+    btn.disabled = true; btn.textContent = 'Criando…';
+    try {
+      const data = {
+        instanceName, displayName,
+        responsavel: $('qr-responsavel').value,
+        funil:       $('qr-funil').value,
+        status: 'awaiting_qr', phoneNumber: '', lastActivity: null,
+        createdAt: new Date().toISOString(),
+      };
+      if (isLive) {
+        const ref = await addDoc(collection(db, 'whatsapp_instances'), data);
+        qrInstanceId = ref.id;
+      } else {
+        qrInstanceId = 'local-' + Date.now();
+        waInstances.push({ id: qrInstanceId, ...data });
+        renderInstancias();
+      }
+      $('qr-confirmar').style.display = 'none';
+      qrGoToStep('qr');
+      await triggerQRGenerate(instanceName);
+    } catch(e) { console.error(e); toast('Erro ao criar instância.','err'); }
+    finally    { btn.disabled = false; }
+  }
+}
+
+async function triggerQRGenerate(instanceName) {
+  setQRState('loading'); stopQRTimer(); stopQRPolling();
+  const imgEl = $('qr-img');
+  if (imgEl) imgEl.style.display = '';
+  try {
+    await fetchEvolution('/instance/create', 'POST', { instanceName, qrcode: true, integration: 'WHATSAPP-BAILEYS' });
+    const res = await fetchEvolution(`/instance/connect/${instanceName}`);
+    if (res?.qrcode?.base64) {
+      imgEl.src = res.qrcode.base64;
+      setQRState('waiting'); startQRTimer(instanceName); startQRPolling(instanceName);
+    } else { throw new Error('sem QR'); }
+  } catch(e) {
+    console.warn('[FDV] Evolution API (mock):', e.message);
+    if (imgEl) { imgEl.style.display = 'none'; }
+    const wrap = document.querySelector('.qr-image-wrap');
+    if (wrap && !wrap.querySelector('.qr-mock-msg')) {
+      const p = document.createElement('p');
+      p.className = 'qr-mock-msg';
+      p.innerHTML = 'Evolution API não conectada.<br><code>EVOLUTION_API_URL</code> = <code>' + EVOLUTION_API_URL + '</code>';
+      wrap.appendChild(p);
+    }
+    setQRState('waiting'); startQRTimer(instanceName);
+  }
+}
+
+async function fetchEvolution(path, method = 'GET', body = null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(`${EVOLUTION_API_URL}${path}`, opts);
+  if (!res.ok) throw new Error(`Evolution API ${res.status}`);
+  return res.json();
+}
+
+function startQRTimer(instanceName) {
+  qrSecondsLeft = 60;
+  const el = $('qr-timer-count'); if (el) el.textContent = qrSecondsLeft;
+  stopQRTimer();
+  qrTimerInterval = setInterval(() => {
+    qrSecondsLeft--;
+    const c = $('qr-timer-count'); if (c) c.textContent = qrSecondsLeft;
+    if (qrSecondsLeft <= 0) { stopQRTimer(); stopQRPolling(); setQRState('expired'); }
+  }, 1000);
+}
+function stopQRTimer()   { if (qrTimerInterval)   { clearInterval(qrTimerInterval);   qrTimerInterval   = null; } }
+
+function startQRPolling(instanceName) {
+  stopQRPolling();
+  qrPollingInterval = setInterval(async () => {
+    try {
+      const res = await fetchEvolution(`/instance/connectionState/${instanceName}`);
+      const state = res?.instance?.state || res?.state;
+      if (state === 'open') {
+        stopQRPolling(); stopQRTimer();
+        $('qr-connected-phone').textContent = 'Número conectado com sucesso.';
+        setQRState('connected');
+        if (isLive && qrInstanceId && !qrInstanceId.startsWith('local-')) {
+          await updateDoc(doc(db, 'whatsapp_instances', qrInstanceId), { status: 'connected', lastActivity: new Date().toISOString() });
+        } else {
+          const inst = waInstances.find(i => i.id === qrInstanceId);
+          if (inst) inst.status = 'connected';
+        }
+        setTimeout(() => closeQRModal(), 2500);
+      }
+    } catch(e) { /* ignore */ }
+  }, 3000);
+}
+function stopQRPolling() { if (qrPollingInterval) { clearInterval(qrPollingInterval); qrPollingInterval = null; } }
+
+async function disconnectInstance(id) {
+  const inst = waInstances.find(i => i.id === id); if (!inst) return;
+  if (!confirm(`Desconectar "${inst.displayName}"?`)) return;
+  try { await fetchEvolution(`/instance/logout/${inst.instanceName}`, 'DELETE'); } catch(e) { /* mock */ }
+  if (isLive && !id.startsWith('local-')) {
+    await updateDoc(doc(db, 'whatsapp_instances', id), { status: 'disconnected' });
+  } else { inst.status = 'disconnected'; renderInstancias(); }
+  toast(`${inst.displayName} desconectada.`, 'ok');
+}
+
+async function deleteInstance(id) {
+  const inst = waInstances.find(i => i.id === id); if (!inst) return;
+  if (!confirm(`Excluir "${inst.displayName}"? Esta ação não pode ser desfeita.`)) return;
+  try { await fetchEvolution(`/instance/delete/${inst.instanceName}`, 'DELETE'); } catch(e) { /* mock */ }
+  if (isLive && !id.startsWith('local-')) {
+    await deleteDoc(doc(db, 'whatsapp_instances', id));
+  } else { waInstances = waInstances.filter(x => x.id !== id); renderInstancias(); }
+  toast(`"${inst.displayName}" excluída.`, 'ok');
+}
+
 // ─── EVENTS ──────────────────────────────────────────────────────────
 function bindEvents() {
   // Sub-nav
@@ -1745,9 +2032,41 @@ function bindEvents() {
   $('btn-login-google').addEventListener('click', loginWithGoogle);
   $('btn-logout').addEventListener('click', logoutUser);
 
+  // WhatsApp — nova instância
+  $('btn-nova-instancia').addEventListener('click', () => openQRModal(null));
+
+  // WhatsApp — sub-nav
+  document.querySelectorAll('#tab-whatsapp .sub-link[data-sub]').forEach(btn =>
+    btn.addEventListener('click', () => switchWaSub(btn.dataset.sub))
+  );
+
+  // WhatsApp — ações nos cards (delegado)
+  $('wa-instances-grid').addEventListener('click', e => {
+    const reconnect  = e.target.closest('.wa-btn-reconnect');
+    const disconnect = e.target.closest('.wa-btn-disconnect');
+    const del        = e.target.closest('.wa-btn-delete');
+    if (reconnect)  openQRModal(reconnect.dataset.id);
+    if (disconnect) disconnectInstance(disconnect.dataset.id);
+    if (del)        deleteInstance(del.dataset.id);
+  });
+
+  // QR modal
+  $('qr-close').addEventListener('click', closeQRModal);
+  $('qr-cancelar').addEventListener('click', closeQRModal);
+  $('qr-confirmar').addEventListener('click', confirmQRStep);
+  $('qr-backdrop').addEventListener('click', e => { if (e.target === $('qr-backdrop')) closeQRModal(); });
+  $('btn-regenerate-qr').addEventListener('click', () => {
+    const inst = waInstances.find(i => i.id === qrInstanceId);
+    if (inst) triggerQRGenerate(inst.instanceName);
+  });
+  $('btn-retry-qr').addEventListener('click', () => {
+    const inst = waInstances.find(i => i.id === qrInstanceId);
+    if (inst) triggerQRGenerate(inst.instanceName);
+  });
+
   // Keyboard
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeModal(); closePerfil(); closeNovoLead(); }
+    if (e.key === 'Escape') { closeModal(); closePerfil(); closeNovoLead(); closeQRModal(); }
   });
 }
 
