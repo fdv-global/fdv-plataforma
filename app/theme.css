@@ -1,0 +1,366 @@
+/* ============================================================
+   FDV — Theme Glassmorphism
+   Importado APÓS style.css · Não editar style.css para isso
+   ============================================================ */
+
+/* ── 1. Tipografia ─────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Red+Hat+Display:ital,wght@0,300;0,400;0,500;0,600;0,700;0,900;1,400;1,700&family=Red+Hat+Text:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
+/* ── 2. Wallpaper + Overlay ────────────────────────────────── */
+html {
+  min-height: 100vh;
+  background:
+    linear-gradient(rgba(12, 18, 20, 0.80), rgba(12, 18, 20, 0.80)),
+    url('fdv-wallpaper.png') center / cover fixed;
+  background-color: #0c1214;
+}
+body {
+  background: transparent !important;
+  font-family: 'Red Hat Text', system-ui, sans-serif;
+}
+
+/* ── 3. Seleção de texto ───────────────────────────────────── */
+::selection { background: rgba(206, 146, 33, 0.28); color: #fff; }
+
+/* ── 4. Tipografia — Red Hat Display em títulos ────────────── */
+h1, h2, h3, h4,
+.modal-title,
+.page-title-block h1,
+.login-title,
+.login-abbr,
+.brand-abbr,
+.brand-full,
+.user-name,
+.nav-link,
+.wa-inst-name,
+.cli-name,
+.chats-panel-name,
+.kanban-col-title,
+.kc-nome {
+  font-family: 'Red Hat Display', system-ui, sans-serif;
+}
+
+/* ── 5. Header glassmorphism ───────────────────────────────── */
+.app-header {
+  background: rgba(14, 21, 23, 0.76) !important;
+  backdrop-filter: blur(22px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.5) !important;
+  border-bottom: 1px solid rgba(206, 146, 33, 0.22) !important;
+  box-shadow:
+    0 1px 0 rgba(206, 146, 33, 0.08),
+    0 4px 24px rgba(0, 0, 0, 0.40) !important;
+}
+
+/* ── 6. Logo — imagem no lugar do texto ────────────────────── */
+.header-brand {
+  width: 120px;
+  height: 36px;
+  background: url('fdv-logo.png') left center / contain no-repeat;
+  flex-shrink: 0;
+}
+.brand-abbr,
+.brand-sep,
+.brand-full { display: none !important; }
+
+/* ── 7. Navegação — hover dourado, pill ────────────────────── */
+.nav-link {
+  border-radius: 30px !important;
+  transition: background 200ms ease, color 200ms ease, border-color 200ms ease !important;
+}
+.nav-link:hover:not(.active) {
+  color: var(--gold) !important;
+  background: rgba(206, 146, 33, 0.10) !important;
+}
+.nav-link.active {
+  background: rgba(206, 146, 33, 0.16) !important;
+  border: 1px solid rgba(206, 146, 33, 0.30) !important;
+  color: var(--gold) !important;
+}
+.sub-link {
+  border-radius: 30px !important;
+  transition: background 200ms ease, color 200ms ease !important;
+}
+.sub-link:hover:not(.active) {
+  color: var(--gold) !important;
+  background: rgba(206, 146, 33, 0.08) !important;
+}
+.perfil-tab {
+  border-radius: 30px !important;
+  transition: all 180ms ease !important;
+}
+
+/* ── 8. Botões — pill + hover escala + brilho ──────────────── */
+.btn-primary {
+  border-radius: 30px !important;
+  transition: transform 180ms cubic-bezier(.34,1.42,.64,1),
+              box-shadow 180ms ease,
+              background 180ms ease !important;
+}
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px) scale(1.016) !important;
+  box-shadow: 0 6px 22px rgba(206, 146, 33, 0.38),
+              0 2px 6px  rgba(206, 146, 33, 0.18) !important;
+}
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0) scale(0.98) !important;
+  box-shadow: none !important;
+}
+.btn-confirm {
+  border-radius: 30px !important;
+  transition: transform 180ms cubic-bezier(.34,1.42,.64,1),
+              box-shadow 180ms ease !important;
+}
+.btn-confirm:hover:not(:disabled) {
+  transform: translateY(-1px) scale(1.016) !important;
+  box-shadow: 0 6px 22px rgba(206, 146, 33, 0.38) !important;
+}
+.btn-confirm:active:not(:disabled) {
+  transform: scale(0.97) !important;
+}
+.btn-ghost {
+  border-radius: 30px !important;
+  transition: background 180ms ease, border-color 180ms ease,
+              color 180ms ease, transform 180ms ease !important;
+}
+.btn-ghost:hover:not(:disabled) {
+  border-color: rgba(206, 146, 33, 0.32) !important;
+  color: var(--gold) !important;
+  transform: translateY(-1px) !important;
+}
+.btn-logout {
+  border-radius: 30px !important;
+  transition: background 180ms ease, color 180ms ease !important;
+}
+.btn-google {
+  border-radius: 30px !important;
+  transition: transform 180ms ease, box-shadow 180ms ease !important;
+}
+.btn-google:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,.28) !important;
+}
+
+/* ── 9. Login card ─────────────────────────────────────────── */
+#login-screen {
+  background:
+    linear-gradient(rgba(12, 18, 20, 0.82), rgba(12, 18, 20, 0.82)),
+    url('fdv-wallpaper.png') center / cover fixed !important;
+}
+.login-card {
+  background: rgba(18, 27, 29, 0.82) !important;
+  backdrop-filter: blur(32px) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(1.4) !important;
+  border: 1px solid rgba(206, 146, 33, 0.22) !important;
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(206, 146, 33, 0.10) !important;
+}
+.login-abbr {
+  font-family: 'Red Hat Display', sans-serif !important;
+  font-weight: 900 !important;
+}
+
+/* ── 10. Glassmorphism — Stat cards ────────────────────────── */
+.stat-card {
+  background: rgba(24, 33, 35, 0.62) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(206, 146, 33, 0.12) !important;
+}
+.stat-card.accent-gold    { border-color: rgba(206,146,33,.28) !important; }
+.stat-card.accent-green   { border-color: rgba(76,175,142,.22) !important; }
+.stat-card.accent-marsala { border-color: rgba(107,39,55,.26) !important; }
+.stat-card.accent-petro   { border-color: rgba(77,181,200,.20) !important; }
+.stat-card.accent-sand    { border-color: rgba(221,199,158,.18) !important; }
+
+/* ── 11. Glassmorphism — Modais ────────────────────────────── */
+.modal,
+.modal--wide,
+.modal--qr {
+  background: rgba(18, 27, 29, 0.86) !important;
+  backdrop-filter: blur(28px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.5) !important;
+  border: 1px solid rgba(206, 146, 33, 0.18) !important;
+  box-shadow:
+    0 28px 72px rgba(0, 0, 0, 0.65),
+    0 4px 16px  rgba(0, 0, 0, 0.30),
+    inset 0 1px 0 rgba(206, 146, 33, 0.08) !important;
+}
+.modal-backdrop {
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+}
+
+/* ── 12. Glassmorphism — Kanban ────────────────────────────── */
+.kanban-col {
+  background: rgba(18, 26, 28, 0.58) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+.kanban-col-header {
+  background: rgba(22, 32, 34, 0.65) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.05) !important;
+}
+.kanban-card {
+  background: rgba(24, 34, 36, 0.72) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(206, 146, 33, 0.12) !important;
+  transition: border-color 200ms ease,
+              box-shadow  200ms ease,
+              transform   200ms ease !important;
+}
+.kanban-card:hover {
+  border-color: rgba(206, 146, 33, 0.28) !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.40) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ── 13. Glassmorphism — Table + Filtros ───────────────────── */
+.table-wrap {
+  background: rgba(20, 29, 31, 0.62) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(206, 146, 33, 0.10) !important;
+  border-radius: var(--r-lg) !important;
+  overflow: hidden !important;
+}
+.filters-bar {
+  background: rgba(20, 29, 31, 0.56) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: var(--r-lg) !important;
+}
+
+/* ── 14. Glassmorphism — WhatsApp ──────────────────────────── */
+.wa-instance-card {
+  background: rgba(22, 31, 33, 0.65) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(206, 146, 33, 0.12) !important;
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease !important;
+}
+.wa-instance-card:hover {
+  border-color: rgba(206, 146, 33, 0.28) !important;
+  transform: translateY(-1px) !important;
+}
+.chats-layout {
+  background: rgba(16, 24, 26, 0.60) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(206, 146, 33, 0.12) !important;
+}
+.chats-sidebar  { background: rgba(18, 27, 29, 0.50) !important; }
+.chats-panel    { background: rgba(14, 21, 23, 0.55) !important; }
+.chats-panel-header { background: rgba(18, 27, 29, 0.62) !important; }
+
+/* ── 15. Glassmorphism — Relatórios ────────────────────────── */
+.rel-block {
+  background: rgba(22, 31, 33, 0.62) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(206, 146, 33, 0.11) !important;
+}
+
+/* ── 16. Formulários — inputs semi-transparentes ───────────── */
+.form-ctrl,
+.filter-select,
+.filter-input,
+.chat-input {
+  background: rgba(24, 34, 36, 0.72) !important;
+  border-color: rgba(206, 146, 33, 0.14) !important;
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease !important;
+}
+.form-ctrl:focus,
+.filter-select:focus,
+.filter-input:focus,
+.chat-input:focus {
+  background: rgba(24, 34, 36, 0.90) !important;
+  border-color: rgba(206, 146, 33, 0.45) !important;
+  box-shadow: 0 0 0 3px rgba(206, 146, 33, 0.10) !important;
+}
+
+/* ── 17. QR modal ──────────────────────────────────────────── */
+.qr-instruction {
+  background: rgba(26, 36, 38, 0.68) !important;
+  border-color: rgba(206, 146, 33, 0.16) !important;
+}
+
+/* ── 18. Agenda + Briefing ─────────────────────────────────── */
+.agenda-sidebar,
+.agenda-layout {
+  background: transparent !important;
+}
+.briefing-card,
+.briefing-item {
+  background: rgba(22, 31, 33, 0.62) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(206, 146, 33, 0.12) !important;
+}
+
+/* ── 19. Spacing — premium e respirado ─────────────────────── */
+.page-top,
+.kanban-page-top {
+  padding-top: 32px !important;
+  padding-bottom: 24px !important;
+}
+.page-title-block h1 {
+  font-weight: 700 !important;
+  letter-spacing: -0.025em !important;
+}
+
+/* ── 20. Ticker Bíblico ────────────────────────────────────── */
+#fdv-ticker {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  right: 0;
+  z-index: 98;
+  height: 30px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  background: rgba(10, 16, 18, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(206, 146, 33, 0.14);
+  pointer-events: none;
+}
+.ticker-track {
+  display: flex;
+  flex-shrink: 0;
+  white-space: nowrap;
+  will-change: transform;
+  animation: fdv-ticker-scroll 280s linear infinite;
+}
+.ticker-content {
+  display: inline-block;
+  font-family: 'Red Hat Display', serif;
+  font-style: italic;
+  font-size: 11.5px;
+  font-weight: 400;
+  color: rgba(206, 146, 33, 0.78);
+  letter-spacing: 0.015em;
+  line-height: 1;
+  user-select: none;
+  padding-right: 96px;
+}
+@keyframes fdv-ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Empurra o conteúdo principal para baixo do ticker */
+.app-main  { padding-top: 72px !important; }
+@media (max-width: 768px) {
+  .app-main { padding-top: 56px !important; }
+}
+
+/* ── 21. Scrollbars custom ─────────────────────────────────── */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(206,146,33,.22); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(206,146,33,.40); }
