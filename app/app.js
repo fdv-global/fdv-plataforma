@@ -1,7 +1,8 @@
 import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import {
   getFirestore, collection, onSnapshot,
-  doc, updateDoc, addDoc, deleteDoc
+  doc, updateDoc, addDoc, deleteDoc,
+  query, orderBy
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
@@ -93,6 +94,12 @@ let qrInstanceId       = null;
 let qrTimerInterval    = null;
 let qrPollingInterval  = null;
 let qrSecondsLeft      = 60;
+
+// Chat state
+let chatLeadId         = null;
+let chatUnsubscribe    = null;
+let chatMessages       = [];
+let chatActiveSide     = null;
 
 const ETIQUETAS_DEFAULT = ['Super Lead', 'Bom', 'Neutro', 'Frio'];
 
@@ -660,10 +667,14 @@ function kanbanCard(l) {
   const etiquetas  = (l.etiquetas||[]).slice(0,2);
   const isAgendado = l.status === 'agendado';
 
+  const unreadCount = l.unreadCount || 0;
   return `<div class="kanban-card" draggable="true" data-id="${l.id}">
     <div class="kc-head">
       <button class="kc-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
-      ${badgeStatus(l.status)}
+      <div style="display:flex;align-items:center;gap:6px">
+        ${unreadCount ? `<span class="kc-unread-badge">${unreadCount}</span>` : ''}
+        ${badgeStatus(l.status)}
+      </div>
     </div>
     ${etiquetas.length ? `<div class="kc-etiquetas">${etiquetas.map(t=>etiquetaChip(t,true)).join('')}</div>` : ''}
     ${l.dataagendamento ? `<div class="kc-datetime">📅 ${fmtDateHora(l.dataagendamento,l.horaagendamento)}</div>` : ''}
@@ -1176,6 +1187,14 @@ function instagramLink(raw) {
 
 function openPerfil(lead) {
   perfilLeadId = lead.id;
+  switchPerfilTab('dados');
+  // Unread badge
+  const badge = $('perfil-unread-badge');
+  if (badge) {
+    const n = lead.unreadCount || 0;
+    badge.textContent    = n;
+    badge.style.display  = n > 0 ? '' : 'none';
+  }
   const STATUS_LBL = { aguardando:'Aguardando', agendado:'Agendado', realizada:'Call Realizada', noshow:'No Show', cancelado:'Cancelado' };
   $('perfil-title').textContent    = lead.nome || '—';
   $('perfil-subtitle').textContent = STATUS_LBL[lead.status] || lead.status || '—';
@@ -1241,6 +1260,8 @@ function openPerfil(lead) {
 }
 
 function closePerfil() {
+  stopChatListener();
+  switchPerfilTab('dados');
   $('perfil-backdrop').classList.remove('open');
   document.body.style.overflow = '';
   perfilLeadId = null;
@@ -1652,6 +1673,222 @@ function toast(msg, type = 'ok') {
   setTimeout(() => { el.style.animation='toastOut .25s ease forwards'; setTimeout(()=>el.remove(),250); }, 3500);
 }
 
+// ─── CHAT / MENSAGENS ────────────────────────────────────────────────
+
+function switchPerfilTab(tab) {
+  ['dados','whatsapp'].forEach(t => {
+    const el = $(`perfil-tab-${t}`);
+    if (el) el.style.display = t === tab ? '' : 'none';
+  });
+  document.querySelectorAll('.perfil-tab').forEach(b =>
+    b.classList.toggle('active', b.dataset.perfilTab === tab)
+  );
+  const saveBtn = $('btn-salvar-obs');
+  if (saveBtn) saveBtn.style.display = tab === 'dados' ? '' : 'none';
+  if (tab === 'whatsapp') { if (perfilLeadId) openChatForLead(perfilLeadId); }
+  else stopChatListener();
+}
+
+function openChatForLead(leadId) {
+  const lead = allLeads.find(l => l.id === leadId);
+  if (!lead) return;
+  chatLeadId = leadId;
+  const metaEl = $('perfil-chat-meta');
+  if (metaEl) metaEl.textContent = lead.celular || '—';
+  populateChatInstanceSelector('perfil-chat-instance');
+  startChatListener(leadId, 'perfil-chat-messages', 'perfil-chat-empty');
+  if (isLive && (lead.unreadCount || 0) > 0) {
+    updateDoc(doc(db, 'leads', leadId), { unreadCount: 0 }).catch(console.error);
+    lead.unreadCount = 0;
+  }
+  const badge = $('perfil-unread-badge');
+  if (badge) badge.style.display = 'none';
+}
+
+function populateChatInstanceSelector(selectId) {
+  const sel = $(selectId); if (!sel) return;
+  sel.innerHTML = `<option value="">Selecionar instância…</option>` +
+    waInstances.map(i =>
+      `<option value="${esc(i.instanceName)}"${i.status!=='connected'?' disabled':''}>${esc(i.displayName)}${i.status==='connected'?' ✓':' (offline)'}</option>`
+    ).join('');
+  const first = waInstances.find(i => i.status === 'connected');
+  if (first) sel.value = first.instanceName;
+}
+
+function startChatListener(leadId, messagesId, emptyId) {
+  stopChatListener();
+  chatLeadId = leadId;
+  if (!isLive) {
+    chatMessages = [];
+    renderChatMessages(chatMessages, messagesId, emptyId); return;
+  }
+  const q = query(collection(db, 'leads', leadId, 'messages'), orderBy('timestamp', 'asc'));
+  chatUnsubscribe = onSnapshot(q, snap => {
+    chatMessages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderChatMessages(chatMessages, messagesId, emptyId);
+    if (activeTab === 'whatsapp' && activeWaSub === 'chats') renderChatsList();
+  }, err => console.error('[FDV] messages:', err.code));
+}
+
+function stopChatListener() {
+  if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
+  chatMessages = []; chatLeadId = null;
+}
+
+function renderChatMessages(messages, containerId, emptyId) {
+  const container = $(containerId); if (!container) return;
+  const emptyEl   = $(emptyId);
+  container.querySelectorAll('.chat-msg, .chat-date-sep').forEach(el => el.remove());
+  if (messages.length === 0) {
+    if (emptyEl) emptyEl.style.display = '';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+  const frag    = document.createDocumentFragment();
+  let lastDate  = '';
+  messages.forEach(msg => {
+    const ts      = new Date(msg.timestamp);
+    const dateLbl = ts.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
+    if (dateLbl !== lastDate) {
+      const sep = document.createElement('div');
+      sep.className = 'chat-date-sep'; sep.textContent = dateLbl;
+      frag.appendChild(sep); lastDate = dateLbl;
+    }
+    const el = document.createElement('div');
+    el.className = `chat-msg chat-msg--${msg.direction||'sent'}`;
+    el.innerHTML = `<div class="chat-bubble">${esc(msg.text||'')}</div>
+      <div class="chat-msg-meta">
+        ${msg.senderName ? `<span class="chat-sender">${esc(msg.senderName)}</span>` : ''}
+        <span class="chat-time">${ts.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span>
+        ${(msg.direction||'sent')==='sent'?`<span class="chat-tick">${msg.status==='read'?'✓✓':'✓'}</span>`:''}
+      </div>`;
+    frag.appendChild(el);
+  });
+  container.appendChild(frag);
+  container.scrollTop = container.scrollHeight;
+}
+
+async function sendChatMessage(inputId, instSelectId, leadId) {
+  if (!leadId) return;
+  const input    = $(inputId);
+  const instSel  = $(instSelectId);
+  const text     = input?.value.trim();
+  const instName = instSel?.value;
+  if (!text)     { toast('Digite uma mensagem.','err'); return; }
+  if (!instName) { toast('Selecione uma instância para enviar.','err'); return; }
+  const lead = allLeads.find(l => l.id === leadId);
+  if (!lead) return;
+  const phone = (lead.celular||'').replace(/\D/g,'');
+  if (!phone)   { toast('Lead sem número de celular.','err'); return; }
+  input.disabled = true;
+  const ts = new Date().toISOString();
+  const msgData = {
+    text, direction: 'sent', timestamp: ts, instanceName: instName,
+    senderName: currentUser?.displayName || 'FDV', status: 'sent',
+  };
+  try {
+    if (isLive) {
+      await addDoc(collection(db, 'leads', leadId, 'messages'), msgData);
+      await updateDoc(doc(db, 'leads', leadId), { lastMessageAt: ts, lastMessageText: text, lastMessageInstance: instName, atualizadoem: ts });
+    } else {
+      chatMessages.push({ id:'local-'+Date.now(), ...msgData });
+      renderChatMessages(chatMessages, inputId.includes('perfil') ? 'perfil-chat-messages' : 'central-chat-messages',
+                                       inputId.includes('perfil') ? 'perfil-chat-empty'    : 'central-chat-empty');
+      lead.lastMessageAt = ts; lead.lastMessageText = text; lead.lastMessageInstance = instName;
+    }
+    try { await fetchEvolution(`/message/sendText/${instName}`, 'POST', { number: phone, text }); } catch(e) { /* mock */ }
+    input.value = '';
+  } catch(e) { console.error(e); toast('Erro ao enviar mensagem.','err'); }
+  finally    { input.disabled = false; input.focus(); }
+}
+
+// ─── CENTRAL DE CHATS ────────────────────────────────────────────────
+
+function renderCentralChats() {
+  renderChatsFilters();
+  renderChatsList();
+}
+
+function renderChatsFilters() {
+  const sel = $('chats-filter-instance'); if (!sel) return;
+  sel.innerHTML = `<option value="">Todas as instâncias</option>` +
+    waInstances.map(i => `<option value="${esc(i.instanceName)}">${esc(i.displayName)}</option>`).join('');
+}
+
+function renderChatsList() {
+  const instFilt   = $('chats-filter-instance')?.value || '';
+  const statusFilt = $('chats-filter-status')?.value   || '';
+  let convs = allLeads.filter(l => l.lastMessageAt);
+  if (instFilt)   convs = convs.filter(l => l.lastMessageInstance === instFilt);
+  if (statusFilt) convs = convs.filter(l => l.status === statusFilt);
+  convs.sort((a,b) => (b.lastMessageAt||'').localeCompare(a.lastMessageAt||''));
+  const listEl = $('chats-list'); if (!listEl) return;
+  if (convs.length === 0) {
+    listEl.innerHTML = `<div class="chat-list-empty"><div style="font-size:32px;margin-bottom:10px">💬</div><p>Nenhuma conversa ainda.</p></div>`;
+    return;
+  }
+  listEl.innerHTML = convs.map(lead => {
+    const isActive = lead.id === chatActiveSide;
+    const unread   = lead.unreadCount || 0;
+    const lastMsg  = lead.lastMessageText ? esc(lead.lastMessageText.slice(0,55)) : '—';
+    const lastTime = lead.lastMessageAt
+      ? new Date(lead.lastMessageAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '';
+    return `<div class="chats-list-item${isActive?' chats-list-item--active':''}${unread?' chats-list-item--unread':''}" data-lead-id="${esc(lead.id)}" role="button" tabindex="0">
+      <div class="cli-avatar">${esc((lead.nome||'?')[0].toUpperCase())}</div>
+      <div class="cli-body">
+        <div class="cli-top">
+          <span class="cli-name">${esc(lead.nome||'—')}</span>
+          <span class="cli-time">${lastTime}</span>
+        </div>
+        <div class="cli-preview">
+          <span class="cli-msg">${lastMsg}</span>
+          ${unread?`<span class="cli-unread-badge">${unread}</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openCentralChat(leadId) {
+  chatActiveSide = leadId;
+  renderChatsList();
+  const lead = allLeads.find(l => l.id === leadId); if (!lead) return;
+  const panel = $('chats-panel'); if (!panel) return;
+  panel.innerHTML = `
+    <div class="chats-panel-header">
+      <div class="chats-panel-lead">
+        <div class="cli-avatar" style="width:38px;height:38px;font-size:15px">${esc((lead.nome||'?')[0].toUpperCase())}</div>
+        <div>
+          <div class="chats-panel-name">${esc(lead.nome||'—')}</div>
+          <div class="chats-panel-phone">${esc(lead.celular||'—')}</div>
+        </div>
+      </div>
+      <select id="central-chat-instance" class="filter-select chat-inst-sel">
+        <option value="">Selecionar instância…</option>
+      </select>
+    </div>
+    <div class="chat-messages" id="central-chat-messages">
+      <div class="chat-empty" id="central-chat-empty">
+        <span>Nenhuma mensagem ainda.</span>
+        <span class="chat-empty-hint">Selecione uma instância e envie a primeira mensagem.</span>
+      </div>
+    </div>
+    <div class="chat-input-bar">
+      <textarea class="chat-input" id="central-chat-input" placeholder="Digite uma mensagem…" rows="2"></textarea>
+      <button class="btn-primary chat-send-btn" id="btn-central-send">↑</button>
+    </div>`;
+  $('btn-central-send').addEventListener('click', () => sendChatMessage('central-chat-input','central-chat-instance',leadId));
+  $('central-chat-input').addEventListener('keydown', e => {
+    if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage('central-chat-input','central-chat-instance',leadId); }
+  });
+  populateChatInstanceSelector('central-chat-instance');
+  startChatListener(leadId, 'central-chat-messages', 'central-chat-empty');
+  if (isLive && (lead.unreadCount||0) > 0) {
+    updateDoc(doc(db,'leads',leadId),{unreadCount:0}).catch(console.error);
+    lead.unreadCount = 0; renderChatsList();
+  }
+}
+
 // ─── WHATSAPP / EVOLUTION API ────────────────────────────────────────
 
 const WA_RESPONSAVEIS = {
@@ -1680,7 +1917,8 @@ function switchWaSub(sub) {
   document.querySelectorAll('#tab-whatsapp .sub-link[data-sub]').forEach(l =>
     l.classList.toggle('active', l.dataset.sub === sub)
   );
-  if (sub === 'instancias') renderInstancias();
+  if      (sub === 'instancias') renderInstancias();
+  else if (sub === 'chats')      renderCentralChats();
 }
 
 function renderInstancias() {
@@ -2031,6 +2269,30 @@ function bindEvents() {
   // Auth
   $('btn-login-google').addEventListener('click', loginWithGoogle);
   $('btn-logout').addEventListener('click', logoutUser);
+
+  // Perfil tabs
+  document.querySelectorAll('.perfil-tab').forEach(btn =>
+    btn.addEventListener('click', () => switchPerfilTab(btn.dataset.perfilTab))
+  );
+
+  // Chat no perfil
+  $('btn-perfil-send').addEventListener('click', () =>
+    sendChatMessage('perfil-chat-input', 'perfil-chat-instance', perfilLeadId)
+  );
+  $('perfil-chat-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage('perfil-chat-input','perfil-chat-instance',perfilLeadId); }
+  });
+
+  // Central de chats — filtros
+  ['chats-filter-instance','chats-filter-status'].forEach(id =>
+    $(id)?.addEventListener('change', renderChatsList)
+  );
+
+  // Central de chats — clique na conversa (delegado)
+  $('chats-list').addEventListener('click', e => {
+    const item = e.target.closest('.chats-list-item');
+    if (item) openCentralChat(item.dataset.leadId);
+  });
 
   // WhatsApp — nova instância
   $('btn-nova-instancia').addEventListener('click', () => openQRModal(null));
