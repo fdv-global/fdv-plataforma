@@ -1,6 +1,6 @@
 # RDM — Sistema FDV: Tasks Pendentes
 
-> Última atualização: 2026-04-10 — v3 em desenvolvimento
+> Última atualização: 2026-04-14 — v3 em produção · WhatsApp em desenvolvimento
 
 ---
 
@@ -39,23 +39,53 @@
 
 ---
 
+---
+
+## ✅ CONCLUÍDO (v3 — WhatsApp, itens 1–4)
+
+- [x] **WhatsApp — aba no menu** — nova aba "WhatsApp" no header com sub-nav: Instâncias / Central de Chats
+- [x] **WhatsApp — tela de instâncias** — cards com nome, ID, responsável (Muy/Fernanda/Thomaz/Tati), funil, número, última atividade; stats em tempo real (total, conectadas, desconectadas, aguardando QR)
+- [x] **WhatsApp — status badges** — Conectado (verde pulsante) / Desconectado (vermelho) / Aguardando QR (dourado)
+- [x] **WhatsApp — ações por instância** — Reconectar, Desconectar, Excluir (com confirmação)
+- [x] **WhatsApp — Firebase** — coleção `whatsapp_instances` com listener `onSnapshot` em tempo real
+- [x] **Modal QR Code** — step 1: formulário (nome, ID, responsável, funil) → step 2: QR com timer regressivo 60s
+- [x] **Modal QR Code — estados visuais** — carregando → aguardando scan → conectado → expirado → erro
+- [x] **Modal QR Code — polling** — verifica `/instance/connectionState` a cada 3s; fecha modal ao conectar
+- [x] **Modal QR Code — modo mock** — funciona sem a Evolution API; mostra mensagem explicativa
+- [x] **WhatsApp — aba no perfil do lead** — tabs "Dados do Lead" / "WhatsApp" no modal de perfil
+- [x] **WhatsApp — chat no lead** — histórico em tempo real via `leads/{id}/messages`; bubbles enviadas (direita/dourado) e recebidas (esquerda/cinza); separador de data
+- [x] **WhatsApp — envio de mensagem** — seletor de instância + campo + botão ↑ + Enter para enviar
+- [x] **WhatsApp — badge de não lidas** — no botão da aba WhatsApp no perfil + nos cards do Kanban (`unreadCount`)
+- [x] **Central de Chats** — layout duas colunas: lista de conversas + painel de chat
+- [x] **Central de Chats — ordenação** — última mensagem primeiro; não lidas em destaque (bold + badge vermelho)
+- [x] **Central de Chats — filtros** — por instância e por status do lead
+- [x] **GitHub Actions** — deploy automático da pasta `app/` para GitHub Pages a cada push no `master`
+- [x] **GitHub Pages** — site publicado em `https://faculdadedavida.github.io/faculdadavida`
+
+---
+
 ## 🔲 PENDENTE
+
+### WhatsApp — infraestrutura (aguardando AWS)
+- [ ] **Evolution API no AWS** — instalar e configurar; trocar `EVOLUTION_API_URL = 'http://localhost:8080'` em `app.js`
+- [ ] **Webhook de recebimento** — Firebase Functions (ou endpoint externo) para receber mensagens da Evolution API, salvar em `leads/{id}/messages` e incrementar `unreadCount` no lead
+- [ ] **Webhook de status** — atualizar `status` da instância em `whatsapp_instances` quando desconectar/reconectar
 
 ### Features prioritárias
 - [ ] **Integração Google Sheets** — importar leads dos formulários ISCAS/Respondi para o Firestore automaticamente
-- [ ] **Notificações de agenda** — lembrete antes da call (push ou WhatsApp via Evolution API)
+- [ ] **Notificações de agenda** — lembrete antes da call (WhatsApp via Evolution API)
 - [ ] **Busca global** — busca por nome, celular, e-mail direto no header (qualquer tela)
 
 ### Features secundárias
 - [ ] **Pós-venda** — frente futura para gestão de alunos
 - [ ] **Export CSV/Excel** — exportar lista de leads com filtros ativos
 - [ ] **Multi-usuário** — controle de acesso por role (admin, closer, SDR)
-- [x] **Etiquetas no Kanban** — chips coloridos nos cards do kanban usando `etiquetaChip()` (corrigido junto com item de etiquetas)
 
 ---
 
 ## NOTAS TÉCNICAS
 
+### Leads (`leads`)
 - `kanban_column` — campo no lead que controla a coluna no kanban (persistido no Firestore)
 - `etiquetas: []` — array de strings no lead
 - `etiqueta_colors` — cores salvas em `localStorage` (chave `fdv_etiqueta_colors`), não no Firestore
@@ -64,6 +94,31 @@
 - `parcelas: number`, `tem_entrada: bool`, `valor_entrada: string`
 - `produto: string`
 - `obs_call: string` — observações da call, editável pelo closer direto no kanban
+- `lastMessageAt: ISO string` — timestamp da última mensagem (enviada ou recebida)
+- `lastMessageText: string` — prévia da última mensagem
+- `lastMessageInstance: string` — instanceName usada na última mensagem
+- `unreadCount: number` — mensagens não lidas; zerado ao abrir o chat
+
+### Mensagens (`leads/{id}/messages`)
+- `text: string`
+- `direction: 'sent' | 'received'`
+- `timestamp: ISO string`
+- `instanceName: string`
+- `senderName: string`
+- `status: 'sent' | 'delivered' | 'read'`
+
+### WhatsApp Instances (`whatsapp_instances`)
+- `instanceName: string` — slug usado nas chamadas da Evolution API
+- `displayName: string` — nome de exibição
+- `responsavel: 'muy' | 'fernanda' | 'thomaz' | 'tati'`
+- `funil: 'captacao' | 'closer' | 'pos-venda' | 'geral'`
+- `status: 'connected' | 'disconnected' | 'awaiting_qr'`
+- `phoneNumber: string`
+- `lastActivity: ISO string`
+
+### Infra
+- `EVOLUTION_API_URL` — constante no topo de `app.js`; trocar para URL do AWS quando disponível
 - Colunas do kanban salvas em `localStorage` (chave `fdv_kanban_columns`)
 - `agendaCalYear / agendaCalMonth` — estado do mini calendário (em memória, reset ao recarregar)
 - Servidor local: `node app/server.js` na porta 3000, hot reload via SSE
+- Deploy: GitHub Actions (`.github/workflows/deploy.yml`) → GitHub Pages no push para `master`
