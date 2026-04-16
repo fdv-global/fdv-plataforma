@@ -166,9 +166,10 @@ h1, h2, h3, h4,
   background:
     linear-gradient(rgba(12, 18, 20, 0.22), rgba(12, 18, 20, 0.22)),
     url('fdv-wallpaper.png') center / cover fixed !important;
-  align-items: flex-end !important;
+  display: flex !important;
+  align-items: center !important;
   justify-content: center !important;
-  padding-bottom: 48px !important;
+  padding-bottom: 0 !important;
 }
 
 /* [A] Vinheta de base — gradiente escuro nos 42% inferiores */
@@ -223,14 +224,20 @@ h1, h2, h3, h4,
 /* ── 10. Stat cards — glassmorphism contrastado ────────────── */
 /* Opacidade 32%, blur 24px, border-radius 20px */
 .stat-card {
-  background: rgba(12, 18, 20, 0.85) !important;
-  backdrop-filter: blur(24px) saturate(1.6) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(1.6) !important;
+  background: rgba(12, 18, 20, 0.82) !important;
+  backdrop-filter: blur(24px) saturate(1.8) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.8) !important;
   border: 1px solid rgba(206, 146, 33, 0.22) !important;
   border-radius: 20px !important;
   animation: fdvFadeUp 220ms ease both;
   transition: transform 180ms cubic-bezier(.34,1.42,.64,1),
               box-shadow 180ms ease !important;
+}
+.stat-card .stat-label,
+.stat-card .stat-num,
+.stat-card .stat-sub {
+  text-rendering: optimizeLegibility !important;
+  -webkit-font-smoothing: antialiased !important;
 }
 .stat-card:hover {
   transform: translateY(-3px) scale(1.02) !important;
@@ -431,10 +438,11 @@ h1, h2, h3, h4,
   color: #e8e4dc !important;
   font-weight: 600 !important;
 }
-/* Labels de filtro — tamanho compacto */
+/* Labels de filtro — tamanho compacto e contrastado */
 .filter-label,
 .agenda-date-label {
   font-size: 12px !important;
+  letter-spacing: 0.05em !important;
 }
 /* Texto secundário (subtítulos, datas, meta-info) */
 .text-muted,
@@ -461,26 +469,24 @@ h1, h2, h3, h4,
 /* ── 20. Versículo — topo central da tela ──────────────────── */
 #fdv-ticker {
   position: fixed;
-  top: 0;
+  top: 16px;
   left: 50%;
-  right: auto;
   transform: translateX(-50%);
   z-index: 999;
-  height: auto;
-  width: auto;
-  max-width: 600px;
+  width: max-content;
+  max-width: 580px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  background: rgba(10, 15, 17, 0.55);
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  border: none;
-  border-left: 3px solid #CE9221;
-  border-radius: 0 0 12px 12px;
-  padding: 12px 16px;
+  background: rgba(10, 71, 81, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(206, 146, 33, 0.30);
+  border-radius: 12px;
+  padding: 12px 20px;
   pointer-events: none;
   overflow: visible;
+  text-align: center;
 }
 .ticker-verso {
   font-family: 'Red Hat Display', sans-serif;
@@ -504,7 +510,7 @@ h1, h2, h3, h4,
 }
 
 /* Conteúdo — sem header no topo, taskbar fixa no rodapé */
-.app-main { padding-top: 40px !important; padding-bottom: 100px !important; }
+.app-main { padding-top: 80px !important; padding-bottom: 120px !important; }
 
 /* [F] Mobile — ocultar versículo, ajustar espaço */
 @media (max-width: 768px) {
