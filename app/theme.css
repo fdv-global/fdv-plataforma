@@ -351,6 +351,11 @@ h1, h2, h3, h4,
 }
 
 /* ── 13. Table + Filtros + Row hover [C] ───────────────────── */
+.leads-table th {
+  color: #e8e4dc !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em !important;
+}
 .table-wrap {
   background: rgba(20, 29, 31, 0.62) !important;
   backdrop-filter: blur(14px) !important;
