@@ -141,12 +141,16 @@ function initAuth() {
     return;
   }
   auth = getAuth();
-  getRedirectResult(auth).catch(() => {
-    const err = $('login-error');
-    if (err) { err.textContent = 'Erro ao entrar. Tente novamente.'; err.style.display = 'block'; }
-    const btn = $('btn-login-google');
-    if (btn) btn.disabled = false;
-  });
+  // Oculta o botão enquanto o redirect está sendo processado
+  const loginBtn = $('btn-login-google');
+  if (loginBtn) loginBtn.disabled = true;
+  getRedirectResult(auth)
+    .then(() => { if (loginBtn) loginBtn.disabled = false; })
+    .catch(() => {
+      if (loginBtn) loginBtn.disabled = false;
+      const err = $('login-error');
+      if (err) { err.textContent = 'Erro ao entrar. Tente novamente.'; err.style.display = 'block'; }
+    });
   onAuthStateChanged(auth, user => {
     if (user) {
       currentUser = user;
