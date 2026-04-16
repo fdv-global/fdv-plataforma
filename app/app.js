@@ -155,11 +155,15 @@ function initAuth() {
     if (user) {
       const role = await resolveRole(user);
       console.log('[FDV] role resolvida:', role);
-      if (!role) return;
+      if (!role) { console.warn('[FDV] role nula — tela não muda'); return; }
       currentUser = user;
       currentRole = role;
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
+      const loginEl = document.getElementById('login-screen');
+      const appEl   = document.getElementById('app');
+      console.log('[FDV] elementos encontrados: login-screen=', !!loginEl, 'app=', !!appEl);
+      if (loginEl) loginEl.style.display = 'none';
+      if (appEl)   appEl.style.display   = 'block';
+      console.log('[FDV] display após update: login-screen=', loginEl?.style.display, 'app=', appEl?.style.display);
       $('user-name').textContent = user.displayName || user.email;
       document.querySelectorAll('.admin-only').forEach(el =>
         el.style.display = role === 'admin' ? '' : 'none'
