@@ -490,7 +490,7 @@ button[class*="btn-c"] {
 /* ── 20. Versículo — topo central da tela ──────────────────── */
 #fdv-ticker {
   position: fixed;
-  top: 86px;
+  top: 110px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 998;
@@ -508,17 +508,6 @@ button[class*="btn-c"] {
   pointer-events: none;
   overflow: visible;
   text-align: center;
-}
-#fdv-ticker::before {
-  content: '\201C';
-  font-size: 48px;
-  color: #CE9221;
-  opacity: 0.6;
-  position: absolute;
-  top: -10px;
-  left: 14px;
-  line-height: 1;
-  font-family: Georgia, serif;
 }
 .ticker-verso {
   font-family: 'Red Hat Display', sans-serif;

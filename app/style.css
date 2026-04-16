@@ -165,15 +165,15 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 .btn-google {
   display: inline-flex; align-items: center; gap: 10px;
   padding: 13px 24px; border-radius: var(--r);
-  background: var(--gold); color: #0d1a1c;
+  background: linear-gradient(135deg, #B8811D, #CE9221, #A67019); color: #0d1a1c;
   font-size: 14px; font-weight: 700; font-family: inherit;
-  border: none; width: 100%; justify-content: center;
+  border: 1px solid rgba(206,146,33,.60); width: 100%; justify-content: center;
   transition: transform var(--fast) var(--spring),
               background var(--fast) var(--ease),
               box-shadow var(--fast) var(--ease);
-  box-shadow: var(--shad-gold);
+  box-shadow: 0 2px 12px rgba(206,146,33,.25);
 }
-.btn-google:hover   { background: #d99e28; transform: translateY(-2px); box-shadow: 0 8px 28px rgba(206,146,33,.38); }
+.btn-google:hover   { background: linear-gradient(135deg, #B8811D, #CE9221, #A67019); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(206,146,33,.38); }
 .btn-google:active  { transform: scale(.98) translateY(0); }
 .btn-google:disabled { opacity: .5; cursor: default; transform: none; box-shadow: none; }
 
@@ -267,15 +267,15 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
    ============================================================ */
 .btn-primary {
   display: inline-flex; align-items: center; gap: 7px;
-  background: var(--gold); color: #0d1a1c;
+  background: linear-gradient(135deg, #B8811D, #CE9221, #A67019); color: #0d1a1c;
   font-size: 13.5px; font-weight: 700; letter-spacing: .15px;
-  padding: 10px 20px; border-radius: var(--r); border: none;
+  padding: 10px 20px; border-radius: var(--r); border: 1px solid rgba(206,146,33,.60);
   transition: transform var(--fast) var(--spring),
               background var(--fast) var(--ease),
               box-shadow var(--fast) var(--ease);
-  box-shadow: 0 2px 8px rgba(206,146,33,.24);
+  box-shadow: 0 2px 12px rgba(206,146,33,.25);
 }
-.btn-primary:hover  { background: #d99e28; transform: translateY(-1.5px); box-shadow: 0 6px 22px rgba(206,146,33,.36); }
+.btn-primary:hover  { background: linear-gradient(135deg, #B8811D, #CE9221, #A67019); transform: translateY(-1.5px); box-shadow: 0 6px 22px rgba(206,146,33,.36); }
 .btn-primary:active { transform: scale(.98) translateY(0); box-shadow: none; }
 
 .btn-ghost {
@@ -503,7 +503,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   transition-property: background, color, border-color, transform;
 }
 .btn-acao.agendar  { background: var(--gold-10); color: #d4982a; border-color: var(--gold-22); }
-.btn-acao.agendar:hover { background: var(--gold); color: #0d1a1c; }
+.btn-acao.agendar:hover { background: linear-gradient(135deg, #B8811D, #CE9221, #A67019); color: #0d1a1c; }
 .btn-acao.realizar { background: var(--petro-10); color: var(--petro-l); border-color: rgba(77,181,200,.2); }
 .btn-acao.realizar:hover { background: var(--petro-18); }
 .btn-acao.ver      { background: transparent; color: var(--t3); border-color: var(--b1); }
@@ -1107,8 +1107,8 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 /* ============================================================
    SAVE BUTTONS
    ============================================================ */
-#btn-salvar-obs  { background: var(--gold); color: #0d1a1c; border: none; box-shadow: var(--shad-gold); }
-#btn-salvar-lead { background: var(--gold); color: #0d1a1c; border: none; box-shadow: var(--shad-gold); }
+#btn-salvar-obs  { background: linear-gradient(135deg, #B8811D, #CE9221, #A67019); color: #0d1a1c; border: 1px solid rgba(206,146,33,.60); box-shadow: 0 2px 12px rgba(206,146,33,.25); }
+#btn-salvar-lead { background: linear-gradient(135deg, #B8811D, #CE9221, #A67019); color: #0d1a1c; border: 1px solid rgba(206,146,33,.60); box-shadow: 0 2px 12px rgba(206,146,33,.25); }
 
 /* ============================================================
    ETIQUETAS
