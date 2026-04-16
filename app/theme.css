@@ -142,13 +142,15 @@ h1, h2, h3, h4,
 .btn-primary,
 .btn-confirm,
 .btn-google,
+.nav-btn.active,
+.sub-nav-btn.active,
 button[class*="btn-p"],
 button[class*="btn-c"] {
-  background: linear-gradient(135deg, #CE9221, #B8811D) !important;
+  background: linear-gradient(135deg, #B8811D 0%, #CE9221 50%, #A67019 100%) !important;
   color: #0f1517 !important;
   font-weight: 700 !important;
-  border: none !important;
-  box-shadow: 0 4px 16px rgba(206, 146, 33, 0.35) !important;
+  border: 1px solid rgba(206, 146, 33, 0.60) !important;
+  box-shadow: 0 2px 12px rgba(206, 146, 33, 0.25) !important;
   border-radius: 30px !important;
   transition: transform 180ms cubic-bezier(.34,1.42,.64,1),
               box-shadow 180ms ease !important;
@@ -158,7 +160,7 @@ button[class*="btn-c"] {
 .btn-primary:hover:not(:disabled),
 .btn-confirm:hover:not(:disabled),
 .btn-google:hover:not(:disabled) {
-  background: linear-gradient(135deg, #CE9221, #B8811D) !important;
+  background: linear-gradient(135deg, #B8811D 0%, #CE9221 50%, #A67019 100%) !important;
   box-shadow: 0 8px 28px rgba(206, 146, 33, 0.55) !important;
   transform: scale(1.03) !important;
 }
@@ -488,7 +490,7 @@ button[class*="btn-c"] {
 /* ── 20. Versículo — topo central da tela ──────────────────── */
 #fdv-ticker {
   position: fixed;
-  top: 72px;
+  top: 86px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 998;
