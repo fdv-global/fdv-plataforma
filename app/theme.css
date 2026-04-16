@@ -50,20 +50,23 @@ h1, h2, h3, h4,
   transform: translateX(-50%) !important;
   width: auto !important;
   height: auto !important;
+  min-height: 56px !important;
   background: rgba(18, 24, 26, 0.65) !important;
   backdrop-filter: blur(24px) saturate(1.5) !important;
   -webkit-backdrop-filter: blur(24px) saturate(1.5) !important;
   border: 1px solid rgba(206, 146, 33, 0.20) !important;
   border-radius: 20px !important;
-  padding: 8px 24px !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.40) !important;
+  padding: 12px 32px !important;
+  box-shadow:
+    0 -4px 32px rgba(0, 0, 0, 0.50),
+    0 8px 32px rgba(0, 0, 0, 0.40) !important;
   z-index: 100 !important;
 }
 
 /* ── 6. Logo — imagem no lugar do texto ────────────────────── */
 .header-brand {
-  width: 120px;
-  height: 36px;
+  width: 134px;
+  height: 40px;
   background: url('fdv-logo.png') left center / contain no-repeat;
   flex-shrink: 0;
   mix-blend-mode: screen;
@@ -72,19 +75,23 @@ h1, h2, h3, h4,
 .brand-sep,
 .brand-full { display: none !important; }
 
-/* ── 7. Navegação — hover dourado, pill ────────────────────── */
+/* ── 7. Navegação — pill, 15px/600, ativo dourado sólido ───── */
 .nav-link {
   border-radius: 30px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: #e8e4dc !important;
   transition: background 200ms ease, color 200ms ease, border-color 200ms ease !important;
 }
 .nav-link:hover:not(.active) {
   color: var(--gold) !important;
-  background: rgba(206, 146, 33, 0.10) !important;
+  background: rgba(206, 146, 33, 0.12) !important;
 }
 .nav-link.active {
-  background: rgba(206, 146, 33, 0.16) !important;
-  border: 1px solid rgba(206, 146, 33, 0.30) !important;
-  color: var(--gold) !important;
+  background: var(--gold) !important;
+  border: none !important;
+  color: #0f1517 !important;
+  font-weight: 700 !important;
 }
 .perfil-tab {
   border-radius: 30px !important;
@@ -207,7 +214,7 @@ h1, h2, h3, h4,
 /* ── 10. Stat cards — glassmorphism contrastado ────────────── */
 /* Opacidade 32%, blur 24px, border-radius 20px */
 .stat-card {
-  background: rgba(18, 24, 26, 0.80) !important;
+  background: rgba(12, 18, 20, 0.85) !important;
   backdrop-filter: blur(24px) saturate(1.6) !important;
   -webkit-backdrop-filter: blur(24px) saturate(1.6) !important;
   border: 1px solid rgba(206, 146, 33, 0.22) !important;
@@ -275,7 +282,7 @@ h1, h2, h3, h4,
   border-bottom-color: rgba(255, 255, 255, 0.05) !important;
 }
 .kanban-card {
-  background: rgba(18, 24, 26, 0.80) !important;
+  background: rgba(12, 18, 20, 0.85) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
   border: 1px solid rgba(206, 146, 33, 0.12) !important;
@@ -316,7 +323,7 @@ h1, h2, h3, h4,
 
 /* ── 14. WhatsApp — scale hover ────────────────────────────── */
 .wa-instance-card {
-  background: rgba(18, 24, 26, 0.80) !important;
+  background: rgba(12, 18, 20, 0.85) !important;
   backdrop-filter: blur(14px) !important;
   -webkit-backdrop-filter: blur(14px) !important;
   border: 1px solid rgba(206, 146, 33, 0.12) !important;
@@ -379,7 +386,7 @@ h1, h2, h3, h4,
 }
 .briefing-card,
 .briefing-item {
-  background: rgba(18, 24, 26, 0.80) !important;
+  background: rgba(12, 18, 20, 0.85) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
   border: 1px solid rgba(206, 146, 33, 0.12) !important;
@@ -395,7 +402,36 @@ h1, h2, h3, h4,
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.38) !important;
 }
 
-/* ── 19. Spacing — premium e respirado ─────────────────────── */
+/* ── 19. Contraste — legibilidade aprimorada ───────────────── */
+/* Sobrescreve tokens de texto para maior contraste */
+:root {
+  --t1: #e8e4dc;
+  --t2: #c8c4bc;
+}
+/* Labels e títulos secundários */
+.stat-label,
+.stat-sub,
+.kanban-col-title,
+.kc-status,
+.lead-meta,
+.rel-section-title,
+.filter-label,
+.form-label,
+.section-label {
+  color: #e8e4dc !important;
+  font-weight: 500 !important;
+}
+/* Texto secundário (subtítulos, datas, meta-info) */
+.text-muted,
+.stat-sub,
+.kc-meta,
+.kc-closer,
+.briefing-meta,
+.lead-status-badge {
+  color: #c8c4bc !important;
+}
+
+/* ── 19b. Spacing — premium e respirado ────────────────────── */
 .page-top,
 .kanban-page-top {
   padding-top: 32px !important;
@@ -407,24 +443,26 @@ h1, h2, h3, h4,
   text-shadow: 0 0 30px rgba(206, 146, 33, 0.3) !important;
 }
 
-/* ── 20. Versículo — citação elegante (canto sup. esq.) ────── */
+/* ── 20. Versículo — topo central da tela ──────────────────── */
 #fdv-ticker {
   position: fixed;
-  top: 80px;
-  left: 20px;
+  top: 0;
+  left: 50%;
   right: auto;
-  z-index: 98;
+  transform: translateX(-50%);
+  z-index: 999;
   height: auto;
-  max-width: 340px;
+  width: auto;
+  max-width: 600px;
   display: flex;
   align-items: flex-start;
-  justify-content: flex-start;
+  justify-content: center;
   background: rgba(10, 15, 17, 0.55);
   backdrop-filter: blur(20px) saturate(1.4);
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
   border: none;
   border-left: 3px solid #CE9221;
-  border-radius: 0 12px 12px 0;
+  border-radius: 0 0 12px 12px;
   padding: 12px 16px;
   pointer-events: none;
   overflow: visible;
@@ -436,7 +474,7 @@ h1, h2, h3, h4,
   font-weight: 500;
   color: #FFD700;
   letter-spacing: 0.015em;
-  text-align: left;
+  text-align: center;
   line-height: 1.55;
   text-shadow: 0 0 16px rgba(206, 146, 33, 0.9);
   user-select: none;
