@@ -5,7 +5,7 @@ import {
   query, orderBy
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import {
-  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+  getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 // ─── CLOSERS ─────────────────────────────────────────────────────────
@@ -141,6 +141,12 @@ function initAuth() {
     return;
   }
   auth = getAuth();
+  getRedirectResult(auth).catch(() => {
+    const err = $('login-error');
+    if (err) { err.textContent = 'Erro ao entrar. Tente novamente.'; err.style.display = 'block'; }
+    const btn = $('btn-login-google');
+    if (btn) btn.disabled = false;
+  });
   onAuthStateChanged(auth, user => {
     if (user) {
       currentUser = user;
@@ -161,12 +167,10 @@ function initAuth() {
   });
 }
 
-async function loginWithGoogle() {
+function loginWithGoogle() {
   const btn = $('btn-login-google'), err = $('login-error');
   btn.disabled = true; err.style.display = 'none';
-  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
-  catch(e) { err.textContent = 'Erro ao entrar. Tente novamente.'; err.style.display = 'block'; }
-  finally { btn.disabled = false; }
+  signInWithRedirect(auth, new GoogleAuthProvider());
 }
 
 async function logoutUser() {
