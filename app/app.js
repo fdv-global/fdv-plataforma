@@ -154,12 +154,16 @@ async function initAuth() {
 
   // Mantém botão desabilitado enquanto processa retorno do Google
   const btn = $('btn-login-google');
-  if (sessionStorage.getItem(_LOGIN_KEY) && btn) btn.disabled = true;
+  const _pending = sessionStorage.getItem(_LOGIN_KEY);
+  console.log('[FDV auth] pending flag:', _pending, '| URL:', location.href);
+  if (_pending && btn) btn.disabled = true;
 
   // Processa credenciais do redirect antes de registrar onAuthStateChanged
   try {
-    await getRedirectResult(auth);
+    const result = await getRedirectResult(auth);
+    console.log('[FDV auth] getRedirectResult →', result ? result.user.email : 'null (sem redirect pendente)');
   } catch(e) {
+    console.error('[FDV auth] getRedirectResult error:', e.code, e.message);
     const err = $('login-error');
     if (err) { err.textContent = 'Erro ao entrar. Tente novamente.'; err.style.display = 'block'; }
   } finally {
@@ -169,6 +173,7 @@ async function initAuth() {
 
   // Auth state já reflete o usuário autenticado neste ponto
   onAuthStateChanged(auth, user => {
+    console.log('[FDV auth] onAuthStateChanged →', user ? user.email : 'null');
     if (user) {
       currentUser = user;
       $('login-screen').style.display = 'none';
@@ -195,6 +200,7 @@ function loginWithGoogle() {
   provider.addScope('email');
   provider.addScope('profile');
   provider.setCustomParameters({ prompt: 'select_account' });
+  console.log('[FDV auth] iniciando signInWithRedirect...');
   sessionStorage.setItem(_LOGIN_KEY, '1');
   signInWithRedirect(auth, provider);
 }
