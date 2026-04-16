@@ -1,6 +1,6 @@
 # RDM — Sistema FDV: Tasks Pendentes
 
-> Última atualização: 2026-04-14 — v3 em produção · theme polish concluído
+> Última atualização: 2026-04-16 — theme v2 completo · taskbar Win11 · versículo topo · microanimações
 
 ---
 
@@ -90,6 +90,25 @@
 - [x] **Agenda + Briefing** — `.briefing-card/.briefing-item` com glassmorphism
 - [x] **Spacing premium** — `page-top/kanban-page-top` com padding generoso
 - [x] **Seleção de texto** — `::selection` com fundo dourado translúcido
+
+---
+
+## ✅ CONCLUÍDO (theme v2 — taskbar Win11 + polish avançado · 2026-04-16)
+
+- [x] **Wallpaper full-brightness** — overlay reduzido para `rgba(15,21,23,0.45)`; árvore nítida e imersiva
+- [x] **Login Win11** — wallpaper full (overlay 0.22), vinheta `::after` nos 42% inferiores, card glassmorphism `blur(44px)` com `align-items:flex-end + justify-content:center` → card centralizado na base da tela
+- [x] **Versículo bíblico (fdv-ticker)** — posição topo-central: `fixed; top:0; left:50%; transform:translateX(-50%)`; `border-radius: 0 0 12px 12px`; cor `#FFD700` + `text-shadow` dourado brilhante; `pointer-events:none`; oculto em mobile
+- [x] **Taskbar Win11 flutuante** — header migrado de `position:sticky;top:0` para `position:fixed;bottom:24px;left:50%;transform:translateX(-50%)`; `border-radius:20px`; glassmorphism `blur(24px)`; `box-shadow: 0 -4px 32px` (sombra para cima); `padding:16px 40px`, `min-height:64px`
+- [x] **Ícones Unicode na taskbar** — pseudo-elemento `::before` em cada `nav-link[data-tab]`: 📅 Agendamentos · 👤 Closer · 📊 Relatórios · 💬 WhatsApp; `gap:16px` entre botões
+- [x] **Logo mix-blend-mode: lighten** — fundo preto da PNG some sobre painel escuro; `height:48px`, `width:160px`
+- [x] **Botões Win11 translúcidos** — base: `rgba(206,146,33,0.15) + backdrop-filter:blur(12px) + borda dourada`; CTAs: gradiente `#CE9221→#DDC79E`; hover `scale(1.03) + box-shadow dourado`; active `scale(0.97)`
+- [x] **Cards opacos** — `rgba(12,18,20,0.85)` em stat-cards, kanban-cards, wa-instance-card, briefing-card para legibilidade sobre wallpaper
+- [x] **Contraste aprimorado** — `:root { --t1:#e8e4dc; --t2:#c8c4bc }` sobrescreve tokens do style.css; labels, títulos e col-titles em `#e8e4dc / font-weight:500`
+- [x] **Microanimações fdvFadeUp** — `@keyframes fdvFadeUp` com `opacity:0;translateY(10px) → 1;0`; aplicado em `.kanban-col`, `.stat-card`, `.briefing-card`; stagger por `:nth-child()` (delays de 55ms por coluna)
+- [x] **Sub-nav pills visíveis** — inativas: `padding:10px 20px`, `font-size:14px/600`, `color:#e8e4dc`, `border:rgba(206,146,33,0.40)`; ativas: `background:#CE9221` sólido, `color:#0f1517` (texto escuro sobre ouro)
+- [x] **Nav-link font aumentada** — `font-size:16px/600` nos botões da taskbar
+- [x] **Proteção header duplicado** — seção 25 no theme.css: `top:auto!important` + seletor `~ .app-header { display:none }` como seguro
+- [x] **`.gitignore`** — exclui `.claude/` (configuração local do IDE, não deve ir ao repositório)
 
 ---
 
