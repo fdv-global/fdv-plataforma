@@ -5,8 +5,7 @@ import {
   query, orderBy
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import {
-  initializeAuth, browserLocalPersistence, browserPopupRedirectResolver,
-  GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged
+  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 // ─── CLOSERS ─────────────────────────────────────────────────────────
@@ -73,7 +72,6 @@ let filteredLeads = [];
 let currentId     = null;
 let modalMode     = 'agendar';
 let db            = null;
-let firebaseApp   = null;
 let isLive        = false;
 let selectedIds   = new Set();
 let perfilLeadId  = null;
@@ -133,11 +131,7 @@ function etiquetaChip(tag, sm = false) {
 }
 
 // ─── AUTH ────────────────────────────────────────────────────────────
-// GitHub Pages org serve COOP: same-origin — signInWithPopup bloqueado.
-// Solução: signInWithRedirect + getRedirectResult aguardado ANTES do onAuthStateChanged.
-const _LOGIN_KEY = 'fdv_login_pending';
-
-async function initAuth() {
+function initAuth() {
   isLive = initFirebase();
   if (!isLive) {
     $('login-screen').style.display = 'none';
@@ -146,34 +140,8 @@ async function initAuth() {
     loadLeads();
     return;
   }
-
-  auth = initializeAuth(firebaseApp, {
-    persistence:           browserLocalPersistence,
-    popupRedirectResolver: browserPopupRedirectResolver,
-  });
-
-  // Mantém botão desabilitado enquanto processa retorno do Google
-  const btn = $('btn-login-google');
-  const _pending = sessionStorage.getItem(_LOGIN_KEY);
-  console.log('[FDV auth] pending flag:', _pending, '| URL:', location.href);
-  if (_pending && btn) btn.disabled = true;
-
-  // Processa credenciais do redirect antes de registrar onAuthStateChanged
-  try {
-    const result = await getRedirectResult(auth);
-    console.log('[FDV auth] getRedirectResult →', result ? result.user.email : 'null (sem redirect pendente)');
-  } catch(e) {
-    console.error('[FDV auth] getRedirectResult error:', e.code, e.message);
-    const err = $('login-error');
-    if (err) { err.textContent = 'Erro ao entrar. Tente novamente.'; err.style.display = 'block'; }
-  } finally {
-    sessionStorage.removeItem(_LOGIN_KEY);
-    if (btn) btn.disabled = false;
-  }
-
-  // Auth state já reflete o usuário autenticado neste ponto
+  auth = getAuth();
   onAuthStateChanged(auth, user => {
-    console.log('[FDV auth] onAuthStateChanged →', user ? user.email : 'null');
     if (user) {
       currentUser = user;
       $('login-screen').style.display = 'none';
@@ -193,16 +161,12 @@ async function initAuth() {
   });
 }
 
-function loginWithGoogle() {
+async function loginWithGoogle() {
   const btn = $('btn-login-google'), err = $('login-error');
   btn.disabled = true; err.style.display = 'none';
-  const provider = new GoogleAuthProvider();
-  provider.addScope('email');
-  provider.addScope('profile');
-  provider.setCustomParameters({ prompt: 'select_account' });
-  console.log('[FDV auth] iniciando signInWithRedirect...');
-  sessionStorage.setItem(_LOGIN_KEY, '1');
-  signInWithRedirect(auth, provider);
+  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+  catch(e) { err.textContent = 'Erro ao entrar. Tente novamente.'; err.style.display = 'block'; }
+  finally { btn.disabled = false; }
 }
 
 async function logoutUser() {
@@ -212,7 +176,7 @@ async function logoutUser() {
 // ─── FIREBASE ────────────────────────────────────────────────────────
 function initFirebase() {
   if (firebaseConfig.apiKey === 'YOUR_API_KEY') return false;
-  try { firebaseApp = initializeApp(firebaseConfig); db = getFirestore(firebaseApp); return true; }
+  try { const app = initializeApp(firebaseConfig); db = getFirestore(app); return true; }
   catch(e) { console.error(e); return false; }
 }
 
