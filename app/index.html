@@ -859,7 +859,7 @@
 </div>
 
 <!-- ===== MODAL NOVO USUÁRIO ===== -->
-<div class="modal-backdrop" id="novo-usuario-backdrop" style="display:none">
+<div class="modal-backdrop" id="novo-usuario-backdrop">
   <div class="modal" role="dialog" aria-modal="true">
     <div class="modal-header">
       <div>
@@ -869,6 +869,17 @@
       <button class="modal-close" id="novo-usuario-close" aria-label="Fechar">✕</button>
     </div>
     <div class="modal-body">
+      <!-- Foto -->
+      <div class="form-group nu-foto-group">
+        <label class="filter-label">Foto do usuário</label>
+        <div class="nu-foto-row">
+          <img id="nu-foto-preview" src="" alt="" class="nu-foto-preview" style="display:none">
+          <label class="nu-foto-label" for="nu-foto">
+            <span id="nu-foto-label-text">Escolher foto…</span>
+            <input type="file" id="nu-foto" accept="image/*" class="nu-foto-input">
+          </label>
+        </div>
+      </div>
       <div class="form-row-2">
         <div class="form-group">
           <label for="nu-nome">Nome <span class="req">*</span></label>

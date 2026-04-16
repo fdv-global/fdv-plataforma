@@ -8,6 +8,8 @@ import {
   getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
   sendPasswordResetEmail, signOut, onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 
 // ─── CLOSERS ─────────────────────────────────────────────────────────
 const CLOSERS = {
@@ -84,6 +86,7 @@ let selectedIds   = new Set();
 let perfilLeadId  = null;
 let novoLeadId    = null;
 let auth          = null;
+let storage       = null;
 let currentUser   = null;
 let currentRole   = null;
 let leadsLoaded   = false;
@@ -168,6 +171,7 @@ function initAuth() {
       document.querySelectorAll('.admin-only').forEach(el =>
         el.style.display = role === 'admin' ? '' : 'none'
       );
+      loadCurrentUserProfile(user.uid);
       if (!leadsLoaded) { leadsLoaded = true; loadLeads(); }
       if (role === 'admin') loadUsuarios();
     } else {
@@ -179,6 +183,18 @@ function initAuth() {
       if (usuariosUnsub) { usuariosUnsub(); usuariosUnsub = null; }
     }
   });
+}
+
+async function loadCurrentUserProfile(uid) {
+  try {
+    const snap = await getDoc(doc(db, 'usuarios', uid));
+    if (!snap.exists()) return;
+    const d = snap.data();
+    if (d.nome) $('user-name').textContent = d.nome;
+    const av = $('user-avatar');
+    if (d.photoURL) { av.src = d.photoURL; av.style.display = ''; }
+    else av.style.display = 'none';
+  } catch(_) {}
 }
 
 async function resolveRole(user) {
@@ -282,14 +298,19 @@ function loadUsuarios() {
 function renderUsuarios(lista) {
   const tbody = $('usuarios-tbody');
   if (!tbody) return;
-  const badge = role => {
-    const map = { admin: 'accent-gold', closer: 'accent-petro', operacoes: 'accent-sand' };
+  const roleBadge = role => {
+    const map    = { admin: 'accent-gold', closer: 'accent-petro', operacoes: 'accent-sand' };
     const labels = { admin: 'Admin', closer: 'Closer', operacoes: 'Operações' };
     return `<span class="lead-status-badge ${map[role]||''}">${labels[role]||role}</span>`;
   };
-  tbody.innerHTML = lista.map(u => `
+  tbody.innerHTML = lista.map(u => {
+    const initials = esc((u.nome||u.email||'?')[0].toUpperCase());
+    const avatar   = u.photoURL
+      ? `<img class="usuario-avatar" src="${esc(u.photoURL)}" alt="">`
+      : `<span class="usuario-avatar usuario-avatar--initials">${initials}</span>`;
+    return `
     <tr>
-      <td>${esc(u.nome||'—')}</td>
+      <td><div class="usuario-nome-cell">${avatar}<span>${esc(u.nome||'—')}</span></div></td>
       <td>${esc(u.email)}</td>
       <td>
         <select class="filter-select usuario-role-sel" data-uid="${u.id}">
@@ -298,19 +319,34 @@ function renderUsuarios(lista) {
           <option value="operacoes"${u.role==='operacoes'?' selected':''}>Operações</option>
         </select>
       </td>
-      <td>${badge(u.role)}</td>
+      <td>${roleBadge(u.role)}</td>
       <td><span class="lead-status-badge ${u.ativo?'accent-green':'accent-marsala'}">${u.ativo?'Ativo':'Inativo'}</span></td>
-      <td>
+      <td class="usuario-acoes">
         <button class="btn-ghost btn-sm usuario-toggle-btn" data-uid="${u.id}" data-ativo="${u.ativo}">
           ${u.ativo?'Desativar':'Ativar'}
         </button>
+        <button class="btn-ghost btn-sm usuario-delete-btn" data-uid="${u.id}" data-nome="${esc(u.nome||u.email)}">
+          Excluir
+        </button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 async function toggleAtivoUsuario(uid, ativo) {
-  try { await updateDoc(doc(db, 'usuarios', uid), { ativo: !ativo }); }
-  catch(e) { console.error('[FDV] toggleAtivo:', e); }
+  if (ativo && !confirm('Desativar este usuário? Ele perderá o acesso ao sistema.')) return;
+  try {
+    await updateDoc(doc(db, 'usuarios', uid), { ativo: !ativo });
+    toast(ativo ? 'Usuário desativado.' : 'Usuário ativado.', 'ok');
+  } catch(e) { console.error('[FDV] toggleAtivo:', e); toast('Erro ao atualizar usuário.', 'err'); }
+}
+
+async function deleteUsuario(uid, nome) {
+  if (!confirm(`Excluir "${nome}"?\nEsta ação não pode ser desfeita.`)) return;
+  try {
+    await deleteDoc(doc(db, 'usuarios', uid));
+    toast('Usuário excluído.', 'ok');
+  } catch(e) { console.error('[FDV] deleteUsuario:', e); toast('Erro ao excluir usuário.', 'err'); }
 }
 
 async function updateRoleUsuario(uid, role) {
@@ -322,9 +358,17 @@ function openNovoUsuario() {
   ['nu-nome','nu-email','nu-senha'].forEach(id => $(id).value = '');
   $('nu-role').value = 'closer';
   $('nu-error').style.display = 'none';
-  $('novo-usuario-backdrop').style.display = '';
+  const fotoInput = $('nu-foto');
+  if (fotoInput) { fotoInput.value = ''; }
+  const preview = $('nu-foto-preview');
+  if (preview) { preview.src = ''; preview.style.display = 'none'; }
+  $('novo-usuario-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
-function closeNovoUsuario() { $('novo-usuario-backdrop').style.display = 'none'; }
+function closeNovoUsuario() {
+  $('novo-usuario-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
 
 async function salvarNovoUsuario() {
   const nome  = $('nu-nome').value.trim();
@@ -335,28 +379,39 @@ async function salvarNovoUsuario() {
   if (!nome || !email || !senha) { errEl.textContent = 'Preencha todos os campos.'; errEl.style.display = 'block'; return; }
   if (senha.length < 6)          { errEl.textContent = 'Senha mínima: 6 caracteres.'; errEl.style.display = 'block'; return; }
   const btn = $('btn-salvar-usuario');
-  btn.disabled = true; errEl.style.display = 'none';
+  btn.disabled = true; btn.textContent = 'Criando…'; errEl.style.display = 'none';
   let tempApp;
   try {
     tempApp = initializeApp(firebaseConfig, `fdv-tmp-${Date.now()}`);
     const tempAuth = getAuth(tempApp);
     const cred = await createUserWithEmailAndPassword(tempAuth, email, senha);
-    await setDoc(doc(db, 'usuarios', cred.user.uid), {
-      uid: cred.user.uid, email, nome, role, ativo: true, criadoEm: new Date()
+    const uid  = cred.user.uid;
+
+    let photoURL = null;
+    const fotoFile = $('nu-foto')?.files?.[0];
+    if (fotoFile && storage) {
+      const sRef = storageRef(storage, `usuarios/${uid}/foto`);
+      await uploadBytes(sRef, fotoFile);
+      photoURL = await getDownloadURL(sRef);
+    }
+
+    await setDoc(doc(db, 'usuarios', uid), {
+      uid, email, nome, role, ativo: true, criadoEm: new Date(),
+      ...(photoURL && { photoURL })
     });
     await signOut(tempAuth);
     closeNovoUsuario();
-    showToast('Usuário criado com sucesso!', 'ok');
+    toast('Usuário criado com sucesso!', 'ok');
   } catch(e) {
     const msgs = {
       'auth/email-already-in-use': 'Email já cadastrado.',
       'auth/invalid-email':        'Email inválido.',
       'auth/weak-password':        'Senha muito fraca.',
     };
-    errEl.textContent = msgs[e.code] || 'Erro ao criar usuário.';
+    errEl.textContent = msgs[e.code] || 'Erro ao criar usuário: ' + (e.message || e.code);
     errEl.style.display = 'block';
   } finally {
-    btn.disabled = false;
+    btn.disabled = false; btn.textContent = 'Criar Usuário';
     if (tempApp) try { await deleteApp(tempApp); } catch(_) {}
   }
 }
@@ -364,7 +419,7 @@ async function salvarNovoUsuario() {
 // ─── FIREBASE ────────────────────────────────────────────────────────
 function initFirebase() {
   if (firebaseConfig.apiKey === 'YOUR_API_KEY') return false;
-  try { const app = initializeApp(firebaseConfig); db = getFirestore(app); return true; }
+  try { const app = initializeApp(firebaseConfig); db = getFirestore(app); storage = getStorage(app); return true; }
   catch(e) { console.error(e); return false; }
 }
 
@@ -2584,8 +2639,20 @@ function bindEvents() {
     if (sel) updateRoleUsuario(sel.dataset.uid, sel.value);
   });
   $('usuarios-tbody')?.addEventListener('click', e => {
-    const btn = e.target.closest('.usuario-toggle-btn');
-    if (btn) toggleAtivoUsuario(btn.dataset.uid, btn.dataset.ativo === 'true');
+    const toggle = e.target.closest('.usuario-toggle-btn');
+    if (toggle) toggleAtivoUsuario(toggle.dataset.uid, toggle.dataset.ativo === 'true');
+    const del = e.target.closest('.usuario-delete-btn');
+    if (del) deleteUsuario(del.dataset.uid, del.dataset.nome);
+  });
+  $('nu-foto')?.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    const preview = $('nu-foto-preview');
+    const labelText = $('nu-foto-label-text');
+    if (file && preview) {
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = '';
+      if (labelText) labelText.textContent = file.name;
+    }
   });
 
   // Perfil tabs
