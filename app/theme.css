@@ -50,13 +50,13 @@ h1, h2, h3, h4,
   transform: translateX(-50%) !important;
   width: auto !important;
   height: auto !important;
-  min-height: 56px !important;
+  min-height: 64px !important;
   background: rgba(18, 24, 26, 0.65) !important;
   backdrop-filter: blur(24px) saturate(1.5) !important;
   -webkit-backdrop-filter: blur(24px) saturate(1.5) !important;
   border: 1px solid rgba(206, 146, 33, 0.20) !important;
   border-radius: 20px !important;
-  padding: 12px 32px !important;
+  padding: 16px 40px !important;
   box-shadow:
     0 -4px 32px rgba(0, 0, 0, 0.50),
     0 8px 32px rgba(0, 0, 0, 0.40) !important;
@@ -65,20 +65,23 @@ h1, h2, h3, h4,
 
 /* ── 6. Logo — imagem no lugar do texto ────────────────────── */
 .header-brand {
-  width: 134px;
-  height: 40px;
+  width: 160px;
+  height: 48px;
   background: url('fdv-logo.png') left center / contain no-repeat;
   flex-shrink: 0;
-  mix-blend-mode: screen;
+  mix-blend-mode: lighten;
 }
 .brand-abbr,
 .brand-sep,
 .brand-full { display: none !important; }
 
-/* ── 7. Navegação — pill, 15px/600, ativo dourado sólido ───── */
+/* ── 7. Navegação — pill, 16px/600, ativo dourado sólido ───── */
+.header-nav {
+  gap: 16px !important;
+}
 .nav-link {
   border-radius: 30px !important;
-  font-size: 15px !important;
+  font-size: 16px !important;
   font-weight: 600 !important;
   color: #e8e4dc !important;
   transition: background 200ms ease, color 200ms ease, border-color 200ms ease !important;
@@ -97,6 +100,11 @@ h1, h2, h3, h4,
   border-radius: 30px !important;
   transition: all 180ms ease !important;
 }
+/* Ícones Unicode nas abas da taskbar */
+.nav-link[data-tab="agendamentos"]::before { content: "📅 "; }
+.nav-link[data-tab="closer"]::before        { content: "👤 "; }
+.nav-link[data-tab="relatorios"]::before    { content: "📊 "; }
+.nav-link[data-tab="whatsapp"]::before      { content: "💬 "; }
 
 /* ── 8. Botões — Win11 translúcido (base) + CTA gradiente ──── */
 /* Base: todos os botões com glassmorphism dourado */
@@ -511,13 +519,14 @@ h1, h2, h3, h4,
 }
 .sub-link {
   background: rgba(20, 28, 30, 0.52) !important;
-  border: 1px solid rgba(206, 146, 33, 0.16) !important;
+  border: 1px solid rgba(206, 146, 33, 0.40) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
   border-radius: 100px !important;
-  font-size: 12.5px !important;
-  font-weight: 500 !important;
-  color: var(--t2) !important;
+  padding: 10px 20px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #e8e4dc !important;
   transition: border-color 180ms ease,
               box-shadow   180ms ease,
               color        180ms ease,
@@ -526,16 +535,16 @@ h1, h2, h3, h4,
 .sub-link:hover:not(.active) {
   color: var(--gold) !important;
   background: rgba(206, 146, 33, 0.08) !important;
-  border-color: rgba(206, 146, 33, 0.32) !important;
+  border-color: rgba(206, 146, 33, 0.60) !important;
   box-shadow: 0 0 12px rgba(206, 146, 33, 0.18) !important;
 }
 .sub-link.active {
-  background: rgba(206, 146, 33, 0.13) !important;
-  border-color: rgba(206, 146, 33, 0.42) !important;
-  color: var(--gold) !important;
-  font-weight: 600 !important;
+  background: #CE9221 !important;
+  border-color: #CE9221 !important;
+  color: #0f1517 !important;
+  font-weight: 700 !important;
   box-shadow:
-    0 0 14px rgba(206, 146, 33, 0.24),
+    0 0 18px rgba(206, 146, 33, 0.45),
     0 2px 8px rgba(0, 0, 0, 0.22) !important;
 }
 
@@ -546,6 +555,17 @@ h1, h2, h3, h4,
   padding: 14px 28px !important;
   font-size: 15px !important;
   font-weight: 700 !important;
+}
+
+/* ── 25. Header topo — ocultar qualquer duplicata ──────────── */
+/* O .app-header é position:fixed;bottom:24px — não deve existir no topo. */
+/* style.css define position:sticky;top:0; esta regra anula completamente. */
+.app-header {
+  top: auto !important;
+}
+/* Caso algum script injete um segundo header, ocultá-lo */
+.app-header ~ .app-header {
+  display: none !important;
 }
 
 /* ── 24. Microanimações — fdvFadeUp ────────────────────────── */
