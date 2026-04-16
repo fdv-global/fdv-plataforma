@@ -96,7 +96,7 @@ h1, h2, h3, h4,
   background: rgba(206, 146, 33, 0.12) !important;
 }
 .nav-link.active {
-  background: var(--gold) !important;
+  background: linear-gradient(135deg, #CE9221, #B8811D) !important;
   border: none !important;
   color: #0f1517 !important;
   font-weight: 700 !important;
@@ -147,16 +147,21 @@ h1, h2, h3, h4,
 /* CTAs principais — gradiente sólido (sobrescreve base) */
 #btn-novo-lead,
 #btn-novo-lead-sub,
-.btn-confirm {
-  background: linear-gradient(135deg, #CE9221, #DDC79E) !important;
+.btn-primary,
+.btn-confirm,
+.btn-google {
+  background: linear-gradient(135deg, #CE9221, #B8811D) !important;
   color: #0f1517 !important;
+  font-weight: 700 !important;
   border: none !important;
   box-shadow: 0 4px 16px rgba(206, 146, 33, 0.35) !important;
 }
 #btn-novo-lead:hover:not(:disabled),
 #btn-novo-lead-sub:hover:not(:disabled),
-.btn-confirm:hover:not(:disabled) {
-  background: linear-gradient(135deg, #CE9221, #DDC79E) !important;
+.btn-primary:hover:not(:disabled),
+.btn-confirm:hover:not(:disabled),
+.btn-google:hover:not(:disabled) {
+  background: linear-gradient(135deg, #CE9221, #B8811D) !important;
   box-shadow: 0 8px 28px rgba(206, 146, 33, 0.55) !important;
 }
 
@@ -477,10 +482,10 @@ h1, h2, h3, h4,
 /* ── 20. Versículo — topo central da tela ──────────────────── */
 #fdv-ticker {
   position: fixed;
-  top: 16px;
+  top: 80px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 999;
+  z-index: 998;
   width: max-content;
   max-width: 580px;
   display: flex;
@@ -533,13 +538,13 @@ h1, h2, h3, h4,
   white-space: nowrap;
 }
 
-/* Conteúdo — taskbar fixa no topo */
-.app-main { padding-top: 120px !important; padding-bottom: 40px !important; }
+/* Conteúdo — taskbar + ticker fixos no topo */
+.app-main { padding-top: 180px !important; padding-bottom: 40px !important; }
 
 /* [F] Mobile — ocultar versículo, ajustar espaço */
 @media (max-width: 768px) {
   #fdv-ticker { display: none !important; }
-  .app-main   { padding-top: 88px !important; padding-bottom: 20px !important; }
+  .app-main   { padding-top: 100px !important; padding-bottom: 20px !important; }
 }
 
 /* ── 21. Scrollbars custom ─────────────────────────────────── */
