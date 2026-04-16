@@ -1,6 +1,6 @@
 # RDM — Sistema FDV: Tasks Pendentes
 
-> Última atualização: 2026-04-14 — v3 em produção · WhatsApp em desenvolvimento
+> Última atualização: 2026-04-14 — v3 em produção · theme polish concluído
 
 ---
 
@@ -61,6 +61,35 @@
 - [x] **Central de Chats — filtros** — por instância e por status do lead
 - [x] **GitHub Actions** — deploy automático da pasta `app/` para GitHub Pages a cada push no `master`
 - [x] **GitHub Pages** — site publicado em `https://faculdadedavida.github.io/faculdadavida`
+
+---
+
+## ✅ CONCLUÍDO (theme — glassmorphism + polish visual)
+
+- [x] **theme.css criado** — arquivo separado importado após style.css; não toca app.js nem HTML existente
+- [x] **Wallpaper + overlay** — `html` com `linear-gradient(rgba overlay) + url('fdv-wallpaper.png')` fixo; `body { background: transparent }`
+- [x] **Logo sem fundo preto** — `.header-brand` com `mix-blend-mode: screen`; texto `.brand-abbr/.brand-sep/.brand-full` oculto
+- [x] **Tipografia** — Google Fonts Red Hat Display (títulos) + Red Hat Text (corpo) via `@import`
+- [x] **Versículo estático por sessão** — `#fdv-ticker` fixo abaixo do header (top 64px, z-index 98); script inline sorteia 1 de 50 versículos via `Math.random()` a cada carregamento; sem animação de scroll
+- [x] **Header glassmorphism** — `rgba(14,21,23,0.76) + blur(28px) saturate(1.5) + borda dourada`
+- [x] **Navegação** — nav-links e sub-links com pill `border-radius: 30px`, hover dourado suave, active com borda/fundo dourado
+- [x] **Botões** — pill + hover `translateY(-1px) scale(1.016)` + box-shadow dourado; btn-primary, btn-confirm, btn-ghost, btn-logout, btn-google
+- [x] **Botão Novo Lead** — destaque especial: gradiente `#CE9221 → #DDC79E`, padding `14px 28px`, font 15px/700, box-shadow dourado, hover animado
+- [x] **Login card** — glassmorphism profundo `blur(32px) + borda dourada + box-shadow`
+- [x] **Stat cards** — glassmorphism + borda dourada `rgba(206,146,33,0.35)` (mais visível)
+- [x] **Modais** — glassmorphism `blur(28px)`, borda dourada, inset highlight
+- [x] **Kanban** — colunas e cards com glassmorphism; card hover com `translateY(-1px) + borda dourada`
+- [x] **Table + filtros** — `.table-wrap` e `.filters-bar` com glassmorphism
+- [x] **WhatsApp** — instância cards, chats-layout, chats-sidebar/panel com glassmorphism
+- [x] **Relatórios** — `.rel-block` com glassmorphism
+- [x] **Formulários** — inputs semi-transparentes com focus dourado + `box-shadow`
+- [x] **Sub-nav** — glassmorphism pronunciado `bg rgba(28,37,39,0.70) + borda rgba(206,146,33,0.25)`
+- [x] **Título da seção** — `text-shadow: 0 0 30px rgba(206,146,33,0.3)` nos `h1` de página
+- [x] **Overlay wallpaper** — opacidade reduzida para `0.45` (árvore mais nítida e brilhante)
+- [x] **Scrollbars custom** — `5px`, track transparente, thumb dourado
+- [x] **Agenda + Briefing** — `.briefing-card/.briefing-item` com glassmorphism
+- [x] **Spacing premium** — `page-top/kanban-page-top` com padding generoso
+- [x] **Seleção de texto** — `::selection` com fundo dourado translúcido
 
 ---
 
