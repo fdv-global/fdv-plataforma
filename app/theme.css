@@ -107,18 +107,16 @@ h1, h2, h3, h4,
 }
 /* Ícones Lucide nas abas da taskbar — gerenciados via HTML + lucide.createIcons() */
 
-/* ── 8. Botões — Win11 translúcido (base) + CTA gradiente ──── */
-/* Base: todos os botões com glassmorphism dourado */
-.btn-primary,
-.btn-confirm,
+/* ── 8. Botões — base neutra + CTA dourado FDV ──────────────── */
+/* Base: secundários/ghost — glassmorphism neutro sem amarelo */
 .btn-cancel,
 .btn-ghost,
 .btn-logout {
   border-radius: 30px !important;
-  background: rgba(206, 146, 33, 0.15) !important;
+  background: rgba(18, 24, 26, 0.65) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(206, 146, 33, 0.35) !important;
+  border: 1px solid rgba(206, 146, 33, 0.25) !important;
   color: #DDC79E !important;
   font-weight: 600 !important;
   padding: 10px 24px !important;
@@ -126,35 +124,34 @@ h1, h2, h3, h4,
               box-shadow  180ms ease,
               background  180ms ease !important;
 }
-.btn-primary:hover:not(:disabled),
-.btn-confirm:hover:not(:disabled),
 .btn-cancel:hover:not(:disabled),
 .btn-ghost:hover:not(:disabled),
 .btn-logout:hover:not(:disabled) {
-  background: rgba(206, 146, 33, 0.30) !important;
+  background: rgba(206, 146, 33, 0.15) !important;
   transform: scale(1.03) !important;
-  box-shadow: 0 6px 20px rgba(206, 146, 33, 0.32) !important;
 }
-.btn-primary:active:not(:disabled),
-.btn-confirm:active:not(:disabled),
 .btn-cancel:active:not(:disabled),
 .btn-ghost:active:not(:disabled),
 .btn-logout:active:not(:disabled) {
   transform: scale(0.97) !important;
-  box-shadow: none !important;
 }
 
-/* CTAs principais — gradiente sólido (sobrescreve base) */
+/* CTAs principais — gradiente dourado FDV em TODOS os botões primários */
 #btn-novo-lead,
 #btn-novo-lead-sub,
 .btn-primary,
 .btn-confirm,
-.btn-google {
+.btn-google,
+button[class*="btn-p"],
+button[class*="btn-c"] {
   background: linear-gradient(135deg, #CE9221, #B8811D) !important;
   color: #0f1517 !important;
   font-weight: 700 !important;
   border: none !important;
   box-shadow: 0 4px 16px rgba(206, 146, 33, 0.35) !important;
+  border-radius: 30px !important;
+  transition: transform 180ms cubic-bezier(.34,1.42,.64,1),
+              box-shadow 180ms ease !important;
 }
 #btn-novo-lead:hover:not(:disabled),
 #btn-novo-lead-sub:hover:not(:disabled),
@@ -163,6 +160,15 @@ h1, h2, h3, h4,
 .btn-google:hover:not(:disabled) {
   background: linear-gradient(135deg, #CE9221, #B8811D) !important;
   box-shadow: 0 8px 28px rgba(206, 146, 33, 0.55) !important;
+  transform: scale(1.03) !important;
+}
+#btn-novo-lead:active:not(:disabled),
+#btn-novo-lead-sub:active:not(:disabled),
+.btn-primary:active:not(:disabled),
+.btn-confirm:active:not(:disabled),
+.btn-google:active:not(:disabled) {
+  transform: scale(0.97) !important;
+  box-shadow: 0 2px 8px rgba(206, 146, 33, 0.30) !important;
 }
 
 /* ── 9. Login — Windows 11 style ───────────────────────────── */
@@ -194,8 +200,8 @@ h1, h2, h3, h4,
   background: rgba(10, 16, 18, 0.55) !important;
   backdrop-filter: blur(44px) saturate(1.7) !important;
   -webkit-backdrop-filter: blur(44px) saturate(1.7) !important;
-  border: 1px solid rgba(206, 146, 33, 0.45) !important;
-  box-shadow: 0 0 0 1px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
+  border: 1px solid rgba(206, 146, 33, 0.55) !important;
+  box-shadow: 0 0 12px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
   border-radius: 24px !important;
   padding: 36px 44px !important;
   max-width: 440px !important;
@@ -232,8 +238,8 @@ h1, h2, h3, h4,
   background: rgba(12, 18, 20, 0.82) !important;
   backdrop-filter: blur(24px) saturate(1.8) !important;
   -webkit-backdrop-filter: blur(24px) saturate(1.8) !important;
-  border: 1px solid rgba(206, 146, 33, 0.45) !important;
-  box-shadow: 0 0 0 1px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
+  border: 1px solid rgba(206, 146, 33, 0.55) !important;
+  box-shadow: 0 0 12px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
   border-radius: 20px !important;
   animation: fdvFadeUp 220ms ease both;
   transition: transform 180ms cubic-bezier(.34,1.42,.64,1),
@@ -273,7 +279,7 @@ h1, h2, h3, h4,
   border: 1px solid rgba(206, 146, 33, 0.45) !important;
   border-radius: 20px !important;
   box-shadow:
-    0 0 0 1px rgba(206,146,33,0.15),
+    0 0 12px rgba(206,146,33,0.15),
     0 28px 72px rgba(0, 0, 0, 0.65),
     0 4px 16px rgba(0, 0, 0, 0.30),
     inset 0 0 0 1px rgba(206,146,33,0.08) !important;
@@ -308,8 +314,8 @@ h1, h2, h3, h4,
   background: rgba(12, 18, 20, 0.85) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(206, 146, 33, 0.45) !important;
-  box-shadow: 0 0 0 1px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
+  border: 1px solid rgba(206, 146, 33, 0.55) !important;
+  box-shadow: 0 0 12px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
   transition: border-color 200ms ease,
               box-shadow   200ms ease,
               transform    200ms cubic-bezier(.34,1.42,.64,1) !important;
@@ -325,8 +331,8 @@ h1, h2, h3, h4,
   background: rgba(20, 29, 31, 0.62) !important;
   backdrop-filter: blur(14px) !important;
   -webkit-backdrop-filter: blur(14px) !important;
-  border: 1px solid rgba(206, 146, 33, 0.45) !important;
-  box-shadow: 0 0 0 1px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
+  border: 1px solid rgba(206, 146, 33, 0.55) !important;
+  box-shadow: 0 0 12px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
   border-radius: var(--r-lg) !important;
   overflow: hidden !important;
 }
@@ -351,8 +357,8 @@ h1, h2, h3, h4,
   background: rgba(12, 18, 20, 0.85) !important;
   backdrop-filter: blur(14px) !important;
   -webkit-backdrop-filter: blur(14px) !important;
-  border: 1px solid rgba(206, 146, 33, 0.45) !important;
-  box-shadow: 0 0 0 1px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
+  border: 1px solid rgba(206, 146, 33, 0.55) !important;
+  box-shadow: 0 0 12px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
   transition: border-color 200ms ease,
               box-shadow   200ms ease,
               transform    200ms cubic-bezier(.34,1.42,.64,1) !important;
@@ -366,8 +372,8 @@ h1, h2, h3, h4,
   background: rgba(16, 24, 26, 0.60) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
-  border: 1px solid rgba(206, 146, 33, 0.45) !important;
-  box-shadow: 0 0 0 1px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
+  border: 1px solid rgba(206, 146, 33, 0.55) !important;
+  box-shadow: 0 0 12px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
 }
 .chats-sidebar      { background: rgba(18, 27, 29, 0.50) !important; }
 .chats-panel        { background: rgba(14, 21, 23, 0.55) !important; }
@@ -378,8 +384,8 @@ h1, h2, h3, h4,
   background: rgba(22, 31, 33, 0.62) !important;
   backdrop-filter: blur(14px) !important;
   -webkit-backdrop-filter: blur(14px) !important;
-  border: 1px solid rgba(206, 146, 33, 0.45) !important;
-  box-shadow: 0 0 0 1px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
+  border: 1px solid rgba(206, 146, 33, 0.55) !important;
+  box-shadow: 0 0 12px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
 }
 
 /* ── 16. Formulários — inputs semi-transparentes ───────────── */
@@ -417,8 +423,8 @@ h1, h2, h3, h4,
   background: rgba(12, 18, 20, 0.85) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(206, 146, 33, 0.45) !important;
-  box-shadow: 0 0 0 1px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
+  border: 1px solid rgba(206, 146, 33, 0.55) !important;
+  box-shadow: 0 0 12px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
   animation: fdvFadeUp 200ms ease both;
   transition: transform 200ms cubic-bezier(.34,1.42,.64,1),
               box-shadow  200ms ease,
@@ -482,12 +488,12 @@ h1, h2, h3, h4,
 /* ── 20. Versículo — topo central da tela ──────────────────── */
 #fdv-ticker {
   position: fixed;
-  top: 80px;
+  top: 72px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 998;
-  width: max-content;
-  max-width: 580px;
+  width: auto;
+  max-width: 560px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -513,9 +519,9 @@ h1, h2, h3, h4,
   font-family: Georgia, serif;
 }
 .ticker-verso {
-  font-family: 'Selvia Genatu', Georgia, serif;
-  font-style: italic;
-  font-weight: 300;
+  font-family: 'Red Hat Display', sans-serif;
+  font-style: normal;
+  font-weight: 400;
   font-size: 14px;
   color: #DDC79E;
   letter-spacing: 0.015em;
