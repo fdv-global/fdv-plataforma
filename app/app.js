@@ -193,23 +193,35 @@ async function resolveRole(user) {
         showLoginErro('Conta desativada. Contate o administrador.');
         return null;
       }
-      return d.role;
+      return d.role || (ADMIN_EMAILS.includes(user.email) ? 'admin' : null);
     }
     console.log('[FDV] resolveRole: sem doc, checando ADMIN_EMAILS para', user.email);
     if (ADMIN_EMAILS.includes(user.email)) {
       console.log('[FDV] resolveRole: email é admin, provisionando doc...');
-      await setDoc(doc(db, 'usuarios', user.uid), {
-        uid: user.uid, email: user.email,
-        nome: user.email.split('@')[0],
-        role: 'admin', ativo: true, criadoEm: new Date()
-      });
-      console.log('[FDV] resolveRole: doc criado com sucesso');
+      try {
+        await setDoc(doc(db, 'usuarios', user.uid), {
+          uid: user.uid, email: user.email,
+          nome: user.email.split('@')[0],
+          role: 'admin', ativo: true, criadoEm: new Date()
+        });
+        console.log('[FDV] resolveRole: doc criado com sucesso');
+      } catch(writeErr) {
+        console.warn('[FDV] resolveRole: falha ao criar doc admin (regras Firestore?):', writeErr.message);
+      }
       return 'admin';
     }
     await signOut(auth);
     showLoginErro('Usuário não cadastrado no sistema.');
     return null;
-  } catch(e) { console.error('[FDV] resolveRole ERRO:', e.code, e.message); return null; }
+  } catch(e) {
+    console.error('[FDV] resolveRole ERRO:', e.code, e.message);
+    if (ADMIN_EMAILS.includes(user.email)) {
+      console.warn('[FDV] resolveRole: erro no Firestore, fallback admin para email conhecido');
+      return 'admin';
+    }
+    showLoginErro('Erro ao verificar permissões. Tente novamente.');
+    return null;
+  }
 }
 
 async function loginWithEmail() {
