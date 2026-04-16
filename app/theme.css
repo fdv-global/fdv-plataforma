@@ -43,8 +43,8 @@ h1, h2, h3, h4,
 /* ── 5. Navbar — taskbar flutuante Win11 ───────────────────── */
 .app-header {
   position: fixed !important;
-  bottom: 24px !important;
-  top: auto !important;
+  top: 16px !important;
+  bottom: auto !important;
   left: 50% !important;
   right: auto !important;
   transform: translateX(-50%) !important;
@@ -58,7 +58,7 @@ h1, h2, h3, h4,
   border-radius: 20px !important;
   padding: 16px 40px !important;
   box-shadow:
-    0 -4px 32px rgba(0, 0, 0, 0.50),
+    0 4px 32px rgba(0, 0, 0, 0.50),
     0 8px 32px rgba(0, 0, 0, 0.40) !important;
   z-index: 100 !important;
 }
@@ -524,13 +524,13 @@ h1, h2, h3, h4,
   white-space: nowrap;
 }
 
-/* Conteúdo — sem header no topo, taskbar fixa no rodapé */
-.app-main { padding-top: 80px !important; padding-bottom: 120px !important; }
+/* Conteúdo — taskbar fixa no topo */
+.app-main { padding-top: 120px !important; padding-bottom: 40px !important; }
 
 /* [F] Mobile — ocultar versículo, ajustar espaço */
 @media (max-width: 768px) {
   #fdv-ticker { display: none !important; }
-  .app-main   { padding-top: 20px !important; padding-bottom: 88px !important; }
+  .app-main   { padding-top: 88px !important; padding-bottom: 20px !important; }
 }
 
 /* ── 21. Scrollbars custom ─────────────────────────────────── */
@@ -589,11 +589,7 @@ h1, h2, h3, h4,
 }
 
 /* ── 25. Header topo — ocultar qualquer duplicata ──────────── */
-/* O .app-header é position:fixed;bottom:24px — não deve existir no topo. */
-/* style.css define position:sticky;top:0; esta regra anula completamente. */
-.app-header {
-  top: auto !important;
-}
+/* style.css define position:sticky;top:0; a regra principal abaixo anula completamente. */
 /* Caso algum script injete um segundo header, ocultá-lo */
 .app-header ~ .app-header {
   display: none !important;
