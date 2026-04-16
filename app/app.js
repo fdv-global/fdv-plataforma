@@ -150,9 +150,12 @@ function initAuth() {
     return;
   }
   auth = getAuth();
+  console.log('[FDV] Auth inicializado, aguardando estado...');
   onAuthStateChanged(auth, async user => {
+    console.log('[FDV] onAuthStateChanged:', user ? `uid=${user.uid} email=${user.email}` : 'null (não logado)');
     if (user) {
       const role = await resolveRole(user);
+      console.log('[FDV] role resolvida:', role);
       if (!role) return;
       currentUser = user;
       currentRole = role;
@@ -178,10 +181,13 @@ function initAuth() {
 }
 
 async function resolveRole(user) {
+  console.log('[FDV] resolveRole: buscando doc usuarios/', user.uid);
   try {
     const snap = await getDoc(doc(db, 'usuarios', user.uid));
+    console.log('[FDV] resolveRole: doc existe?', snap.exists());
     if (snap.exists()) {
       const d = snap.data();
+      console.log('[FDV] resolveRole: dados do doc:', d);
       if (!d.ativo) {
         await signOut(auth);
         showLoginErro('Conta desativada. Contate o administrador.');
@@ -189,18 +195,21 @@ async function resolveRole(user) {
       }
       return d.role;
     }
+    console.log('[FDV] resolveRole: sem doc, checando ADMIN_EMAILS para', user.email);
     if (ADMIN_EMAILS.includes(user.email)) {
+      console.log('[FDV] resolveRole: email é admin, provisionando doc...');
       await setDoc(doc(db, 'usuarios', user.uid), {
         uid: user.uid, email: user.email,
         nome: user.email.split('@')[0],
         role: 'admin', ativo: true, criadoEm: new Date()
       });
+      console.log('[FDV] resolveRole: doc criado com sucesso');
       return 'admin';
     }
     await signOut(auth);
     showLoginErro('Usuário não cadastrado no sistema.');
     return null;
-  } catch(e) { console.error('[FDV] resolveRole:', e); return null; }
+  } catch(e) { console.error('[FDV] resolveRole ERRO:', e.code, e.message); return null; }
 }
 
 async function loginWithEmail() {
@@ -208,9 +217,15 @@ async function loginWithEmail() {
   const senha = $('login-senha').value;
   const btn = $('btn-login-email'), err = $('login-error');
   if (!email || !senha) { showLoginErro('Preencha email e senha.'); return; }
+  console.log('[FDV] loginWithEmail: tentando login para', email);
+  console.log('[FDV] loginWithEmail: auth =', auth);
   btn.disabled = true; err.style.display = 'none';
-  try { await signInWithEmailAndPassword(auth, email, senha); }
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, senha);
+    console.log('[FDV] loginWithEmail: sucesso! uid=', cred.user.uid);
+  }
   catch(e) {
+    console.error('[FDV] loginWithEmail ERRO:', e.code, e.message);
     const msgs = {
       'auth/user-not-found':    'Usuário não encontrado.',
       'auth/wrong-password':    'Senha incorreta.',
@@ -218,7 +233,7 @@ async function loginWithEmail() {
       'auth/too-many-requests': 'Muitas tentativas. Tente mais tarde.',
       'auth/invalid-email':     'Email inválido.',
     };
-    showLoginErro(msgs[e.code] || 'Erro ao entrar. Tente novamente.');
+    showLoginErro(msgs[e.code] || `Erro: ${e.code}`);
   }
   finally { btn.disabled = false; }
 }
