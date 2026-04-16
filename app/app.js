@@ -143,8 +143,8 @@ function etiquetaChip(tag, sm = false) {
 function initAuth() {
   isLive = initFirebase();
   if (!isLive) {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
+    document.getElementById('login-screen').style.setProperty('display', 'none', 'important');
+    document.getElementById('app').style.setProperty('display', 'block', 'important');
     loadLeads();
     return;
   }
@@ -161,8 +161,8 @@ function initAuth() {
       const loginEl = document.getElementById('login-screen');
       const appEl   = document.getElementById('app');
       console.log('[FDV] elementos encontrados: login-screen=', !!loginEl, 'app=', !!appEl);
-      if (loginEl) loginEl.style.display = 'none';
-      if (appEl)   appEl.style.display   = 'block';
+      if (loginEl) loginEl.style.setProperty('display', 'none', 'important');
+      if (appEl)   appEl.style.setProperty('display', 'block', 'important');
       console.log('[FDV] display após update: login-screen=', loginEl?.style.display, 'app=', appEl?.style.display);
       $('user-name').textContent = user.displayName || user.email;
       document.querySelectorAll('.admin-only').forEach(el =>
@@ -173,8 +173,8 @@ function initAuth() {
     } else {
       currentUser = null;
       currentRole = null;
-      document.getElementById('login-screen').style.display = '';
-      document.getElementById('app').style.display = 'none';
+      document.getElementById('login-screen').style.setProperty('display', 'flex', 'important');
+      document.getElementById('app').style.setProperty('display', 'none', 'important');
       leadsLoaded = false;
       if (usuariosUnsub) { usuariosUnsub(); usuariosUnsub = null; }
     }

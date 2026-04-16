@@ -166,7 +166,6 @@ h1, h2, h3, h4,
   background:
     linear-gradient(rgba(12, 18, 20, 0.22), rgba(12, 18, 20, 0.22)),
     url('fdv-wallpaper.png') center / cover fixed !important;
-  display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   padding-bottom: 0 !important;
