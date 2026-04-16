@@ -88,7 +88,7 @@ let currentUser   = null;
 let currentRole   = null;
 let leadsLoaded   = false;
 let usuariosUnsub = null;
-let activeTab     = 'agendamentos';
+let activeTab     = 'inicio';
 let activeSub     = 'leads';
 let dragLeadId    = null;
 let cal = { step: 1, closer: null, leadSnap: null };
@@ -422,7 +422,8 @@ function switchTab(tab) {
     l.classList.toggle('active', l.dataset.tab === tab)
   );
   populateAllMonths();
-  if      (tab === 'agendamentos') renderActiveSub();
+  if      (tab === 'inicio')       renderInicio();
+  else if (tab === 'agendamentos') renderActiveSub();
   else if (tab === 'closer')       renderKanban();
   else if (tab === 'relatorios')   renderRelatorios();
   else if (tab === 'whatsapp')     { if (!waInstancesLoaded) loadWaInstances(); else renderInstancias(); }
@@ -450,10 +451,120 @@ function renderAll() {
   allLeads.sort((a, b) => (b.datachegada || '').localeCompare(a.datachegada || ''));
   populateAllMonths();
   updateStats();
-  if      (activeTab === 'agendamentos') renderActiveSub();
+  if      (activeTab === 'inicio')       renderInicio();
+  else if (activeTab === 'agendamentos') renderActiveSub();
   else if (activeTab === 'closer')       renderKanban();
   else if (activeTab === 'relatorios')   renderRelatorios();
   else if (activeTab === 'whatsapp')     renderInstancias();
+}
+
+// ─── INÍCIO ──────────────────────────────────────────────────────────
+const VERSES = [
+  "Bem-aventurado o homem que não anda no conselho dos ímpios... Será como árvore plantada junto a correntes de águas. — Salmos 1:1,3",
+  "O Senhor é o meu pastor e nada me faltará. — Salmos 23:1",
+  "Ainda que eu andasse pelo vale da sombra da morte, não temeria mal nenhum, pois tu estás comigo. — Salmos 23:4",
+  "Deleita-te também no Senhor, e ele te concederá os desejos do teu coração. — Salmos 37:4",
+  "Entrega o teu caminho ao Senhor; confia nele, e ele o fará. — Salmos 37:5",
+  "Cria em mim, ó Deus, um coração puro. — Salmos 51:10",
+  "Deus é o nosso refúgio e força, socorro bem presente na angústia. — Salmos 46:1",
+  "Como o cervo anseia pelas correntes das águas, assim a minha alma anseia por ti, ó Deus. — Salmos 42:1",
+  "A tua palavra é lâmpada para os meus pés e luz para o meu caminho. — Salmos 119:105",
+  "O Senhor te guardará de todo o mal; ele guardará a tua alma. — Salmos 121:7",
+  "Os que semeiam com lágrimas colherão com alegria. — Salmos 126:5",
+  "Ele me faz deitar em pastos verdejantes, guia-me mansamente a águas tranquilas. — Salmos 23:2",
+  "Não há falta para os que o temem. — Salmos 34:9",
+  "Louvarei ao Senhor enquanto viver; cantarei louvores ao meu Deus enquanto eu existir. — Salmos 146:2",
+  "Confia no Senhor de todo o teu coração e não te apoies no teu próprio entendimento. — Provérbios 3:5",
+  "Reconhece-o em todos os teus caminhos, e ele endireitará as tuas veredas. — Provérbios 3:6",
+  "O fruto do justo é árvore da vida. — Provérbios 11:30",
+  "Onde não há visão o povo perece. — Provérbios 29:18",
+  "Instrui o jovem no caminho em que deve andar; e até quando envelhecer não se desviará dele. — Provérbios 22:6",
+  "Bendito o homem que confia no Senhor... Será como árvore plantada junto às águas. — Jeremias 17:7-8",
+  "Porque sou eu que conheço os planos que tenho para vocês, planos de fazê-los prosperar e não de causar dano, planos de dar a vocês esperança e um futuro. — Jeremias 29:11",
+  "Clama a mim e eu te responderei, e te anunciarei coisas grandes e ocultas. — Jeremias 33:3",
+  "Não temas, porque eu sou contigo; não te assombres, porque eu sou o teu Deus. — Isaías 41:10",
+  "Os que esperam no Senhor renovam as suas forças, sobem com asas como águias. — Isaías 40:31",
+  "Eis que faço uma coisa nova; está a brotar; não a percebeis? — Isaías 43:19",
+  "Eu sou a videira, vocês são os ramos. Quem permanece em mim e eu nele dará muito fruto. — João 15:5",
+  "Eu vim para que tenham vida, e a tenham em abundância. — João 10:10",
+  "Busquem primeiro o Reino de Deus e a sua justiça, e todas essas coisas lhes serão acrescentadas. — Mateus 6:33",
+  "Vinde a mim, todos os que estais cansados e sobrecarregados, e eu vos aliviarei. — Mateus 11:28",
+  "E conhecereis a verdade, e a verdade vos libertará. — João 8:32",
+  "Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito. — João 3:16",
+  "Pedi e dar-se-vos-á; buscai e achareis; batei e abrir-se-vos-á. — Mateus 7:7",
+  "Eu sou o caminho, a verdade e a vida. — João 14:6",
+  "Tudo posso naquele que me fortalece. — Filipenses 4:13",
+  "Alegrem-se sempre no Senhor. Repito: alegrem-se! — Filipenses 4:4",
+  "A paz de Deus, que excede todo o entendimento, guardará os vossos corações. — Filipenses 4:7",
+  "Não vos inquieteis com nada; antes em tudo, pela oração e súplica, com ação de graças. — Filipenses 4:6",
+  "O fruto do Espírito é amor, alegria, paz, paciência, amabilidade, bondade, fidelidade. — Gálatas 5:22",
+  "Não nos cansemos de fazer o bem, pois a seu tempo ceifaremos, se não desanimarmos. — Gálatas 6:9",
+  "Sede fortes e corajosos. Não temais nem vos assusteis. — Josué 1:9",
+  "Não vos conformeis com este século, mas transformai-vos pela renovação da vossa mente. — Romanos 12:2",
+  "Se Deus é por nós, quem será contra nós? — Romanos 8:31",
+  "Tudo coopera para o bem daqueles que amam a Deus. — Romanos 8:28",
+  "Agora, pois, permanecem a fé, a esperança e o amor; mas o maior destes é o amor. — 1 Coríntios 13:13",
+  "Sede fortes no Senhor e na força do seu poder. — Efésios 6:10",
+  "Porque pela graça sois salvos, mediante a fé. — Efésios 2:8",
+  "Aquele que começou boa obra em vós a aperfeiçoará até ao dia de Cristo Jesus. — Filipenses 1:6",
+  "Mas os que esperam no Senhor renovam as suas forças; sobem com asas como águias. — Isaías 40:31",
+  "Deus não nos deu espírito de covardia, mas de poder, de amor e de equilíbrio. — 2 Timóteo 1:7",
+  "Seja forte e corajoso! Não se apavore nem desanime, pois o Senhor, o seu Deus, estará com você. — Josué 1:9",
+  "O nome do Senhor é uma torre forte; o justo corre para ela e fica seguro. — Provérbios 18:10",
+];
+
+function renderInicio() {
+  const el = document.getElementById('inicio-content');
+  if (!el) return;
+
+  const now   = new Date();
+  const hour  = now.getHours();
+  const greet = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
+  const name  = esc(currentUser?.displayName || (currentUser?.email?.split('@')[0]) || 'visitante');
+  const datePt = now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const dateStr = datePt.charAt(0).toUpperCase() + datePt.slice(1);
+
+  const start     = new Date(now.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((now - start) / 86400000);
+  const raw       = VERSES[dayOfYear % VERSES.length];
+  const sep       = raw.lastIndexOf(' \u2014 ');
+  const verseText = sep >= 0 ? raw.slice(0, sep) : raw;
+  const verseRef  = sep >= 0 ? raw.slice(sep + 3) : '';
+
+  const todayStr  = now.toISOString().slice(0, 10);
+  const thisMonth = todayStr.slice(0, 7);
+  const callsHoje = allLeads.filter(l => (l.dataagendamento || '').startsWith(todayStr)).length;
+  const aguardando = allLeads.filter(l => l.status === 'aguardando').length;
+  const vendasMes  = allLeads.filter(l => l.venda_realizada === true &&
+    ((l.dataagendamento || l.datachegada || '').startsWith(thisMonth))).length;
+
+  el.innerHTML = `
+    <div class="inicio-header">
+      <h1 class="inicio-greeting">${greet}, ${name}!</h1>
+      <p class="inicio-date">${dateStr}</p>
+    </div>
+    <div class="inicio-verse-card">
+      <div class="inicio-verse-text">${verseText}</div>
+      <div class="inicio-verse-ref">${verseRef}</div>
+    </div>
+    <div class="inicio-stats">
+      <div class="stat-card accent-petro">
+        <div class="stat-top"><span class="stat-label">Calls Hoje</span><span class="stat-icon">📅</span></div>
+        <strong class="stat-num">${callsHoje}</strong>
+        <span class="stat-sub">agendadas para hoje</span>
+      </div>
+      <div class="stat-card accent-gold">
+        <div class="stat-top"><span class="stat-label">Aguardando</span><span class="stat-icon">◷</span></div>
+        <strong class="stat-num">${aguardando}</strong>
+        <span class="stat-sub">leads para agendar</span>
+      </div>
+      <div class="stat-card accent-green">
+        <div class="stat-top"><span class="stat-label">Vendas do Mês</span><span class="stat-icon">◆</span></div>
+        <strong class="stat-num">${vendasMes}</strong>
+        <span class="stat-sub">fechadas este mês</span>
+      </div>
+    </div>
+  `;
 }
 
 // ─── LEADS LIST ──────────────────────────────────────────────────────
