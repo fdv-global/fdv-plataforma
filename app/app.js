@@ -1,11 +1,12 @@
-import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import {
   getFirestore, collection, onSnapshot,
-  doc, updateDoc, addDoc, deleteDoc,
-  query, orderBy
+  doc, getDoc, setDoc, getDocs, updateDoc, addDoc, deleteDoc,
+  query, orderBy, where
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import {
-  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  sendPasswordResetEmail, signOut, onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 // ─── CLOSERS ─────────────────────────────────────────────────────────
@@ -13,6 +14,12 @@ const CLOSERS = {
   fernanda: { name: 'Fernanda', waName: 'Fernanda Ayub',      icon: '⭐', color: '#CE9221', bg: 'rgba(206,146,33,.12)', calLink: 'https://calendar.app.google/hWWi6tVKAhoXg5cUA' },
   thomaz:   { name: 'Thomaz',   waName: 'Thomaz Empresarial', icon: '🧑', color: '#4db5c8', bg: 'rgba(77,181,200,.12)',  calLink: 'https://calendar.app.google/1heVe3395Tsk9GeM8' }
 };
+
+// ─── ADMIN EMAILS — auto-provisionados como admin no primeiro login ──
+const ADMIN_EMAILS = [
+  'muyane.petters@faculdadedavida.com.br',
+  'thomaz@faculdadedavida.com.br',
+];
 
 // ─── DATE HELPERS ────────────────────────────────────────────────────
 const DAYS = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
@@ -78,7 +85,9 @@ let perfilLeadId  = null;
 let novoLeadId    = null;
 let auth          = null;
 let currentUser   = null;
+let currentRole   = null;
 let leadsLoaded   = false;
+let usuariosUnsub = null;
 let activeTab     = 'agendamentos';
 let activeSub     = 'leads';
 let dragLeadId    = null;
@@ -141,36 +150,187 @@ function initAuth() {
     return;
   }
   auth = getAuth();
-  onAuthStateChanged(auth, user => {
+  onAuthStateChanged(auth, async user => {
     if (user) {
+      const role = await resolveRole(user);
+      if (!role) return;
       currentUser = user;
+      currentRole = role;
       $('login-screen').style.display = 'none';
       $('app-header').style.display   = '';
       $('app-main').style.display     = '';
-      const avatar = $('user-avatar');
-      if (user.photoURL) { avatar.src = user.photoURL; avatar.style.display = ''; }
       $('user-name').textContent = user.displayName || user.email;
+      document.querySelectorAll('.admin-only').forEach(el =>
+        el.style.display = role === 'admin' ? '' : 'none'
+      );
       if (!leadsLoaded) { leadsLoaded = true; loadLeads(); }
+      if (role === 'admin') loadUsuarios();
     } else {
       currentUser = null;
+      currentRole = null;
       $('login-screen').style.display = '';
       $('app-header').style.display   = 'none';
       $('app-main').style.display     = 'none';
       leadsLoaded = false;
+      if (usuariosUnsub) { usuariosUnsub(); usuariosUnsub = null; }
     }
   });
 }
 
-async function loginWithGoogle() {
-  const btn = $('btn-login-google'), err = $('login-error');
+async function resolveRole(user) {
+  try {
+    const snap = await getDoc(doc(db, 'usuarios', user.uid));
+    if (snap.exists()) {
+      const d = snap.data();
+      if (!d.ativo) {
+        await signOut(auth);
+        showLoginErro('Conta desativada. Contate o administrador.');
+        return null;
+      }
+      return d.role;
+    }
+    if (ADMIN_EMAILS.includes(user.email)) {
+      await setDoc(doc(db, 'usuarios', user.uid), {
+        uid: user.uid, email: user.email,
+        nome: user.email.split('@')[0],
+        role: 'admin', ativo: true, criadoEm: new Date()
+      });
+      return 'admin';
+    }
+    await signOut(auth);
+    showLoginErro('Usuário não cadastrado no sistema.');
+    return null;
+  } catch(e) { console.error('[FDV] resolveRole:', e); return null; }
+}
+
+async function loginWithEmail() {
+  const email = $('login-email').value.trim();
+  const senha = $('login-senha').value;
+  const btn = $('btn-login-email'), err = $('login-error');
+  if (!email || !senha) { showLoginErro('Preencha email e senha.'); return; }
   btn.disabled = true; err.style.display = 'none';
-  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
-  catch(e) { err.textContent = 'Erro ao entrar. Tente novamente.'; err.style.display = 'block'; }
+  try { await signInWithEmailAndPassword(auth, email, senha); }
+  catch(e) {
+    const msgs = {
+      'auth/user-not-found':    'Usuário não encontrado.',
+      'auth/wrong-password':    'Senha incorreta.',
+      'auth/invalid-credential':'Email ou senha incorretos.',
+      'auth/too-many-requests': 'Muitas tentativas. Tente mais tarde.',
+      'auth/invalid-email':     'Email inválido.',
+    };
+    showLoginErro(msgs[e.code] || 'Erro ao entrar. Tente novamente.');
+  }
   finally { btn.disabled = false; }
+}
+
+async function esqueceuSenha() {
+  const email = $('login-email').value.trim();
+  if (!email) { showLoginErro('Digite seu email para recuperar a senha.'); return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showLoginErro('Email de recuperação enviado! Verifique sua caixa de entrada.');
+  } catch(e) { showLoginErro('Erro ao enviar email. Verifique o endereço.'); }
+}
+
+function showLoginErro(msg) {
+  const err = $('login-error');
+  err.textContent = msg; err.style.display = 'block';
 }
 
 async function logoutUser() {
   try { leadsLoaded = false; await signOut(auth); } catch(e) { console.error(e); }
+}
+
+// ─── USUÁRIOS ─────────────────────────────────────────────────────────
+function loadUsuarios() {
+  if (usuariosUnsub) return;
+  const ref = collection(db, 'usuarios');
+  usuariosUnsub = onSnapshot(query(ref, orderBy('criadoEm')), snap => {
+    const lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderUsuarios(lista);
+  }, err => console.error('[FDV] usuarios:', err.code));
+}
+
+function renderUsuarios(lista) {
+  const tbody = $('usuarios-tbody');
+  if (!tbody) return;
+  const badge = role => {
+    const map = { admin: 'accent-gold', closer: 'accent-petro', operacoes: 'accent-sand' };
+    const labels = { admin: 'Admin', closer: 'Closer', operacoes: 'Operações' };
+    return `<span class="lead-status-badge ${map[role]||''}">${labels[role]||role}</span>`;
+  };
+  tbody.innerHTML = lista.map(u => `
+    <tr>
+      <td>${esc(u.nome||'—')}</td>
+      <td>${esc(u.email)}</td>
+      <td>
+        <select class="filter-select usuario-role-sel" data-uid="${u.id}">
+          <option value="admin"${u.role==='admin'?' selected':''}>Admin</option>
+          <option value="closer"${u.role==='closer'?' selected':''}>Closer</option>
+          <option value="operacoes"${u.role==='operacoes'?' selected':''}>Operações</option>
+        </select>
+      </td>
+      <td>${badge(u.role)}</td>
+      <td><span class="lead-status-badge ${u.ativo?'accent-green':'accent-marsala'}">${u.ativo?'Ativo':'Inativo'}</span></td>
+      <td>
+        <button class="btn-ghost btn-sm usuario-toggle-btn" data-uid="${u.id}" data-ativo="${u.ativo}">
+          ${u.ativo?'Desativar':'Ativar'}
+        </button>
+      </td>
+    </tr>`).join('');
+}
+
+async function toggleAtivoUsuario(uid, ativo) {
+  try { await updateDoc(doc(db, 'usuarios', uid), { ativo: !ativo }); }
+  catch(e) { console.error('[FDV] toggleAtivo:', e); }
+}
+
+async function updateRoleUsuario(uid, role) {
+  try { await updateDoc(doc(db, 'usuarios', uid), { role }); }
+  catch(e) { console.error('[FDV] updateRole:', e); }
+}
+
+function openNovoUsuario() {
+  ['nu-nome','nu-email','nu-senha'].forEach(id => $(id).value = '');
+  $('nu-role').value = 'closer';
+  $('nu-error').style.display = 'none';
+  $('novo-usuario-backdrop').style.display = '';
+}
+function closeNovoUsuario() { $('novo-usuario-backdrop').style.display = 'none'; }
+
+async function salvarNovoUsuario() {
+  const nome  = $('nu-nome').value.trim();
+  const email = $('nu-email').value.trim();
+  const role  = $('nu-role').value;
+  const senha = $('nu-senha').value;
+  const errEl = $('nu-error');
+  if (!nome || !email || !senha) { errEl.textContent = 'Preencha todos os campos.'; errEl.style.display = 'block'; return; }
+  if (senha.length < 6)          { errEl.textContent = 'Senha mínima: 6 caracteres.'; errEl.style.display = 'block'; return; }
+  const btn = $('btn-salvar-usuario');
+  btn.disabled = true; errEl.style.display = 'none';
+  let tempApp;
+  try {
+    tempApp = initializeApp(firebaseConfig, `fdv-tmp-${Date.now()}`);
+    const tempAuth = getAuth(tempApp);
+    const cred = await createUserWithEmailAndPassword(tempAuth, email, senha);
+    await setDoc(doc(db, 'usuarios', cred.user.uid), {
+      uid: cred.user.uid, email, nome, role, ativo: true, criadoEm: new Date()
+    });
+    await signOut(tempAuth);
+    closeNovoUsuario();
+    showToast('Usuário criado com sucesso!', 'ok');
+  } catch(e) {
+    const msgs = {
+      'auth/email-already-in-use': 'Email já cadastrado.',
+      'auth/invalid-email':        'Email inválido.',
+      'auth/weak-password':        'Senha muito fraca.',
+    };
+    errEl.textContent = msgs[e.code] || 'Erro ao criar usuário.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    if (tempApp) try { await deleteApp(tempApp); } catch(_) {}
+  }
 }
 
 // ─── FIREBASE ────────────────────────────────────────────────────────
@@ -2267,8 +2427,27 @@ function bindEvents() {
   document.addEventListener('click', e => { if(!e.target.closest('.acoes-wrap')) closeAllDropdowns(); });
 
   // Auth
-  $('btn-login-google').addEventListener('click', loginWithGoogle);
+  $('btn-login-email').addEventListener('click', loginWithEmail);
+  $('btn-esqueci-senha').addEventListener('click', esqueceuSenha);
+  ['login-email','login-senha'].forEach(id =>
+    $(id).addEventListener('keydown', e => { if (e.key === 'Enter') loginWithEmail(); })
+  );
   $('btn-logout').addEventListener('click', logoutUser);
+
+  // Usuários
+  $('btn-novo-usuario')?.addEventListener('click', openNovoUsuario);
+  $('novo-usuario-close')?.addEventListener('click', closeNovoUsuario);
+  $('novo-usuario-cancelar')?.addEventListener('click', closeNovoUsuario);
+  $('novo-usuario-backdrop')?.addEventListener('click', e => { if (e.target === $('novo-usuario-backdrop')) closeNovoUsuario(); });
+  $('btn-salvar-usuario')?.addEventListener('click', salvarNovoUsuario);
+  $('usuarios-tbody')?.addEventListener('change', e => {
+    const sel = e.target.closest('.usuario-role-sel');
+    if (sel) updateRoleUsuario(sel.dataset.uid, sel.value);
+  });
+  $('usuarios-tbody')?.addEventListener('click', e => {
+    const btn = e.target.closest('.usuario-toggle-btn');
+    if (btn) toggleAtivoUsuario(btn.dataset.uid, btn.dataset.ativo === 'true');
+  });
 
   // Perfil tabs
   document.querySelectorAll('.perfil-tab').forEach(btn =>
