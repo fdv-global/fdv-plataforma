@@ -143,9 +143,8 @@ function etiquetaChip(tag, sm = false) {
 function initAuth() {
   isLive = initFirebase();
   if (!isLive) {
-    $('login-screen').style.display = 'none';
-    $('app-header').style.display   = '';
-    $('app-main').style.display     = '';
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
     loadLeads();
     return;
   }
@@ -159,9 +158,8 @@ function initAuth() {
       if (!role) return;
       currentUser = user;
       currentRole = role;
-      $('login-screen').style.display = 'none';
-      $('app-header').style.display   = '';
-      $('app-main').style.display     = '';
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
       $('user-name').textContent = user.displayName || user.email;
       document.querySelectorAll('.admin-only').forEach(el =>
         el.style.display = role === 'admin' ? '' : 'none'
@@ -171,9 +169,8 @@ function initAuth() {
     } else {
       currentUser = null;
       currentRole = null;
-      $('login-screen').style.display = '';
-      $('app-header').style.display   = 'none';
-      $('app-main').style.display     = 'none';
+      document.getElementById('login-screen').style.display = '';
+      document.getElementById('app').style.display = 'none';
       leadsLoaded = false;
       if (usuariosUnsub) { usuariosUnsub(); usuariosUnsub = null; }
     }
