@@ -1,5 +1,5 @@
 /* ============================================================
-   FDV — Theme Glassmorphism
+   FDV — Theme Glassmorphism v2
    Importado APÓS style.css · Não editar style.css para isso
    ============================================================ */
 
@@ -77,46 +77,32 @@ h1, h2, h3, h4,
   border: 1px solid rgba(206, 146, 33, 0.30) !important;
   color: var(--gold) !important;
 }
-.sub-link {
-  border-radius: 30px !important;
-  transition: background 200ms ease, color 200ms ease !important;
-}
-.sub-link:hover:not(.active) {
-  color: var(--gold) !important;
-  background: rgba(206, 146, 33, 0.08) !important;
-}
 .perfil-tab {
   border-radius: 30px !important;
   transition: all 180ms ease !important;
 }
 
-/* ── 8. Botões — pill + hover escala + brilho ──────────────── */
-.btn-primary {
-  border-radius: 30px !important;
-  transition: transform 180ms cubic-bezier(.34,1.42,.64,1),
-              box-shadow 180ms ease,
-              background 180ms ease !important;
-}
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-1px) scale(1.016) !important;
-  box-shadow: 0 6px 22px rgba(206, 146, 33, 0.38),
-              0 2px 6px  rgba(206, 146, 33, 0.18) !important;
-}
-.btn-primary:active:not(:disabled) {
-  transform: translateY(0) scale(0.98) !important;
-  box-shadow: none !important;
-}
+/* ── 8. Botões — pill + gradiente dourado ──────────────────── */
+.btn-primary,
 .btn-confirm {
   border-radius: 30px !important;
+  background: linear-gradient(135deg, #CE9221, #DDC79E) !important;
+  color: #0f1517 !important;
+  border: none !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 16px rgba(206, 146, 33, 0.32) !important;
   transition: transform 180ms cubic-bezier(.34,1.42,.64,1),
               box-shadow 180ms ease !important;
 }
+.btn-primary:hover:not(:disabled),
 .btn-confirm:hover:not(:disabled) {
-  transform: translateY(-1px) scale(1.016) !important;
-  box-shadow: 0 6px 22px rgba(206, 146, 33, 0.38) !important;
+  transform: translateY(-1px) scale(1.03) !important;
+  box-shadow: 0 8px 24px rgba(206, 146, 33, 0.50) !important;
 }
+.btn-primary:active:not(:disabled),
 .btn-confirm:active:not(:disabled) {
   transform: scale(0.97) !important;
+  box-shadow: 0 2px 8px rgba(206, 146, 33, 0.28) !important;
 }
 .btn-ghost {
   border-radius: 30px !important;
@@ -132,49 +118,98 @@ h1, h2, h3, h4,
   border-radius: 30px !important;
   transition: background 180ms ease, color 180ms ease !important;
 }
-.btn-google {
-  border-radius: 30px !important;
-  transition: transform 180ms ease, box-shadow 180ms ease !important;
-}
-.btn-google:hover {
-  transform: translateY(-1px) !important;
-  box-shadow: 0 6px 20px rgba(0,0,0,.28) !important;
-}
 
-/* ── 9. Login card ─────────────────────────────────────────── */
+/* ── 9. Login — Windows 11 style ───────────────────────────── */
+/* Wallpaper liberado (overlay 0.22) + painel no rodapé */
 #login-screen {
   background:
-    linear-gradient(rgba(12, 18, 20, 0.82), rgba(12, 18, 20, 0.82)),
+    linear-gradient(rgba(12, 18, 20, 0.22), rgba(12, 18, 20, 0.22)),
     url('fdv-wallpaper.png') center / cover fixed !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  padding-bottom: 56px !important;
 }
+
+/* [A] Vinheta de base — gradiente escuro nos 42% inferiores */
+#login-screen::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 42%;
+  background: linear-gradient(to top, rgba(8, 13, 15, 0.82) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Card flutuante — glassmorphism pronunciado, border-radius 24px */
 .login-card {
-  background: rgba(18, 27, 29, 0.82) !important;
-  backdrop-filter: blur(32px) saturate(1.4) !important;
-  -webkit-backdrop-filter: blur(32px) saturate(1.4) !important;
-  border: 1px solid rgba(206, 146, 33, 0.22) !important;
+  position: relative;
+  z-index: 1;
+  background: rgba(10, 16, 18, 0.55) !important;
+  backdrop-filter: blur(44px) saturate(1.7) !important;
+  -webkit-backdrop-filter: blur(44px) saturate(1.7) !important;
+  border: 1px solid rgba(206, 146, 33, 0.28) !important;
+  border-radius: 24px !important;
+  padding: 36px 44px !important;
+  max-width: 440px !important;
+  width: 100% !important;
+  gap: 24px !important;
   box-shadow:
-    0 32px 80px rgba(0, 0, 0, 0.65),
-    inset 0 1px 0 rgba(206, 146, 33, 0.10) !important;
+    0 24px 64px rgba(0, 0, 0, 0.55),
+    0 4px 16px rgba(0, 0, 0, 0.30),
+    inset 0 1px 0 rgba(206, 146, 33, 0.14) !important;
 }
 .login-abbr {
   font-family: 'Red Hat Display', sans-serif !important;
   font-weight: 900 !important;
 }
 
-/* ── 10. Glassmorphism — Stat cards ────────────────────────── */
+/* [G] Botão Google — CTA proeminente dentro do painel menor */
+.btn-google {
+  border-radius: 30px !important;
+  padding: 16px 32px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  border: 1px solid rgba(206, 146, 33, 0.28) !important;
+  transition: transform 180ms ease, box-shadow 180ms ease !important;
+}
+.btn-google:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32) !important;
+}
+.btn-google:active { transform: scale(0.98) translateY(0) !important; }
+
+/* ── 10. Stat cards — glassmorphism contrastado ────────────── */
+/* Opacidade 32%, blur 24px, border-radius 20px */
 .stat-card {
-  background: rgba(24, 33, 35, 0.62) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  border: 1px solid rgba(206, 146, 33, 0.35) !important;
+  background: rgba(14, 21, 23, 0.32) !important;
+  backdrop-filter: blur(24px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.6) !important;
+  border: 1px solid rgba(206, 146, 33, 0.22) !important;
+  border-radius: 20px !important;
+  animation: fdvFadeUp 220ms ease both;
+  transition: transform 180ms cubic-bezier(.34,1.42,.64,1),
+              box-shadow 180ms ease !important;
+}
+.stat-card:hover {
+  transform: translateY(-3px) scale(1.02) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important;
 }
 .stat-card.accent-gold    { border-color: rgba(206,146,33,.28) !important; }
 .stat-card.accent-green   { border-color: rgba(76,175,142,.22) !important; }
-.stat-card.accent-marsala { border-color: rgba(107,39,55,.26) !important; }
-.stat-card.accent-petro   { border-color: rgba(77,181,200,.20) !important; }
+.stat-card.accent-marsala { border-color: rgba(107,39,55,.26)  !important; }
+.stat-card.accent-petro   { border-color: rgba(77,181,200,.20)  !important; }
 .stat-card.accent-sand    { border-color: rgba(221,199,158,.18) !important; }
 
-/* ── 11. Glassmorphism — Modais ────────────────────────────── */
+/* Números grandes — [B] glow por accent */
+.stat-num { font-size: 42px !important; }
+.stat-card.accent-gold    .stat-num { text-shadow: 0 0 24px rgba(206,146,33,.42) !important; }
+.stat-card.accent-petro   .stat-num { text-shadow: 0 0 22px rgba(77,181,200,.38) !important; }
+.stat-card.accent-green   .stat-num { text-shadow: 0 0 22px rgba(76,175,142,.38) !important; }
+.stat-card.accent-marsala .stat-num { text-shadow: 0 0 20px rgba(176,80,104,.32) !important; }
+.stat-card.accent-sand    .stat-num { text-shadow: 0 0 20px rgba(221,199,158,.28) !important; }
+
+/* ── 11. Modais — border-radius 20px [E] ───────────────────── */
 .modal,
 .modal--wide,
 .modal--qr {
@@ -182,23 +217,34 @@ h1, h2, h3, h4,
   backdrop-filter: blur(28px) saturate(1.5) !important;
   -webkit-backdrop-filter: blur(28px) saturate(1.5) !important;
   border: 1px solid rgba(206, 146, 33, 0.18) !important;
+  border-radius: 20px !important;
   box-shadow:
     0 28px 72px rgba(0, 0, 0, 0.65),
-    0 4px 16px  rgba(0, 0, 0, 0.30),
+    0 4px 16px rgba(0, 0, 0, 0.30),
     inset 0 1px 0 rgba(206, 146, 33, 0.08) !important;
 }
 .modal-backdrop {
-  backdrop-filter: blur(6px) !important;
-  -webkit-backdrop-filter: blur(6px) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
 }
 
-/* ── 12. Glassmorphism — Kanban ────────────────────────────── */
+/* ── 12. Kanban — scale 1.04 + fdvFadeUp escalonado [D] ────── */
 .kanban-col {
   background: rgba(18, 26, 28, 0.58) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
   border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  animation: fdvFadeUp 200ms ease both;
 }
+/* Entrada em cascata por coluna */
+.kanban-col:nth-child(1) { animation-delay:   0ms; }
+.kanban-col:nth-child(2) { animation-delay:  55ms; }
+.kanban-col:nth-child(3) { animation-delay: 110ms; }
+.kanban-col:nth-child(4) { animation-delay: 165ms; }
+.kanban-col:nth-child(5) { animation-delay: 220ms; }
+.kanban-col:nth-child(6) { animation-delay: 275ms; }
+.kanban-col:nth-child(n+7) { animation-delay: 330ms; }
+
 .kanban-col-header {
   background: rgba(22, 32, 34, 0.65) !important;
   border-bottom-color: rgba(255, 255, 255, 0.05) !important;
@@ -209,16 +255,16 @@ h1, h2, h3, h4,
   -webkit-backdrop-filter: blur(12px) !important;
   border: 1px solid rgba(206, 146, 33, 0.12) !important;
   transition: border-color 200ms ease,
-              box-shadow  200ms ease,
-              transform   200ms ease !important;
+              box-shadow   200ms ease,
+              transform    200ms cubic-bezier(.34,1.42,.64,1) !important;
 }
 .kanban-card:hover {
-  border-color: rgba(206, 146, 33, 0.28) !important;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.40) !important;
-  transform: translateY(-1px) !important;
+  border-color: rgba(206, 146, 33, 0.35) !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.50) !important;
+  transform: scale(1.04) !important;
 }
 
-/* ── 13. Glassmorphism — Table + Filtros ───────────────────── */
+/* ── 13. Table + Filtros + Row hover [C] ───────────────────── */
 .table-wrap {
   background: rgba(20, 29, 31, 0.62) !important;
   backdrop-filter: blur(14px) !important;
@@ -234,18 +280,29 @@ h1, h2, h3, h4,
   border: 1px solid rgba(255, 255, 255, 0.06) !important;
   border-radius: var(--r-lg) !important;
 }
+/* Highlight de linha — interatividade na principal tela */
+.leads-table tbody tr:hover td {
+  background: rgba(206, 146, 33, 0.04) !important;
+  transition: background 150ms ease !important;
+}
+.leads-table tbody tr:hover td:first-child {
+  border-left: 2px solid rgba(206, 146, 33, 0.32) !important;
+}
 
-/* ── 14. Glassmorphism — WhatsApp ──────────────────────────── */
+/* ── 14. WhatsApp — scale hover ────────────────────────────── */
 .wa-instance-card {
   background: rgba(22, 31, 33, 0.65) !important;
   backdrop-filter: blur(14px) !important;
   -webkit-backdrop-filter: blur(14px) !important;
   border: 1px solid rgba(206, 146, 33, 0.12) !important;
-  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease !important;
+  transition: border-color 200ms ease,
+              box-shadow   200ms ease,
+              transform    200ms cubic-bezier(.34,1.42,.64,1) !important;
 }
 .wa-instance-card:hover {
-  border-color: rgba(206, 146, 33, 0.28) !important;
-  transform: translateY(-1px) !important;
+  border-color: rgba(206, 146, 33, 0.32) !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.40) !important;
+  transform: scale(1.04) !important;
 }
 .chats-layout {
   background: rgba(16, 24, 26, 0.60) !important;
@@ -253,11 +310,11 @@ h1, h2, h3, h4,
   -webkit-backdrop-filter: blur(16px) !important;
   border: 1px solid rgba(206, 146, 33, 0.12) !important;
 }
-.chats-sidebar  { background: rgba(18, 27, 29, 0.50) !important; }
-.chats-panel    { background: rgba(14, 21, 23, 0.55) !important; }
+.chats-sidebar      { background: rgba(18, 27, 29, 0.50) !important; }
+.chats-panel        { background: rgba(14, 21, 23, 0.55) !important; }
 .chats-panel-header { background: rgba(18, 27, 29, 0.62) !important; }
 
-/* ── 15. Glassmorphism — Relatórios ────────────────────────── */
+/* ── 15. Relatórios ────────────────────────────────────────── */
 .rel-block {
   background: rgba(22, 31, 33, 0.62) !important;
   backdrop-filter: blur(14px) !important;
@@ -272,7 +329,8 @@ h1, h2, h3, h4,
 .chat-input {
   background: rgba(24, 34, 36, 0.72) !important;
   border-color: rgba(206, 146, 33, 0.14) !important;
-  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease !important;
+  transition: border-color 180ms ease, background 180ms ease,
+              box-shadow 180ms ease !important;
 }
 .form-ctrl:focus,
 .filter-select:focus,
@@ -280,7 +338,7 @@ h1, h2, h3, h4,
 .chat-input:focus {
   background: rgba(24, 34, 36, 0.90) !important;
   border-color: rgba(206, 146, 33, 0.45) !important;
-  box-shadow: 0 0 0 3px rgba(206, 146, 33, 0.10) !important;
+  box-shadow: 0 0 0 3px rgba(206, 146, 33, 0.12) !important;
 }
 
 /* ── 17. QR modal ──────────────────────────────────────────── */
@@ -289,7 +347,7 @@ h1, h2, h3, h4,
   border-color: rgba(206, 146, 33, 0.16) !important;
 }
 
-/* ── 18. Agenda + Briefing ─────────────────────────────────── */
+/* ── 18. Agenda + Briefing — hover scale + fdvFadeUp ──────── */
 .agenda-sidebar,
 .agenda-layout {
   background: transparent !important;
@@ -300,6 +358,16 @@ h1, h2, h3, h4,
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
   border: 1px solid rgba(206, 146, 33, 0.12) !important;
+  animation: fdvFadeUp 200ms ease both;
+  transition: transform 200ms cubic-bezier(.34,1.42,.64,1),
+              box-shadow  200ms ease,
+              border-color 200ms ease !important;
+}
+.briefing-card:hover,
+.briefing-item:hover {
+  transform: translateY(-2px) scale(1.01) !important;
+  border-color: rgba(206, 146, 33, 0.28) !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.38) !important;
 }
 
 /* ── 19. Spacing — premium e respirado ─────────────────────── */
@@ -314,59 +382,98 @@ h1, h2, h3, h4,
   text-shadow: 0 0 30px rgba(206, 146, 33, 0.3) !important;
 }
 
-/* ── 20. Versículo estático (sorteado por sessão) ──────────── */
+/* ── 20. Versículo — citação elegante (canto sup. esq.) ────── */
 #fdv-ticker {
   position: fixed;
-  top: 64px;
-  left: 0;
-  right: 0;
+  top: 80px;
+  left: 20px;
+  right: auto;
   z-index: 98;
-  height: 36px;
+  height: auto;
+  max-width: 340px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(10, 16, 18, 0.72);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid rgba(206, 146, 33, 0.14);
+  align-items: flex-start;
+  justify-content: flex-start;
+  background: rgba(10, 16, 18, 0.48);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: none;
+  border-left: 3px solid rgba(206, 146, 33, 0.58);
+  border-radius: 0 12px 12px 0;
+  padding: 12px 18px 12px 16px;
   pointer-events: none;
-  overflow: hidden;
+  overflow: visible;
 }
 .ticker-verso {
   font-family: 'Red Hat Display', sans-serif;
   font-style: italic;
-  font-size: 16px;
+  font-size: 13.5px;
   font-weight: 500;
-  color: #FFD700;
-  letter-spacing: 0.02em;
-  text-align: center;
-  text-shadow: 0 0 20px rgba(206, 146, 33, 0.8);
+  color: rgba(206, 146, 33, 0.90);
+  letter-spacing: 0.015em;
+  text-align: left;
+  line-height: 1.55;
+  text-shadow: 0 0 16px rgba(206, 146, 33, 0.55);
   user-select: none;
-  padding: 0 32px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
+  padding: 0;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  max-width: none;
 }
 
-/* Empurra o conteúdo principal para baixo do ticker */
-.app-main  { padding-top: 72px !important; }
+/* Empurra o conteúdo principal para baixo do header */
+.app-main { padding-top: 72px !important; }
+
+/* [F] Ocultar versículo em mobile — espaço crítico */
 @media (max-width: 768px) {
-  .app-main { padding-top: 56px !important; }
+  #fdv-ticker { display: none !important; }
+  .app-main   { padding-top: 72px !important; }
 }
 
 /* ── 21. Scrollbars custom ─────────────────────────────────── */
 ::-webkit-scrollbar       { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(206,146,33,.22); border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(206,146,33,.40); }
+::-webkit-scrollbar-thumb { background: rgba(206,146,33,.26); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(206,146,33,.44); }
 
-/* ── 22. Sub-nav — glassmorphism pronunciado ───────────────── */
+/* ── 22. Sub-nav — pills glassmorphism individuais ─────────── */
 .sub-nav {
-  background: rgba(28, 37, 39, 0.70) !important;
-  border: 1px solid rgba(206, 146, 33, 0.25) !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
+  background: transparent !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  gap: 8px !important;
+  padding: 0 !important;
+}
+.sub-link {
+  background: rgba(20, 28, 30, 0.52) !important;
+  border: 1px solid rgba(206, 146, 33, 0.16) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-radius: 100px !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  color: var(--t2) !important;
+  transition: border-color 180ms ease,
+              box-shadow   180ms ease,
+              color        180ms ease,
+              background   180ms ease !important;
+}
+.sub-link:hover:not(.active) {
+  color: var(--gold) !important;
+  background: rgba(206, 146, 33, 0.08) !important;
+  border-color: rgba(206, 146, 33, 0.32) !important;
+  box-shadow: 0 0 12px rgba(206, 146, 33, 0.18) !important;
+}
+.sub-link.active {
+  background: rgba(206, 146, 33, 0.13) !important;
+  border-color: rgba(206, 146, 33, 0.42) !important;
+  color: var(--gold) !important;
+  font-weight: 600 !important;
+  box-shadow:
+    0 0 14px rgba(206, 146, 33, 0.24),
+    0 2px 8px rgba(0, 0, 0, 0.22) !important;
 }
 
 /* ── 23. Botão Novo Lead — impactante ──────────────────────── */
@@ -392,4 +499,16 @@ h1, h2, h3, h4,
 #btn-novo-lead-sub:active {
   transform: scale(0.97) !important;
   box-shadow: 0 2px 8px rgba(206, 146, 33, 0.3) !important;
+}
+
+/* ── 24. Microanimações — fdvFadeUp ────────────────────────── */
+@keyframes fdvFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
