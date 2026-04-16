@@ -477,26 +477,36 @@ h1, h2, h3, h4,
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(10, 71, 81, 0.75);
+  background: rgba(10, 15, 17, 0.45);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(206, 146, 33, 0.30);
+  border: 1px solid rgba(206, 146, 33, 0.15);
   border-radius: 12px;
-  padding: 12px 20px;
+  padding: 20px 28px 16px;
   pointer-events: none;
   overflow: visible;
   text-align: center;
 }
+#fdv-ticker::before {
+  content: '\201C';
+  font-size: 48px;
+  color: #CE9221;
+  opacity: 0.6;
+  position: absolute;
+  top: -10px;
+  left: 14px;
+  line-height: 1;
+  font-family: Georgia, serif;
+}
 .ticker-verso {
-  font-family: 'Red Hat Display', sans-serif;
+  font-family: 'Selvia Genatu', Georgia, serif;
   font-style: italic;
-  font-size: 15px;
-  font-weight: 500;
-  color: #FFD700;
+  font-weight: 300;
+  font-size: 14px;
+  color: #DDC79E;
   letter-spacing: 0.015em;
   text-align: center;
-  line-height: 1.55;
-  text-shadow: 0 0 16px rgba(206, 146, 33, 0.9);
+  line-height: 1.6;
   user-select: none;
   padding: 0;
   white-space: normal;
@@ -506,6 +516,12 @@ h1, h2, h3, h4,
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+.ticker-ref {
+  color: #CE9221;
+  font-size: 12px;
+  font-style: normal;
+  white-space: nowrap;
 }
 
 /* Conteúdo — sem header no topo, taskbar fixa no rodapé */

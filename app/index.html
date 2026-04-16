@@ -127,7 +127,7 @@
     "O nome do Senhor é uma torre forte; o justo corre para ela e fica seguro. — Provérbios 18:10"
   ];
   var el=document.getElementById("fdv-verso");
-  if(el) el.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#CE9221" stroke-width="2" style="flex-shrink:0"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>'+v[Math.floor(Math.random()*v.length)];
+  if(el){var t=v[Math.floor(Math.random()*v.length)],i=t.lastIndexOf(' \u2014 '),verso=i>=0?t.slice(0,i):t,ref=i>=0?t.slice(i):'';el.innerHTML=verso+(ref?'<span class="ticker-ref">'+ref+'</span>':'');}
 })();
 </script>
 
