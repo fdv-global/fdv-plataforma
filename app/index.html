@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="theme.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 
@@ -45,10 +46,10 @@
     <span class="brand-full">Faculdade da Vida</span>
   </div>
   <nav class="header-nav">
-    <button class="nav-link active" data-tab="agendamentos">Agendamentos</button>
-    <button class="nav-link" data-tab="closer">Closer</button>
-    <button class="nav-link" data-tab="relatorios">Relatórios</button>
-    <button class="nav-link" data-tab="whatsapp">WhatsApp</button>
+    <button class="nav-link active" data-tab="agendamentos"><i data-lucide="calendar"></i>Agendamentos</button>
+    <button class="nav-link" data-tab="closer"><i data-lucide="user"></i>Closer</button>
+    <button class="nav-link" data-tab="relatorios"><i data-lucide="bar-chart-2"></i>Relatórios</button>
+    <button class="nav-link" data-tab="whatsapp"><i data-lucide="message-circle"></i>WhatsApp</button>
   </nav>
   <div class="header-right">
     <div class="user-info">
@@ -121,7 +122,7 @@
     "O nome do Senhor é uma torre forte; o justo corre para ela e fica seguro. — Provérbios 18:10"
   ];
   var el=document.getElementById("fdv-verso");
-  if(el) el.textContent=v[Math.floor(Math.random()*v.length)];
+  if(el) el.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CE9221" stroke-width="2" style="flex-shrink:0"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>'+v[Math.floor(Math.random()*v.length)];
 })();
 </script>
 
@@ -887,5 +888,6 @@
 <div class="toast-dock" id="toast-dock"></div>
 
 <script type="module" src="app.js"></script>
+<script>lucide.createIcons();</script>
 </body>
 </html>

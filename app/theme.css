@@ -69,7 +69,8 @@ h1, h2, h3, h4,
   height: 48px;
   background: url('fdv-logo.png') left center / contain no-repeat;
   flex-shrink: 0;
-  mix-blend-mode: lighten;
+  mix-blend-mode: screen;
+  filter: brightness(2) contrast(1.2);
 }
 .brand-abbr,
 .brand-sep,
@@ -85,6 +86,10 @@ h1, h2, h3, h4,
   font-weight: 600 !important;
   color: #e8e4dc !important;
   transition: background 200ms ease, color 200ms ease, border-color 200ms ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  flex-direction: row !important;
+  gap: 6px !important;
 }
 .nav-link:hover:not(.active) {
   color: var(--gold) !important;
@@ -100,11 +105,7 @@ h1, h2, h3, h4,
   border-radius: 30px !important;
   transition: all 180ms ease !important;
 }
-/* Ícones Unicode nas abas da taskbar */
-.nav-link[data-tab="agendamentos"]::before { content: "📅 "; }
-.nav-link[data-tab="closer"]::before        { content: "👤 "; }
-.nav-link[data-tab="relatorios"]::before    { content: "📊 "; }
-.nav-link[data-tab="whatsapp"]::before      { content: "💬 "; }
+/* Ícones Lucide nas abas da taskbar — gerenciados via HTML + lucide.createIcons() */
 
 /* ── 8. Botões — Win11 translúcido (base) + CTA gradiente ──── */
 /* Base: todos os botões com glassmorphism dourado */
@@ -425,9 +426,15 @@ h1, h2, h3, h4,
 .rel-section-title,
 .filter-label,
 .form-label,
-.section-label {
+.section-label,
+.agenda-date-label {
   color: #e8e4dc !important;
-  font-weight: 500 !important;
+  font-weight: 600 !important;
+}
+/* Labels de filtro — tamanho compacto */
+.filter-label,
+.agenda-date-label {
+  font-size: 12px !important;
 }
 /* Texto secundário (subtítulos, datas, meta-info) */
 .text-muted,
@@ -491,6 +498,9 @@ h1, h2, h3, h4,
   overflow: visible;
   text-overflow: unset;
   max-width: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Conteúdo — sem header no topo, taskbar fixa no rodapé */
