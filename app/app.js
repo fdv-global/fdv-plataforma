@@ -5,7 +5,8 @@ import {
   query, orderBy
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import {
-  getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged
+  initializeAuth, browserLocalPersistence, browserPopupRedirectResolver,
+  GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 // ─── CLOSERS ─────────────────────────────────────────────────────────
@@ -72,6 +73,7 @@ let filteredLeads = [];
 let currentId     = null;
 let modalMode     = 'agendar';
 let db            = null;
+let firebaseApp   = null;
 let isLive        = false;
 let selectedIds   = new Set();
 let perfilLeadId  = null;
@@ -140,17 +142,11 @@ function initAuth() {
     loadLeads();
     return;
   }
-  auth = getAuth();
-  // Oculta o botão enquanto o redirect está sendo processado
-  const loginBtn = $('btn-login-google');
-  if (loginBtn) loginBtn.disabled = true;
-  getRedirectResult(auth)
-    .then(() => { if (loginBtn) loginBtn.disabled = false; })
-    .catch(() => {
-      if (loginBtn) loginBtn.disabled = false;
-      const err = $('login-error');
-      if (err) { err.textContent = 'Erro ao entrar. Tente novamente.'; err.style.display = 'block'; }
-    });
+  // initializeAuth com browserPopupRedirectResolver resolve o bloqueio COOP no GitHub Pages
+  auth = initializeAuth(firebaseApp, {
+    persistence: browserLocalPersistence,
+    popupRedirectResolver: browserPopupRedirectResolver,
+  });
   onAuthStateChanged(auth, user => {
     if (user) {
       currentUser = user;
@@ -171,10 +167,16 @@ function initAuth() {
   });
 }
 
-function loginWithGoogle() {
+async function loginWithGoogle() {
   const btn = $('btn-login-google'), err = $('login-error');
   btn.disabled = true; err.style.display = 'none';
-  signInWithRedirect(auth, new GoogleAuthProvider());
+  const provider = new GoogleAuthProvider();
+  provider.addScope('email');
+  provider.addScope('profile');
+  provider.setCustomParameters({ prompt: 'select_account' });
+  try { await signInWithPopup(auth, provider); }
+  catch(e) { err.textContent = 'Erro ao entrar: ' + (e.message || 'Tente novamente.'); err.style.display = 'block'; }
+  finally { btn.disabled = false; }
 }
 
 async function logoutUser() {
@@ -184,7 +186,7 @@ async function logoutUser() {
 // ─── FIREBASE ────────────────────────────────────────────────────────
 function initFirebase() {
   if (firebaseConfig.apiKey === 'YOUR_API_KEY') return false;
-  try { const app = initializeApp(firebaseConfig); db = getFirestore(app); return true; }
+  try { firebaseApp = initializeApp(firebaseConfig); db = getFirestore(firebaseApp); return true; }
   catch(e) { console.error(e); return false; }
 }
 
