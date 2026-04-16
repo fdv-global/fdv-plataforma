@@ -6,7 +6,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import {
   initializeAuth, browserLocalPersistence, browserPopupRedirectResolver,
-  GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged
+  GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 // ─── CLOSERS ─────────────────────────────────────────────────────────
@@ -133,12 +133,7 @@ function etiquetaChip(tag, sm = false) {
 }
 
 // ─── AUTH ────────────────────────────────────────────────────────────
-// Fluxo: página carrega → getRedirectResult() → se tem user, entra no app
-//        se não tem → onAuthStateChanged decide (sessão existente ou tela de login)
-//        clica login → signInWithRedirect → Google → página recarrega → getRedirectResult captura
-const REDIRECT_KEY = 'fdv_redirect_pending';
-
-async function initAuth() {
+function initAuth() {
   isLive = initFirebase();
   if (!isLive) {
     $('login-screen').style.display = 'none';
@@ -147,33 +142,12 @@ async function initAuth() {
     loadLeads();
     return;
   }
-
+  // initializeAuth com browserPopupRedirectResolver permite signInWithPopup
+  // sem ser bloqueado pelo COOP do GitHub Pages
   auth = initializeAuth(firebaseApp, {
     persistence: browserLocalPersistence,
     popupRedirectResolver: browserPopupRedirectResolver,
   });
-
-  // Se há redirect pendente, desabilitar botão imediatamente para evitar flash de login
-  const btn = $('btn-login-google');
-  if (sessionStorage.getItem(REDIRECT_KEY) && btn) {
-    btn.disabled = true;
-    btn.style.opacity = '0.6';
-  }
-
-  // 1. getRedirectResult ANTES do onAuthStateChanged
-  //    Processa credenciais do retorno do Google e atualiza o auth state
-  try {
-    await getRedirectResult(auth);
-  } catch(e) {
-    const err = $('login-error');
-    if (err) { err.textContent = 'Erro ao entrar. Tente novamente.'; err.style.display = 'block'; }
-  } finally {
-    sessionStorage.removeItem(REDIRECT_KEY);
-    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
-  }
-
-  // 2. onAuthStateChanged inicializado APÓS getRedirectResult resolver
-  //    Neste ponto o auth state já reflete o usuário autenticado (se redirect teve sucesso)
   onAuthStateChanged(auth, user => {
     if (user) {
       currentUser = user;
@@ -194,16 +168,16 @@ async function initAuth() {
   });
 }
 
-function loginWithGoogle() {
+async function loginWithGoogle() {
   const btn = $('btn-login-google'), err = $('login-error');
   btn.disabled = true; err.style.display = 'none';
   const provider = new GoogleAuthProvider();
   provider.addScope('email');
   provider.addScope('profile');
   provider.setCustomParameters({ prompt: 'select_account' });
-  // Marca redirect pendente — persiste na recarga da página após retorno do Google
-  sessionStorage.setItem(REDIRECT_KEY, '1');
-  signInWithRedirect(auth, provider);
+  try { await signInWithPopup(auth, provider); }
+  catch(e) { err.textContent = 'Erro ao entrar: ' + (e.message || 'Tente novamente.'); err.style.display = 'block'; }
+  finally { btn.disabled = false; }
 }
 
 async function logoutUser() {
