@@ -82,41 +82,57 @@ h1, h2, h3, h4,
   transition: all 180ms ease !important;
 }
 
-/* ── 8. Botões — pill + gradiente dourado ──────────────────── */
+/* ── 8. Botões — Win11 translúcido (base) + CTA gradiente ──── */
+/* Base: todos os botões com glassmorphism dourado */
 .btn-primary,
-.btn-confirm {
+.btn-confirm,
+.btn-cancel,
+.btn-ghost,
+.btn-logout {
   border-radius: 30px !important;
+  background: rgba(206, 146, 33, 0.15) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(206, 146, 33, 0.35) !important;
+  color: #DDC79E !important;
+  font-weight: 600 !important;
+  padding: 10px 24px !important;
+  transition: transform 180ms cubic-bezier(.34,1.42,.64,1),
+              box-shadow  180ms ease,
+              background  180ms ease !important;
+}
+.btn-primary:hover:not(:disabled),
+.btn-confirm:hover:not(:disabled),
+.btn-cancel:hover:not(:disabled),
+.btn-ghost:hover:not(:disabled),
+.btn-logout:hover:not(:disabled) {
+  background: rgba(206, 146, 33, 0.30) !important;
+  transform: scale(1.03) !important;
+  box-shadow: 0 6px 20px rgba(206, 146, 33, 0.32) !important;
+}
+.btn-primary:active:not(:disabled),
+.btn-confirm:active:not(:disabled),
+.btn-cancel:active:not(:disabled),
+.btn-ghost:active:not(:disabled),
+.btn-logout:active:not(:disabled) {
+  transform: scale(0.97) !important;
+  box-shadow: none !important;
+}
+
+/* CTAs principais — gradiente sólido (sobrescreve base) */
+#btn-novo-lead,
+#btn-novo-lead-sub,
+.btn-confirm {
   background: linear-gradient(135deg, #CE9221, #DDC79E) !important;
   color: #0f1517 !important;
   border: none !important;
-  font-weight: 600 !important;
-  box-shadow: 0 4px 16px rgba(206, 146, 33, 0.32) !important;
-  transition: transform 180ms cubic-bezier(.34,1.42,.64,1),
-              box-shadow 180ms ease !important;
+  box-shadow: 0 4px 16px rgba(206, 146, 33, 0.35) !important;
 }
-.btn-primary:hover:not(:disabled),
+#btn-novo-lead:hover:not(:disabled),
+#btn-novo-lead-sub:hover:not(:disabled),
 .btn-confirm:hover:not(:disabled) {
-  transform: translateY(-1px) scale(1.03) !important;
-  box-shadow: 0 8px 24px rgba(206, 146, 33, 0.50) !important;
-}
-.btn-primary:active:not(:disabled),
-.btn-confirm:active:not(:disabled) {
-  transform: scale(0.97) !important;
-  box-shadow: 0 2px 8px rgba(206, 146, 33, 0.28) !important;
-}
-.btn-ghost {
-  border-radius: 30px !important;
-  transition: background 180ms ease, border-color 180ms ease,
-              color 180ms ease, transform 180ms ease !important;
-}
-.btn-ghost:hover:not(:disabled) {
-  border-color: rgba(206, 146, 33, 0.32) !important;
-  color: var(--gold) !important;
-  transform: translateY(-1px) !important;
-}
-.btn-logout {
-  border-radius: 30px !important;
-  transition: background 180ms ease, color 180ms ease !important;
+  background: linear-gradient(135deg, #CE9221, #DDC79E) !important;
+  box-shadow: 0 8px 28px rgba(206, 146, 33, 0.55) !important;
 }
 
 /* ── 9. Login — Windows 11 style ───────────────────────────── */
@@ -126,8 +142,8 @@ h1, h2, h3, h4,
     linear-gradient(rgba(12, 18, 20, 0.22), rgba(12, 18, 20, 0.22)),
     url('fdv-wallpaper.png') center / cover fixed !important;
   align-items: flex-end !important;
-  justify-content: center !important;
-  padding-bottom: 56px !important;
+  justify-content: flex-end !important;
+  padding-bottom: 48px !important;
 }
 
 /* [A] Vinheta de base — gradiente escuro nos 42% inferiores */
@@ -394,26 +410,26 @@ h1, h2, h3, h4,
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
-  background: rgba(10, 16, 18, 0.48);
+  background: rgba(10, 15, 17, 0.55);
   backdrop-filter: blur(20px) saturate(1.4);
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
   border: none;
-  border-left: 3px solid rgba(206, 146, 33, 0.58);
+  border-left: 3px solid #CE9221;
   border-radius: 0 12px 12px 0;
-  padding: 12px 18px 12px 16px;
+  padding: 12px 16px;
   pointer-events: none;
   overflow: visible;
 }
 .ticker-verso {
   font-family: 'Red Hat Display', sans-serif;
   font-style: italic;
-  font-size: 13.5px;
+  font-size: 15px;
   font-weight: 500;
-  color: rgba(206, 146, 33, 0.90);
+  color: #FFD700;
   letter-spacing: 0.015em;
   text-align: left;
   line-height: 1.55;
-  text-shadow: 0 0 16px rgba(206, 146, 33, 0.55);
+  text-shadow: 0 0 16px rgba(206, 146, 33, 0.9);
   user-select: none;
   padding: 0;
   white-space: normal;
@@ -476,29 +492,13 @@ h1, h2, h3, h4,
     0 2px 8px rgba(0, 0, 0, 0.22) !important;
 }
 
-/* ── 23. Botão Novo Lead — impactante ──────────────────────── */
+/* ── 23. Botão Novo Lead — sizing extra ────────────────────── */
+/* Gradiente e hover já definidos na seção 8 junto aos CTAs */
 #btn-novo-lead,
 #btn-novo-lead-sub {
   padding: 14px 28px !important;
   font-size: 15px !important;
   font-weight: 700 !important;
-  border-radius: 30px !important;
-  background: linear-gradient(135deg, #CE9221, #DDC79E) !important;
-  color: #0f1517 !important;
-  border: none !important;
-  box-shadow: 0 4px 20px rgba(206, 146, 33, 0.4) !important;
-  transition: transform 180ms cubic-bezier(.34,1.42,.64,1),
-              box-shadow 180ms ease !important;
-}
-#btn-novo-lead:hover,
-#btn-novo-lead-sub:hover {
-  transform: translateY(-2px) scale(1.02) !important;
-  box-shadow: 0 8px 28px rgba(206, 146, 33, 0.55) !important;
-}
-#btn-novo-lead:active,
-#btn-novo-lead-sub:active {
-  transform: scale(0.97) !important;
-  box-shadow: 0 2px 8px rgba(206, 146, 33, 0.3) !important;
 }
 
 /* ── 24. Microanimações — fdvFadeUp ────────────────────────── */
