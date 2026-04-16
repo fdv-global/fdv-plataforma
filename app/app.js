@@ -5,8 +5,7 @@ import {
   query, orderBy
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import {
-  initializeAuth, browserLocalPersistence, browserPopupRedirectResolver,
-  GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 // ─── CLOSERS ─────────────────────────────────────────────────────────
@@ -73,7 +72,6 @@ let filteredLeads = [];
 let currentId     = null;
 let modalMode     = 'agendar';
 let db            = null;
-let firebaseApp   = null;
 let isLive        = false;
 let selectedIds   = new Set();
 let perfilLeadId  = null;
@@ -142,12 +140,7 @@ function initAuth() {
     loadLeads();
     return;
   }
-  // initializeAuth com browserPopupRedirectResolver permite signInWithPopup
-  // sem ser bloqueado pelo COOP do GitHub Pages
-  auth = initializeAuth(firebaseApp, {
-    persistence: browserLocalPersistence,
-    popupRedirectResolver: browserPopupRedirectResolver,
-  });
+  auth = getAuth();
   onAuthStateChanged(auth, user => {
     if (user) {
       currentUser = user;
@@ -171,12 +164,8 @@ function initAuth() {
 async function loginWithGoogle() {
   const btn = $('btn-login-google'), err = $('login-error');
   btn.disabled = true; err.style.display = 'none';
-  const provider = new GoogleAuthProvider();
-  provider.addScope('email');
-  provider.addScope('profile');
-  provider.setCustomParameters({ prompt: 'select_account' });
-  try { await signInWithPopup(auth, provider); }
-  catch(e) { err.textContent = 'Erro ao entrar: ' + (e.message || 'Tente novamente.'); err.style.display = 'block'; }
+  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+  catch(e) { err.textContent = 'Erro ao entrar. Tente novamente.'; err.style.display = 'block'; }
   finally { btn.disabled = false; }
 }
 
@@ -187,7 +176,7 @@ async function logoutUser() {
 // ─── FIREBASE ────────────────────────────────────────────────────────
 function initFirebase() {
   if (firebaseConfig.apiKey === 'YOUR_API_KEY') return false;
-  try { firebaseApp = initializeApp(firebaseConfig); db = getFirestore(firebaseApp); return true; }
+  try { const app = initializeApp(firebaseConfig); db = getFirestore(app); return true; }
   catch(e) { console.error(e); return false; }
 }
 
