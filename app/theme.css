@@ -40,15 +40,24 @@ h1, h2, h3, h4,
   font-family: 'Red Hat Display', system-ui, sans-serif;
 }
 
-/* ── 5. Header glassmorphism ───────────────────────────────── */
+/* ── 5. Navbar — taskbar flutuante Win11 ───────────────────── */
 .app-header {
-  background: rgba(14, 21, 23, 0.76) !important;
-  backdrop-filter: blur(28px) saturate(1.5) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(1.5) !important;
-  border-bottom: 1px solid rgba(206, 146, 33, 0.22) !important;
-  box-shadow:
-    0 1px 0 rgba(206, 146, 33, 0.08),
-    0 4px 24px rgba(0, 0, 0, 0.40) !important;
+  position: fixed !important;
+  bottom: 24px !important;
+  top: auto !important;
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  width: auto !important;
+  height: auto !important;
+  background: rgba(18, 24, 26, 0.65) !important;
+  backdrop-filter: blur(24px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.5) !important;
+  border: 1px solid rgba(206, 146, 33, 0.20) !important;
+  border-radius: 20px !important;
+  padding: 8px 24px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.40) !important;
+  z-index: 100 !important;
 }
 
 /* ── 6. Logo — imagem no lugar do texto ────────────────────── */
@@ -142,7 +151,7 @@ h1, h2, h3, h4,
     linear-gradient(rgba(12, 18, 20, 0.22), rgba(12, 18, 20, 0.22)),
     url('fdv-wallpaper.png') center / cover fixed !important;
   align-items: flex-end !important;
-  justify-content: flex-end !important;
+  justify-content: center !important;
   padding-bottom: 48px !important;
 }
 
@@ -198,7 +207,7 @@ h1, h2, h3, h4,
 /* ── 10. Stat cards — glassmorphism contrastado ────────────── */
 /* Opacidade 32%, blur 24px, border-radius 20px */
 .stat-card {
-  background: rgba(14, 21, 23, 0.32) !important;
+  background: rgba(18, 24, 26, 0.80) !important;
   backdrop-filter: blur(24px) saturate(1.6) !important;
   -webkit-backdrop-filter: blur(24px) saturate(1.6) !important;
   border: 1px solid rgba(206, 146, 33, 0.22) !important;
@@ -266,7 +275,7 @@ h1, h2, h3, h4,
   border-bottom-color: rgba(255, 255, 255, 0.05) !important;
 }
 .kanban-card {
-  background: rgba(24, 34, 36, 0.72) !important;
+  background: rgba(18, 24, 26, 0.80) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
   border: 1px solid rgba(206, 146, 33, 0.12) !important;
@@ -307,7 +316,7 @@ h1, h2, h3, h4,
 
 /* ── 14. WhatsApp — scale hover ────────────────────────────── */
 .wa-instance-card {
-  background: rgba(22, 31, 33, 0.65) !important;
+  background: rgba(18, 24, 26, 0.80) !important;
   backdrop-filter: blur(14px) !important;
   -webkit-backdrop-filter: blur(14px) !important;
   border: 1px solid rgba(206, 146, 33, 0.12) !important;
@@ -370,7 +379,7 @@ h1, h2, h3, h4,
 }
 .briefing-card,
 .briefing-item {
-  background: rgba(22, 31, 33, 0.62) !important;
+  background: rgba(18, 24, 26, 0.80) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
   border: 1px solid rgba(206, 146, 33, 0.12) !important;
@@ -438,13 +447,13 @@ h1, h2, h3, h4,
   max-width: none;
 }
 
-/* Empurra o conteúdo principal para baixo do header */
-.app-main { padding-top: 72px !important; }
+/* Conteúdo — sem header no topo, taskbar fixa no rodapé */
+.app-main { padding-top: 40px !important; padding-bottom: 100px !important; }
 
-/* [F] Ocultar versículo em mobile — espaço crítico */
+/* [F] Mobile — ocultar versículo, ajustar espaço */
 @media (max-width: 768px) {
   #fdv-ticker { display: none !important; }
-  .app-main   { padding-top: 72px !important; }
+  .app-main   { padding-top: 20px !important; padding-bottom: 88px !important; }
 }
 
 /* ── 21. Scrollbars custom ─────────────────────────────────── */
