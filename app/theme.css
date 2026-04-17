@@ -1338,3 +1338,145 @@ h1, h2, h3, h4,
   font-size: 11px;
   color: var(--t3, #5a6a6c);
 }
+
+/* ── Kanban: Quick filter pills ───────────────────────────────── */
+.kanban-quick-filter {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.kqf-btn {
+  padding: 5px 13px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1.5px solid rgba(255,255,255,0.1);
+  background: transparent;
+  color: var(--t2, #c4cece);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.kqf-btn:hover { border-color: rgba(206,146,33,0.4); color: #fff; }
+.kqf-btn.active { border-color: #CE9221; background: rgba(206,146,33,0.12); color: #fff; }
+
+/* ── Kanban search ───────────────────────────────────────────── */
+.kanban-search { max-width: 160px; }
+
+/* ── Days badge ──────────────────────────────────────────────── */
+.kc-days-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.07);
+  color: var(--t3, #5a6a6c);
+  line-height: 1;
+}
+.kc-days-badge.kc-days-warn   { background: rgba(255,200,0,0.14); color: #ffc800; }
+.kc-days-badge.kc-days-danger { background: rgba(255,70,70,0.14); color: #ff5555; }
+
+.kanban-card.kc-days-warn   { border-color: rgba(255,200,0,0.45) !important; }
+.kanban-card.kc-days-danger { border-color: rgba(255,70,70,0.55) !important; }
+
+/* ── Datetime in card — gold highlight ───────────────────────── */
+.kc-datetime {
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #CE9221 !important;
+  background: rgba(206,146,33,0.1) !important;
+  border-radius: 6px !important;
+  padding: 4px 8px !important;
+  margin-bottom: 8px !important;
+}
+.kc-cal-icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  stroke-width: 2;
+}
+
+/* ── Move to dropdown ────────────────────────────────────────── */
+.kc-move-wrap {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.kc-move-select {
+  width: 100%;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 7px;
+  color: var(--t2, #c4cece);
+  font-size: 12px;
+  padding: 5px 8px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.kc-move-select:hover { border-color: rgba(206,146,33,0.35); }
+.kc-move-select:focus { outline: none; border-color: #CE9221; }
+.kc-move-select option { background: #1a2426; color: #c4cece; }
+
+/* ── WhatsApp button ─────────────────────────────────────────── */
+.kc-wa-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: rgba(37,211,102,0.1);
+  color: #25d366;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.kc-wa-btn:hover { background: rgba(37,211,102,0.22); }
+.kc-wa-icon { width: 14px; height: 14px; stroke-width: 1.75; }
+
+/* ── History toggle & section ────────────────────────────────── */
+.kc-hist-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: rgba(255,255,255,0.04);
+  color: var(--t3, #5a6a6c);
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.kc-hist-toggle:hover { background: rgba(255,255,255,0.09); color: var(--t1, #e8e4dc); }
+.kc-hist-toggle svg { width: 13px; height: 13px; }
+
+.kc-historico {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: rgba(0,0,0,0.25);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.kc-hist-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.kc-hist-item:last-child { border-bottom: none; }
+.kc-hist-col  { font-size: 11.5px; font-weight: 600; color: var(--t1, #e8e4dc); }
+.kc-hist-meta { font-size: 10.5px; color: var(--t3, #5a6a6c); text-align: right; white-space: nowrap; }
+
+/* ── Search dimming ──────────────────────────────────────────── */
+.kanban-card.kc-dimmed { opacity: 0.18; pointer-events: none; }

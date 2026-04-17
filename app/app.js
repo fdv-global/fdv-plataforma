@@ -118,6 +118,9 @@ let chatActiveSide     = null;
 let mpLeadId  = null;
 let mpSelected = null;
 
+// Kanban search
+let kanbanSearchText = '';
+
 // Notification state
 let notifUnsub = null;
 let allNotifs  = [];
@@ -1043,6 +1046,9 @@ function renderKanban() {
   const closerFilt = $('kanban-filter-closer').value;
   const cols       = getKanbanCols();
 
+  // Sync quick-filter pills with the select value
+  document.querySelectorAll('.kqf-btn').forEach(b => b.classList.toggle('active', b.dataset.closer === closerFilt));
+
   let leads = allLeads.filter(l => l.status !== 'aguardando');
   if (mesFilt)    leads = leads.filter(l => (l.dataagendamento||l.datachegada||'').startsWith(mesFilt));
   if (closerFilt) leads = leads.filter(l => (l.closer||'') === closerFilt);
@@ -1055,11 +1061,18 @@ function renderKanban() {
         <span class="kanban-col-count">${colLeads.length}</span>
       </div>
       <div class="kanban-col-body" data-col="${col.id}">
-        ${colLeads.length ? colLeads.map(l => kanbanCard(l)).join('') : '<div class="kanban-empty"><i data-lucide="inbox" class="empty-lucide-sm"></i><span>Sem leads</span></div>'}
+        ${colLeads.length ? colLeads.map(l => kanbanCard(l, cols)).join('') : '<div class="kanban-empty"><i data-lucide="inbox" class="empty-lucide-sm"></i><span>Sem leads</span></div>'}
       </div>
     </div>`;
   }).join('');
   lucide.createIcons();
+
+  // Re-apply active search dimming after re-render
+  if (kanbanSearchText) {
+    board.querySelectorAll('.kanban-card').forEach(card => {
+      card.classList.toggle('kc-dimmed', !card.dataset.nome.includes(kanbanSearchText));
+    });
+  }
 
   // Drag events on cards
   board.querySelectorAll('.kanban-card').forEach(card => {
@@ -1117,24 +1130,71 @@ function renderKanban() {
       catch(e) { toast('Erro ao salvar obs.', 'err'); }
     });
   });
+
+  // Mover para: dropdown
+  board.querySelectorAll('.kc-move-select').forEach(sel => {
+    sel.addEventListener('mousedown', e => e.stopPropagation());
+    sel.addEventListener('change', async e => {
+      const colId = e.target.value;
+      if (!colId) return;
+      e.target.value = '';
+      await moveLeadToCol(e.target.dataset.id, colId);
+    });
+  });
+
+  // Histórico toggle
+  board.querySelectorAll('.kc-hist-toggle').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const hist = btn.closest('.kanban-card').querySelector('.kc-historico');
+      if (hist) hist.style.display = hist.style.display === 'none' ? '' : 'none';
+    });
+  });
 }
 
-function kanbanCard(l) {
-  const closerName = l.closer ? (CLOSERS[l.closer]?.name||l.closer) : null;
-  const etiquetas  = (l.etiquetas||[]).slice(0,2);
-  const isAgendado = l.status === 'agendado';
-
+function kanbanCard(l, cols) {
+  const closerName  = l.closer ? (CLOSERS[l.closer]?.name||l.closer) : null;
+  const etiquetas   = (l.etiquetas||[]).slice(0,2);
+  const isAgendado  = l.status === 'agendado';
   const unreadCount = l.unreadCount || 0;
-  return `<div class="kanban-card" draggable="true" data-id="${l.id}">
+  const currentCol  = getLeadKanbanCol(l);
+
+  // Days in current column
+  const days = l.kanban_column_since
+    ? Math.floor((Date.now() - new Date(l.kanban_column_since).getTime()) / 86400000)
+    : null;
+  const daysClass = days === null ? '' : days >= 7 ? 'kc-days-danger' : days >= 3 ? 'kc-days-warn' : '';
+
+  // WhatsApp
+  const phone  = (l.celular||l.telefone||'').replace(/\D/g,'');
+  const waHref = phone ? `https://wa.me/55${phone}` : null;
+
+  // Move options (exclude current column)
+  const allCols   = cols || getKanbanCols();
+  const moveOpts  = allCols.filter(c => c.id !== currentCol)
+    .map(c => `<option value="${c.id}">${esc(c.label)}</option>`).join('');
+
+  // History (last 3, newest first)
+  const hist = (l.historico_kanban || []).slice(-3).reverse();
+  const histHtml = hist.length ? `
+    <div class="kc-historico" style="display:none">
+      ${hist.map(h => `<div class="kc-hist-item">
+        <span class="kc-hist-col">${esc(h.colLabel||h.col)}</span>
+        <span class="kc-hist-meta">${esc(h.movidoPor||'—')} · ${fmtNotifTime(h.movidoEm)}</span>
+      </div>`).join('')}
+    </div>` : '';
+
+  return `<div class="kanban-card ${daysClass}" draggable="true" data-id="${l.id}" data-nome="${esc((l.nome||'').toLowerCase())}">
     <div class="kc-head">
       <button class="kc-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
-      <div style="display:flex;align-items:center;gap:6px">
+      <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
         ${unreadCount ? `<span class="kc-unread-badge">${unreadCount}</span>` : ''}
+        ${days !== null ? `<span class="kc-days-badge ${daysClass}">${days}d</span>` : ''}
         ${badgeStatus(l.status)}
       </div>
     </div>
     ${etiquetas.length ? `<div class="kc-etiquetas">${etiquetas.map(t=>etiquetaChip(t,true)).join('')}</div>` : ''}
-    ${l.dataagendamento ? `<div class="kc-datetime">📅 ${fmtDateHora(l.dataagendamento,l.horaagendamento)}</div>` : ''}
+    ${l.dataagendamento ? `<div class="kc-datetime"><i data-lucide="calendar" class="kc-cal-icon"></i>${fmtDateHora(l.dataagendamento,l.horaagendamento)}</div>` : ''}
     <div class="kc-meta">
       ${closerName ? `<span class="kc-closer">${esc(closerName)}</span>` : ''}
       ${l.agendadopor ? `<span class="kc-resp">via ${esc(l.agendadopor)}</span>` : ''}
@@ -1143,6 +1203,15 @@ function kanbanCard(l) {
     <div class="kc-foot">
       ${isAgendado ? `<button class="btn-kanban-noshow" data-id="${l.id}">No Show</button>` : ''}
       <button class="btn-kanban-resultado" data-id="${l.id}">${isAgendado?'Resultado →':'Ver →'}</button>
+      ${waHref ? `<a class="kc-wa-btn" href="${waHref}" target="_blank" rel="noopener" title="WhatsApp"><i data-lucide="message-circle" class="kc-wa-icon"></i></a>` : ''}
+      ${hist.length ? `<button class="kc-hist-toggle" title="Histórico"><i data-lucide="history"></i></button>` : ''}
+    </div>
+    ${histHtml}
+    <div class="kc-move-wrap">
+      <select class="kc-move-select" data-id="${l.id}">
+        <option value="">Mover para…</option>
+        ${moveOpts}
+      </select>
     </div>
     <div class="kc-obs-wrap">
       <textarea class="kc-obs-input" data-id="${l.id}" placeholder="Obs. pós-call…">${esc(l.obs_call||'')}</textarea>
@@ -1150,10 +1219,42 @@ function kanbanCard(l) {
   </div>`;
 }
 
+async function ensureObsSaved(leadId) {
+  const ta   = document.querySelector(`.kc-obs-input[data-id="${leadId}"]`);
+  if (!ta) return;
+  const obs  = ta.value.trim();
+  const lead = allLeads.find(l => l.id === leadId);
+  if (!lead || obs === (lead.obs_call||'').trim()) return;
+  try { await saveLead(leadId, { obs_call: obs, atualizadoem: new Date().toISOString() }); } catch(_) {}
+}
+
+function buildHistoryEntry(leadId, colId, colLabel) {
+  const lead = allLeads.find(l => l.id === leadId);
+  if (!lead) return null;
+  const hist = [...(lead.historico_kanban || [])];
+  hist.push({
+    col: colId,
+    colLabel,
+    movidoPor: currentUser?.displayName || currentUser?.email || 'Desconhecido',
+    movidoEm:  new Date().toISOString(),
+  });
+  if (hist.length > 20) hist.splice(0, hist.length - 20);
+  return hist;
+}
+
 async function moveLeadToCol(leadId, colId) {
   if (colId === 'venda_perdida') { openMotivosPerda(leadId); return; }
+  await ensureObsSaved(leadId);
   try {
-    await saveLead(leadId, { kanban_column: colId, atualizadoem: new Date().toISOString() });
+    const allCols   = getKanbanCols();
+    const colLabel  = allCols.find(c => c.id === colId)?.label || colId;
+    const hist      = buildHistoryEntry(leadId, colId, colLabel);
+    await saveLead(leadId, {
+      kanban_column:      colId,
+      kanban_column_since: new Date().toISOString(),
+      ...(hist && { historico_kanban: hist }),
+      atualizadoem:       new Date().toISOString(),
+    });
     toast('Card movido.', 'ok');
     if (colId === 'venda_ganha') notifyVendaGanha(leadId);
     if (!isLive) renderKanban();
@@ -1230,12 +1331,19 @@ async function confirmarMotivosPerda() {
   const outroText  = mpSelected === 'outro' ? ($('mp-outro-text')?.value || '').trim() : '';
 
   try {
+    await ensureObsSaved(mpLeadId);
+    const allCols  = getKanbanCols();
+    const colLabel = allCols.find(c => c.id === 'venda_perdida')?.label || 'Venda Perdida';
+    const hist     = buildHistoryEntry(mpLeadId, 'venda_perdida', colLabel);
     await saveLead(mpLeadId, {
-      kanban_column:    'venda_perdida',
-      motivo_perda:     mpSelected,
-      motivo_perda_label: motivoItem?.label || mpSelected,
+      kanban_column:       'venda_perdida',
+      kanban_column_since: new Date().toISOString(),
+      venda_realizada:     false,
+      motivo_perda:        mpSelected,
+      motivo_perda_label:  motivoItem?.label || mpSelected,
       ...(outroText && { motivo_perda_obs: outroText }),
-      atualizadoem:     new Date().toISOString(),
+      ...(hist && { historico_kanban: hist }),
+      atualizadoem:        new Date().toISOString(),
     });
     toast('Lead marcado como perda.', 'ok');
     closeMotivosPerda();
@@ -2812,6 +2920,22 @@ function bindEvents() {
   // Kanban filters
   ['kanban-filter-mes','kanban-filter-closer'].forEach(id => $(id).addEventListener('change', renderKanban));
   $('btn-add-column').addEventListener('click', addKanbanColumn);
+
+  // Kanban search
+  $('kanban-search').addEventListener('input', e => {
+    kanbanSearchText = e.target.value.toLowerCase().trim();
+    document.querySelectorAll('#kanban-board .kanban-card').forEach(card => {
+      card.classList.toggle('kc-dimmed', !!(kanbanSearchText && !card.dataset.nome.includes(kanbanSearchText)));
+    });
+  });
+
+  // Quick-filter pills
+  document.querySelectorAll('.kqf-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $('kanban-filter-closer').value = btn.dataset.closer;
+      renderKanban();
+    });
+  });
 
   // Relatórios filters
   ['rel-filter-mes','rel-filter-origem'].forEach(id => $(id).addEventListener('change', renderRelatorios));

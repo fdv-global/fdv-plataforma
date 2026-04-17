@@ -311,10 +311,16 @@
       <p>Funil de vendas — arraste os cards entre colunas</p>
     </div>
     <div class="kanban-controls">
+      <input type="text" class="filter-select kanban-search" id="kanban-search" placeholder="Buscar lead…">
       <select class="filter-select" id="kanban-filter-mes">
         <option value="">Todos os meses</option>
       </select>
-      <select class="filter-select" id="kanban-filter-closer">
+      <div class="kanban-quick-filter">
+        <button class="kqf-btn active" data-closer="">Todos</button>
+        <button class="kqf-btn" data-closer="fernanda">Fernanda</button>
+        <button class="kqf-btn" data-closer="thomaz">Thomaz</button>
+      </div>
+      <select class="filter-select" id="kanban-filter-closer" style="display:none">
         <option value="">Todos os closers</option>
         <option value="fernanda">Fernanda</option>
         <option value="thomaz">Thomaz</option>
