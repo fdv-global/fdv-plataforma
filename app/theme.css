@@ -1004,17 +1004,70 @@ h1, h2, h3, h4,
   opacity: 1 !important;
 }
 
-/* ── Relatórios — contraste elevado em labels e valores ─────── */
-.rel-section-title {
+/* ── Relatórios — contraste total dentro de #tab-relatorios ──── */
+
+/* Títulos de seção: dourado */
+#tab-relatorios .rel-section-title {
+  color: #CE9221 !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 16px rgba(206,146,33,0.25) !important;
+}
+
+/* Cabeçalhos de tabela: labels claros */
+#tab-relatorios .rel-table th {
   color: #e8e4dc !important;
   font-weight: 600 !important;
 }
-.rel-table th {
-  color: #e8e4dc !important;
-  font-weight: 600 !important;
-}
-.rel-table td {
+
+/* Valores nas células: branco */
+#tab-relatorios .rel-table td {
   color: #ffffff !important;
+}
+
+/* Chart comparativo — labels e valores */
+#tab-relatorios .rel-chart-lbl {
+  color: #e8e4dc !important;
+  font-weight: 600 !important;
+}
+#tab-relatorios .rel-chart-val {
+  color: #ffffff !important;
+}
+#tab-relatorios .rel-legend-item {
+  color: #e8e4dc !important;
+}
+
+/* Ranking de origem — nomes, posições, números */
+#tab-relatorios .rel-rank-pos {
+  color: #CE9221 !important;
+  font-weight: 700 !important;
+}
+#tab-relatorios .rel-rank-name {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  background: rgba(0,0,0,0.45) !important;
+  padding: 2px 8px !important;
+  border-radius: 4px !important;
+  display: inline-block !important;
+}
+#tab-relatorios .rel-rank-sub {
+  color: #e8e4dc !important;
+}
+#tab-relatorios .rel-rank-conv {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+#tab-relatorios .rel-rank-conv--hi  { color: #4caf8e !important; }
+#tab-relatorios .rel-rank-conv--mid { color: #E5B94E !important; }
+
+/* Wrap da barra de ranking — fundo escuro para legibilidade */
+#tab-relatorios .rel-rank-bar-wrap {
+  background: rgba(0,0,0,0.40) !important;
+  border-radius: 4px !important;
+}
+
+/* Filtros dentro de relatórios */
+#tab-relatorios .filter-label {
+  color: #e8e4dc !important;
 }
 
 /* ── Consistência — border-radius 12–16px em todo sistema ────── */
