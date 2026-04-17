@@ -114,6 +114,47 @@ let chatUnsubscribe    = null;
 let chatMessages       = [];
 let chatActiveSide     = null;
 
+// Motivo de perda state
+let mpLeadId  = null;
+let mpSelected = null;
+
+// Notification state
+let notifUnsub = null;
+let allNotifs  = [];
+
+// ─── MOTIVOS DE PERDA ────────────────────────────────────────────────
+const MOTIVOS_PERDA = [
+  {
+    cat: '💰 Financeiro',
+    items: [
+      { id: 'sem_condicoes', icon: 'wallet',       label: 'Sem condições financeiras no momento' },
+      { id: 'valor_alto',    icon: 'trending-down', label: 'Valor acima do orçamento' },
+    ]
+  },
+  {
+    cat: '👤 Perfil',
+    items: [
+      { id: 'sem_perfil',  icon: 'user-x',       label: 'Não tem o perfil ideal para o programa' },
+      { id: 'momento_vida',icon: 'clock',         label: 'Momento de vida não adequado' },
+      { id: 'expectativas',icon: 'alert-circle',  label: 'Expectativas não alinhadas com o programa' },
+    ]
+  },
+  {
+    cat: '📵 Contato',
+    items: [
+      { id: 'sem_resposta',  icon: 'message-x', label: 'Não respondeu após follow up' },
+      { id: 'desapareceu',   icon: 'ghost',     label: 'Desapareceu após a call' },
+      { id: 'numero_errado', icon: 'phone-off', label: 'Número errado/inativo' },
+    ]
+  },
+  {
+    cat: '📝 Outro',
+    items: [
+      { id: 'outro', icon: 'pencil', label: 'Outro (campo livre)' },
+    ]
+  },
+];
+
 const ETIQUETAS_DEFAULT = ['Super Lead', 'Bom', 'Neutro', 'Frio'];
 
 // ─── ETIQUETA COLORS ─────────────────────────────────────────────────
@@ -175,6 +216,7 @@ function initAuth() {
       loadCurrentUserProfile(user.uid);
       if (!leadsLoaded) { leadsLoaded = true; loadLeads(); }
       if (role === 'admin') loadUsuarios();
+      loadNotifications(user.uid);
       switchTab('inicio');
     } else {
       currentUser = null;
@@ -183,6 +225,9 @@ function initAuth() {
       document.getElementById('app').style.setProperty('display', 'none', 'important');
       leadsLoaded = false;
       if (usuariosUnsub) { usuariosUnsub(); usuariosUnsub = null; }
+      if (notifUnsub)    { notifUnsub();    notifUnsub    = null; }
+      allNotifs = [];
+      renderNotifPanel();
     }
   });
 }
@@ -1106,9 +1151,11 @@ function kanbanCard(l) {
 }
 
 async function moveLeadToCol(leadId, colId) {
+  if (colId === 'venda_perdida') { openMotivosPerda(leadId); return; }
   try {
     await saveLead(leadId, { kanban_column: colId, atualizadoem: new Date().toISOString() });
     toast('Card movido.', 'ok');
+    if (colId === 'venda_ganha') notifyVendaGanha(leadId);
     if (!isLive) renderKanban();
   } catch(e) {
     console.error(e);
@@ -1123,6 +1170,81 @@ function addKanbanColumn() {
   cols.push({ id: 'col_' + Date.now(), label: label.trim() });
   saveKanbanCols(cols);
   renderKanban();
+}
+
+// ─── MOTIVO DE PERDA ─────────────────────────────────────────────────
+function openMotivosPerda(leadId) {
+  mpLeadId  = leadId;
+  mpSelected = null;
+  const lead = allLeads.find(l => l.id === leadId);
+  $('mp-lead-nome').textContent = lead?.nome || '—';
+  $('mp-confirmar').disabled = true;
+
+  const body = $('mp-body');
+  body.innerHTML = MOTIVOS_PERDA.map(cat => `
+    <div class="mp-cat">
+      <div class="mp-cat-title">${esc(cat.cat)}</div>
+      <div class="mp-items">
+        ${cat.items.map(item => `
+          <button class="mp-item" data-id="${item.id}">
+            <i data-lucide="${item.icon}" class="mp-icon"></i>
+            <span>${esc(item.label)}</span>
+          </button>`).join('')}
+      </div>
+    </div>`).join('') + `
+    <div id="mp-outro-wrap" style="display:none;margin-top:14px">
+      <textarea id="mp-outro-text" class="form-ctrl" placeholder="Descreva o motivo…" rows="3" style="width:100%;resize:vertical"></textarea>
+    </div>`;
+  lucide.createIcons();
+
+  body.querySelectorAll('.mp-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      body.querySelectorAll('.mp-item').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      mpSelected = btn.dataset.id;
+      $('mp-outro-wrap').style.display = mpSelected === 'outro' ? 'block' : 'none';
+      $('mp-confirmar').disabled = false;
+    });
+  });
+
+  $('motivo-perda-backdrop').style.display = 'flex';
+}
+
+function closeMotivosPerda() {
+  $('motivo-perda-backdrop').style.display = 'none';
+  mpLeadId  = null;
+  mpSelected = null;
+}
+
+async function confirmarMotivosPerda() {
+  if (!mpLeadId || !mpSelected) return;
+  if (mpSelected === 'outro') {
+    const text = ($('mp-outro-text')?.value || '').trim();
+    if (!text) { toast('Descreva o motivo da perda.', 'err'); return; }
+  }
+  const btn = $('mp-confirmar');
+  btn.disabled = true;
+
+  const allItems   = MOTIVOS_PERDA.flatMap(c => c.items);
+  const motivoItem = allItems.find(i => i.id === mpSelected);
+  const outroText  = mpSelected === 'outro' ? ($('mp-outro-text')?.value || '').trim() : '';
+
+  try {
+    await saveLead(mpLeadId, {
+      kanban_column:    'venda_perdida',
+      motivo_perda:     mpSelected,
+      motivo_perda_label: motivoItem?.label || mpSelected,
+      ...(outroText && { motivo_perda_obs: outroText }),
+      atualizadoem:     new Date().toISOString(),
+    });
+    toast('Lead marcado como perda.', 'ok');
+    closeMotivosPerda();
+    if (!isLive) renderKanban();
+  } catch(e) {
+    console.error(e);
+    toast('Erro ao salvar motivo.', 'err');
+    btn.disabled = false;
+  }
 }
 
 // ─── RELATÓRIOS ──────────────────────────────────────────────────────
@@ -1968,6 +2090,14 @@ async function confirmar() {
         atualizadoem:new Date().toISOString()
       });
       toast(`Call agendada — ${timePart} · ${fmtDate(datePart)}`, 'ok');
+      const closerUid = getCloserUid(cal.closer);
+      if (closerUid && closerUid !== currentUser?.uid) {
+        const leadName = allLeads.find(l => l.id === currentId)?.nome || '—';
+        createNotification(closerUid, {
+          type: 'agendamento', leadId: currentId,
+          message: `📅 Nova call: ${leadName} — ${timePart} · ${fmtDate(datePart)}`,
+        });
+      }
 
     } else if (modalMode === 'resultado' || modalMode === 'detalhes') {
       const closerSt   = getToggleVal('toggle-closer-status');
@@ -2075,6 +2205,77 @@ async function confirmarNovoLead() {
     }
     closeNovoLead();
   } catch(e) { console.error(e); toast(e.message||'Erro ao salvar.', 'err'); btn.disabled=false; }
+}
+
+// ─── NOTIFICATIONS ───────────────────────────────────────────────────
+function loadNotifications(uid) {
+  if (!isLive) return;
+  if (notifUnsub) notifUnsub();
+  const q = query(collection(db, 'notifications', uid, 'items'), orderBy('createdAt', 'desc'));
+  notifUnsub = onSnapshot(q, snap => {
+    allNotifs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderNotifPanel();
+  }, err => console.error('[FDV] notif error:', err));
+}
+
+function renderNotifPanel() {
+  const badge = $('notif-badge');
+  const list  = $('notif-list');
+  if (!badge || !list) return;
+  const unread = allNotifs.filter(n => !n.read).length;
+  badge.textContent  = unread > 9 ? '9+' : String(unread);
+  badge.style.display = unread > 0 ? '' : 'none';
+  if (!allNotifs.length) {
+    list.innerHTML = '<div class="notif-empty">Nenhuma notificação</div>';
+    return;
+  }
+  list.innerHTML = allNotifs.map(n => `
+    <div class="notif-item${n.read ? '' : ' unread'}" data-id="${n.id}">
+      <div class="notif-dot"></div>
+      <div class="notif-content">
+        <p class="notif-msg">${esc(n.message)}</p>
+        <span class="notif-time">${fmtNotifTime(n.createdAt)}</span>
+      </div>
+    </div>`).join('');
+}
+
+function fmtNotifTime(iso) {
+  if (!iso) return '';
+  const diff = Math.floor((Date.now() - new Date(iso)) / 60000);
+  if (diff < 1)    return 'agora';
+  if (diff < 60)   return `${diff}min`;
+  if (diff < 1440) return `${Math.floor(diff/60)}h`;
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+}
+
+async function createNotification(userId, data) {
+  if (!isLive || !userId) return;
+  try {
+    await addDoc(collection(db, 'notifications', userId, 'items'), {
+      ...data, read: false, createdAt: new Date().toISOString(),
+    });
+  } catch(e) { console.error('[FDV] notif write error:', e); }
+}
+
+function getCloserUid(closerKey) {
+  if (!closerKey) return null;
+  const name = (CLOSERS[closerKey]?.name || '').toLowerCase();
+  if (!name) return null;
+  const u = allUsuarios.find(u => (u.nome || '').toLowerCase().includes(name));
+  return u?.uid || null;
+}
+
+async function notifyVendaGanha(leadId) {
+  const lead   = allLeads.find(l => l.id === leadId);
+  if (!lead) return;
+  const admins = allUsuarios.filter(u => u.role === 'admin' && u.uid);
+  for (const admin of admins) {
+    await createNotification(admin.uid, {
+      type: 'venda_ganha', leadId,
+      message: `🏆 Venda ganha! ${lead.nome || '—'} fechou negócio.`,
+    });
+  }
 }
 
 // ─── TOAST ───────────────────────────────────────────────────────────
@@ -2787,9 +2988,36 @@ function bindEvents() {
     if (inst) triggerQRGenerate(inst.instanceName);
   });
 
+  // Motivo de perda
+  $('mp-close').addEventListener('click', closeMotivosPerda);
+  $('mp-cancelar').addEventListener('click', closeMotivosPerda);
+  $('mp-confirmar').addEventListener('click', confirmarMotivosPerda);
+  $('motivo-perda-backdrop').addEventListener('click', e => { if (e.target === $('motivo-perda-backdrop')) closeMotivosPerda(); });
+
+  // Notificações
+  $('notif-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    const panel = $('notif-panel');
+    panel.style.display = panel.style.display === 'none' ? '' : 'none';
+  });
+  $('notif-mark-all').addEventListener('click', async () => {
+    if (!isLive || !currentUser) return;
+    for (const n of allNotifs.filter(n => !n.read)) {
+      await updateDoc(doc(db, 'notifications', currentUser.uid, 'items', n.id), { read: true });
+    }
+  });
+  $('notif-list').addEventListener('click', async e => {
+    const item = e.target.closest('.notif-item');
+    if (!item || !isLive || !currentUser) return;
+    await updateDoc(doc(db, 'notifications', currentUser.uid, 'items', item.dataset.id), { read: true });
+  });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#notif-wrapper')) { const p = $('notif-panel'); if (p) p.style.display = 'none'; }
+  });
+
   // Keyboard
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeModal(); closePerfil(); closeNovoLead(); closeQRModal(); }
+    if (e.key === 'Escape') { closeModal(); closePerfil(); closeNovoLead(); closeQRModal(); closeMotivosPerda(); }
   });
 }
 

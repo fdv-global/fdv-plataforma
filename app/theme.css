@@ -1143,3 +1143,198 @@ h1, h2, h3, h4,
 /* Override .agenda-empty .empty-ico to be compatible with both emoji and Lucide */
 .agenda-empty .empty-ico    { font-size: 36px; color: var(--b2); margin-bottom: 16px; }
 .agenda-empty .empty-lucide { color: var(--gold, #CE9221); opacity: 0.55; }
+
+/* ── Modal wide — Motivo de Perda ─────────────────────────────── */
+.modal-wide { max-width: 580px !important; width: 94vw !important; }
+
+.mp-cat { margin-bottom: 20px; }
+
+.mp-cat-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--gold, #CE9221);
+  margin-bottom: 10px;
+}
+
+.mp-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+  gap: 8px;
+}
+
+.mp-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  color: var(--t2, #c4cece);
+  font-size: 12.5px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s, color 0.18s;
+}
+
+.mp-item:hover {
+  border-color: rgba(206,146,33,0.4);
+  background: rgba(206,146,33,0.06);
+  color: #fff;
+}
+
+.mp-item.selected {
+  border-color: #CE9221;
+  background: rgba(206,146,33,0.12);
+  color: #fff;
+}
+
+.mp-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  stroke-width: 1.75;
+  color: inherit;
+}
+
+/* ── Notificações ─────────────────────────────────────────────── */
+.notif-wrapper {
+  position: relative;
+}
+
+.notif-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--t2, #c4cece);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.notif-btn:hover { background: rgba(255,255,255,0.07); color: #fff; }
+
+.notif-btn svg { width: 18px; height: 18px; stroke-width: 1.75; }
+
+.notif-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #CE9221;
+  color: #000;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 320px;
+  max-height: 420px;
+  border-radius: 14px;
+  background: rgba(20,28,30,0.97);
+  border: 1px solid rgba(255,255,255,0.09);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  backdrop-filter: blur(16px);
+  z-index: 300;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.notif-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+}
+
+.notif-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.notif-mark-all {
+  font-size: 11px;
+  color: var(--gold, #CE9221);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+.notif-mark-all:hover { opacity: 1; }
+
+.notif-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 6px 0;
+}
+
+.notif-empty {
+  padding: 32px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--t3, #5a6a6c);
+}
+
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.notif-item:last-child { border-bottom: none; }
+
+.notif-item:hover { background: rgba(255,255,255,0.04); }
+
+.notif-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+.notif-item.unread .notif-dot { background: var(--gold, #CE9221); }
+
+.notif-content { flex: 1; min-width: 0; }
+
+.notif-msg {
+  font-size: 12.5px;
+  color: var(--t2, #c4cece);
+  margin: 0 0 4px;
+  line-height: 1.45;
+}
+
+.notif-item.unread .notif-msg { color: #fff; font-weight: 500; }
+
+.notif-time {
+  font-size: 11px;
+  color: var(--t3, #5a6a6c);
+}

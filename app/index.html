@@ -59,6 +59,21 @@
       <img class="user-avatar" id="user-avatar" src="" alt="" style="display:none">
       <span class="user-name" id="user-name"></span>
     </div>
+    <div class="notif-wrapper" id="notif-wrapper">
+      <button class="notif-btn" id="notif-btn" aria-label="Notificações">
+        <i data-lucide="bell"></i>
+        <span class="notif-badge" id="notif-badge" style="display:none">0</span>
+      </button>
+      <div class="notif-panel" id="notif-panel" style="display:none">
+        <div class="notif-header">
+          <span class="notif-title">Notificações</span>
+          <button class="notif-mark-all" id="notif-mark-all">Marcar lidas</button>
+        </div>
+        <div class="notif-list" id="notif-list">
+          <div class="notif-empty">Nenhuma notificação</div>
+        </div>
+      </div>
+    </div>
     <button class="btn-logout" id="btn-logout">Sair</button>
     <span class="online-dot"></span>
     <span class="online-label">online</span>
@@ -961,6 +976,24 @@
     <div class="modal-footer">
       <button class="btn-ghost" id="editar-usuario-cancelar">Cancelar</button>
       <button class="btn-confirm" id="btn-salvar-editar-usuario">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MOTIVO DE PERDA ===== -->
+<div class="modal-backdrop" id="motivo-perda-backdrop" style="display:none">
+  <div class="modal modal-wide" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">Motivo da Perda</h2>
+        <p class="modal-subtitle" id="mp-lead-nome">—</p>
+      </div>
+      <button class="modal-close" id="mp-close" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-body" id="mp-body"></div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="mp-cancelar">Cancelar</button>
+      <button class="btn-confirm" id="mp-confirmar" disabled>Confirmar Perda</button>
     </div>
   </div>
 </div>
