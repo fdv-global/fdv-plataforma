@@ -175,6 +175,7 @@ function initAuth() {
       loadCurrentUserProfile(user.uid);
       if (!leadsLoaded) { leadsLoaded = true; loadLeads(); }
       if (role === 'admin') loadUsuarios();
+      switchTab('inicio');
     } else {
       currentUser = null;
       currentRole = null;
