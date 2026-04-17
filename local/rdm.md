@@ -1,6 +1,6 @@
 # RDM — Sistema FDV: Tasks Pendentes
 
-> Última atualização: 2026-04-16 — theme v2 completo · taskbar Win11 · versículo topo · microanimações
+> Última atualização: 2026-04-17 — kanban UX: venda ganha modal · remoção de campos legados · fix drag delegation
 
 ---
 
@@ -64,6 +64,22 @@
 
 ---
 
+## ✅ CONCLUÍDO (UX polish + gestão de usuários · 2026-04-16)
+
+- [x] **Aba Início** — primeira tab (ícone Lucide `house`, padrão ao logar); saudação com nome + bom dia/tarde/noite; versículo do dia em card centralizado glassmorphism (varia por dia do ano, consistente durante o dia); 3 cards resumo: Calls Hoje / Leads Aguardando / Vendas do Mês
+- [x] **Ticker fixo removido** — versículo saiu do layout fixo e passou para a aba Início exclusivamente; `padding-top` do `app-main` reduzido 180px → 110px
+- [x] **`VERSES` centralizado** — array de 51 versículos em `app.js` (constante `VERSES`); índice = `dayOfYear % VERSES.length`
+- [x] **Usuários — botão Cadastrar corrigido** — causa raiz: `openNovoUsuario` usava `style.display=''` mas o modal CSS exige `.modal-backdrop.open`; corrigido para `classList.add/remove('open')` + `body.overflow`
+- [x] **Usuários — formulário salva corretamente** — corrigido `showToast` → `toast` (função que não existia); mensagem de erro agora exibe `e.message`; campos: `uid, email, nome, role, ativo, criadoEm, photoURL`
+- [x] **Usuários — foto/avatar** — campo de upload no modal com preview circular; importação de `getStorage / uploadBytes / getDownloadURL` do Firebase Storage (v10.12.0); foto salva em `usuarios/{uid}/foto`; `photoURL` persiste no Firestore; `getStorage(app)` inicializado em `initFirebase()`
+- [x] **Usuários — avatar na tabela** — célula Nome mostra `<img>` circular (32px) se `photoURL` existir, ou `<span>` com inicial dourada como fallback; coluna Ações com flex gap
+- [x] **Usuários — avatar na taskbar** — `loadCurrentUserProfile(uid)` lê o doc Firestore após login e alimenta `#user-avatar` (img 30px) e `#user-name` com o `nome` real do doc; chamada adicionada em `onAuthStateChanged`
+- [x] **Usuários — desativar com confirmação** — `confirm('Desativar este usuário? Ele perderá o acesso ao sistema.')` antes de `updateDoc`; toast de feedback para ativar/desativar
+- [x] **Usuários — excluir** — botão vermelho (`.usuario-delete-btn`) com `confirm('Excluir "X"?\nEsta ação não pode ser desfeita.')`; remove doc do Firestore; `resolveRole` já bloqueia login quando doc não existe (chama `signOut` + erro)
+- [x] **Lucide icons nas abas** — substituídos pseudo-elementos Unicode por `<i data-lucide="...">` nas 6 abas do menu; ícone `house` para Início
+
+---
+
 ## ✅ CONCLUÍDO (theme — glassmorphism + polish visual)
 
 - [x] **theme.css criado** — arquivo separado importado após style.css; não toca app.js nem HTML existente
@@ -112,7 +128,36 @@
 
 ---
 
+## ✅ CONCLUÍDO (kanban UX polish · 2026-04-17 — sessões A e B)
+
+- [x] **Toast/Snackbar** — sucesso ao mover card (ex: "Card movido.") e ao enviar mensagem no chat
+- [x] **Empty States** — ícones Lucide (`inbox`, `calendar-x`, `users`) substituem emojis em kanban, agenda e briefing; `lucide.createIcons()` chamado após cada innerHTML dinâmico
+- [x] **Skeleton Loading** — spinner de overlay substituído por linhas shimmer animadas na tabela de leads
+- [x] **Motivo de Perda** — modal obrigatório ao arrastar card para "Venda Perdida"; 9 motivos em 3 categorias com ícone Lucide; campo de texto livre para "Outro"; salva `motivo_perda` + `motivo_perda_label` no Firestore
+- [x] **Notificações In-App** — sininho no header com badge de contagem; painel dropdown com lista de notificações; coleção Firestore `notifications/{uid}/items`; marcar tudo como lido; `createNotification()` chamado em agendamento, motivo de perda e venda ganha
+- [x] **Kanban — mover card pelo menu** — dropdown "Mover para:" em cada card com todas as colunas disponíveis
+- [x] **Kanban — histórico de movimentação** — campo `historico_kanban` (array, max 20 entradas) com coluna, label, responsável e timestamp; expansível por toggle no card
+- [x] **Kanban — contador de dias na coluna** — `kanban_column_since` gravado a cada movimentação; badge "X dias" no card com cor verde/dourado/vermelho
+- [x] **Kanban — atalho WhatsApp** — botão no card abre `https://wa.me/{celular}` em nova aba
+- [x] **Kanban — quick-filter pills** — pills de closer acima do kanban; sincronizados bidirecionalmente com o select de filtro
+- [x] **Kanban — busca por nome** — campo de busca que aplica classe `.kc-dimmed` (opacity 0.18) nos cards que não correspondem, sem re-render
+- [x] **Kanban — data do agendamento no card** — exibe data/hora formatada do `dataagendamento`
+- [x] **Contraste — tabela de leads** — headers `rgba(255,255,255,0.55)`, badges de origem mais visíveis, botões de ação (`cell-acoes` opacity `.72`, `btn-acao-main` cor `0.85`), checkboxes com `appearance:none` + fundo dourado quando marcado
+- [x] **Venda Ganha — modal celebratório** — intercepta `moveLeadToCol` para a coluna `venda_ganha`; modal com trophy Lucide verde; campos: Valor da Venda, Valor da Entrada, Forma de Pagamento (dropdown: À vista / Parcelado cartão / Parcelado boleto / PIX), Programa Vendido (dropdown: 5 opções), Observações; salva `venda_ganha_dados` no Firestore; notifica admins via `createNotification()`
+- [x] **Remove `venda_realizada`** — campo legado completamente eliminado de demo data, `getLeadKanbanCol()`, `confirmarMotivosPerda()`, todos os relatórios (5 pontos), `stat-vendas`, briefing, `confirmar()`, `openDetalhes()`, `openResultado()`; substituído por `kanban_column === 'venda_ganha'` como fonte da verdade; faturamento lê de `venda_ganha_dados.valor`
+- [x] **Remove `temperatura do lead`** — toggle removido do modal de resultado (HTML + JS: `openDetalhes`, `confirmar`, `bindEvents`)
+- [x] **Bug fix — drag delegation** — listeners `dragstart/dragend/dragover/dragleave/drop` migrados de `board.querySelectorAll('.kanban-col-body')` (re-criados a cada `renderKanban()`) para `#kanban-board` via event delegation; listeners agora sobrevivem a qualquer `onSnapshot` que dispare `renderKanban()` durante um arrasto; `dragLeadId` limpo também no `dragend` como segurança
+- [x] **Escape fecha Venda Ganha** — `closeVendaGanha()` adicionado ao handler global de `keydown`
+
+---
+
 ## 🔲 PENDENTE
+
+### Usuários — o que ainda falta
+- [ ] **Editar usuário** — modal de edição para alterar nome, role e foto de um usuário existente (hoje só o role é alterável via select inline na tabela)
+- [ ] **Excluir do Firebase Authentication** — hoje só remove o doc Firestore (bloqueia login via `resolveRole`). Remoção real do Auth requer Admin SDK via Cloud Function
+- [ ] **Firebase Storage CORS** — configurar regras de CORS no bucket `faculdade-da-vida.firebasestorage.app` para permitir upload de foto pela origem do GitHub Pages
+- [ ] **Foto na tela de login** — mostrar avatar do usuário logado na tela de boas-vindas da aba Início (já existe `user-avatar` na taskbar; falta preencher no Início)
 
 ### WhatsApp — infraestrutura (aguardando AWS)
 - [ ] **Evolution API no AWS** — instalar e configurar; trocar `EVOLUTION_API_URL = 'http://localhost:8080'` em `app.js`
@@ -127,25 +172,26 @@
 ### Features secundárias
 - [ ] **Pós-venda** — frente futura para gestão de alunos
 - [ ] **Export CSV/Excel** — exportar lista de leads com filtros ativos
-- [ ] **Multi-usuário** — controle de acesso por role (admin, closer, SDR)
 
 ---
 
 ## NOTAS TÉCNICAS
 
 ### Leads (`leads`)
-- `kanban_column` — campo no lead que controla a coluna no kanban (persistido no Firestore)
+- `kanban_column` — fonte da verdade para posição no kanban (substitui `venda_realizada` legado)
+- `kanban_column_since: ISO string` — quando o lead entrou na coluna atual (base do contador de dias)
+- `historico_kanban: []` — array de até 20 entradas `{ col, colLabel, movidoPor, movidoEm }`
 - `etiquetas: []` — array de strings no lead
 - `etiqueta_colors` — cores salvas em `localStorage` (chave `fdv_etiqueta_colors`), não no Firestore
 - `agendadopor` — nome do usuário logado no momento do agendamento
-- `formas_pagamento: []` — array de métodos (avista, pix, cartao, boleto, parcelado)
-- `parcelas: number`, `tem_entrada: bool`, `valor_entrada: string`
-- `produto: string`
 - `obs_call: string` — observações da call, editável pelo closer direto no kanban
+- `motivo_perda: string` — id do motivo selecionado; `motivo_perda_label: string`; `motivo_perda_obs?: string`
+- `venda_ganha_dados: { valor, entrada, forma, programa, obs }` — dados registrados no modal celebratório
 - `lastMessageAt: ISO string` — timestamp da última mensagem (enviada ou recebida)
 - `lastMessageText: string` — prévia da última mensagem
 - `lastMessageInstance: string` — instanceName usada na última mensagem
 - `unreadCount: number` — mensagens não lidas; zerado ao abrir o chat
+- **Campos removidos:** `venda_realizada`, `produto`, `formas_pagamento`, `parcelas`, `tem_entrada`, `valor_entrada`, `temperatura`
 
 ### Mensagens (`leads/{id}/messages`)
 - `text: string`
@@ -163,6 +209,17 @@
 - `status: 'connected' | 'disconnected' | 'awaiting_qr'`
 - `phoneNumber: string`
 - `lastActivity: ISO string`
+
+### Usuários (`usuarios`)
+- `uid: string` — mesmo UID do Firebase Authentication
+- `email: string`
+- `nome: string`
+- `role: 'admin' | 'closer' | 'operacoes'`
+- `ativo: boolean` — false bloqueia login (resolveRole chama signOut)
+- `criadoEm: Date`
+- `photoURL?: string` — URL do Firebase Storage (`usuarios/{uid}/foto`)
+- Criação: instância Firebase temporária (`initializeApp` + `fdv-tmp-{ts}`) para não deslogar o admin atual
+- Exclusão: apenas Firestore (Auth não é deletado pelo cliente — sem Admin SDK)
 
 ### Infra
 - `EVOLUTION_API_URL` — constante no topo de `app.js`; trocar para URL do AWS quando disponível
