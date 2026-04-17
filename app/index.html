@@ -480,73 +480,6 @@
           </div>
         </div>
 
-        <div class="form-group" style="margin-bottom:18px">
-          <label class="form-lbl">Venda realizada?</label>
-          <div class="toggle-group" id="toggle-venda">
-            <button class="toggle-opt" data-val="sim">Sim</button>
-            <button class="toggle-opt" data-val="nao">Não</button>
-          </div>
-        </div>
-
-        <div id="campos-venda" style="display:none">
-          <div class="form-group" style="margin-bottom:14px">
-            <label for="res-produto">Produto</label>
-            <select id="res-produto" class="form-ctrl">
-              <option value="">Selecione…</option>
-              <option value="Comunidade">Comunidade</option>
-              <option value="PRM">PRM</option>
-              <option value="Mentoria Individual">Mentoria Individual</option>
-              <option value="Comunidade 6m">Comunidade 6 meses</option>
-              <option value="Comunidade 1a">Comunidade 1 ano</option>
-            </select>
-          </div>
-
-          <div class="form-group" style="margin-bottom:14px">
-            <label for="res-valor-venda">Valor total da venda</label>
-            <input type="text" id="res-valor-venda" class="form-ctrl" placeholder="R$ 0.000">
-          </div>
-
-          <div class="form-group" style="margin-bottom:14px">
-            <label class="form-lbl">Formas de pagamento</label>
-            <div class="pagamento-opcoes" id="pagamento-opcoes">
-              <label class="pagamento-chk"><input type="checkbox" value="avista"> À vista</label>
-              <label class="pagamento-chk"><input type="checkbox" value="pix"> Pix</label>
-              <label class="pagamento-chk"><input type="checkbox" value="cartao"> Cartão</label>
-              <label class="pagamento-chk"><input type="checkbox" value="boleto"> Boleto</label>
-              <label class="pagamento-chk"><input type="checkbox" value="parcelado"> Parcelado</label>
-            </div>
-          </div>
-
-          <div id="campo-parcelas" style="display:none;margin-bottom:14px">
-            <div class="form-group">
-              <label for="res-parcelas">Número de parcelas</label>
-              <input type="number" id="res-parcelas" class="form-ctrl" min="1" max="120" placeholder="Ex: 12">
-            </div>
-          </div>
-
-          <div class="form-group" style="margin-bottom:6px">
-            <label class="form-lbl">Entrada?</label>
-            <div class="toggle-group" id="toggle-entrada">
-              <button class="toggle-opt" data-val="sim">Sim</button>
-              <button class="toggle-opt" data-val="nao">Não</button>
-            </div>
-          </div>
-          <div id="campo-valor-entrada" style="display:none;margin-bottom:14px">
-            <div class="form-group">
-              <label for="res-valor-entrada">Valor de entrada</label>
-              <input type="text" id="res-valor-entrada" class="form-ctrl" placeholder="R$ 0.000">
-            </div>
-          </div>
-        </div><!-- /campos-venda -->
-
-        <div class="form-group" style="margin-bottom:18px">
-          <label class="form-lbl">Temperatura do lead</label>
-          <div class="toggle-group" id="toggle-temperatura">
-            <button class="toggle-opt temp-frio"   data-val="frio">Frio</button>
-            <button class="toggle-opt temp-morno"  data-val="morno">Morno</button>
-            <button class="toggle-opt temp-quente" data-val="quente">Quente</button>
-          </div>
-        </div>
 
         <div class="form-group">
           <label for="res-obs">Observações da call</label>
@@ -1000,6 +933,50 @@
     <div class="modal-footer">
       <button class="btn-ghost" id="mp-cancelar">Cancelar</button>
       <button class="btn-confirm" id="mp-confirmar" disabled>Confirmar Perda</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== VENDA GANHA MODAL ===== -->
+<div class="modal-backdrop" id="venda-ganha-backdrop" style="display:none">
+  <div class="modal modal-wide" role="dialog" aria-modal="true" style="border-top:3px solid #2ecc71">
+    <div class="modal-header" style="background:rgba(46,204,113,0.08)">
+      <div style="display:flex;align-items:center;gap:12px">
+        <i data-lucide="trophy" style="width:28px;height:28px;color:#2ecc71;flex-shrink:0"></i>
+        <div>
+          <h2 class="modal-title" style="color:#2ecc71">Venda Ganha! 🎉</h2>
+          <p class="modal-subtitle" id="vg-lead-nome">—</p>
+        </div>
+      </div>
+      <button class="modal-close" id="vg-close" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="vg-valor">Valor da venda (R$)</label>
+        <input type="text" id="vg-valor" class="form-ctrl" placeholder="Ex: 3.500">
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="vg-forma">Forma de pagamento</label>
+        <select id="vg-forma" class="form-ctrl">
+          <option value="">Selecione…</option>
+          <option value="avista">À vista</option>
+          <option value="parcelado_cartao">Parcelado cartão</option>
+          <option value="parcelado_boleto">Parcelado boleto</option>
+          <option value="pix">PIX</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="vg-programa">Programa vendido</label>
+        <input type="text" id="vg-programa" class="form-ctrl" placeholder="Ex: Comunidade, PRM, Mentoria…">
+      </div>
+      <div class="form-group">
+        <label for="vg-obs">Observações</label>
+        <textarea id="vg-obs" class="form-ctrl" rows="3" placeholder="Detalhes adicionais…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="vg-cancelar">Cancelar</button>
+      <button class="btn-confirm" id="vg-confirmar" style="background:#2ecc71;color:#0d1a1c;border:none">Confirmar Venda</button>
     </div>
   </div>
 </div>

@@ -51,11 +51,11 @@ const DEMO = [
   { id:'d3',  nome:'Mariana Fonseca',       celular:'(31) 97654-3210', origem:'Facebook',  profissao:'Enfermeira',       renda:'R$ 5.800',  datachegada:'2026-03-28', status:'realizada', resultado:'interessado', status_closer:'followup', etiquetas:['Neutro'] },
   { id:'d4',  nome:'Carlos Eduardo Lopes',  celular:'(41) 96543-2109', origem:'Google',    profissao:'Empresário',       renda:'R$ 15.000', datachegada:'2026-04-03', status:'aguardando', etiquetas:['Super Lead'] },
   { id:'d5',  nome:'Patrícia Oliveira',     celular:'(51) 95432-1098', origem:'WhatsApp',  profissao:'Nutricionista',    renda:'R$ 6.300',  datachegada:'2026-04-05', status:'aguardando' },
-  { id:'d6',  nome:'Marcos Henrique Costa', celular:'(61) 94321-0987', origem:'Instagram', profissao:'Engenheiro Civil', renda:'R$ 12.000', datachegada:'2026-03-20', status:'realizada', venda_realizada:true, valor_venda:'R$ 3.000', produto:'Comunidade', formas_pagamento:['pix'], closer:'thomaz', agendadopor:'Fernanda', etiquetas:['Bom'] },
+  { id:'d6',  nome:'Marcos Henrique Costa', celular:'(61) 94321-0987', origem:'Instagram', profissao:'Engenheiro Civil', renda:'R$ 12.000', datachegada:'2026-03-20', status:'realizada', kanban_column:'venda_ganha', venda_ganha_dados:{valor:'R$ 3.000', forma:'pix', programa:'Comunidade', obs:''}, closer:'thomaz', agendadopor:'Fernanda', etiquetas:['Bom'] },
   { id:'d7',  nome:'Juliana Alves',         celular:'(71) 93210-9876', origem:'Indicação', profissao:'Médica',           renda:'R$ 22.000', datachegada:'2026-04-06', status:'agendado',  dataagendamento:'2026-04-11', horaagendamento:'10:00', closer:'thomaz', agendadopor:'Admin', etiquetas:['Super Lead'] },
   { id:'d8',  nome:'Fernando Ribeiro',      celular:'(81) 92109-8765', origem:'Outros',    profissao:'Advogado',         renda:'R$ 9.500',  datachegada:'2026-03-15', status:'aguardando' },
   { id:'d9',  nome:'Camila Torres',         celular:'(11) 91098-7654', origem:'Instagram', profissao:'Designer',         renda:'R$ 7.200',  datachegada:'2026-04-07', status:'noshow', dataagendamento:'2026-04-08', closer:'fernanda' },
-  { id:'d10', nome:'Rodrigo Neves',         celular:'(21) 90987-6543', origem:'Google',    profissao:'Contador',         renda:'R$ 10.800', datachegada:'2026-03-10', status:'realizada', venda_realizada:false, status_closer:'venda_perdida', etiquetas:['Frio'] },
+  { id:'d10', nome:'Rodrigo Neves',         celular:'(21) 90987-6543', origem:'Google',    profissao:'Contador',         renda:'R$ 10.800', datachegada:'2026-03-10', status:'realizada', kanban_column:'venda_perdida', status_closer:'venda_perdida', etiquetas:['Frio'] },
 ];
 
 // ─── KANBAN CONFIG ───────────────────────────────────────────────────
@@ -691,7 +691,7 @@ function renderInicio() {
   const thisMonth = todayStr.slice(0, 7);
   const callsHoje = allLeads.filter(l => (l.dataagendamento || '').startsWith(todayStr)).length;
   const aguardando = allLeads.filter(l => l.status === 'aguardando').length;
-  const vendasMes  = allLeads.filter(l => l.venda_realizada === true &&
+  const vendasMes  = allLeads.filter(l => l.kanban_column === 'venda_ganha' &&
     ((l.dataagendamento || l.datachegada || '').startsWith(thisMonth))).length;
 
   el.innerHTML = `
@@ -1033,8 +1033,8 @@ function getLeadKanbanCol(lead) {
     const sc = lead.status_closer;
     if (sc === 'followup')     return 'followup';
     if (sc === 'fechamento')   return 'fechamento';
-    if (sc === 'venda_ganha'  || lead.venda_realizada === true)  return 'venda_ganha';
-    if (sc === 'venda_perdida'|| lead.venda_realizada === false) return 'venda_perdida';
+    if (sc === 'venda_ganha')   return 'venda_ganha';
+    if (sc === 'venda_perdida') return 'venda_perdida';
     return 'call_realizada';
   }
   return 'agendado';
@@ -1244,19 +1244,19 @@ function buildHistoryEntry(leadId, colId, colLabel) {
 
 async function moveLeadToCol(leadId, colId) {
   if (colId === 'venda_perdida') { openMotivosPerda(leadId); return; }
+  if (colId === 'venda_ganha')   { openVendaGanha(leadId);   return; }
   await ensureObsSaved(leadId);
   try {
     const allCols   = getKanbanCols();
     const colLabel  = allCols.find(c => c.id === colId)?.label || colId;
     const hist      = buildHistoryEntry(leadId, colId, colLabel);
     await saveLead(leadId, {
-      kanban_column:      colId,
+      kanban_column:       colId,
       kanban_column_since: new Date().toISOString(),
       ...(hist && { historico_kanban: hist }),
-      atualizadoem:       new Date().toISOString(),
+      atualizadoem:        new Date().toISOString(),
     });
     toast('Card movido.', 'ok');
-    if (colId === 'venda_ganha') notifyVendaGanha(leadId);
     if (!isLive) renderKanban();
   } catch(e) {
     console.error(e);
@@ -1338,7 +1338,6 @@ async function confirmarMotivosPerda() {
     await saveLead(mpLeadId, {
       kanban_column:       'venda_perdida',
       kanban_column_since: new Date().toISOString(),
-      venda_realizada:     false,
       motivo_perda:        mpSelected,
       motivo_perda_label:  motivoItem?.label || mpSelected,
       ...(outroText && { motivo_perda_obs: outroText }),
@@ -1367,11 +1366,11 @@ function renderRelatorios() {
   const agendados  = base.filter(l => l.dataagendamento);
   const realizadas = base.filter(l => l.status === 'realizada');
   const noShows    = base.filter(l => l.status === 'noshow');
-  const vendas     = base.filter(l => l.venda_realizada === true);
+  const vendas     = base.filter(l => l.kanban_column === 'venda_ganha');
 
   const taxaComp    = agendados.length  ? pct(realizadas.length, agendados.length)  : 0;
   const taxaConv    = realizadas.length ? pct(vendas.length,     realizadas.length) : 0;
-  const faturamento = vendas.reduce((s,l) => s + parseValor(l.valor_venda), 0);
+  const faturamento = vendas.reduce((s,l) => s + parseValor(l.venda_ganha_dados?.valor), 0);
   const ticketMedio = vendas.length ? Math.round(faturamento / vendas.length) : 0;
 
   // Por closer
@@ -1380,7 +1379,7 @@ function renderRelatorios() {
     const k = l.closer||'_sem';
     if (!closerMap[k]) closerMap[k] = { agendados:0, realizadas:0, vendas:0, valor:0 };
     closerMap[k].realizadas++;
-    if (l.venda_realizada) { closerMap[k].vendas++; closerMap[k].valor += parseValor(l.valor_venda); }
+    if (l.kanban_column === 'venda_ganha') { closerMap[k].vendas++; closerMap[k].valor += parseValor(l.venda_ganha_dados?.valor); }
   });
   agendados.forEach(l => {
     const k = l.closer||'_sem';
@@ -1396,7 +1395,7 @@ function renderRelatorios() {
     origemMap[o].total++;
     if (l.dataagendamento) origemMap[o].agendados++;
     if (l.status==='realizada') origemMap[o].realizadas++;
-    if (l.venda_realizada) origemMap[o].vendas++;
+    if (l.kanban_column === 'venda_ganha') origemMap[o].vendas++;
   });
 
   // Por responsável
@@ -1406,7 +1405,7 @@ function renderRelatorios() {
     if (!respMap[r]) respMap[r] = { agendados:0, realizadas:0, vendas:0 };
     respMap[r].agendados++;
     if (l.status==='realizada') respMap[r].realizadas++;
-    if (l.venda_realizada) respMap[r].vendas++;
+    if (l.kanban_column === 'venda_ganha') respMap[r].vendas++;
   });
 
   // Por mês
@@ -1417,7 +1416,7 @@ function renderRelatorios() {
     if (!mesMap[m]) mesMap[m] = { total:0, realizadas:0, vendas:0, noShows:0, valor:0 };
     mesMap[m].total++;
     if (l.status==='realizada') mesMap[m].realizadas++;
-    if (l.venda_realizada) { mesMap[m].vendas++; mesMap[m].valor += parseValor(l.valor_venda); }
+    if (l.kanban_column === 'venda_ganha') { mesMap[m].vendas++; mesMap[m].valor += parseValor(l.venda_ganha_dados?.valor); }
     if (l.status==='noshow') mesMap[m].noShows++;
   });
 
@@ -1691,7 +1690,7 @@ function updateStats() {
   $('stat-agendado').textContent   = base.filter(l=>l.status==='agendado').length;
   $('stat-noshow').textContent     = base.filter(l=>l.status==='noshow').length;
   $('stat-realizada').textContent  = base.filter(l=>l.status==='realizada').length;
-  $('stat-vendas').textContent     = base.filter(l=>l.venda_realizada===true).length;
+  $('stat-vendas').textContent     = base.filter(l=>l.kanban_column==='venda_ganha').length;
 }
 function updateCount() {
   const t = filteredLeads.length, a = allLeads.length;
@@ -1942,10 +1941,8 @@ function buildHistorico(lead) {
       : fmtDate(lead.dataagendamento);
     const sub = [
       dataCall,
-      lead.venda_realizada===true  ? 'Venda realizada' : null,
-      lead.venda_realizada===false ? 'Sem venda' : null,
-      lead.produto ? lead.produto : null,
-      lead.valor_venda ? lead.valor_venda : null,
+      lead.venda_ganha_dados?.programa ? lead.venda_ganha_dados.programa : null,
+      lead.venda_ganha_dados?.valor    ? lead.venda_ganha_dados.valor    : null,
       lead.status_closer ? CLOSER_LBL[lead.status_closer]||lead.status_closer : null,
     ].filter(Boolean).join(' · ');
     items.push({ ico:'✅', label:'Call realizada', sub });
@@ -2045,16 +2042,8 @@ function openResultado(lead) {
   $('form-agendar').style.display   = 'none';
   $('form-resultado').style.display = 'block';
   $('form-detalhes').style.display  = 'none';
-  $('campos-venda').style.display   = 'none';
-  $('campo-parcelas').style.display = 'none';
-  $('campo-valor-entrada').style.display = 'none';
   document.querySelectorAll('#form-resultado .toggle-opt').forEach(b => b.classList.remove('selected'));
-  document.querySelectorAll('#pagamento-opcoes input[type=checkbox]').forEach(c => c.checked = false);
   $('res-obs').value = '';
-  $('res-valor-venda').value = '';
-  $('res-valor-entrada').value = '';
-  $('res-parcelas').value = '';
-  $('res-produto').value = '';
   const btn = $('btn-confirmar');
   $('btn-voltar').style.display = 'none';
   btn.textContent='Salvar Resultado'; btn.style.display=''; btn.style.background='var(--green-bright)'; btn.style.color='#0d1a1c'; btn.style.border='none'; btn.disabled=false;
@@ -2070,29 +2059,8 @@ function openDetalhes(lead) {
   $('form-resultado').style.display = 'block';
 
   document.querySelectorAll('#form-resultado .toggle-opt').forEach(b => b.classList.remove('selected'));
-  document.querySelectorAll('#pagamento-opcoes input[type=checkbox]').forEach(c => c.checked = false);
 
   if (lead.status_closer) setToggleVal('toggle-closer-status', lead.status_closer);
-  const vendaStr = lead.venda_realizada===true?'sim': lead.venda_realizada===false?'nao':null;
-  if (vendaStr) setToggleVal('toggle-venda', vendaStr);
-  const temVenda = lead.venda_realizada===true;
-  $('campos-venda').style.display = temVenda ? 'block' : 'none';
-  if (temVenda) {
-    $('res-produto').value         = lead.produto || '';
-    $('res-valor-venda').value     = lead.valor_venda || '';
-    $('res-valor-entrada').value   = lead.valor_entrada || '';
-    $('res-parcelas').value        = lead.parcelas || '';
-    (lead.formas_pagamento||[]).forEach(v => {
-      const chk = document.querySelector(`#pagamento-opcoes input[value="${v}"]`);
-      if (chk) chk.checked = true;
-    });
-    const temParcelado = (lead.formas_pagamento||[]).includes('parcelado');
-    $('campo-parcelas').style.display = temParcelado ? 'block' : 'none';
-    const temEntrada = lead.tem_entrada;
-    if (temEntrada) setToggleVal('toggle-entrada','sim');
-    $('campo-valor-entrada').style.display = temEntrada ? 'block' : 'none';
-  }
-  if (lead.temperatura) setToggleVal('toggle-temperatura', lead.temperatura);
   $('res-obs').value = lead.obs_call || '';
 
   $('det-nome').textContent      = lead.nome      || '—';
@@ -2208,34 +2176,18 @@ async function confirmar() {
       }
 
     } else if (modalMode === 'resultado' || modalMode === 'detalhes') {
-      const closerSt   = getToggleVal('toggle-closer-status');
-      const vendaVal   = getToggleVal('toggle-venda');
-      const temperatura = getToggleVal('toggle-temperatura');
+      const closerSt = getToggleVal('toggle-closer-status');
       if (!closerSt) { toast('Selecione o status da negociação.', 'err'); btn.disabled=false; return; }
-      if (!vendaVal) { toast('Informe se a venda foi realizada.', 'err'); btn.disabled=false; return; }
 
       const kanbanColMap = { call_realizada:'call_realizada', followup:'followup', fechamento:'fechamento', venda_ganha:'venda_ganha', venda_perdida:'venda_perdida' };
       const payload = {
-        status:          'realizada',
-        status_closer:   closerSt,
-        kanban_column:   kanbanColMap[closerSt] || 'call_realizada',
-        venda_realizada: vendaVal === 'sim',
-        obs_call:        $('res-obs').value.trim(),
-        atualizadoem:    new Date().toISOString()
+        status:        'realizada',
+        status_closer: closerSt,
+        kanban_column: kanbanColMap[closerSt] || 'call_realizada',
+        obs_call:      $('res-obs').value.trim(),
+        atualizadoem:  new Date().toISOString()
       };
       if (modalMode === 'resultado') payload.realizadaem = new Date().toISOString();
-      if (temperatura) payload.temperatura = temperatura;
-
-      if (vendaVal === 'sim') {
-        const formas = [...document.querySelectorAll('#pagamento-opcoes input[type=checkbox]:checked')].map(c=>c.value);
-        payload.produto          = $('res-produto').value;
-        payload.valor_venda      = $('res-valor-venda').value.trim();
-        payload.formas_pagamento = formas;
-        if (formas.includes('parcelado')) payload.parcelas = parseInt($('res-parcelas').value)||0;
-        const entradaVal = getToggleVal('toggle-entrada');
-        payload.tem_entrada = entradaVal === 'sim';
-        if (entradaVal === 'sim') payload.valor_entrada = $('res-valor-entrada').value.trim();
-      }
 
       const lead = allLeads.find(l => l.id === currentId);
       await saveLead(currentId, payload);
@@ -2372,6 +2324,59 @@ function getCloserUid(closerKey) {
   if (!name) return null;
   const u = allUsuarios.find(u => (u.nome || '').toLowerCase().includes(name));
   return u?.uid || null;
+}
+
+// ─── VENDA GANHA MODAL ───────────────────────────────────────────────
+let vgLeadId = null;
+
+function openVendaGanha(leadId) {
+  vgLeadId = leadId;
+  const lead = allLeads.find(l => l.id === leadId);
+  $('vg-lead-nome').textContent = lead?.nome || '—';
+  $('vg-valor').value    = '';
+  $('vg-forma').value    = '';
+  $('vg-programa').value = '';
+  $('vg-obs').value      = '';
+  $('venda-ganha-backdrop').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  lucide.createIcons();
+  setTimeout(() => $('vg-valor').focus(), 50);
+}
+
+function closeVendaGanha() {
+  vgLeadId = null;
+  $('venda-ganha-backdrop').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+async function confirmarVendaGanha() {
+  const btn = $('vg-confirmar');
+  btn.disabled = true;
+  try {
+    const allCols  = getKanbanCols();
+    const colLabel = allCols.find(c => c.id === 'venda_ganha')?.label || 'Venda Ganha';
+    const hist     = buildHistoryEntry(vgLeadId, 'venda_ganha', colLabel);
+    await saveLead(vgLeadId, {
+      kanban_column:       'venda_ganha',
+      kanban_column_since: new Date().toISOString(),
+      venda_ganha_dados: {
+        valor:    $('vg-valor').value.trim(),
+        forma:    $('vg-forma').value,
+        programa: $('vg-programa').value.trim(),
+        obs:      $('vg-obs').value.trim(),
+      },
+      ...(hist && { historico_kanban: hist }),
+      atualizadoem: new Date().toISOString(),
+    });
+    toast('Venda registrada! 🏆', 'ok');
+    notifyVendaGanha(vgLeadId);
+    closeVendaGanha();
+    if (!isLive) renderKanban();
+  } catch(e) {
+    console.error(e);
+    toast('Erro ao registrar venda.', 'err');
+    btn.disabled = false;
+  }
 }
 
 async function notifyVendaGanha(leadId) {
@@ -2963,18 +2968,6 @@ function bindEvents() {
     document.querySelectorAll(`#${group.id} .toggle-opt`).forEach(b=>b.classList.remove('selected'));
     opt.classList.add('selected');
 
-    if (group.id === 'toggle-venda') {
-      $('campos-venda').style.display = opt.dataset.val==='sim' ? 'block' : 'none';
-    }
-    if (group.id === 'toggle-entrada') {
-      $('campo-valor-entrada').style.display = opt.dataset.val==='sim' ? 'block' : 'none';
-    }
-  });
-
-  // Parcelado toggle
-  document.getElementById('pagamento-opcoes').addEventListener('change', () => {
-    const parcelado = document.querySelector('#pagamento-opcoes input[value="parcelado"]')?.checked;
-    $('campo-parcelas').style.display = parcelado ? 'block' : 'none';
   });
 
   // Bulk
@@ -3117,6 +3110,12 @@ function bindEvents() {
   $('mp-cancelar').addEventListener('click', closeMotivosPerda);
   $('mp-confirmar').addEventListener('click', confirmarMotivosPerda);
   $('motivo-perda-backdrop').addEventListener('click', e => { if (e.target === $('motivo-perda-backdrop')) closeMotivosPerda(); });
+
+  // Venda ganha
+  $('vg-close').addEventListener('click', closeVendaGanha);
+  $('vg-cancelar').addEventListener('click', closeVendaGanha);
+  $('vg-confirmar').addEventListener('click', confirmarVendaGanha);
+  $('venda-ganha-backdrop').addEventListener('click', e => { if (e.target === $('venda-ganha-backdrop')) closeVendaGanha(); });
 
   // Notificações
   $('notif-btn').addEventListener('click', e => {
