@@ -1074,29 +1074,6 @@ function renderKanban() {
     });
   }
 
-  // Drag events on cards
-  board.querySelectorAll('.kanban-card').forEach(card => {
-    card.addEventListener('dragstart', e => {
-      dragLeadId = card.dataset.id;
-      setTimeout(() => card.classList.add('dragging'), 0);
-    });
-    card.addEventListener('dragend', () => card.classList.remove('dragging'));
-  });
-
-  // Drop targets
-  board.querySelectorAll('.kanban-col-body').forEach(body => {
-    body.addEventListener('dragover', e => { e.preventDefault(); body.classList.add('drag-over'); });
-    body.addEventListener('dragleave', () => body.classList.remove('drag-over'));
-    body.addEventListener('drop', async e => {
-      e.preventDefault();
-      body.classList.remove('drag-over');
-      if (dragLeadId && dragLeadId !== '') {
-        await moveLeadToCol(dragLeadId, body.dataset.col);
-        dragLeadId = null;
-      }
-    });
-  });
-
   // Editable column titles
   board.querySelectorAll('.kanban-col-title[contenteditable]').forEach(el => {
     el.addEventListener('blur', () => {
@@ -2334,6 +2311,7 @@ function openVendaGanha(leadId) {
   const lead = allLeads.find(l => l.id === leadId);
   $('vg-lead-nome').textContent = lead?.nome || '—';
   $('vg-valor').value    = '';
+  $('vg-entrada').value  = '';
   $('vg-forma').value    = '';
   $('vg-programa').value = '';
   $('vg-obs').value      = '';
@@ -2361,8 +2339,9 @@ async function confirmarVendaGanha() {
       kanban_column_since: new Date().toISOString(),
       venda_ganha_dados: {
         valor:    $('vg-valor').value.trim(),
+        entrada:  $('vg-entrada').value.trim(),
         forma:    $('vg-forma').value,
-        programa: $('vg-programa').value.trim(),
+        programa: $('vg-programa').value,
         obs:      $('vg-obs').value.trim(),
       },
       ...(hist && { historico_kanban: hist }),
@@ -2894,6 +2873,42 @@ async function deleteInstance(id) {
 
 // ─── EVENTS ──────────────────────────────────────────────────────────
 function bindEvents() {
+  // Kanban drag-and-drop — delegated on the persistent board element so listeners
+  // survive renderKanban() innerHTML replacements (fixes modal not firing mid-session)
+  const kboard = $('kanban-board');
+  kboard.addEventListener('dragstart', e => {
+    const card = e.target.closest('.kanban-card[draggable]');
+    if (!card) return;
+    dragLeadId = card.dataset.id;
+    setTimeout(() => card.classList.add('dragging'), 0);
+  });
+  kboard.addEventListener('dragend', e => {
+    const card = e.target.closest('.kanban-card');
+    if (card) card.classList.remove('dragging');
+    dragLeadId = null;
+  });
+  kboard.addEventListener('dragover', e => {
+    const body = e.target.closest('.kanban-col-body');
+    if (!body) return;
+    e.preventDefault();
+    body.classList.add('drag-over');
+  });
+  kboard.addEventListener('dragleave', e => {
+    const body = e.target.closest('.kanban-col-body');
+    if (body && !body.contains(e.relatedTarget)) body.classList.remove('drag-over');
+  });
+  kboard.addEventListener('drop', async e => {
+    const body = e.target.closest('.kanban-col-body');
+    if (!body) return;
+    e.preventDefault();
+    kboard.querySelectorAll('.kanban-col-body').forEach(b => b.classList.remove('drag-over'));
+    if (dragLeadId) {
+      const id = dragLeadId;
+      dragLeadId = null;
+      await moveLeadToCol(id, body.dataset.col);
+    }
+  });
+
   // Sub-nav
   document.querySelectorAll('.sub-link[data-sub]').forEach(btn =>
     btn.addEventListener('click', () => switchSub(btn.dataset.sub))
@@ -3140,7 +3155,7 @@ function bindEvents() {
 
   // Keyboard
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeModal(); closePerfil(); closeNovoLead(); closeQRModal(); closeMotivosPerda(); }
+    if (e.key === 'Escape') { closeModal(); closePerfil(); closeNovoLead(); closeQRModal(); closeMotivosPerda(); closeVendaGanha(); }
   });
 }
 

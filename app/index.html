@@ -956,6 +956,10 @@
         <input type="text" id="vg-valor" class="form-ctrl" placeholder="Ex: 3.500">
       </div>
       <div class="form-group" style="margin-bottom:14px">
+        <label for="vg-entrada">Valor da entrada (R$)</label>
+        <input type="text" id="vg-entrada" class="form-ctrl" placeholder="Deixe em branco se não houver">
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
         <label for="vg-forma">Forma de pagamento</label>
         <select id="vg-forma" class="form-ctrl">
           <option value="">Selecione…</option>
@@ -967,7 +971,14 @@
       </div>
       <div class="form-group" style="margin-bottom:14px">
         <label for="vg-programa">Programa vendido</label>
-        <input type="text" id="vg-programa" class="form-ctrl" placeholder="Ex: Comunidade, PRM, Mentoria…">
+        <select id="vg-programa" class="form-ctrl">
+          <option value="">Selecione…</option>
+          <option value="Comunidade 6 meses">Comunidade 6 meses</option>
+          <option value="Comunidade 1 ano">Comunidade 1 ano</option>
+          <option value="PRM">PRM</option>
+          <option value="Mentoria Individual">Mentoria Individual</option>
+          <option value="Assinatura Faculdade da Vida">Assinatura Faculdade da Vida</option>
+        </select>
       </div>
       <div class="form-group">
         <label for="vg-obs">Observações</label>
