@@ -859,8 +859,8 @@ h1, h2, h3, h4,
   font-size: 10px !important;
   font-weight: 700 !important;
   letter-spacing: 1.5px !important;
-  color: rgba(200, 196, 188, 0.60) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.045) !important;
+  color: rgba(220, 216, 208, 0.88) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.055) !important;
 }
 .leads-table td {
   padding: 15px 20px !important;
@@ -876,7 +876,15 @@ h1, h2, h3, h4,
   border-bottom: none !important;
 }
 
-/* ── Ações — botão ⋯ circular discreto ──────────────────────── */
+/* ── Ações — botão ⋯ circular ────────────────────────────────── */
+/* cell-acoes: visível em repouso (era .35 × .50 = 17.5%) */
+.leads-table tbody tr .cell-acoes {
+  opacity: .72 !important;
+}
+.leads-table tbody tr:hover .cell-acoes {
+  opacity: 1 !important;
+}
+
 .btn-acao-main {
   width: 34px !important;
   height: 34px !important;
@@ -886,9 +894,9 @@ h1, h2, h3, h4,
   font-weight: 700 !important;
   line-height: 1 !important;
   letter-spacing: 1px !important;
-  border: 1px solid rgba(255, 255, 255, 0.07) !important;
-  background: rgba(255, 255, 255, 0.035) !important;
-  color: rgba(200, 196, 188, 0.50) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  color: rgba(220, 216, 208, 0.85) !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -896,9 +904,9 @@ h1, h2, h3, h4,
               border-color 140ms ease, transform 140ms ease !important;
 }
 .btn-acao-main:hover {
-  background: rgba(255, 255, 255, 0.10) !important;
-  border-color: rgba(255, 255, 255, 0.16) !important;
-  color: var(--t1) !important;
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.26) !important;
+  color: #ffffff !important;
   transform: scale(1.10) !important;
 }
 .acoes-dropdown {
@@ -1480,3 +1488,58 @@ h1, h2, h3, h4,
 
 /* ── Search dimming ──────────────────────────────────────────── */
 .kanban-card.kc-dimmed { opacity: 0.18; pointer-events: none; }
+
+/* ── Tabela: contraste — badges, checkboxes ──────────────────── */
+
+/* Badges de origem — tipos custom (FORMS, MER.ATIVADO, etc.) caem
+   em .outros: cor original era --t3 (#5e7578), quase invisível      */
+.badge-origem.outros {
+  background: rgba(255, 255, 255, 0.09) !important;
+  color: rgba(220, 216, 208, 0.82) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+}
+
+/* Outros badges de origem: tornar texto mais legível */
+.badge-origem.instagram { color: #f07090 !important; }
+.badge-origem.facebook  { color: #90b0f0 !important; }
+.badge-origem.indicacao { color: #e0a830 !important; }
+.badge-origem.google    { color: #7ab8f8 !important; }
+.badge-origem.whatsapp  { color: #3de67c !important; }
+
+/* Checkboxes — borda visível no fundo escuro */
+.row-chk,
+#chk-all {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 15px !important;
+  height: 15px !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.38) !important;
+  border-radius: 3px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.14s, border-color 0.14s;
+  flex-shrink: 0;
+}
+.row-chk:hover,
+#chk-all:hover {
+  border-color: rgba(206, 146, 33, 0.70) !important;
+}
+.row-chk:checked,
+#chk-all:checked {
+  background: #CE9221 !important;
+  border-color: #CE9221 !important;
+}
+.row-chk:checked::after,
+#chk-all:checked::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 4px;
+  width: 4px;
+  height: 7px;
+  border: 2px solid #0d1a1c;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
