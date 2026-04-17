@@ -1079,3 +1079,67 @@ h1, h2, h3, h4,
 .wa-instance-card { border-radius: 14px !important; }
 .chats-layout  { border-radius: 16px !important; }
 .modal         { border-radius: 20px !important; }
+
+/* ── Skeleton Loading ──────────────────────────────────────────── */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+
+.skeleton-wrap {
+  width: 100%;
+  max-width: 780px;
+  padding: 28px 32px;
+}
+
+.skeleton-row {
+  height: 52px;
+  width: 100%;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.04) 0%,
+    rgba(255,255,255,0.10) 40%,
+    rgba(255,255,255,0.04) 80%
+  );
+  background-size: 1200px 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  margin-bottom: 10px;
+}
+
+.loading-layer {
+  background: rgba(10,15,17,0.88) !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+/* ── Empty State — Lucide icons ───────────────────────────────── */
+.empty-lucide {
+  display: block;
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 16px;
+  color: var(--gold, #CE9221);
+  opacity: 0.55;
+  stroke-width: 1.5;
+}
+
+.empty-lucide-sm {
+  display: block;
+  width: 22px;
+  height: 22px;
+  margin: 0 auto 6px;
+  color: var(--t3, #5a6a6c);
+  stroke-width: 1.5;
+}
+
+/* Kanban empty — icon + label stacked */
+.kanban-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Override .agenda-empty .empty-ico to be compatible with both emoji and Lucide */
+.agenda-empty .empty-ico    { font-size: 36px; color: var(--b2); margin-bottom: 16px; }
+.agenda-empty .empty-lucide { color: var(--gold, #CE9221); opacity: 0.55; }

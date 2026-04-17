@@ -717,8 +717,10 @@ function renderAgendaSub() {
   if (closerFilt) leads = leads.filter(l => (l.closer || '') === closerFilt);
 
   if (!leads.length) {
-    content.innerHTML = `<div class="agenda-empty"><div class="empty-ico">📅</div>
+    content.innerHTML = `<div class="agenda-empty">
+      <i data-lucide="calendar-x" class="empty-lucide"></i>
       <h3>Nenhuma call encontrada</h3><p>Sem calls para os filtros selecionados.</p></div>`;
+    lucide.createIcons();
     return;
   }
 
@@ -786,8 +788,10 @@ function renderBriefingSub() {
   leads.sort((a,b) => ((a.dataagendamento||'')+(a.horaagendamento||'')).localeCompare((b.dataagendamento||'')+(b.horaagendamento||'')));
 
   if (!leads.length) {
-    content.innerHTML = `<div class="agenda-empty"><div class="empty-ico">📋</div>
+    content.innerHTML = `<div class="agenda-empty">
+      <i data-lucide="clipboard-list" class="empty-lucide"></i>
       <h3>Nenhum briefing disponível</h3><p>Sem leads agendados para os filtros selecionados.</p></div>`;
+    lucide.createIcons();
     return;
   }
 
@@ -1006,10 +1010,11 @@ function renderKanban() {
         <span class="kanban-col-count">${colLeads.length}</span>
       </div>
       <div class="kanban-col-body" data-col="${col.id}">
-        ${colLeads.length ? colLeads.map(l => kanbanCard(l)).join('') : '<div class="kanban-empty">Sem leads</div>'}
+        ${colLeads.length ? colLeads.map(l => kanbanCard(l)).join('') : '<div class="kanban-empty"><i data-lucide="inbox" class="empty-lucide-sm"></i><span>Sem leads</span></div>'}
       </div>
     </div>`;
   }).join('');
+  lucide.createIcons();
 
   // Drag events on cards
   board.querySelectorAll('.kanban-card').forEach(card => {
@@ -1103,6 +1108,7 @@ function kanbanCard(l) {
 async function moveLeadToCol(leadId, colId) {
   try {
     await saveLead(leadId, { kanban_column: colId, atualizadoem: new Date().toISOString() });
+    toast('Card movido.', 'ok');
     if (!isLive) renderKanban();
   } catch(e) {
     console.error(e);
@@ -1271,8 +1277,9 @@ function renderRelatorios() {
       Object.entries(respMap).map(([r,d])=>[r, d.agendados, d.realizadas, d.vendas])
     )}
 
-    ${!base.length ? '<div class="agenda-empty"><div class="empty-ico">◈</div><h3>Sem dados</h3><p>Adicione leads ou ajuste os filtros.</p></div>' : ''}
+    ${!base.length ? '<div class="agenda-empty"><i data-lucide="bar-chart-2" class="empty-lucide"></i><h3>Sem dados</h3><p>Adicione leads ou ajuste os filtros.</p></div>' : ''}
   `;
+  lucide.createIcons();
 }
 
 function relTable(title, headers, rows) {
@@ -2204,6 +2211,7 @@ async function sendChatMessage(inputId, instSelectId, leadId) {
       lead.lastMessageAt = ts; lead.lastMessageText = text; lead.lastMessageInstance = instName;
     }
     try { await fetchEvolution(`/message/sendText/${instName}`, 'POST', { number: phone, text }); } catch(e) { /* mock */ }
+    toast('Mensagem enviada.', 'ok');
     input.value = '';
   } catch(e) { console.error(e); toast('Erro ao enviar mensagem.','err'); }
   finally    { input.disabled = false; input.focus(); }

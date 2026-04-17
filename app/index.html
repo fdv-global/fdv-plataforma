@@ -194,8 +194,14 @@
 
     <div class="table-wrap" id="table-wrap">
       <div class="loading-layer" id="loading-layer">
-        <div class="spinner"></div>
-        <span>Carregando leads…</span>
+        <div class="skeleton-wrap">
+          <div class="skeleton-row" style="height:44px;margin-bottom:16px;opacity:0.35"></div>
+          <div class="skeleton-row"></div>
+          <div class="skeleton-row" style="width:88%"></div>
+          <div class="skeleton-row"></div>
+          <div class="skeleton-row" style="width:93%"></div>
+          <div class="skeleton-row" style="width:80%"></div>
+        </div>
       </div>
       <table class="leads-table">
         <thead>
@@ -214,7 +220,7 @@
         <tbody id="leads-tbody"></tbody>
       </table>
       <div class="empty-state" id="empty-state" style="display:none">
-        <div class="empty-ico">◈</div>
+        <i data-lucide="users" class="empty-lucide"></i>
         <h3>Nenhum lead encontrado</h3>
         <p>Ajuste os filtros ou cadastre um novo lead.</p>
       </div>
