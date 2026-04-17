@@ -1426,7 +1426,7 @@ function btnAcao(l) {
   ].filter(Boolean).join('');
   return `<div class="acoes-cell">
     <div class="acoes-wrap" data-leadid="${id}">
-      <button class="btn-acao-main" data-id="${id}" data-action="menu">Ações ▾</button>
+      <button class="btn-acao-main" data-id="${id}" data-action="menu" title="Ações">⋯</button>
       <div class="acoes-dropdown">${opts}</div>
     </div>
     <button class="btn-icon btn-editar"  data-id="${id}" data-action="editar"  title="Editar">✏</button>

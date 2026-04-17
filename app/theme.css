@@ -376,11 +376,11 @@ h1, h2, h3, h4,
   overflow: hidden !important;
 }
 .filters-bar {
-  background: rgba(20, 29, 31, 0.56) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
-  border-radius: var(--r-lg) !important;
+  background: rgba(10, 16, 18, 0.74) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.065) !important;
+  border-radius: 16px !important;
 }
 /* Highlight de linha — interatividade na principal tela */
 .leads-table tbody tr:hover td {
@@ -769,13 +769,15 @@ h1, h2, h3, h4,
   box-shadow: 0 0 12px rgba(206, 146, 33, 0.18) !important;
 }
 .sub-link.active {
-  background: #CE9221 !important;
-  border-color: #CE9221 !important;
-  color: #0f1517 !important;
+  background: linear-gradient(160deg, #F5D97A 0%, #E5B94E 22%, #C89B3C 52%, #A87820 82%, #C89B3C 100%) !important;
+  border: 1px solid rgba(200, 155, 50, 0.70) !important;
+  color: #1a0c00 !important;
   font-weight: 700 !important;
   box-shadow:
-    0 0 18px rgba(206, 146, 33, 0.45),
-    0 2px 8px rgba(0, 0, 0, 0.22) !important;
+    inset 0 1px 0 rgba(255, 240, 160, 0.40),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 2px 8px rgba(0, 0, 0, 0.28),
+    0 0 20px rgba(150, 110, 15, 0.22) !important;
 }
 
 /* ── 23. Botão Novo Lead — sizing extra ────────────────────── */
@@ -805,3 +807,177 @@ h1, h2, h3, h4,
     transform: translateY(0);
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   REFINAMENTOS v2 — SaaS Premium (Linear / Vercel / Notion)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── KPI Cards — padding, tipografia, ícones discretos ──────── */
+.stat-card {
+  padding: 28px 26px 22px !important;
+  border-radius: 16px !important;
+}
+.stat-icon {
+  font-size: 15px !important;
+  opacity: 0.45 !important;
+}
+.stat-label {
+  font-size: 10px !important;
+  letter-spacing: 1.4px !important;
+  opacity: 0.75 !important;
+}
+.stat-num {
+  font-size: 44px !important;
+  letter-spacing: -3px !important;
+  line-height: 1 !important;
+  margin-bottom: 6px !important;
+}
+.stat-sub {
+  font-size: 12px !important;
+  opacity: 0.58 !important;
+}
+.stat-top {
+  margin-bottom: 18px !important;
+}
+
+/* ── Tabela SaaS — header frosted, rows espaçadas, sem bordas duras ─ */
+.table-wrap {
+  border-radius: 16px !important;
+}
+.leads-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.leads-table thead tr {
+  background: rgba(7, 13, 15, 0.94) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+.leads-table th {
+  padding: 14px 20px !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 1.5px !important;
+  color: rgba(200, 196, 188, 0.60) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.045) !important;
+}
+.leads-table td {
+  padding: 15px 20px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.028) !important;
+}
+.leads-table tbody tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.014) !important;
+}
+.leads-table tbody tr:hover td {
+  background: rgba(206, 146, 33, 0.042) !important;
+}
+.leads-table tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+/* ── Ações — botão ⋯ circular discreto ──────────────────────── */
+.btn-acao-main {
+  width: 34px !important;
+  height: 34px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  letter-spacing: 1px !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+  color: rgba(200, 196, 188, 0.50) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: background 140ms ease, color 140ms ease,
+              border-color 140ms ease, transform 140ms ease !important;
+}
+.btn-acao-main:hover {
+  background: rgba(255, 255, 255, 0.10) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: var(--t1) !important;
+  transform: scale(1.10) !important;
+}
+.acoes-dropdown {
+  border-radius: 14px !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  box-shadow:
+    0 20px 52px rgba(0, 0, 0, 0.60),
+    0 4px 12px rgba(0, 0, 0, 0.28) !important;
+}
+.acao-opt {
+  font-size: 13px !important;
+  padding: 11px 18px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.038) !important;
+}
+
+/* ── Verso bíblico — editorial, discreto ────────────────────── */
+.inicio-verse-card {
+  max-width: 500px !important;
+  margin: 20px auto 36px !important;
+  background: rgba(7, 12, 14, 0.50) !important;
+  backdrop-filter: blur(20px) saturate(1.1) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.1) !important;
+  border: 1px solid rgba(206, 146, 33, 0.11) !important;
+  box-shadow: none !important;
+  border-radius: 12px !important;
+  padding: 22px 30px !important;
+}
+.inicio-verse-text {
+  font-family: 'Red Hat Display', serif !important;
+  font-size: 14px !important;
+  font-style: italic !important;
+  font-weight: 300 !important;
+  color: rgba(190, 186, 180, 0.80) !important;
+  line-height: 1.72 !important;
+  letter-spacing: 0.01em !important;
+}
+.inicio-verse-ref {
+  font-size: 10.5px !important;
+  color: rgba(206, 146, 33, 0.42) !important;
+  margin-top: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.10em !important;
+  text-transform: uppercase !important;
+}
+
+/* ── Hierarquia e espaçamento — respiro visual ───────────────── */
+.inicio-header {
+  padding: 44px 0 18px !important;
+}
+.inicio-greeting {
+  font-size: 36px !important;
+  letter-spacing: -0.025em !important;
+}
+.inicio-date {
+  font-size: 13px !important;
+  opacity: 0.55 !important;
+  letter-spacing: 0.04em !important;
+  margin-top: 4px !important;
+}
+.inicio-stats {
+  gap: 22px !important;
+  margin-bottom: 52px !important;
+}
+
+/* ── Filtros — label contrastado ─────────────────────────────── */
+.filter-label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 1.1px !important;
+  color: rgba(200, 196, 188, 0.62) !important;
+  opacity: 1 !important;
+}
+
+/* ── Consistência — border-radius 12–16px em todo sistema ────── */
+.rel-block     { border-radius: 16px !important; }
+.briefing-card { border-radius: 14px !important; }
+.briefing-item { border-radius: 12px !important; }
+.kanban-col    { border-radius: 16px !important; }
+.kanban-card   { border-radius: 12px !important; }
+.wa-instance-card { border-radius: 14px !important; }
+.chats-layout  { border-radius: 16px !important; }
+.modal         { border-radius: 20px !important; }
