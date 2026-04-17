@@ -91,6 +91,7 @@ let currentUser   = null;
 let currentRole   = null;
 let leadsLoaded   = false;
 let usuariosUnsub = null;
+let allUsuarios   = [];
 let activeTab     = 'inicio';
 let activeSub     = 'leads';
 let dragLeadId    = null;
@@ -291,6 +292,7 @@ function loadUsuarios() {
   const ref = collection(db, 'usuarios');
   usuariosUnsub = onSnapshot(query(ref, orderBy('criadoEm')), snap => {
     const lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allUsuarios = lista;
     renderUsuarios(lista);
   }, err => console.error('[FDV] usuarios:', err.code));
 }
@@ -322,8 +324,8 @@ function renderUsuarios(lista) {
       <td>${roleBadge(u.role)}</td>
       <td><span class="lead-status-badge ${u.ativo?'accent-green':'accent-marsala'}">${u.ativo?'Ativo':'Inativo'}</span></td>
       <td class="usuario-acoes">
-        <button class="btn-ghost btn-sm usuario-toggle-btn" data-uid="${u.id}" data-ativo="${u.ativo}">
-          ${u.ativo?'Desativar':'Ativar'}
+        <button class="btn-ghost btn-sm usuario-edit-btn" data-uid="${u.id}">
+          Editar
         </button>
         <button class="btn-ghost btn-sm usuario-delete-btn" data-uid="${u.id}" data-nome="${esc(u.nome||u.email)}">
           Excluir
@@ -347,6 +349,56 @@ async function deleteUsuario(uid, nome) {
     await deleteDoc(doc(db, 'usuarios', uid));
     toast('Usuário excluído.', 'ok');
   } catch(e) { console.error('[FDV] deleteUsuario:', e); toast('Erro ao excluir usuário.', 'err'); }
+}
+
+function openEditarUsuario(uid) {
+  const u = allUsuarios.find(x => x.id === uid);
+  if (!u) return;
+  $('eu-uid').value = uid;
+  $('eu-nome').value = u.nome || '';
+  $('eu-email').value = u.email || '';
+  $('eu-role').value = u.role || 'closer';
+  const preview = $('eu-foto-preview');
+  if (u.photoURL) { preview.src = u.photoURL; preview.style.display = ''; }
+  else { preview.src = ''; preview.style.display = 'none'; }
+  $('eu-foto').value = '';
+  $('eu-foto-label-text').textContent = 'Trocar foto…';
+  $('eu-error').style.display = 'none';
+  $('editar-usuario-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeEditarUsuario() {
+  $('editar-usuario-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+async function salvarEditarUsuario() {
+  const uid   = $('eu-uid').value;
+  const nome  = $('eu-nome').value.trim();
+  const email = $('eu-email').value.trim();
+  const role  = $('eu-role').value;
+  const errEl = $('eu-error');
+  if (!nome || !email) { errEl.textContent = 'Preencha nome e email.'; errEl.style.display = 'block'; return; }
+  const btn = $('btn-salvar-editar-usuario');
+  btn.disabled = true; btn.textContent = 'Salvando…'; errEl.style.display = 'none';
+  try {
+    let photoURL;
+    const fotoFile = $('eu-foto')?.files?.[0];
+    if (fotoFile && storage) {
+      const sRef = storageRef(storage, `usuarios/${uid}/foto`);
+      await uploadBytes(sRef, fotoFile);
+      photoURL = await getDownloadURL(sRef);
+    }
+    await updateDoc(doc(db, 'usuarios', uid), { nome, email, role, ...(photoURL && { photoURL }) });
+    closeEditarUsuario();
+    toast('Usuário atualizado.', 'ok');
+  } catch(e) {
+    errEl.textContent = 'Erro ao salvar: ' + (e.message || e.code);
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Salvar';
+  }
 }
 
 async function updateRoleUsuario(uid, role) {
@@ -2639,11 +2691,26 @@ function bindEvents() {
     if (sel) updateRoleUsuario(sel.dataset.uid, sel.value);
   });
   $('usuarios-tbody')?.addEventListener('click', e => {
-    const toggle = e.target.closest('.usuario-toggle-btn');
-    if (toggle) toggleAtivoUsuario(toggle.dataset.uid, toggle.dataset.ativo === 'true');
+    const edit = e.target.closest('.usuario-edit-btn');
+    if (edit) openEditarUsuario(edit.dataset.uid);
     const del = e.target.closest('.usuario-delete-btn');
     if (del) deleteUsuario(del.dataset.uid, del.dataset.nome);
   });
+  $('editar-usuario-close')?.addEventListener('click', closeEditarUsuario);
+  $('editar-usuario-cancelar')?.addEventListener('click', closeEditarUsuario);
+  $('editar-usuario-backdrop')?.addEventListener('click', e => { if (e.target === $('editar-usuario-backdrop')) closeEditarUsuario(); });
+  $('btn-salvar-editar-usuario')?.addEventListener('click', salvarEditarUsuario);
+  $('eu-foto')?.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    const preview = $('eu-foto-preview');
+    const labelText = $('eu-foto-label-text');
+    if (file && preview) {
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = '';
+      if (labelText) labelText.textContent = file.name;
+    }
+  });
+
   $('nu-foto')?.addEventListener('change', e => {
     const file = e.target.files?.[0];
     const preview = $('nu-foto-preview');

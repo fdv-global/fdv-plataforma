@@ -151,7 +151,8 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   animation: slideUp var(--slow) var(--ease) both;
 }
 
-.login-brand { display: flex; align-items: center; gap: 14px; }
+.login-brand { display: flex; align-items: center; justify-content: center; gap: 14px; }
+.login-logo-img { max-width: 200px; height: auto; display: block; }
 .login-abbr  {
   font-size: 26px; font-weight: 900; letter-spacing: .08em; color: var(--gold);
   text-shadow: 0 0 24px rgba(206,146,33,.45);
