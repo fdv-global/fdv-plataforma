@@ -1004,6 +1004,19 @@ h1, h2, h3, h4,
   opacity: 1 !important;
 }
 
+/* ── Relatórios — contraste elevado em labels e valores ─────── */
+.rel-section-title {
+  color: #e8e4dc !important;
+  font-weight: 600 !important;
+}
+.rel-table th {
+  color: #e8e4dc !important;
+  font-weight: 600 !important;
+}
+.rel-table td {
+  color: #ffffff !important;
+}
+
 /* ── Consistência — border-radius 12–16px em todo sistema ────── */
 .rel-block     { border-radius: 16px !important; }
 .briefing-card { border-radius: 14px !important; }
