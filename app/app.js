@@ -1,15 +1,14 @@
 import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import {
-  getFirestore, collection, onSnapshot,
-  doc, getDoc, setDoc, getDocs, updateDoc, addDoc, deleteDoc,
-  query, orderBy, where
-} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import {
   getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
   sendPasswordResetEmail, signOut, onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const SB_URL     = 'https://yadxcbhginjvoemacdly.supabase.co';
+const SB_ANON    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhZHhjYmhnaW5qdm9lbWFjZGx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5Njc5ODEsImV4cCI6MjA5MjU0Mzk4MX0.n0_WC_KDBX4kdag8N6dYe2Xs0E284U2JESmNKyWT4Wo';
 
 // ─── CLOSERS ─────────────────────────────────────────────────────────
 const CLOSERS = {
@@ -76,12 +75,13 @@ function getKanbanCols() {
 function saveKanbanCols(cols) { localStorage.setItem(KANBAN_LS_KEY, JSON.stringify(cols)); }
 
 // ─── STATE ───────────────────────────────────────────────────────────
-let allLeads      = [];
-let filteredLeads = [];
-let currentId     = null;
-let modalMode     = 'agendar';
-let db            = null;
-let isLive        = false;
+let allLeads       = [];
+let filteredLeads  = [];
+let currentId      = null;
+let modalMode      = 'agendar';
+let supabase       = null;
+let isLive         = false;
+let currentUserDbId = null; // UUID do usuario na tabela Supabase
 let selectedIds   = new Set();
 let perfilLeadId  = null;
 let novoLeadId    = null;
@@ -237,53 +237,62 @@ function initAuth() {
 
 async function loadCurrentUserProfile(uid) {
   try {
-    const snap = await getDoc(doc(db, 'usuarios', uid));
-    if (!snap.exists()) return;
-    const d = snap.data();
+    const { data: d } = await supabase.from('usuarios').select('*').eq('firebase_uid', uid).maybeSingle();
+    if (!d) return;
     if (d.nome) $('user-name').textContent = d.nome;
     const av = $('user-avatar');
-    if (d.photoURL) { av.src = d.photoURL; av.style.display = ''; }
+    if (d.photo_url) { av.src = d.photo_url; av.style.display = ''; }
     else av.style.display = 'none';
   } catch(_) {}
 }
 
 async function resolveRole(user) {
-  console.log('[FDV] resolveRole: buscando doc usuarios/', user.uid);
+  console.log('[FDV] resolveRole: buscando usuario no Supabase para', user.email);
   try {
-    const snap = await getDoc(doc(db, 'usuarios', user.uid));
-    console.log('[FDV] resolveRole: doc existe?', snap.exists());
-    if (snap.exists()) {
-      const d = snap.data();
-      console.log('[FDV] resolveRole: dados do doc:', d);
-      if (!d.ativo) {
+    const { data: userRow, error } = await supabase
+      .from('usuarios')
+      .select('*')
+      .eq('firebase_uid', user.uid)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (userRow) {
+      console.log('[FDV] resolveRole: encontrado', userRow);
+      if (!userRow.ativo) {
         await signOut(auth);
         showLoginErro('Conta desativada. Contate o administrador.');
         return null;
       }
-      return d.role || (ADMIN_EMAILS.includes(user.email) ? 'admin' : null);
+      currentUserDbId = userRow.id;
+      return userRow.role || (ADMIN_EMAILS.includes(user.email) ? 'admin' : null);
     }
-    console.log('[FDV] resolveRole: sem doc, checando ADMIN_EMAILS para', user.email);
+
+    // Não existe — provisionar admin se email autorizado
+    console.log('[FDV] resolveRole: sem registro, checando ADMIN_EMAILS para', user.email);
     if (ADMIN_EMAILS.includes(user.email)) {
-      console.log('[FDV] resolveRole: email é admin, provisionando doc...');
+      console.log('[FDV] resolveRole: provisionando admin no Supabase...');
       try {
-        await setDoc(doc(db, 'usuarios', user.uid), {
-          uid: user.uid, email: user.email,
-          nome: user.email.split('@')[0],
-          role: 'admin', ativo: true, criadoEm: new Date()
-        });
-        console.log('[FDV] resolveRole: doc criado com sucesso');
+        const { data: newUser, error: insErr } = await supabase
+          .from('usuarios')
+          .insert({ firebase_uid: user.uid, email: user.email, nome: user.email.split('@')[0], role: 'admin', ativo: true })
+          .select()
+          .single();
+        if (!insErr && newUser) currentUserDbId = newUser.id;
+        console.log('[FDV] resolveRole: admin provisionado');
       } catch(writeErr) {
-        console.warn('[FDV] resolveRole: falha ao criar doc admin (regras Firestore?):', writeErr.message);
+        console.warn('[FDV] resolveRole: falha ao provisionar admin:', writeErr.message);
       }
       return 'admin';
     }
+
     await signOut(auth);
     showLoginErro('Usuário não cadastrado no sistema.');
     return null;
   } catch(e) {
-    console.error('[FDV] resolveRole ERRO:', e.code, e.message);
+    console.error('[FDV] resolveRole ERRO:', e.message);
     if (ADMIN_EMAILS.includes(user.email)) {
-      console.warn('[FDV] resolveRole: erro no Firestore, fallback admin para email conhecido');
+      console.warn('[FDV] resolveRole: erro Supabase, fallback admin para email conhecido');
       return 'admin';
     }
     showLoginErro('Erro ao verificar permissões. Tente novamente.');
@@ -338,12 +347,13 @@ async function logoutUser() {
 // ─── USUÁRIOS ─────────────────────────────────────────────────────────
 function loadUsuarios() {
   if (usuariosUnsub) return;
-  const ref = collection(db, 'usuarios');
-  usuariosUnsub = onSnapshot(query(ref, orderBy('criadoEm')), snap => {
-    const lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    allUsuarios = lista;
-    renderUsuarios(lista);
-  }, err => console.error('[FDV] usuarios:', err.code));
+  const fetch = () => supabase.from('usuarios').select('*').order('criadoem')
+    .then(({ data }) => { if (data) { allUsuarios = data.map(mapUsuario); renderUsuarios(allUsuarios); } });
+  fetch();
+  const ch = supabase.channel('usuarios_realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'usuarios' }, fetch)
+    .subscribe();
+  usuariosUnsub = () => { supabase.removeChannel(ch); usuariosUnsub = null; };
 }
 
 function renderUsuarios(lista) {
@@ -387,7 +397,8 @@ function renderUsuarios(lista) {
 async function toggleAtivoUsuario(uid, ativo) {
   if (ativo && !confirm('Desativar este usuário? Ele perderá o acesso ao sistema.')) return;
   try {
-    await updateDoc(doc(db, 'usuarios', uid), { ativo: !ativo });
+    const { error } = await supabase.from('usuarios').update({ ativo: !ativo }).eq('id', uid);
+    if (error) throw error;
     toast(ativo ? 'Usuário desativado.' : 'Usuário ativado.', 'ok');
   } catch(e) { console.error('[FDV] toggleAtivo:', e); toast('Erro ao atualizar usuário.', 'err'); }
 }
@@ -395,7 +406,8 @@ async function toggleAtivoUsuario(uid, ativo) {
 async function deleteUsuario(uid, nome) {
   if (!confirm(`Excluir "${nome}"?\nEsta ação não pode ser desfeita.`)) return;
   try {
-    await deleteDoc(doc(db, 'usuarios', uid));
+    const { error } = await supabase.from('usuarios').delete().eq('id', uid);
+    if (error) throw error;
     toast('Usuário excluído.', 'ok');
   } catch(e) { console.error('[FDV] deleteUsuario:', e); toast('Erro ao excluir usuário.', 'err'); }
 }
@@ -439,7 +451,9 @@ async function salvarEditarUsuario() {
       await uploadBytes(sRef, fotoFile);
       photoURL = await getDownloadURL(sRef);
     }
-    await updateDoc(doc(db, 'usuarios', uid), { nome, email, role, ...(photoURL && { photoURL }) });
+    const { error: updErr } = await supabase.from('usuarios')
+      .update({ nome, email, role, ...(photoURL && { photo_url: photoURL }) }).eq('id', uid);
+    if (updErr) throw updErr;
     closeEditarUsuario();
     toast('Usuário atualizado.', 'ok');
   } catch(e) {
@@ -451,7 +465,7 @@ async function salvarEditarUsuario() {
 }
 
 async function updateRoleUsuario(uid, role) {
-  try { await updateDoc(doc(db, 'usuarios', uid), { role }); }
+  try { await supabase.from('usuarios').update({ role }).eq('id', uid); }
   catch(e) { console.error('[FDV] updateRole:', e); }
 }
 
@@ -496,10 +510,11 @@ async function salvarNovoUsuario() {
       photoURL = await getDownloadURL(sRef);
     }
 
-    await setDoc(doc(db, 'usuarios', uid), {
-      uid, email, nome, role, ativo: true, criadoEm: new Date(),
-      ...(photoURL && { photoURL })
+    const { error: insErr2 } = await supabase.from('usuarios').insert({
+      firebase_uid: uid, email, nome, role, ativo: true,
+      ...(photoURL && { photo_url: photoURL }),
     });
+    if (insErr2) throw insErr2;
     await signOut(tempAuth);
     closeNovoUsuario();
     toast('Usuário criado com sucesso!', 'ok');
@@ -517,11 +532,39 @@ async function salvarNovoUsuario() {
   }
 }
 
-// ─── FIREBASE ────────────────────────────────────────────────────────
+// ─── FIREBASE + SUPABASE ─────────────────────────────────────────────
 function initFirebase() {
   if (firebaseConfig.apiKey === 'YOUR_API_KEY') return false;
-  try { const app = initializeApp(firebaseConfig); db = getFirestore(app); storage = getStorage(app); return true; }
+  try {
+    const app = initializeApp(firebaseConfig);
+    storage = getStorage(app);
+    supabase = createClient(SB_URL, SB_ANON);
+    return true;
+  }
   catch(e) { console.error(e); return false; }
+}
+
+// ─── HELPERS DE MAPEAMENTO ───────────────────────────────────────────
+function mapLead(row, histMap = {}) {
+  const lead = {
+    ...row,
+    unreadCount:        row.unread_count,
+    lastMessageAt:      row.last_message_at,
+    lastMessageText:    row.last_message_text,
+    lastMessageInstance:row.last_message_instance,
+    etiquetas:          row.etiquetas || [],
+    historico_kanban:   histMap[row.id] || [],
+  };
+  if (!lead.celular && lead.telefone) lead.celular = lead.telefone;
+  return lead;
+}
+
+function mapUsuario(row) {
+  return { ...row, photoURL: row.photo_url };
+}
+
+function mapWaInstance(row) {
+  return { ...row, instanceName: row.instance_name, displayName: row.display_name, phoneNumber: row.phone_number, lastActivity: row.last_activity };
 }
 
 // ─── LOAD ────────────────────────────────────────────────────────────
@@ -535,36 +578,37 @@ function loadLeads() {
     }, 600);
     return;
   }
-  const leadsRef = collection(db, 'leads');
-  let first = true;
-  onSnapshot(leadsRef, snap => {
-    if (first && snap.empty) { first = false; $('loading-layer').style.display = 'none'; renderAll(); return; }
-    first = false;
-    allLeads = snap.docs.map(d => {
-      const data = d.data();
-      const lead = { id: d.id, ...data };
-      if (!lead.celular && lead.telefone) lead.celular = lead.telefone;
-      if (!lead.etiquetas) lead.etiquetas = [];
-      return lead;
-    });
-    $('loading-layer').style.display = 'none';
-    renderAll();
-  }, err => {
-    $('loading-layer').style.display = 'none';
-    console.error('[FDV] Firestore error:', err.code);
-    showFirestoreError(err.code);
-  });
+
+  const fetchLeads = async () => {
+    try {
+      const [{ data: leads, error }, { data: histRows }] = await Promise.all([
+        supabase.from('leads').select('*'),
+        supabase.from('lead_historico').select('*').order('movido_em', { ascending: true }),
+      ]);
+      if (error) { $('loading-layer').style.display = 'none'; showDbError(error.message); return; }
+      const histMap = {};
+      (histRows || []).forEach(h => {
+        if (!histMap[h.lead_id]) histMap[h.lead_id] = [];
+        histMap[h.lead_id].push({ col: h.col, colLabel: h.col_label, movidoPor: h.movido_por, movidoEm: h.movido_em });
+      });
+      allLeads = (leads || []).map(d => mapLead(d, histMap));
+      $('loading-layer').style.display = 'none';
+      renderAll();
+    } catch(err) { $('loading-layer').style.display = 'none'; showDbError(err.message); }
+  };
+
+  fetchLeads();
+
+  supabase.channel('leads_realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, fetchLeads)
+    .subscribe();
 }
 
-function showFirestoreError(code) {
-  const msgs = {
-    'permission-denied': 'Permissão negada. Verifique as regras do Firestore.',
-    'unavailable': 'Firestore indisponível. Verifique sua conexão.',
-  };
+function showDbError(msg) {
   $('table-wrap').innerHTML = `<div style="padding:48px 32px;text-align:center">
     <div style="font-size:28px;margin-bottom:16px">⚠️</div>
     <h3 style="font-size:16px;font-weight:700;margin-bottom:10px">Não foi possível carregar os leads</h3>
-    <p style="font-size:13px;color:var(--text-muted)">${msgs[code]||'Erro: '+code}</p>
+    <p style="font-size:13px;color:var(--text-muted)">${esc(msg||'Erro desconhecido')}</p>
   </div>`;
 }
 
@@ -1724,7 +1768,7 @@ function handleAction(id, action) {
 async function deleteLead(id) {
   if (!confirm('Excluir este lead? Esta ação não pode ser desfeita.')) return;
   try {
-    if (isLive) { await deleteDoc(doc(db,'leads',id)); }
+    if (isLive) { const { error } = await supabase.from('leads').delete().eq('id', id); if (error) throw error; }
     else        { allLeads = allLeads.filter(l=>l.id!==id); renderAll(); }
     selectedIds.delete(id); updateBulkBar();
     toast('Lead excluído.', 'ok');
@@ -1741,8 +1785,10 @@ async function bulkDelete() {
   const n = selectedIds.size; if (!n) return;
   if (!confirm(`Excluir ${n} lead(s)?`)) return;
   try {
-    if (isLive) { await Promise.all([...selectedIds].map(id=>deleteDoc(doc(db,'leads',id)))); }
-    else        { allLeads = allLeads.filter(l=>!selectedIds.has(l.id)); renderAll(); }
+    if (isLive) {
+      const { error } = await supabase.from('leads').delete().in('id', [...selectedIds]);
+      if (error) throw error;
+    } else { allLeads = allLeads.filter(l=>!selectedIds.has(l.id)); renderAll(); }
     selectedIds.clear(); updateBulkBar();
     toast(`${n} lead(s) excluído(s).`, 'ok');
   } catch(e) { console.error(e); toast('Erro ao excluir.', 'err'); }
@@ -1752,8 +1798,10 @@ async function bulkChangeStatus() {
   if (!status || !n) { toast('Selecione um status.', 'err'); return; }
   try {
     const now = new Date().toISOString();
-    if (isLive) { await Promise.all([...selectedIds].map(id=>updateDoc(doc(db,'leads',id),{status,atualizadoem:now}))); }
-    else { selectedIds.forEach(id=>{ const i=allLeads.findIndex(l=>l.id===id); if(i!==-1) allLeads[i]={...allLeads[i],status,atualizadoem:now}; }); renderAll(); }
+    if (isLive) {
+      const { error } = await supabase.from('leads').update({ status, atualizadoem: now }).in('id', [...selectedIds]);
+      if (error) throw error;
+    } else { selectedIds.forEach(id=>{ const i=allLeads.findIndex(l=>l.id===id); if(i!==-1) allLeads[i]={...allLeads[i],status,atualizadoem:now}; }); renderAll(); }
     toast(`Status atualizado em ${n} lead(s).`, 'ok');
     selectedIds.clear(); $('bulk-status-sel').value = ''; updateBulkBar();
   } catch(e) { console.error(e); toast('Erro ao atualizar status.', 'err'); }
@@ -2180,7 +2228,22 @@ async function confirmar() {
 
 async function saveLead(id, data) {
   if (isLive) {
-    await updateDoc(doc(db, 'leads', id), data);
+    const { historico_kanban, ...leadData } = data;
+    if (historico_kanban) {
+      const last = historico_kanban[historico_kanban.length - 1];
+      if (last) {
+        await supabase.from('lead_historico').insert({
+          lead_id: id, col: last.col, col_label: last.colLabel,
+          movido_por: last.movidoPor, movido_em: last.movidoEm,
+        });
+      }
+      const idx = allLeads.findIndex(l => l.id === id);
+      if (idx !== -1) allLeads[idx].historico_kanban = historico_kanban;
+    }
+    const { error } = await supabase.from('leads').update(leadData).eq('id', id);
+    if (error) throw error;
+    const idx = allLeads.findIndex(l => l.id === id);
+    if (idx !== -1) allLeads[idx] = { ...allLeads[idx], ...leadData };
   } else {
     const i = allLeads.findIndex(l => l.id === id);
     if (i !== -1) allLeads[i] = { ...allLeads[i], ...data };
@@ -2236,8 +2299,12 @@ async function confirmarNovoLead() {
       data.datachegada = new Date().toISOString().slice(0,10);
       data.criadoem    = new Date().toISOString();
       data.etiquetas   = [];
-      if (isLive) { await addDoc(collection(db,'leads'), data); }
-      else        { allLeads.unshift({ id:'local-'+Date.now(), ...data }); renderAll(); }
+      if (isLive) {
+        const { data: newLead, error } = await supabase.from('leads').insert(data).select().single();
+        if (error) throw error;
+        allLeads.unshift(mapLead(newLead));
+        renderAll();
+      } else { allLeads.unshift({ id:'local-'+Date.now(), ...data }); renderAll(); }
       toast(`Lead cadastrado — ${nome}`, 'ok');
     }
     closeNovoLead();
@@ -2246,13 +2313,16 @@ async function confirmarNovoLead() {
 
 // ─── NOTIFICATIONS ───────────────────────────────────────────────────
 function loadNotifications(uid) {
-  if (!isLive) return;
+  if (!isLive || !currentUserDbId) return;
   if (notifUnsub) notifUnsub();
-  const q = query(collection(db, 'notifications', uid, 'items'), orderBy('createdAt', 'desc'));
-  notifUnsub = onSnapshot(q, snap => {
-    allNotifs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderNotifPanel();
-  }, err => console.error('[FDV] notif error:', err));
+  const fetch = () => supabase.from('notifications').select('*')
+    .eq('usuario_id', currentUserDbId).order('created_at', { ascending: false })
+    .then(({ data }) => { allNotifs = (data || []).map(n => ({ ...n, createdAt: n.created_at })); renderNotifPanel(); });
+  fetch();
+  const ch = supabase.channel(`notifs_${currentUserDbId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `usuario_id=eq.${currentUserDbId}` }, fetch)
+    .subscribe();
+  notifUnsub = () => { supabase.removeChannel(ch); notifUnsub = null; };
 }
 
 function renderNotifPanel() {
@@ -2289,8 +2359,8 @@ function fmtNotifTime(iso) {
 async function createNotification(userId, data) {
   if (!isLive || !userId) return;
   try {
-    await addDoc(collection(db, 'notifications', userId, 'items'), {
-      ...data, read: false, createdAt: new Date().toISOString(),
+    await supabase.from('notifications').insert({
+      usuario_id: userId, message: data.message, read: false, created_at: new Date().toISOString(),
     });
   } catch(e) { console.error('[FDV] notif write error:', e); }
 }
@@ -2300,7 +2370,7 @@ function getCloserUid(closerKey) {
   const name = (CLOSERS[closerKey]?.name || '').toLowerCase();
   if (!name) return null;
   const u = allUsuarios.find(u => (u.nome || '').toLowerCase().includes(name));
-  return u?.uid || null;
+  return u?.id || null;
 }
 
 // ─── VENDA GANHA MODAL ───────────────────────────────────────────────
@@ -2361,10 +2431,9 @@ async function confirmarVendaGanha() {
 async function notifyVendaGanha(leadId) {
   const lead   = allLeads.find(l => l.id === leadId);
   if (!lead) return;
-  const admins = allUsuarios.filter(u => u.role === 'admin' && u.uid);
+  const admins = allUsuarios.filter(u => u.role === 'admin' && u.id);
   for (const admin of admins) {
-    await createNotification(admin.uid, {
-      type: 'venda_ganha', leadId,
+    await createNotification(admin.id, {
       message: `🏆 Venda ganha! ${lead.nome || '—'} fechou negócio.`,
     });
   }
@@ -2405,8 +2474,8 @@ function openChatForLead(leadId) {
   populateChatInstanceSelector('perfil-chat-instance');
   startChatListener(leadId, 'perfil-chat-messages', 'perfil-chat-empty');
   if (isLive && (lead.unreadCount || 0) > 0) {
-    updateDoc(doc(db, 'leads', leadId), { unreadCount: 0 }).catch(console.error);
-    lead.unreadCount = 0;
+    supabase.from('leads').update({ unread_count: 0 }).eq('id', leadId).catch(console.error);
+    lead.unreadCount = 0; lead.unread_count = 0;
   }
   const badge = $('perfil-unread-badge');
   if (badge) badge.style.display = 'none';
@@ -2429,12 +2498,21 @@ function startChatListener(leadId, messagesId, emptyId) {
     chatMessages = [];
     renderChatMessages(chatMessages, messagesId, emptyId); return;
   }
-  const q = query(collection(db, 'leads', leadId, 'messages'), orderBy('timestamp', 'asc'));
-  chatUnsubscribe = onSnapshot(q, snap => {
-    chatMessages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderChatMessages(chatMessages, messagesId, emptyId);
-    if (activeTab === 'whatsapp' && activeWaSub === 'chats') renderChatsList();
-  }, err => console.error('[FDV] messages:', err.code));
+  const mapMsg = m => ({ ...m, senderName: m.sender_name, instanceName: m.instance_name });
+  supabase.from('lead_messages').select('*').eq('lead_id', leadId).order('timestamp', { ascending: true })
+    .then(({ data }) => {
+      chatMessages = (data || []).map(mapMsg);
+      renderChatMessages(chatMessages, messagesId, emptyId);
+    });
+  const ch = supabase.channel(`msgs_${leadId}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'lead_messages', filter: `lead_id=eq.${leadId}` },
+      ({ new: msg }) => {
+        chatMessages.push(mapMsg(msg));
+        renderChatMessages(chatMessages, messagesId, emptyId);
+        if (activeTab === 'whatsapp' && activeWaSub === 'chats') renderChatsList();
+      })
+    .subscribe();
+  chatUnsubscribe = () => { supabase.removeChannel(ch); };
 }
 
 function stopChatListener() {
@@ -2495,8 +2573,12 @@ async function sendChatMessage(inputId, instSelectId, leadId) {
   };
   try {
     if (isLive) {
-      await addDoc(collection(db, 'leads', leadId, 'messages'), msgData);
-      await updateDoc(doc(db, 'leads', leadId), { lastMessageAt: ts, lastMessageText: text, lastMessageInstance: instName, atualizadoem: ts });
+      await supabase.from('lead_messages').insert({
+        lead_id: leadId, text, direction: 'sent', timestamp: ts,
+        instance_name: instName, sender_name: currentUser?.displayName || 'FDV', status: 'sent',
+      });
+      await supabase.from('leads').update({ last_message_at: ts, last_message_text: text, last_message_instance: instName, atualizadoem: ts }).eq('id', leadId);
+      lead.lastMessageAt = ts; lead.lastMessageText = text; lead.lastMessageInstance = instName;
     } else {
       chatMessages.push({ id:'local-'+Date.now(), ...msgData });
       renderChatMessages(chatMessages, inputId.includes('perfil') ? 'perfil-chat-messages' : 'central-chat-messages',
@@ -2592,8 +2674,8 @@ function openCentralChat(leadId) {
   populateChatInstanceSelector('central-chat-instance');
   startChatListener(leadId, 'central-chat-messages', 'central-chat-empty');
   if (isLive && (lead.unreadCount||0) > 0) {
-    updateDoc(doc(db,'leads',leadId),{unreadCount:0}).catch(console.error);
-    lead.unreadCount = 0; renderChatsList();
+    supabase.from('leads').update({ unread_count: 0 }).eq('id', leadId).catch(console.error);
+    lead.unreadCount = 0; lead.unread_count = 0; renderChatsList();
   }
 }
 
@@ -2611,11 +2693,16 @@ function loadWaInstances() {
   if (!isLive) {
     waInstances = []; waInstancesLoaded = true; renderInstancias(); return;
   }
-  onSnapshot(collection(db, 'whatsapp_instances'), snap => {
-    waInstances = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    waInstancesLoaded = true;
-    if (activeTab === 'whatsapp' && activeWaSub === 'instancias') renderInstancias();
-  }, err => console.error('[FDV] whatsapp_instances:', err.code));
+  const fetch = () => supabase.from('whatsapp_instances').select('*')
+    .then(({ data }) => {
+      waInstances = (data || []).map(mapWaInstance);
+      waInstancesLoaded = true;
+      if (activeTab === 'whatsapp' && activeWaSub === 'instancias') renderInstancias();
+    });
+  fetch();
+  supabase.channel('wa_realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'whatsapp_instances' }, fetch)
+    .subscribe();
 }
 
 function switchWaSub(sub) {
@@ -2768,8 +2855,13 @@ async function confirmQRStep() {
         createdAt: new Date().toISOString(),
       };
       if (isLive) {
-        const ref = await addDoc(collection(db, 'whatsapp_instances'), data);
-        qrInstanceId = ref.id;
+        const { data: inst, error: instErr } = await supabase.from('whatsapp_instances').insert({
+          instance_name: instanceName, display_name: displayName,
+          responsavel: $('qr-responsavel').value, funil: $('qr-funil').value,
+          status: 'awaiting_qr', phone_number: '', last_activity: null,
+        }).select().single();
+        if (instErr) throw instErr;
+        qrInstanceId = inst.id;
       } else {
         qrInstanceId = 'local-' + Date.now();
         waInstances.push({ id: qrInstanceId, ...data });
@@ -2839,7 +2931,7 @@ function startQRPolling(instanceName) {
         $('qr-connected-phone').textContent = 'Número conectado com sucesso.';
         setQRState('connected');
         if (isLive && qrInstanceId && !qrInstanceId.startsWith('local-')) {
-          await updateDoc(doc(db, 'whatsapp_instances', qrInstanceId), { status: 'connected', lastActivity: new Date().toISOString() });
+          await supabase.from('whatsapp_instances').update({ status: 'connected', last_activity: new Date().toISOString() }).eq('id', qrInstanceId);
         } else {
           const inst = waInstances.find(i => i.id === qrInstanceId);
           if (inst) inst.status = 'connected';
@@ -2856,7 +2948,7 @@ async function disconnectInstance(id) {
   if (!confirm(`Desconectar "${inst.displayName}"?`)) return;
   try { await fetchEvolution(`/instance/logout/${inst.instanceName}`, 'DELETE'); } catch(e) { /* mock */ }
   if (isLive && !id.startsWith('local-')) {
-    await updateDoc(doc(db, 'whatsapp_instances', id), { status: 'disconnected' });
+    await supabase.from('whatsapp_instances').update({ status: 'disconnected' }).eq('id', id);
   } else { inst.status = 'disconnected'; renderInstancias(); }
   toast(`${inst.displayName} desconectada.`, 'ok');
 }
@@ -2866,7 +2958,7 @@ async function deleteInstance(id) {
   if (!confirm(`Excluir "${inst.displayName}"? Esta ação não pode ser desfeita.`)) return;
   try { await fetchEvolution(`/instance/delete/${inst.instanceName}`, 'DELETE'); } catch(e) { /* mock */ }
   if (isLive && !id.startsWith('local-')) {
-    await deleteDoc(doc(db, 'whatsapp_instances', id));
+    await supabase.from('whatsapp_instances').delete().eq('id', id);
   } else { waInstances = waInstances.filter(x => x.id !== id); renderInstancias(); }
   toast(`"${inst.displayName}" excluída.`, 'ok');
 }
@@ -3139,15 +3231,14 @@ function bindEvents() {
     panel.style.display = panel.style.display === 'none' ? '' : 'none';
   });
   $('notif-mark-all').addEventListener('click', async () => {
-    if (!isLive || !currentUser) return;
-    for (const n of allNotifs.filter(n => !n.read)) {
-      await updateDoc(doc(db, 'notifications', currentUser.uid, 'items', n.id), { read: true });
-    }
+    if (!isLive || !currentUserDbId) return;
+    const ids = allNotifs.filter(n => !n.read).map(n => n.id);
+    if (ids.length) await supabase.from('notifications').update({ read: true }).in('id', ids);
   });
   $('notif-list').addEventListener('click', async e => {
     const item = e.target.closest('.notif-item');
-    if (!item || !isLive || !currentUser) return;
-    await updateDoc(doc(db, 'notifications', currentUser.uid, 'items', item.dataset.id), { read: true });
+    if (!item || !isLive) return;
+    await supabase.from('notifications').update({ read: true }).eq('id', item.dataset.id);
   });
   document.addEventListener('click', e => {
     if (!e.target.closest('#notif-wrapper')) { const p = $('notif-panel'); if (p) p.style.display = 'none'; }

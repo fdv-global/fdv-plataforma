@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>FDV — Migração Firebase → Supabase</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Courier New', monospace; background: #0d1117; color: #c9d1d9; min-height: 100vh; padding: 32px; }
+  h1 { color: #58a6ff; font-size: 20px; margin-bottom: 8px; }
+  .subtitle { color: #8b949e; font-size: 13px; margin-bottom: 24px; }
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+  .card h2 { color: #e6edf3; font-size: 14px; margin-bottom: 12px; }
+  input { width: 100%; background: #0d1117; border: 1px solid #30363d; color: #c9d1d9; padding: 8px 12px;
+          border-radius: 6px; font-family: inherit; font-size: 13px; margin-bottom: 8px; }
+  input:focus { outline: none; border-color: #58a6ff; }
+  button { background: #238636; color: #fff; border: none; padding: 10px 20px; border-radius: 6px;
+           font-family: inherit; font-size: 13px; cursor: pointer; margin-right: 8px; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.secondary { background: #21262d; border: 1px solid #30363d; color: #c9d1d9; }
+  #log { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 16px;
+         height: 420px; overflow-y: auto; font-size: 12px; line-height: 1.7; }
+  .ok   { color: #3fb950; }
+  .err  { color: #f85149; }
+  .info { color: #58a6ff; }
+  .warn { color: #d29922; }
+  .dim  { color: #8b949e; }
+  .sep  { color: #30363d; }
+  #progress { display: none; margin-top: 12px; }
+  progress { width: 100%; height: 6px; border-radius: 3px; }
+  .stats { display: grid; grid-template-columns: repeat(6,1fr); gap: 8px; margin-top: 12px; }
+  .stat { background: #21262d; border-radius: 6px; padding: 10px; text-align: center; }
+  .stat-num { display: block; font-size: 22px; font-weight: bold; color: #58a6ff; }
+  .stat-lbl { font-size: 10px; color: #8b949e; }
+</style>
+</head>
+<body>
+
+<h1>FDV — Migração Firebase → Supabase</h1>
+<p class="subtitle">Exporta todas as coleções do Firestore e importa nas tabelas do Supabase</p>
+
+<div class="card" id="login-card">
+  <h2>🔐 Login Firebase (conta admin)</h2>
+  <input type="email"    id="email" placeholder="Email admin" value="muyane.petters@faculdadedavida.com.br">
+  <input type="password" id="senha" placeholder="Senha">
+  <button id="btn-login">Entrar</button>
+  <span id="login-status" style="font-size:12px;color:#8b949e;margin-left:8px"></span>
+</div>
+
+<div class="card" id="action-card" style="display:none">
+  <h2>🚀 Executar Migração</h2>
+  <p style="font-size:12px;color:#8b949e;margin-bottom:12px">
+    Exporta: leads, usuarios, whatsapp_instances, lead_messages, lead_historico, notifications
+  </p>
+  <button id="btn-migrate">▶ Iniciar Migração</button>
+  <button id="btn-check" class="secondary">🔍 Só verificar tabelas</button>
+  <div id="progress">
+    <progress id="pbar" value="0" max="100"></progress>
+    <span id="ptext" style="font-size:11px;color:#8b949e"></span>
+  </div>
+  <div class="stats">
+    <div class="stat"><span class="stat-num" id="s-leads">—</span><span class="stat-lbl">leads</span></div>
+    <div class="stat"><span class="stat-num" id="s-usuarios">—</span><span class="stat-lbl">usuários</span></div>
+    <div class="stat"><span class="stat-num" id="s-msgs">—</span><span class="stat-lbl">mensagens</span></div>
+    <div class="stat"><span class="stat-num" id="s-hist">—</span><span class="stat-lbl">histórico</span></div>
+    <div class="stat"><span class="stat-num" id="s-wa">—</span><span class="stat-lbl">instâncias WA</span></div>
+    <div class="stat"><span class="stat-num" id="s-notif">—</span><span class="stat-lbl">notificações</span></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>📋 Log</h2>
+  <div id="log"><span class="dim">Aguardando login...</span></div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp }        from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, getDocs, query, orderBy }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getAuth, signInWithEmailAndPassword }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+// ─── CONFIG ───────────────────────────────────────────────────
+const FB_CONFIG = {
+  apiKey:            'AIzaSyBdcF3cXNmfspkHJfd6MduhVl9s9lU9mDk',
+  authDomain:        'faculdade-da-vida.firebaseapp.com',
+  projectId:         'faculdade-da-vida',
+};
+const SB_URL = 'https://yadxcbhginjvoemacdly.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhZHhjYmhnaW5qdm9lbWFjZGx5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Njk2Nzk4MSwiZXhwIjoyMDkyNTQzOTgxfQ.Vp_JSA4ReP40a25L8GS7stNdROAy5YIIw-7HM98z_RY';
+
+const app  = initializeApp(FB_CONFIG);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// ─── LOG HELPERS ──────────────────────────────────────────────
+const logEl = document.getElementById('log');
+function log(msg, cls = '') {
+  const d = document.createElement('div');
+  d.className = cls;
+  d.textContent = msg;
+  logEl.appendChild(d);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function sep() { log('─'.repeat(60), 'sep'); }
+function setProgress(pct, txt) {
+  document.getElementById('progress').style.display = '';
+  document.getElementById('pbar').value = pct;
+  document.getElementById('ptext').textContent = txt;
+}
+function setStat(id, n) { document.getElementById('s-' + id).textContent = n; }
+
+// ─── LOGIN ────────────────────────────────────────────────────
+document.getElementById('btn-login').addEventListener('click', async () => {
+  const email = document.getElementById('email').value.trim();
+  const senha = document.getElementById('senha').value;
+  const btn   = document.getElementById('btn-login');
+  const status = document.getElementById('login-status');
+  btn.disabled = true;
+  status.textContent = 'Entrando...';
+  try {
+    await signInWithEmailAndPassword(auth, email, senha);
+    status.textContent = '✓ Logado como ' + email;
+    status.style.color = '#3fb950';
+    document.getElementById('login-card').style.opacity = '0.6';
+    document.getElementById('action-card').style.display = '';
+    logEl.innerHTML = '';
+    log('Login realizado com sucesso.', 'ok');
+    log('Pronto para iniciar a migração.', 'info');
+  } catch(e) {
+    status.textContent = '✗ ' + e.message;
+    status.style.color = '#f85149';
+    btn.disabled = false;
+  }
+});
+
+// ─── SUPABASE HELPERS ─────────────────────────────────────────
+// conflictCol: coluna para ON CONFLICT — evita 409 em re-runs
+async function sbInsert(table, rows, chunkSize = 50, conflictCol = 'firebase_id') {
+  if (!rows.length) return 0;
+  let inserted = 0;
+  const qs = conflictCol ? `?on_conflict=${conflictCol}` : '';
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    const chunk = rows.slice(i, i + chunkSize);
+    const res = await fetch(`${SB_URL}/rest/v1/${table}${qs}`, {
+      method: 'POST',
+      headers: {
+        'apikey':        SB_KEY,
+        'Authorization': `Bearer ${SB_KEY}`,
+        'Content-Type':  'application/json',
+        'Prefer':        'return=minimal,resolution=ignore-duplicates',
+      },
+      body: JSON.stringify(chunk),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`INSERT ${table} chunk ${i}: HTTP ${res.status} — ${err.slice(0,200)}`);
+    }
+    inserted += chunk.length;
+  }
+  return inserted;
+}
+
+async function sbSelect(table, select = '*', filters = '') {
+  const res = await fetch(`${SB_URL}/rest/v1/${table}?select=${select}${filters}`, {
+    headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` },
+  });
+  if (!res.ok) throw new Error(`SELECT ${table}: HTTP ${res.status}`);
+  return res.json();
+}
+
+// ─── CHECK TABLES ─────────────────────────────────────────────
+document.getElementById('btn-check').addEventListener('click', async () => {
+  log('', '');
+  sep();
+  log('🔍 Verificando tabelas no Supabase...', 'info');
+  const tables = ['leads','usuarios','lead_messages','lead_historico','whatsapp_instances','notifications'];
+  for (const t of tables) {
+    try {
+      const rows = await sbSelect(t, 'count', '&head=true');
+      log(`  ✓ ${t}`, 'ok');
+    } catch(e) {
+      log(`  ✗ ${t} — ${e.message}`, 'err');
+    }
+  }
+  sep();
+});
+
+// ─── MAIN MIGRATION ───────────────────────────────────────────
+document.getElementById('btn-migrate').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-migrate');
+  btn.disabled = true;
+  logEl.innerHTML = '';
+  sep();
+  log('🚀 INICIANDO MIGRAÇÃO', 'info');
+  sep();
+
+  const stats = { leads: 0, usuarios: 0, msgs: 0, hist: 0, wa: 0, notif: 0 };
+
+  try {
+    // ── 1. USUARIOS ─────────────────────────────────────────
+    setProgress(5, 'Exportando usuarios...');
+    log('\n[1/6] Exportando usuarios do Firebase...', 'info');
+    const usuariosSnap = await getDocs(collection(db, 'usuarios'));
+    const usuariosRaw = usuariosSnap.docs.map(d => ({ firebaseUid: d.id, ...d.data() }));
+    log(`  Firebase: ${usuariosRaw.length} usuário(s) encontrado(s)`, 'dim');
+
+    // Mapear firebase uid → (após insert, pegar uuid do Supabase)
+    const uidMap = {}; // firebaseUid → supabase uuid
+
+    if (usuariosRaw.length > 0) {
+      const sbUsuarios = usuariosRaw.map(u => ({
+        firebase_uid: u.firebaseUid,
+        nome:         u.nome  || u.email?.split('@')[0] || 'Sem nome',
+        email:        u.email || '',
+        role:         ['admin','closer','operador'].includes(u.role) ? u.role : 'operador',
+        ativo:        u.ativo !== false,
+        photo_url:    u.photoURL || null,
+        criadoem:     u.criadoEm ? new Date(u.criadoEm?.seconds ? u.criadoEm.seconds*1000 : u.criadoEm).toISOString()
+                                  : new Date().toISOString(),
+      }));
+
+      // Upsert por email: email É o conflict target — ON CONFLICT (email) DO NOTHING.
+      // Funciona em re-runs sem precisar de DELETE.
+      await sbInsert('usuarios', sbUsuarios, 50, 'email');
+
+      // SELECT para obter UUID map (necessário para notifications)
+      const existing = await sbSelect('usuarios', 'id,firebase_uid', '&firebase_uid=not.is.null');
+      existing.forEach(u => { if (u.firebase_uid) uidMap[u.firebase_uid] = u.id; });
+      stats.usuarios = existing.length;
+    }
+    log(`  ✅ ${stats.usuarios} usuário(s) importado(s)`, 'ok');
+    setStat('usuarios', stats.usuarios);
+
+    // ── 2. LEADS ────────────────────────────────────────────
+    setProgress(20, 'Exportando leads...');
+    log('\n[2/6] Exportando leads do Firebase...', 'info');
+    const leadsSnap = await getDocs(collection(db, 'leads'));
+    const leadsRaw  = leadsSnap.docs.map(d => ({ firebaseId: d.id, ...d.data() }));
+    log(`  Firebase: ${leadsRaw.length} lead(s) encontrado(s)`, 'dim');
+
+    const firebaseIdMap = {}; // firebase lead id → supabase uuid
+
+    if (leadsRaw.length > 0) {
+      const sbLeads = leadsRaw.map(l => ({
+        firebase_id:           l.firebaseId,
+        nome:                  l.nome || '',
+        celular:               l.celular || null,
+        email:                 l.email || null,
+        instagram:             l.instagram || null,
+        profissao:             l.profissao || null,
+        origem:                l.origem || null,
+        renda:                 l.renda || null,
+        datachegada:           l.datachegada || null,
+        status:                l.status || 'aguardando',
+        kanban_column:         l.kanban_column || null,
+        kanban_column_since:   l.kanban_column_since
+                                 ? new Date(l.kanban_column_since?.seconds ? l.kanban_column_since.seconds*1000 : l.kanban_column_since).toISOString()
+                                 : null,
+        closer:                l.closer || null,
+        agendadopor:           l.agendadopor || null,
+        dataagendamento:       l.dataagendamento || null,
+        horaagendamento:       l.horaagendamento || null,
+        observacoes:           l.observacoes || null,
+        obs_call:              l.obs_call || null,
+        resultado:             l.resultado || null,
+        status_closer:         l.status_closer || null,
+        etiquetas:             Array.isArray(l.etiquetas) ? l.etiquetas : [],
+        venda_ganha_dados:     l.venda_ganha_dados || null,
+        motivo_perda:          l.motivo_perda || null,
+        motivo_perda_label:    l.motivo_perda_label || null,
+        motivo_perda_obs:      l.motivo_perda_obs || null,
+        last_message_at:       l.lastMessageAt
+                                 ? new Date(l.lastMessageAt?.seconds ? l.lastMessageAt.seconds*1000 : l.lastMessageAt).toISOString()
+                                 : null,
+        last_message_text:     l.lastMessageText || null,
+        last_message_instance: l.lastMessageInstance || null,
+        unread_count:          l.unreadCount || 0,
+        criadoem:              l.criadoem
+                                 ? new Date(l.criadoem?.seconds ? l.criadoem.seconds*1000 : l.criadoem).toISOString()
+                                 : new Date().toISOString(),
+        atualizadoem:          l.atualizadoem
+                                 ? new Date(l.atualizadoem?.seconds ? l.atualizadoem.seconds*1000 : l.atualizadoem).toISOString()
+                                 : new Date().toISOString(),
+      }));
+
+      // Upsert por firebase_id (idempotente em re-runs)
+      await sbInsert('leads', sbLeads, 50, 'firebase_id');
+
+      // SELECT separado para obter UUIDs (necessário para FKs de messages e historico)
+      const existingLeads = await sbSelect('leads', 'id,firebase_id', '&firebase_id=not.is.null');
+      existingLeads.forEach(l => { if (l.firebase_id) firebaseIdMap[l.firebase_id] = l.id; });
+      stats.leads = existingLeads.length;
+    }
+    log(`  ✅ ${stats.leads} lead(s) importado(s)`, 'ok');
+    setStat('leads', stats.leads);
+
+    // ── 3. LEAD_HISTORICO (do campo historico_kanban) ───────
+    setProgress(35, 'Extraindo histórico kanban...');
+    log('\n[3/6] Extraindo historico_kanban dos leads...', 'info');
+    const histRows = [];
+    for (const l of leadsRaw) {
+      const leadUuid = firebaseIdMap[l.firebaseId];
+      if (!leadUuid || !Array.isArray(l.historico_kanban)) continue;
+      for (const h of l.historico_kanban) {
+        histRows.push({
+          lead_id:    leadUuid,
+          col:        h.col       || '',
+          col_label:  h.colLabel  || null,
+          movido_por: h.movidoPor || null,
+          movido_em:  h.movidoEm
+                        ? new Date(h.movidoEm?.seconds ? h.movidoEm.seconds*1000 : h.movidoEm).toISOString()
+                        : new Date().toISOString(),
+          criadoem:   h.movidoEm
+                        ? new Date(h.movidoEm?.seconds ? h.movidoEm.seconds*1000 : h.movidoEm).toISOString()
+                        : new Date().toISOString(),
+        });
+      }
+    }
+    if (histRows.length > 0) {
+      // Limpa histórico existente antes de reinserir (não tem firebase_id único)
+      if (Object.keys(firebaseIdMap).length > 0) {
+        const leadUuids = Object.values(firebaseIdMap);
+        // Deleta em lotes para evitar URL longa
+        for (let i = 0; i < leadUuids.length; i += 20) {
+          const batch = leadUuids.slice(i, i + 20).map(id => `"${id}"`).join(',');
+          await fetch(`${SB_URL}/rest/v1/lead_historico?lead_id=in.(${batch})`, {
+            method: 'DELETE',
+            headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` },
+          });
+        }
+      }
+      await sbInsert('lead_historico', histRows, 50, null);
+    }
+    stats.hist = histRows.length;
+    log(`  ✅ ${stats.hist} entradas de histórico importadas`, 'ok');
+    setStat('hist', stats.hist);
+
+    // ── 4. LEAD_MESSAGES (subcoleção) ───────────────────────
+    setProgress(50, 'Exportando mensagens WhatsApp...');
+    log('\n[4/6] Exportando lead_messages (subcoleção)...', 'info');
+    let msgCount = 0;
+    const leadsWithUuid = leadsRaw.filter(l => firebaseIdMap[l.firebaseId]);
+    for (let i = 0; i < leadsWithUuid.length; i++) {
+      const l = leadsWithUuid[i];
+      const leadUuid = firebaseIdMap[l.firebaseId];
+      try {
+        const msgsSnap = await getDocs(
+          query(collection(db, 'leads', l.firebaseId, 'messages'), orderBy('timestamp', 'asc'))
+        );
+        if (msgsSnap.docs.length === 0) continue;
+        const msgRows = msgsSnap.docs.map(m => {
+          const d = m.data();
+          return {
+            firebase_id:   m.id,
+            lead_id:       leadUuid,
+            text:          d.text || '',
+            direction:     ['sent','received'].includes(d.direction) ? d.direction : 'sent',
+            status:        ['sent','delivered','read','failed'].includes(d.status) ? d.status : 'sent',
+            instance_name: d.instanceName || null,
+            sender_name:   d.senderName   || null,
+            timestamp:     d.timestamp
+                             ? new Date(d.timestamp?.seconds ? d.timestamp.seconds*1000 : d.timestamp).toISOString()
+                             : new Date().toISOString(),
+            criadoem:      new Date().toISOString(),
+          };
+        });
+        await sbInsert('lead_messages', msgRows, 50, 'firebase_id');
+        msgCount += msgRows.length;
+      } catch(e) {
+        log(`  ⚠ mensagens do lead ${l.firebaseId}: ${e.message.slice(0,80)}`, 'warn');
+      }
+      if (i % 5 === 0) setProgress(50 + Math.round((i/leadsWithUuid.length)*15), `Mensagens: ${msgCount} importadas...`);
+    }
+    stats.msgs = msgCount;
+    log(`  ✅ ${stats.msgs} mensagem(ns) importada(s)`, 'ok');
+    setStat('msgs', stats.msgs);
+
+    // ── 5. WHATSAPP_INSTANCES ───────────────────────────────
+    setProgress(70, 'Exportando instâncias WhatsApp...');
+    log('\n[5/6] Exportando whatsapp_instances...', 'info');
+    const waSnap = await getDocs(collection(db, 'whatsapp_instances'));
+    const waRaw  = waSnap.docs.map(d => ({ firebaseId: d.id, ...d.data() }));
+    log(`  Firebase: ${waRaw.length} instância(s) encontrada(s)`, 'dim');
+
+    if (waRaw.length > 0) {
+      const sbWa = waRaw.map(i => ({
+        firebase_id:   i.firebaseId,
+        instance_name: i.instanceName  || i.firebaseId,
+        display_name:  i.displayName   || i.instanceName || i.firebaseId,
+        responsavel:   i.responsavel   || null,
+        funil:         i.funil         || null,
+        phone_number:  i.phoneNumber   || null,
+        status:        ['connected','disconnected','awaiting_qr'].includes(i.status) ? i.status : 'disconnected',
+        last_activity: i.lastActivity
+                         ? new Date(i.lastActivity?.seconds ? i.lastActivity.seconds*1000 : i.lastActivity).toISOString()
+                         : null,
+        criadoem:      i.createdAt
+                         ? new Date(i.createdAt?.seconds ? i.createdAt.seconds*1000 : i.createdAt).toISOString()
+                         : new Date().toISOString(),
+      }));
+      // Upsert por instance_name — ON CONFLICT (instance_name) DO NOTHING
+      await sbInsert('whatsapp_instances', sbWa, 50, 'instance_name');
+      stats.wa = sbWa.length;
+    }
+    log(`  ✅ ${stats.wa} instância(s) importada(s)`, 'ok');
+    setStat('wa', stats.wa);
+
+    // ── 6. NOTIFICATIONS (subcoleção por uid) ───────────────
+    setProgress(85, 'Exportando notificações...');
+    log('\n[6/6] Exportando notifications (por usuário)...', 'info');
+    let notifCount = 0;
+    for (const u of usuariosRaw) {
+      const userUuid = uidMap[u.firebaseUid];
+      if (!userUuid) continue;
+      try {
+        const nSnap = await getDocs(
+          query(collection(db, 'notifications', u.firebaseUid, 'items'), orderBy('createdAt', 'desc'))
+        );
+        if (nSnap.docs.length === 0) continue;
+        const nRows = nSnap.docs.map(n => {
+          const d = n.data();
+          const ts = d.createdAt
+            ? new Date(d.createdAt?.seconds ? d.createdAt.seconds*1000 : d.createdAt).toISOString()
+            : new Date().toISOString();
+          return {
+            firebase_id: n.id,
+            usuario_id:  userUuid,
+            message:     d.message || '',
+            read:        d.read === true,
+            created_at:  ts,
+            criadoem:    ts,
+          };
+        });
+        await sbInsert('notifications', nRows, 50, 'firebase_id');
+        notifCount += nRows.length;
+      } catch(e) {
+        log(`  ⚠ notificações do uid ${u.firebaseUid}: ${e.message.slice(0,80)}`, 'warn');
+      }
+    }
+    stats.notif = notifCount;
+    log(`  ✅ ${stats.notif} notificação(ões) importada(s)`, 'ok');
+    setStat('notif', stats.notif);
+
+    // ── RESULTADO FINAL ─────────────────────────────────────
+    setProgress(100, 'Concluído!');
+    sep();
+    log('', '');
+    log('✅ MIGRAÇÃO CONCLUÍDA COM SUCESSO!', 'ok');
+    sep();
+    log(`  leads         : ${stats.leads}`, 'ok');
+    log(`  usuarios      : ${stats.usuarios}`, 'ok');
+    log(`  lead_messages : ${stats.msgs}`, 'ok');
+    log(`  lead_historico: ${stats.hist}`, 'ok');
+    log(`  wa_instances  : ${stats.wa}`, 'ok');
+    log(`  notifications : ${stats.notif}`, 'ok');
+    sep();
+    log('Próximo passo: Etapa 4 — atualizar o código JS para usar Supabase.', 'info');
+
+  } catch(err) {
+    log('\n❌ ERRO: ' + err.message, 'err');
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
