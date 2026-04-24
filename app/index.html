@@ -364,7 +364,7 @@
       <h1>WhatsApp</h1>
       <p>Central de chats · instâncias · respostas rápidas · etiquetas</p>
     </div>
-    <button class="btn-primary" id="btn-nova-instancia">+ Conectar número</button>
+    <button class="btn-primary" id="btn-nova-instancia">📱 Instâncias WhatsApp</button>
   </div>
 
   <div class="sub-nav">
@@ -764,6 +764,26 @@
     <div class="modal-footer">
       <button class="btn-ghost" id="novo-lead-cancelar">Cancelar</button>
       <button class="btn-confirm" id="btn-salvar-lead">Cadastrar Lead</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL INSTÂNCIAS WHATSAPP ===== -->
+<div class="modal-backdrop" id="instancias-modal-backdrop">
+  <div class="modal modal--instancias" role="dialog" aria-modal="true" aria-labelledby="instancias-modal-title">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="instancias-modal-title">Instâncias WhatsApp</h2>
+        <p class="modal-subtitle">Gerencie os números conectados ao sistema</p>
+      </div>
+      <button class="modal-close" id="instancias-modal-close" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="instancias-modal-list" class="im-list"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="instancias-modal-cancel">Fechar</button>
+      <button class="btn-primary" id="instancias-modal-connect">+ Conectar novo número</button>
     </div>
   </div>
 </div>

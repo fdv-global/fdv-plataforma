@@ -3185,6 +3185,7 @@ function loadWaInstances() {
       waInstances = (data || []).map(mapWaInstance);
       waInstancesLoaded = true;
       if (activeTab === 'whatsapp' && activeWaSub === 'instancias') renderInstancias();
+      if ($('instancias-modal-backdrop')?.classList.contains('open')) renderInstanciasModal();
     });
   fetch();
   supabase.channel('wa_realtime')
@@ -3285,6 +3286,64 @@ function renderInstanceCard(inst) {
       <button class="btn-ghost btn-sm wa-btn-delete" data-id="${esc(inst.id)}" style="color:var(--marsala)">Excluir</button>
     </div>
   </div>`;
+}
+
+// ── Instâncias Modal ─────────────────────────────────────────────────
+
+function openInstanciasModal() {
+  renderInstanciasModal();
+  $('instancias-modal-backdrop').classList.add('open');
+}
+
+function closeInstanciasModal() {
+  $('instancias-modal-backdrop').classList.remove('open');
+}
+
+function renderInstanciasModal() {
+  const list = $('instancias-modal-list');
+  if (!list) return;
+  if (!waInstancesLoaded) {
+    list.innerHTML = '<div class="im-loading"><div class="spinner"></div><span>Carregando…</span></div>';
+    return;
+  }
+  if (waInstances.length === 0) {
+    list.innerHTML = '<div class="im-empty"><span style="font-size:32px">📱</span><p>Nenhuma instância configurada.<br>Clique em "+ Conectar novo número" para começar.</p></div>';
+    return;
+  }
+  const ST = {
+    connected:    { label: 'Conectado',     cls: 'wa-status--connected' },
+    disconnected: { label: 'Desconectado',  cls: 'wa-status--disconnected' },
+    awaiting_qr:  { label: 'Aguardando QR', cls: 'wa-status--awaiting' },
+  };
+  list.innerHTML = waInstances.map(inst => {
+    const resp = WA_RESPONSAVEIS[inst.responsavel] || { name: inst.responsavel || '—', color: '#8fa0a2', bg: 'rgba(143,160,162,.12)' };
+    const st   = ST[inst.status] || { label: inst.status || '—', cls: '' };
+    const actionBtn = inst.status === 'connected'
+      ? `<button class="btn-ghost btn-sm im-btn-disconnect" data-id="${esc(inst.id)}">Desconectar</button>`
+      : `<button class="btn-ghost btn-sm im-btn-reconnect" data-id="${esc(inst.id)}">Reconectar</button>`;
+    return `<div class="im-row">
+      <div class="im-row-info">
+        <span class="im-row-icon">📱</span>
+        <div class="im-row-details">
+          <span class="im-row-name">${esc(inst.displayName || inst.instanceName)}</span>
+          <span class="im-row-phone">${esc(inst.phoneNumber || inst.instanceName)}</span>
+        </div>
+      </div>
+      <span class="im-row-resp" style="color:${resp.color};background:${resp.bg};border-color:${resp.color}40">${esc(resp.name)}</span>
+      <span class="wa-status ${st.cls}">${st.label}</span>
+      <div class="im-row-actions">
+        ${actionBtn}
+        <button class="btn-ghost btn-sm im-btn-delete" data-id="${esc(inst.id)}" style="color:var(--marsala)">Excluir</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('.im-btn-disconnect').forEach(btn =>
+    btn.addEventListener('click', () => disconnectInstance(btn.dataset.id)));
+  list.querySelectorAll('.im-btn-reconnect').forEach(btn =>
+    btn.addEventListener('click', () => { closeInstanciasModal(); openQRModal(btn.dataset.id); }));
+  list.querySelectorAll('.im-btn-delete').forEach(btn =>
+    btn.addEventListener('click', () => deleteInstance(btn.dataset.id)));
 }
 
 // ── QR Modal ──────────────────────────────────────────────────────────
@@ -3694,8 +3753,14 @@ function bindEvents() {
     if (item) openCentralChat(item.dataset.leadId);
   });
 
-  // WhatsApp — nova instância
-  $('btn-nova-instancia').addEventListener('click', () => openQRModal(null));
+  // WhatsApp — botão instâncias (abre modal)
+  $('btn-nova-instancia').addEventListener('click', () => openInstanciasModal());
+  $('instancias-modal-close').addEventListener('click',   closeInstanciasModal);
+  $('instancias-modal-cancel').addEventListener('click',  closeInstanciasModal);
+  $('instancias-modal-connect').addEventListener('click', () => { closeInstanciasModal(); openQRModal(null); });
+  $('instancias-modal-backdrop').addEventListener('click', e => {
+    if (e.target === $('instancias-modal-backdrop')) closeInstanciasModal();
+  });
 
   // WhatsApp — sub-nav
   document.querySelectorAll('#tab-whatsapp .sub-link[data-sub]').forEach(btn =>

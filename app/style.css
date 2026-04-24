@@ -1599,6 +1599,45 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
   padding: 6px 14px;
 }
 
+/* ── Instâncias Modal ────────────────────────────────────── */
+.modal--instancias { max-width: 640px; }
+
+.im-list { display: flex; flex-direction: column; gap: 10px; min-height: 80px; }
+
+.im-loading, .im-empty {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 10px; padding: 40px 0;
+  color: var(--t3); font-size: 13px; text-align: center;
+}
+.im-empty p { color: var(--t2); line-height: 1.6; margin: 0; }
+
+.im-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--b1);
+  background: var(--s2);
+  transition: background var(--fast) var(--ease);
+}
+.im-row:hover { background: var(--s3); }
+
+.im-row-info  { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.im-row-icon  { font-size: 20px; flex-shrink: 0; }
+.im-row-details { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.im-row-name  { font-size: 13px; font-weight: 600; color: var(--t1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.im-row-phone { font-size: 11px; color: var(--t3); font-family: var(--mono); }
+
+.im-row-resp {
+  font-size: 11px; font-weight: 600; padding: 3px 8px;
+  border-radius: 20px; border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.im-row-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
 /* ── QR Modal variant ────────────────────────────────────── */
 .modal--qr { max-width: 480px; }
 
