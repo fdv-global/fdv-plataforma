@@ -2770,8 +2770,13 @@ function renderChatsList() {
 
 function openCentralChat(leadId) {
   chatActiveSide = leadId;
-  renderChatsList();
+  // Zero badge BEFORE re-rendering the list so it never flickers
   const lead = allLeads.find(l => l.id === leadId); if (!lead) return;
+  const hadUnread = (lead.unread_count || lead.unreadCount || 0) > 0;
+  lead.unread_count = 0; lead.unreadCount = 0;
+  if (isLive && hadUnread)
+    supabase.from('leads').update({ unread_count: 0 }).eq('id', leadId).catch(console.error);
+  renderChatsList();
   const panel = $('chats-panel'); if (!panel) return;
 
   const initials = (lead.nome || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -2791,8 +2796,8 @@ function openCentralChat(leadId) {
       </div>
       <div class="cp-header-right">
         <select id="central-chat-instance" class="filter-select chat-inst-sel"></select>
-        <button class="btn-ghost btn-icon cp-settings-btn" id="btn-chat-settings" title="Cores dos balões">
-          <i data-lucide="palette" style="width:16px;height:16px"></i>
+        <button class="btn-ghost cp-header-btn cp-settings-btn" id="btn-chat-settings" title="Personalizar cores">
+          <i data-lucide="palette" style="width:14px;height:14px"></i><span>Cores</span>
         </button>
         <div class="cp-bubble-settings" id="cp-bubble-settings" style="display:none">
           <div class="cp-bs-title">Cores dos balões</div>
@@ -2800,8 +2805,8 @@ function openCentralChat(leadId) {
           <div class="cp-bs-row"><label>Recebido</label><input type="color" id="cp-recv-color" class="cp-color-input" value="${esc(initRecvHex)}"></div>
           <button class="btn-primary btn-sm" id="cp-bs-apply" style="width:100%;margin-top:8px">Aplicar</button>
         </div>
-        <button class="btn-ghost btn-icon cp-info-btn" id="btn-toggle-info" title="Info do lead">
-          <i data-lucide="info" style="width:18px;height:18px"></i>
+        <button class="btn-ghost cp-header-btn cp-info-btn" id="btn-toggle-info" title="Perfil do lead">
+          <i data-lucide="user" style="width:14px;height:14px"></i><span>Perfil</span>
         </button>
       </div>
     </div>
@@ -2860,10 +2865,6 @@ function openCentralChat(leadId) {
     if (s && !s.contains(e.target) && e.target.id !== 'btn-chat-settings') s.style.display = 'none';
   }, { once: true });
 
-  if (isLive && (lead.unread_count || lead.unreadCount || 0) > 0) {
-    supabase.from('leads').update({ unread_count: 0 }).eq('id', leadId).catch(console.error);
-    lead.unread_count = 0; lead.unreadCount = 0; renderChatsList();
-  }
 }
 
 // ── Lead info side panel ────────────────────────────────────────────────────
@@ -2877,71 +2878,69 @@ function openLeadInfoPanel(leadId) {
   const panel = $('chats-info-panel'); if (!panel) return;
   const lead  = allLeads.find(l => l.id === leadId); if (!lead) return;
   panel.style.display = '';
+
+  const fields = [
+    { key: 'nome',        label: 'Nome' },
+    { key: 'celular',     label: 'Celular' },
+    { key: 'email',       label: 'E-mail' },
+    { key: 'instagram',   label: 'Instagram' },
+    { key: 'profissao',   label: 'Profissão' },
+    { key: 'renda',       label: 'Renda' },
+    { key: 'idade',       label: 'Idade' },
+    { key: 'observacoes', label: 'Obs.', multiline: true },
+  ];
+
   panel.innerHTML = `
     <div class="cip-header">
       <span>Dados do lead</span>
-      <div style="display:flex;gap:4px;align-items:center">
-        <button class="cip-edit-toggle" id="btn-cip-edit" title="Editar lead">
-          <i data-lucide="pencil" style="width:14px;height:14px"></i>
-        </button>
-        <button class="btn-ghost btn-icon" id="btn-close-info"><i data-lucide="x" style="width:16px;height:16px"></i></button>
-      </div>
+      <button class="btn-ghost btn-icon" id="btn-close-info">
+        <i data-lucide="x" style="width:16px;height:16px"></i>
+      </button>
     </div>
-    <div class="cip-body" id="cip-view">
-      <div class="cip-field"><label>Nome</label><span>${esc(lead.nome || '—')}</span></div>
-      <div class="cip-field"><label>Celular</label><span>${esc(lead.celular || '—')}</span></div>
-      <div class="cip-field"><label>Status</label><span>${esc(lead.status || '—')}</span></div>
-      <div class="cip-field"><label>Origem</label><span>${esc(lead.origem || '—')}</span></div>
-      <div class="cip-field"><label>Profissão</label><span>${esc(lead.profissao || '—')}</span></div>
-      <div class="cip-field"><label>Renda</label><span>${esc(lead.renda || '—')}</span></div>
-      ${lead.observacoes ? `<div class="cip-field"><label>Obs.</label><p class="cip-obs">${esc(lead.observacoes)}</p></div>` : ''}
-    </div>
-    <div class="cip-edit-form" id="cip-edit" style="display:none">
-      <div class="cip-field"><label>Nome</label><input class="filter-input cip-edit-input" id="cip-e-nome" value="${esc(lead.nome || '')}"></div>
-      <div class="cip-field"><label>Celular</label><input class="filter-input cip-edit-input" id="cip-e-cel" value="${esc(lead.celular || '')}"></div>
-      <div class="cip-field"><label>Profissão</label><input class="filter-input cip-edit-input" id="cip-e-prof" value="${esc(lead.profissao || '')}"></div>
-      <div class="cip-field"><label>Renda</label><input class="filter-input cip-edit-input" id="cip-e-renda" value="${esc(lead.renda || '')}"></div>
-      <div class="cip-field"><label>Obs.</label><textarea class="filter-input cip-edit-input" id="cip-e-obs" rows="3">${esc(lead.observacoes || '')}</textarea></div>
-      <div class="cip-edit-actions">
-        <button class="btn-ghost btn-sm" id="btn-cip-cancel">Cancelar</button>
-        <button class="btn-primary btn-sm" id="btn-cip-save">Salvar</button>
-      </div>
+    <div class="cip-body">
+      <p class="cip-hint">Clique em qualquer campo para editar. Salva automaticamente.</p>
+      ${fields.map(f => {
+        const val = lead[f.key] || '';
+        return `<div class="cip-inline-field">
+          <label>${esc(f.label)}</label>
+          ${f.multiline
+            ? `<textarea class="cip-inline-val" data-field="${esc(f.key)}" rows="3">${esc(val)}</textarea>`
+            : `<div class="cip-inline-val" contenteditable="true" data-field="${esc(f.key)}" spellcheck="false">${esc(val)}</div>`
+          }
+          <span class="cip-saved-tick" id="cip-tick-${esc(f.key)}" style="display:none">✓ salvo</span>
+        </div>`;
+      }).join('')}
     </div>
     <div class="cip-actions">
       <button class="btn-primary btn-sm" id="btn-cip-full">Perfil completo</button>
     </div>`;
+
   lucide.createIcons({ nodes: [panel] });
   $('btn-close-info').addEventListener('click', () => { panel.style.display = 'none'; });
-  $('btn-cip-edit').addEventListener('click', () => {
-    $('cip-view').style.display = 'none';
-    $('cip-edit').style.display = '';
-  });
-  $('btn-cip-cancel').addEventListener('click', () => {
-    $('cip-edit').style.display = 'none';
-    $('cip-view').style.display = '';
-  });
-  $('btn-cip-save').addEventListener('click', async () => {
-    const updates = {
-      nome:        $('cip-e-nome').value.trim(),
-      celular:     $('cip-e-cel').value.trim(),
-      profissao:   $('cip-e-prof').value.trim(),
-      renda:       $('cip-e-renda').value.trim(),
-      observacoes: $('cip-e-obs').value.trim(),
-      atualizadoem: new Date().toISOString(),
-    };
-    if (!updates.nome) { toast('Nome é obrigatório.', 'err'); return; }
-    if (isLive) {
-      const { error } = await supabase.from('leads').update(updates).eq('id', leadId);
-      if (error) { toast('Erro ao salvar: ' + error.message, 'err'); return; }
-    }
-    Object.assign(lead, updates);
-    toast('Lead atualizado.', 'ok');
-    openLeadInfoPanel(leadId);
-  });
   $('btn-cip-full').addEventListener('click', () => {
-    const l = allLeads.find(x => x.id === leadId);
-    if (l) openPerfil(l);
+    const l = allLeads.find(x => x.id === leadId); if (l) openPerfil(l);
   });
+
+  panel.querySelectorAll('.cip-inline-val[contenteditable]').forEach(el => {
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } });
+    el.addEventListener('blur', () => saveCipField(leadId, lead, el.dataset.field, el.textContent.trim()));
+  });
+  panel.querySelectorAll('textarea.cip-inline-val').forEach(el => {
+    el.addEventListener('blur', () => saveCipField(leadId, lead, el.dataset.field, el.value.trim()));
+  });
+}
+
+async function saveCipField(leadId, lead, fieldKey, val) {
+  if (String(lead[fieldKey] || '') === val) return;
+  if (isLive) {
+    const { error } = await supabase.from('leads')
+      .update({ [fieldKey]: val, atualizadoem: new Date().toISOString() })
+      .eq('id', leadId);
+    if (error) { toast('Erro ao salvar ' + fieldKey + ': ' + error.message, 'err'); return; }
+  }
+  lead[fieldKey] = val;
+  const tick = $('cip-tick-' + fieldKey);
+  if (tick) { tick.style.display = ''; setTimeout(() => { tick.style.display = 'none'; }, 1800); }
 }
 
 // ── Lead labels in chat ────────────────────────────────────────────────────
