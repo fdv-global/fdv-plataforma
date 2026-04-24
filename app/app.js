@@ -2920,7 +2920,21 @@ async function fetchEvolution(path, method = 'GET', body = null) {
   const opts = { method, headers: { 'Content-Type': 'application/json', 'apikey': EVOLUTION_API_KEY } };
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(`${EVOLUTION_API_URL}${path}`, opts);
-  if (!res.ok) throw new Error(`Evolution API ${res.status}`);
+  if (!res.ok) {
+    let detail = `Evolution API ${res.status}`;
+    try {
+      const err = await res.json();
+      const msgs = err?.response?.message;
+      if (Array.isArray(msgs) && msgs[0]?.exists === false) {
+        detail = 'Número não registrado no WhatsApp';
+      } else if (Array.isArray(msgs) && typeof msgs[0] === 'string') {
+        detail = msgs[0];
+      } else if (typeof msgs === 'string') {
+        detail = msgs;
+      }
+    } catch { /* keep default */ }
+    throw new Error(detail);
+  }
   return res.json();
 }
 
