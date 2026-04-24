@@ -586,6 +586,9 @@ function loadLeads() {
         supabase.from('lead_historico').select('*').order('movido_em', { ascending: true }),
       ]);
       if (error) { $('loading-layer').style.display = 'none'; showDbError(error.message); return; }
+      if (!leads || leads.length === 0) {
+        console.warn('[FDV] loadLeads: Supabase retornou 0 leads — verifique RLS (migration 003_anon_rls_policies.sql)');
+      }
       const histMap = {};
       (histRows || []).forEach(h => {
         if (!histMap[h.lead_id]) histMap[h.lead_id] = [];

@@ -2,10 +2,14 @@
 
 /**
  * FDV — Migration Runner
- * Executa a migration 001_initial_schema.sql no Supabase via pg direto.
+ * Executa qualquer arquivo SQL no Supabase via pg direto.
  *
  * Uso:
+ *   DB_PASSWORD="suasenha" node run-migration.js [arquivo.sql]
+ *
+ * Exemplos:
  *   DB_PASSWORD="suasenha" node run-migration.js
+ *   DB_PASSWORD="suasenha" node run-migration.js migrations/003_anon_rls_policies.sql
  *
  * Onde encontrar a senha:
  *   Supabase Dashboard → Settings → Database → Connection string → password
@@ -21,11 +25,14 @@ const DB_PASSWORD = process.env.DB_PASSWORD;
 
 if (!DB_PASSWORD) {
   console.error('\n  ❌  Variável DB_PASSWORD não definida.');
-  console.error('  Uso: DB_PASSWORD="suasenha" node run-migration.js\n');
+  console.error('  Uso: DB_PASSWORD="suasenha" node run-migration.js [arquivo.sql]\n');
   process.exit(1);
 }
 
-const SQL_FILE = path.join(__dirname, 'migrations', '001_initial_schema.sql');
+const sqlArg = process.argv[2];
+const SQL_FILE = sqlArg
+  ? path.resolve(__dirname, sqlArg)
+  : path.join(__dirname, 'migrations', '001_initial_schema.sql');
 
 async function main() {
   const sql = fs.readFileSync(SQL_FILE, 'utf8');
