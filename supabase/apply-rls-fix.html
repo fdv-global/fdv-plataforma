@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>FDV — Aplicar Migration 003 (RLS Anon)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Courier New', monospace; background: #0d1117; color: #c9d1d9; min-height: 100vh; padding: 32px; max-width: 760px; }
+  h1  { color: #58a6ff; font-size: 20px; margin-bottom: 6px; }
+  .sub { color: #8b949e; font-size: 13px; margin-bottom: 24px; }
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+  .card h2 { color: #e6edf3; font-size: 14px; margin-bottom: 12px; }
+  input { width: 100%; background: #0d1117; border: 1px solid #30363d; color: #c9d1d9; padding: 8px 12px;
+          border-radius: 6px; font-family: inherit; font-size: 13px; margin-bottom: 8px; }
+  input:focus { outline: none; border-color: #58a6ff; }
+  button { background: #238636; color: #fff; border: none; padding: 10px 20px; border-radius: 6px;
+           font-family: inherit; font-size: 13px; cursor: pointer; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.secondary { background: #21262d; border: 1px solid #30363d; color: #c9d1d9; }
+  #log { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 16px;
+         min-height: 200px; max-height: 400px; overflow-y: auto; font-size: 12px; line-height: 1.8; }
+  .ok   { color: #3fb950; } .err  { color: #f85149; }
+  .info { color: #58a6ff; } .warn { color: #d29922; }
+  .dim  { color: #8b949e; } .sep  { color: #30363d; }
+  .note { background: #1f2937; border: 1px solid #374151; border-radius: 6px; padding: 12px; font-size: 12px; color: #9ca3af; margin-top: 12px; line-height: 1.6; }
+  a { color: #58a6ff; }
+</style>
+</head>
+<body>
+<h1>FDV — Aplicar Migration 003 (RLS Anon)</h1>
+<p class="sub">Adiciona políticas RLS para o role <code>anon</code> — corrige lista vazia de leads/usuários</p>
+
+<div class="card">
+  <h2>🔑 Supabase Personal Access Token</h2>
+  <input type="password" id="pat" placeholder="sbp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+  <button id="btn-apply">Aplicar Migration</button>
+  <div class="note">
+    Crie o token em:
+    <a href="https://supabase.com/dashboard/account/tokens" target="_blank">
+      supabase.com/dashboard/account/tokens
+    </a>
+    → "Generate new token" → copie e cole acima.<br><br>
+    Após aplicar com sucesso, edite <code>app/app.js</code>:<br>
+    • Remova <code>SB_SERVICE_KEY</code><br>
+    • Mude <code>createClient(SB_URL, SB_SERVICE_KEY)</code> → <code>createClient(SB_URL, SB_ANON)</code>
+  </div>
+</div>
+
+<div id="log-card" class="card" style="display:none">
+  <h2>📋 Log</h2>
+  <div id="log"></div>
+</div>
+
+<script>
+const PROJECT_REF = 'yadxcbhginjvoemacdly';
+
+const SQL = `
+-- Migration 003: políticas RLS para role anon
+-- O app usa Firebase Auth com anon key — sem estas políticas as queries retornam [] silenciosamente.
+
+create policy "anon full access" on leads
+  for all to anon using (true) with check (true);
+
+create policy "anon full access" on lead_historico
+  for all to anon using (true) with check (true);
+
+create policy "anon full access" on lead_messages
+  for all to anon using (true) with check (true);
+
+create policy "anon full access" on usuarios
+  for all to anon using (true) with check (true);
+
+create policy "anon full access" on whatsapp_instances
+  for all to anon using (true) with check (true);
+
+create policy "anon full access" on notifications
+  for all to anon using (true) with check (true);
+`.trim();
+
+const logEl = document.getElementById('log');
+function log(msg, cls = '') {
+  const d = document.createElement('div');
+  if (cls) d.className = cls;
+  d.textContent = msg;
+  logEl.appendChild(d);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function sep() { log('─'.repeat(55), 'sep'); }
+
+async function runSql(pat, query) {
+  const res = await fetch(`https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${pat}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ query }),
+  });
+  const data = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+  if (!res.ok) throw new Error(data.message || data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+document.getElementById('btn-apply').addEventListener('click', async () => {
+  const pat = document.getElementById('pat').value.trim();
+  if (!pat) { alert('Cole o Personal Access Token antes de continuar.'); return; }
+
+  const btn = document.getElementById('btn-apply');
+  btn.disabled = true;
+  document.getElementById('log-card').style.display = '';
+  logEl.innerHTML = '';
+  sep();
+  log('Iniciando aplicação da migration 003...', 'info');
+  sep();
+
+  // Verificar se as policies já existem (executar como check)
+  try {
+    log('Verificando estado atual das políticas RLS...', 'dim');
+    const check = await runSql(pat, `
+      SELECT tablename, policyname
+      FROM pg_policies
+      WHERE schemaname = 'public'
+        AND roles @> ARRAY['anon']
+        AND tablename IN ('leads','usuarios','lead_historico','lead_messages','whatsapp_instances','notifications')
+      ORDER BY tablename;
+    `);
+    if (check && check.length > 0) {
+      log(`  ⚠ Políticas anon já existem em ${check.length} tabela(s):`, 'warn');
+      check.forEach(r => log(`    • ${r.tablename}: ${r.policyname}`, 'warn'));
+      log('  As políticas serão recriadas (drop + create).', 'warn');
+      sep();
+      // Drop existing anon policies
+      const tables = ['leads','lead_historico','lead_messages','usuarios','whatsapp_instances','notifications'];
+      for (const t of tables) {
+        try {
+          await runSql(pat, `DROP POLICY IF EXISTS "anon full access" ON ${t};`);
+          log(`  ✓ DROP policy em ${t}`, 'dim');
+        } catch(e) { log(`  ⚠ DROP ${t}: ${e.message}`, 'warn'); }
+      }
+    } else {
+      log('  ✓ Nenhuma política anon existente — criando novas.', 'ok');
+    }
+  } catch(e) {
+    log(`  Aviso ao verificar políticas: ${e.message}`, 'warn');
+  }
+  sep();
+
+  // Aplicar cada policy individualmente para melhor diagnóstico
+  const policies = [
+    ['leads',              'CREATE POLICY "anon full access" ON leads FOR ALL TO anon USING (true) WITH CHECK (true);'],
+    ['lead_historico',     'CREATE POLICY "anon full access" ON lead_historico FOR ALL TO anon USING (true) WITH CHECK (true);'],
+    ['lead_messages',      'CREATE POLICY "anon full access" ON lead_messages FOR ALL TO anon USING (true) WITH CHECK (true);'],
+    ['usuarios',           'CREATE POLICY "anon full access" ON usuarios FOR ALL TO anon USING (true) WITH CHECK (true);'],
+    ['whatsapp_instances', 'CREATE POLICY "anon full access" ON whatsapp_instances FOR ALL TO anon USING (true) WITH CHECK (true);'],
+    ['notifications',      'CREATE POLICY "anon full access" ON notifications FOR ALL TO anon USING (true) WITH CHECK (true);'],
+  ];
+
+  let ok = 0, fail = 0;
+  for (const [table, sql] of policies) {
+    try {
+      await runSql(pat, sql);
+      log(`  ✅ ${table}`, 'ok');
+      ok++;
+    } catch(e) {
+      log(`  ✗ ${table}: ${e.message}`, 'err');
+      fail++;
+    }
+  }
+
+  sep();
+  if (fail === 0) {
+    log(`✨ Migration 003 aplicada com sucesso! (${ok} políticas criadas)`, 'ok');
+    sep();
+    log('Próximo passo: reverter app.js para usar SB_ANON:', 'info');
+    log('  1. Remova a linha const SB_SERVICE_KEY = ...', 'dim');
+    log('  2. Mude createClient(SB_URL, SB_SERVICE_KEY) → createClient(SB_URL, SB_ANON)', 'dim');
+    log('  3. Commit e push', 'dim');
+  } else {
+    log(`⚠ ${fail} política(s) falharam. Verifique os erros acima.`, 'warn');
+    if (ok > 0) log(`  ${ok} política(s) aplicadas com sucesso.`, 'ok');
+  }
+
+  btn.disabled = false;
+});
+</script>
+</body>
+</html>

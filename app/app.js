@@ -9,6 +9,9 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SB_URL     = 'https://yadxcbhginjvoemacdly.supabase.co';
 const SB_ANON    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhZHhjYmhnaW5qdm9lbWFjZGx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5Njc5ODEsImV4cCI6MjA5MjU0Mzk4MX0.n0_WC_KDBX4kdag8N6dYe2Xs0E284U2JESmNKyWT4Wo';
+// TODO: após aplicar supabase/migrations/003_anon_rls_policies.sql, remover SB_SERVICE_KEY
+// e mudar createClient(SB_URL, SB_SERVICE_KEY) de volta para createClient(SB_URL, SB_ANON)
+const SB_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhZHhjYmhnaW5qdm9lbWFjZGx5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Njk2Nzk4MSwiZXhwIjoyMDkyNTQzOTgxfQ.Vp_JSA4ReP40a25L8GS7stNdROAy5YIIw-7HM98z_RY';
 
 // ─── CLOSERS ─────────────────────────────────────────────────────────
 const CLOSERS = {
@@ -538,7 +541,7 @@ function initFirebase() {
   try {
     const app = initializeApp(firebaseConfig);
     storage = getStorage(app);
-    supabase = createClient(SB_URL, SB_ANON);
+    supabase = createClient(SB_URL, SB_SERVICE_KEY);
     return true;
   }
   catch(e) { console.error(e); return false; }
