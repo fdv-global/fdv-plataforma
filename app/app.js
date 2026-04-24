@@ -2887,10 +2887,17 @@ async function triggerQRGenerate(instanceName) {
   const imgEl = $('qr-img');
   if (imgEl) imgEl.style.display = '';
   try {
-    await fetchEvolution('/instance/create', 'POST', { instanceName, qrcode: true, integration: 'WHATSAPP-BAILEYS' });
+    // 403 = instância já existe — ignora e vai direto ao connect
+    try {
+      await fetchEvolution('/instance/create', 'POST', { instanceName, qrcode: true, integration: 'WHATSAPP-BAILEYS' });
+    } catch(createErr) {
+      if (!createErr.message.includes('403')) throw createErr;
+    }
     const res = await fetchEvolution(`/instance/connect/${instanceName}`);
-    if (res?.qrcode?.base64) {
-      imgEl.src = res.qrcode.base64;
+    // v2 retorna res.base64 diretamente; v1/create retorna res.qrcode.base64
+    const qrBase64 = res?.base64 || res?.qrcode?.base64;
+    if (qrBase64) {
+      imgEl.src = qrBase64;
       setQRState('waiting'); startQRTimer(instanceName); startQRPolling(instanceName);
     } else { throw new Error('sem QR'); }
   } catch(e) {
