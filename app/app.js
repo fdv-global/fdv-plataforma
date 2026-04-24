@@ -44,7 +44,8 @@ const firebaseConfig = {
 };
 
 // ─── EVOLUTION API ───────────────────────────────────────────────────
-const EVOLUTION_API_URL = 'http://localhost:8080';
+const EVOLUTION_API_URL = 'http://15.229.19.120:8080';
+const EVOLUTION_API_KEY = '32f3c278e63bd1939ff0425bb789ea8741c386e66a4a472cde40a8cc2ce39daf';
 
 // ─── DEMO DATA ───────────────────────────────────────────────────────
 const DEMO = [
@@ -2907,7 +2908,7 @@ async function triggerQRGenerate(instanceName) {
 }
 
 async function fetchEvolution(path, method = 'GET', body = null) {
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  const opts = { method, headers: { 'Content-Type': 'application/json', 'apikey': EVOLUTION_API_KEY } };
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(`${EVOLUTION_API_URL}${path}`, opts);
   if (!res.ok) throw new Error(`Evolution API ${res.status}`);
