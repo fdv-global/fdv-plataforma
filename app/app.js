@@ -2782,8 +2782,9 @@ function openCentralChat(leadId) {
   const initials = (lead.nome || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   const phone    = normalizePhoneForEvolution(lead.celular) || lead.celular || '—';
 
-  const initSentHex = localStorage.getItem('fdv_bubble_sent_hex') || '#CE9221';
-  const initRecvHex = localStorage.getItem('fdv_bubble_recv_hex') || '#2d444a';
+  const initSentHex     = localStorage.getItem('fdv_bubble_sent_hex') || '#CE9221';
+  const initRecvHex     = localStorage.getItem('fdv_bubble_recv_hex') || '#2d444a';
+  const initBubbleStyle = localStorage.getItem('fdv_bubble_style') || '';
 
   panel.innerHTML = `
     <div class="cp-header">
@@ -2800,10 +2801,29 @@ function openCentralChat(leadId) {
           <i data-lucide="palette" style="width:14px;height:14px"></i><span>Cores</span>
         </button>
         <div class="cp-bubble-settings" id="cp-bubble-settings" style="display:none">
-          <div class="cp-bs-title">Cores dos balões</div>
+          <div class="cp-bs-title">Estilo dos balões</div>
+          <div class="cp-bs-row">
+            <label>Estilo</label>
+            <select id="cp-bubble-style" class="filter-select cp-style-sel">
+              <option value="" ${initBubbleStyle===''?'selected':''}>Padrão</option>
+              <option value="comic-book" ${initBubbleStyle==='comic-book'?'selected':''}>Comic Book</option>
+              <option value="minimalista" ${initBubbleStyle==='minimalista'?'selected':''}>Minimalista</option>
+              <option value="retro" ${initBubbleStyle==='retro'?'selected':''}>Retrô</option>
+              <option value="neon" ${initBubbleStyle==='neon'?'selected':''}>Neon</option>
+              <option value="paper" ${initBubbleStyle==='paper'?'selected':''}>Paper</option>
+              <option value="glass" ${initBubbleStyle==='glass'?'selected':''}>Glassmorphism</option>
+              <option value="bubble" ${initBubbleStyle==='bubble'?'selected':''}>Bubble</option>
+              <option value="sharp" ${initBubbleStyle==='sharp'?'selected':''}>Sharp</option>
+              <option value="shadow" ${initBubbleStyle==='shadow'?'selected':''}>Shadow</option>
+              <option value="gradient" ${initBubbleStyle==='gradient'?'selected':''}>Gradient</option>
+              <option value="typewriter" ${initBubbleStyle==='typewriter'?'selected':''}>Typewriter</option>
+              <option value="sticker" ${initBubbleStyle==='sticker'?'selected':''}>Sticker</option>
+            </select>
+          </div>
+          <div class="cp-bs-title" style="margin-top:10px">Cores dos balões</div>
           <div class="cp-bs-row"><label>Enviado</label><input type="color" id="cp-sent-color" class="cp-color-input" value="${esc(initSentHex)}"></div>
           <div class="cp-bs-row"><label>Recebido</label><input type="color" id="cp-recv-color" class="cp-color-input" value="${esc(initRecvHex)}"></div>
-          <button class="btn-primary btn-sm" id="cp-bs-apply" style="width:100%;margin-top:8px">Aplicar</button>
+          <button class="btn-primary btn-sm" id="cp-bs-apply" style="width:100%;margin-top:8px">Aplicar cores</button>
         </div>
         <button class="btn-ghost cp-header-btn cp-info-btn" id="btn-toggle-info" title="Perfil do lead">
           <i data-lucide="user" style="width:14px;height:14px"></i><span>Perfil</span>
@@ -2850,6 +2870,11 @@ function openCentralChat(leadId) {
     e.stopPropagation();
     const s = $('cp-bubble-settings');
     if (s) s.style.display = s.style.display === 'none' ? '' : 'none';
+  });
+  $('cp-bubble-style')?.addEventListener('change', e => {
+    localStorage.setItem('fdv_bubble_style', e.target.value);
+    applyBubbleStyle();
+    toast('Estilo salvo.', 'ok');
   });
   $('cp-bs-apply')?.addEventListener('click', () => {
     const sentHex = $('cp-sent-color')?.value || '#CE9221';
@@ -3842,7 +3867,7 @@ function bindEvents() {
 // ─── SHORTHAND ───────────────────────────────────────────────────────
 function $(id) { return document.getElementById(id); }
 
-// ─── BUBBLE COLOR SETTINGS ───────────────────────────────────────────
+// ─── BUBBLE COLOR & STYLE SETTINGS ──────────────────────────────────
 function applyBubbleColors() {
   function hexToRgba(hex, a) {
     const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
@@ -3855,7 +3880,14 @@ function applyBubbleColors() {
   document.documentElement.style.setProperty('--bubble-recv-bg',  recvHex);
 }
 
+function applyBubbleStyle() {
+  const style = localStorage.getItem('fdv_bubble_style') || '';
+  if (style) document.body.setAttribute('data-bubble-style', style);
+  else document.body.removeAttribute('data-bubble-style');
+}
+
 // ─── BOOT ────────────────────────────────────────────────────────────
 applyBubbleColors();
+applyBubbleStyle();
 bindEvents();
 initAuth();
