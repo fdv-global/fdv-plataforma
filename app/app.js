@@ -44,7 +44,7 @@ const firebaseConfig = {
 };
 
 // ─── EVOLUTION API ───────────────────────────────────────────────────
-const EVOLUTION_API_URL = 'http://15.229.19.120:8080';
+const EVOLUTION_API_URL = 'https://fdv-evolution.8z6sbs.easypanel.host';
 const EVOLUTION_API_KEY = '32f3c278e63bd1939ff0425bb789ea8741c386e66a4a472cde40a8cc2ce39daf';
 
 // ─── DEMO DATA ───────────────────────────────────────────────────────
