@@ -2570,8 +2570,10 @@ async function sendChatMessage(inputId, instSelectId, leadId) {
   if (!instName) { toast('Selecione uma instância para enviar.','err'); return; }
   const lead = allLeads.find(l => l.id === leadId);
   if (!lead) return;
-  const phone = (lead.celular||'').replace(/\D/g,'');
-  if (!phone)   { toast('Lead sem número de celular.','err'); return; }
+  const rawPhone = (lead.celular||'').replace(/\D/g,'');
+  if (!rawPhone) { toast('Lead sem número de celular.','err'); return; }
+  // Evolution API requires full number with Brazil country code (55)
+  const phone = rawPhone.startsWith('55') ? rawPhone : `55${rawPhone}`;
   input.disabled = true;
   const ts = new Date().toISOString();
   const msgData = {
@@ -2579,6 +2581,7 @@ async function sendChatMessage(inputId, instSelectId, leadId) {
     senderName: currentUser?.displayName || 'FDV', status: 'sent',
   };
   try {
+    await fetchEvolution(`/message/sendText/${instName}`, 'POST', { number: phone, text });
     if (isLive) {
       await supabase.from('lead_messages').insert({
         lead_id: leadId, text, direction: 'sent', timestamp: ts,
@@ -2592,10 +2595,9 @@ async function sendChatMessage(inputId, instSelectId, leadId) {
                                        inputId.includes('perfil') ? 'perfil-chat-empty'    : 'central-chat-empty');
       lead.lastMessageAt = ts; lead.lastMessageText = text; lead.lastMessageInstance = instName;
     }
-    try { await fetchEvolution(`/message/sendText/${instName}`, 'POST', { number: phone, text }); } catch(e) { /* mock */ }
     toast('Mensagem enviada.', 'ok');
     input.value = '';
-  } catch(e) { console.error(e); toast('Erro ao enviar mensagem.','err'); }
+  } catch(e) { console.error('[sendChatMessage]', e); toast('Erro ao enviar: ' + (e.message||'falha na API'),'err'); }
   finally    { input.disabled = false; input.focus(); }
 }
 
