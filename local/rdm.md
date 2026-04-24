@@ -1,6 +1,6 @@
 # RDM — Sistema FDV: Tasks Pendentes
 
-> Última atualização: 2026-04-17 — kanban UX: venda ganha modal · remoção de campos legados · fix drag delegation
+> Última atualização: 2026-04-24 — WhatsApp end-to-end: Supabase + Evolution API Thomaz + webhook Edge Function + envio corrigido
 
 ---
 
@@ -151,6 +151,36 @@
 
 ---
 
+## ✅ CONCLUÍDO (WhatsApp end-to-end · 2026-04-24)
+
+### Migração Firebase → Supabase
+- [x] **Supabase como data layer** — `@supabase/supabase-js` substituiu Firestore em toda a app; `isLive` flag controla modo real vs mock; colunas mapeadas para snake_case (`last_message_at`, `unread_count`, etc.)
+- [x] **Tabelas Supabase** — `leads`, `lead_messages`, `whatsapp_instances` com campos equivalentes ao schema Firebase anterior
+
+### Evolution API — infraestrutura
+- [x] **Migração para servidor Thomaz** — `EVOLUTION_API_URL = https://ayub-evolution.8z6sbs.easypanel.host` (EasyPanel, IP não-AWS); resolve bloqueio WhatsApp em EC2 sa-east-1
+- [x] **HTTPS resolvido** — app em GitHub Pages (HTTPS) → Evolution API via EasyPanel (HTTPS); mixed-content eliminado
+- [x] **QR Code v2** — `triggerQRGenerate` corrigido: captura 403 (instância já existe) e continua para `/instance/connect`; campo correto `res.base64` (v2 retorna direto, não `res.qrcode.base64`)
+
+### Webhook de recebimento
+- [x] **Supabase Edge Function** — `supabase/functions/evolution-webhook/index.ts` (Deno/TypeScript); URL pública `https://yadxcbhginjvoemacdly.supabase.co/functions/v1/evolution-webhook`; deployada com `--no-verify-jwt`
+- [x] **Registro em todas as instâncias** — webhook registrado via `POST /webhook/set/{instance}` nas 3 instâncias da Evolution API com header `Authorization: Bearer {service_role_key}` (necessário pelo gateway Supabase)
+- [x] **Eventos tratados** — `MESSAGES_UPSERT`: insere em `lead_messages` + atualiza `leads` (last_message_at/text/instance, unread_count++); `CONNECTION_UPDATE`: atualiza status em `whatsapp_instances`
+- [x] **Auto-criação de lead** — mensagem de número desconhecido → cria lead com `nome` (pushName), `celular`, `status: Novo`, `origem: WHATSAPP`, `datachegada: hoje`; `matched: false` retornado quando sem lead (não cria mais)
+
+### Normalização de telefone
+- [x] **`normalizePhoneForEvolution` (app.js)** — normaliza qualquer formato para `55XXXXXXXXXXX`; strip device-ID suffix de JIDs multi-device (`5547996160613:0@s.whatsapp.net` → `5547996160613`); garante 12–13 dígitos; fallback: últimos 11 dígitos se número corrompido (ex: `98762773000329` → `5562773000329`)
+- [x] **`normalizePhoneForStorage` (Edge Function)** — mesma lógica aplicada ao salvar `celular` em leads auto-criados
+- [x] **wa.me href** — corrigido para usar `normalizePhoneForEvolution` em vez de concatenação ingênua
+
+### Envio de mensagem
+- [x] **Código do país** — `sendChatMessage` adiciona `55` se necessário antes de enviar para Evolution API
+- [x] **Erro visível** — removido `catch(e) { /* mock */ }` silencioso; toast mostra motivo real
+- [x] **Parse de 400** — `fetchEvolution` lê body do erro; `exists: false` → "Número não registrado no WhatsApp" em vez de "Evolution API 400"
+- [x] **Ordem correta** — `fetchEvolution` chamado antes de salvar no Supabase; mensagem só entra no histórico se a API aceitar
+
+---
+
 ## 🔲 PENDENTE
 
 ### Usuários — o que ainda falta
@@ -159,10 +189,11 @@
 - [ ] **Firebase Storage CORS** — configurar regras de CORS no bucket `faculdade-da-vida.firebasestorage.app` para permitir upload de foto pela origem do GitHub Pages
 - [ ] **Foto na tela de login** — mostrar avatar do usuário logado na tela de boas-vindas da aba Início (já existe `user-avatar` na taskbar; falta preencher no Início)
 
-### WhatsApp — infraestrutura (aguardando AWS)
-- [ ] **Evolution API no AWS** — instalar e configurar; trocar `EVOLUTION_API_URL = 'http://localhost:8080'` em `app.js`
-- [ ] **Webhook de recebimento** — Firebase Functions (ou endpoint externo) para receber mensagens da Evolution API, salvar em `leads/{id}/messages` e incrementar `unreadCount` no lead
-- [ ] **Webhook de status** — atualizar `status` da instância em `whatsapp_instances` quando desconectar/reconectar
+### WhatsApp — pendente
+- [ ] **Limpeza de leads duplicados** — números corrompidos (ex: `98762773000329`) criaram leads com celular errado; corrigir manualmente no Supabase ou criar script de normalização em lote
+- [ ] **Reconexão automática** — quando instância desconecta (CONNECTION_UPDATE close), notificar admin ou tentar reconectar automaticamente
+- [ ] **Mensagens de saída na Edge Function** — `fromMe: true` salva no histórico mas não reflete envios feitos fora do CRM (ex: pelo celular diretamente)
+- [ ] **Leitura de mensagens** — zerar `unread_count` ao abrir o chat do lead no CRM (hoje manual)
 
 ### Features prioritárias
 - [ ] **Integração Google Sheets** — importar leads dos formulários ISCAS/Respondi para o Firestore automaticamente
@@ -193,22 +224,24 @@
 - `unreadCount: number` — mensagens não lidas; zerado ao abrir o chat
 - **Campos removidos:** `venda_realizada`, `produto`, `formas_pagamento`, `parcelas`, `tem_entrada`, `valor_entrada`, `temperatura`
 
-### Mensagens (`leads/{id}/messages`)
+### Mensagens (`lead_messages`) — Supabase
+- `id: uuid`
+- `lead_id: uuid` — FK → leads
 - `text: string`
 - `direction: 'sent' | 'received'`
 - `timestamp: ISO string`
-- `instanceName: string`
-- `senderName: string`
+- `instance_name: string`
+- `sender_name: string`
 - `status: 'sent' | 'delivered' | 'read'`
 
-### WhatsApp Instances (`whatsapp_instances`)
-- `instanceName: string` — slug usado nas chamadas da Evolution API
-- `displayName: string` — nome de exibição
+### WhatsApp Instances (`whatsapp_instances`) — Supabase
+- `instance_name: string` — slug usado nas chamadas da Evolution API
+- `display_name: string` — nome de exibição
 - `responsavel: 'muy' | 'fernanda' | 'thomaz' | 'tati'`
 - `funil: 'captacao' | 'closer' | 'pos-venda' | 'geral'`
 - `status: 'connected' | 'disconnected' | 'awaiting_qr'`
-- `phoneNumber: string`
-- `lastActivity: ISO string`
+- `phone_number: string`
+- `last_activity: ISO string`
 
 ### Usuários (`usuarios`)
 - `uid: string` — mesmo UID do Firebase Authentication
@@ -222,8 +255,12 @@
 - Exclusão: apenas Firestore (Auth não é deletado pelo cliente — sem Admin SDK)
 
 ### Infra
-- `EVOLUTION_API_URL` — constante no topo de `app.js`; trocar para URL do AWS quando disponível
+- `EVOLUTION_API_URL = https://ayub-evolution.8z6sbs.easypanel.host` — servidor Thomaz (EasyPanel); `EVOLUTION_API_KEY = 943BFEBDE2188DF38D176E5FC8AFD`
+- **Webhook URL** — `https://yadxcbhginjvoemacdly.supabase.co/functions/v1/evolution-webhook` (Supabase Edge Function, Deno/TS)
+- **Webhook auth** — Evolution API envia `Authorization: Bearer {service_role_key}` em todas as requisições ao webhook
+- **Supabase project** — `yadxcbhginjvoemacdly` (supabase.co)
 - Colunas do kanban salvas em `localStorage` (chave `fdv_kanban_columns`)
 - `agendaCalYear / agendaCalMonth` — estado do mini calendário (em memória, reset ao recarregar)
 - Servidor local: `node app/server.js` na porta 3000, hot reload via SSE
 - Deploy: GitHub Actions (`.github/workflows/deploy.yml`) → GitHub Pages no push para `master`
+- **Phone normalization** — `normalizePhoneForEvolution(celular)` em app.js e `normalizePhoneForStorage(phone)` na Edge Function; ambas garantem `55XXXXXXXXXXX` (12–13 dígitos)

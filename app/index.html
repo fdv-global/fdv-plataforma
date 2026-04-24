@@ -362,44 +362,40 @@
   <div class="page-top">
     <div class="page-title-block">
       <h1>WhatsApp</h1>
-      <p>Instâncias conectadas e central de chats</p>
+      <p>Central de chats · instâncias · respostas rápidas · etiquetas</p>
     </div>
     <button class="btn-primary" id="btn-nova-instancia">+ Conectar número</button>
   </div>
 
   <div class="sub-nav">
-    <button class="sub-link active" data-sub="instancias">Instâncias</button>
-    <button class="sub-link" data-sub="chats">Central de Chats</button>
-  </div>
-
-  <!-- ─── SUB: INSTÂNCIAS ─── -->
-  <div id="sub-instancias" class="sub-panel">
-    <div class="stats-grid" id="wa-stats"></div>
-    <div class="wa-instances-grid" id="wa-instances-grid">
-      <div class="loading-layer" id="wa-loading" style="position:static;background:none;padding:48px 0">
-        <div class="spinner"></div>
-        <span>Carregando instâncias…</span>
-      </div>
-    </div>
+    <button class="sub-link active" data-sub="chats">Central de Chats</button>
+    <button class="sub-link" data-sub="instancias">Instâncias</button>
+    <button class="sub-link" data-sub="respostas">Respostas Rápidas</button>
+    <button class="sub-link" data-sub="etiquetas">Etiquetas</button>
   </div>
 
   <!-- ─── SUB: CENTRAL DE CHATS ─── -->
-  <div id="sub-chats" class="sub-panel sub-panel--chats" style="display:none">
+  <div id="sub-chats" class="sub-panel sub-panel--chats">
     <div class="chats-layout">
 
-      <!-- Lista de conversas -->
+      <!-- Sidebar: busca + filtros + lista -->
       <div class="chats-sidebar">
-        <div class="chats-filters">
-          <select id="chats-filter-instance" class="filter-select">
-            <option value="">Todas as instâncias</option>
-          </select>
-          <select id="chats-filter-status" class="filter-select">
-            <option value="">Todos os status</option>
-            <option value="aguardando">Aguardando</option>
-            <option value="agendado">Agendado</option>
-            <option value="realizada">Realizada</option>
-            <option value="noshow">No Show</option>
-          </select>
+        <div class="chats-sidebar-top">
+          <div class="chats-search-wrap">
+            <input type="text" id="chats-search" class="chats-search-input" placeholder="Buscar conversa…" autocomplete="off">
+          </div>
+          <div class="chats-filters">
+            <select id="chats-filter-instance" class="filter-select">
+              <option value="">Todas as instâncias</option>
+            </select>
+            <select id="chats-filter-status" class="filter-select">
+              <option value="">Todos os status</option>
+              <option value="aguardando">Aguardando</option>
+              <option value="agendado">Agendado</option>
+              <option value="realizada">Realizada</option>
+              <option value="noshow">No Show</option>
+            </select>
+          </div>
         </div>
         <div class="chats-list" id="chats-list">
           <div class="chat-list-empty">
@@ -414,11 +410,72 @@
         <div class="chats-panel-empty">
           <div style="font-size:40px;margin-bottom:12px">💬</div>
           <h3>Selecione uma conversa</h3>
-          <p>Clique em um lead à esquerda para abrir o chat.</p>
+          <p>Clique em um contato à esquerda para abrir o chat.</p>
         </div>
       </div>
 
+      <!-- Painel lateral: info do lead (abre ao clicar no nome) -->
+      <div class="chats-info-panel" id="chats-info-panel" style="display:none"></div>
+
     </div>
+  </div>
+
+  <!-- ─── SUB: INSTÂNCIAS ─── -->
+  <div id="sub-instancias" class="sub-panel" style="display:none">
+    <div class="stats-grid" id="wa-stats"></div>
+    <div class="wa-instances-grid" id="wa-instances-grid">
+      <div class="loading-layer" id="wa-loading" style="position:static;background:none;padding:48px 0">
+        <div class="spinner"></div>
+        <span>Carregando instâncias…</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SUB: RESPOSTAS RÁPIDAS ─── -->
+  <div id="sub-respostas" class="sub-panel" style="display:none">
+    <div class="page-top" style="margin-bottom:24px">
+      <div class="page-title-block">
+        <h2>Respostas Rápidas</h2>
+        <p>Digite <code>/</code> no chat para usar. Atalhos para mensagens frequentes.</p>
+      </div>
+      <button class="btn-primary" id="btn-nova-resposta">+ Nova resposta</button>
+    </div>
+    <div id="quick-reply-form" class="qr-form" style="display:none">
+      <div class="qr-form-fields">
+        <input id="qr-titulo" class="filter-input" placeholder="Título (ex: saudacao, proposta…)">
+        <textarea id="qr-texto" class="filter-input qr-textarea" rows="3" placeholder="Texto da resposta…"></textarea>
+      </div>
+      <div class="qr-form-actions">
+        <button class="btn-ghost btn-sm" id="btn-qr-cancel">Cancelar</button>
+        <button class="btn-primary btn-sm" id="btn-qr-save">Salvar</button>
+      </div>
+    </div>
+    <div id="quick-replies-table-wrap"></div>
+  </div>
+
+  <!-- ─── SUB: ETIQUETAS ─── -->
+  <div id="sub-etiquetas" class="sub-panel" style="display:none">
+    <div class="page-top" style="margin-bottom:24px">
+      <div class="page-title-block">
+        <h2>Etiquetas</h2>
+        <p>Organize conversas com etiquetas coloridas.</p>
+      </div>
+      <button class="btn-primary" id="btn-nova-etiqueta">+ Nova etiqueta</button>
+    </div>
+    <div id="label-form" class="label-form" style="display:none">
+      <div class="label-form-fields">
+        <input id="label-nome" class="filter-input" placeholder="Nome da etiqueta">
+        <div class="label-color-wrap">
+          <span>Cor:</span>
+          <input id="label-cor" type="color" value="#CE9221" class="label-color-picker">
+        </div>
+      </div>
+      <div class="label-form-actions">
+        <button class="btn-ghost btn-sm" id="btn-label-cancel">Cancelar</button>
+        <button class="btn-primary btn-sm" id="btn-label-save">Salvar</button>
+      </div>
+    </div>
+    <div id="labels-grid" class="labels-grid"></div>
   </div>
 
 </div><!-- /tab-whatsapp -->

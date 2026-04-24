@@ -106,7 +106,7 @@ let agendaCalMonth = 0;
 // WhatsApp state
 let waInstances        = [];
 let waInstancesLoaded  = false;
-let activeWaSub        = 'instancias';
+let activeWaSub        = 'chats';
 let qrInstanceId       = null;
 let qrTimerInterval    = null;
 let qrPollingInterval  = null;
@@ -117,6 +117,10 @@ let chatLeadId         = null;
 let chatUnsubscribe    = null;
 let chatMessages       = [];
 let chatActiveSide     = null;
+let chatSearchQuery    = '';
+let leadLabelsCache    = {};   // { leadId: [{id,nome,cor}] }
+let labelsData         = [];
+let quickReplies       = [];
 
 // Motivo de perda state
 let mpLeadId  = null;
@@ -633,7 +637,7 @@ function switchTab(tab) {
   else if (tab === 'agendamentos') renderActiveSub();
   else if (tab === 'closer')       renderKanban();
   else if (tab === 'relatorios')   renderRelatorios();
-  else if (tab === 'whatsapp')     { if (!waInstancesLoaded) loadWaInstances(); else renderInstancias(); }
+  else if (tab === 'whatsapp')     { if (!waInstancesLoaded) loadWaInstances(); switchWaSub('chats'); }
 }
 
 function switchSub(sub) {
@@ -662,7 +666,7 @@ function renderAll() {
   else if (activeTab === 'agendamentos') renderActiveSub();
   else if (activeTab === 'closer')       renderKanban();
   else if (activeTab === 'relatorios')   renderRelatorios();
-  else if (activeTab === 'whatsapp')     renderInstancias();
+  else if (activeTab === 'whatsapp')     renderCentralChats();
 }
 
 // ─── INÍCIO ──────────────────────────────────────────────────────────
@@ -2615,8 +2619,10 @@ async function sendChatMessage(inputId, instSelectId, leadId) {
 
 // ─── CENTRAL DE CHATS ────────────────────────────────────────────────
 
-function renderCentralChats() {
+async function renderCentralChats() {
   renderChatsFilters();
+  await loadLeadLabels();
+  await loadQuickReplies();
   renderChatsList();
 }
 
@@ -2626,35 +2632,59 @@ function renderChatsFilters() {
     waInstances.map(i => `<option value="${esc(i.instanceName)}">${esc(i.displayName)}</option>`).join('');
 }
 
+function fmtChatTime(isoStr) {
+  if (!isoStr) return '';
+  const d   = new Date(isoStr);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString())
+    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  if (new Date(now - 86400000).toDateString() === d.toDateString()) return 'Ontem';
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+}
+
 function renderChatsList() {
   const instFilt   = $('chats-filter-instance')?.value || '';
   const statusFilt = $('chats-filter-status')?.value   || '';
-  let convs = allLeads.filter(l => l.lastMessageAt);
-  if (instFilt)   convs = convs.filter(l => l.lastMessageInstance === instFilt);
+  const search     = chatSearchQuery.toLowerCase();
+
+  let convs = allLeads.filter(l => l.last_message_at || l.lastMessageAt);
+  if (instFilt)   convs = convs.filter(l => (l.last_message_instance || l.lastMessageInstance) === instFilt);
   if (statusFilt) convs = convs.filter(l => l.status === statusFilt);
-  convs.sort((a,b) => (b.lastMessageAt||'').localeCompare(a.lastMessageAt||''));
+  if (search)     convs = convs.filter(l => (l.nome||'').toLowerCase().includes(search) ||
+                                             (l.celular||'').includes(search));
+  convs.sort((a, b) =>
+    ((b.last_message_at||b.lastMessageAt||'')).localeCompare((a.last_message_at||a.lastMessageAt||''))
+  );
+
   const listEl = $('chats-list'); if (!listEl) return;
-  if (convs.length === 0) {
+  if (!convs.length) {
     listEl.innerHTML = `<div class="chat-list-empty"><div style="font-size:32px;margin-bottom:10px">💬</div><p>Nenhuma conversa ainda.</p></div>`;
     return;
   }
+
   listEl.innerHTML = convs.map(lead => {
-    const isActive = lead.id === chatActiveSide;
-    const unread   = lead.unreadCount || 0;
-    const lastMsg  = lead.lastMessageText ? esc(lead.lastMessageText.slice(0,55)) : '—';
-    const lastTime = lead.lastMessageAt
-      ? new Date(lead.lastMessageAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '';
-    return `<div class="chats-list-item${isActive?' chats-list-item--active':''}${unread?' chats-list-item--unread':''}" data-lead-id="${esc(lead.id)}" role="button" tabindex="0">
-      <div class="cli-avatar">${esc((lead.nome||'?')[0].toUpperCase())}</div>
+    const isActive  = lead.id === chatActiveSide;
+    const unread    = lead.unread_count || lead.unreadCount || 0;
+    const lastMsg   = (lead.last_message_text || lead.lastMessageText || '').slice(0, 50);
+    const lastTime  = fmtChatTime(lead.last_message_at || lead.lastMessageAt);
+    const initials  = (lead.nome || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const lbls      = (leadLabelsCache[lead.id] || []);
+    const lblHtml   = lbls.map(l =>
+      `<span class="cli-label-pill" style="background:${esc(l.cor)}22;color:${esc(l.cor)}">${esc(l.nome)}</span>`
+    ).join('');
+
+    return `<div class="chats-list-item${isActive ? ' chats-list-item--active' : ''}${unread ? ' chats-list-item--unread' : ''}" data-lead-id="${esc(lead.id)}" role="button" tabindex="0">
+      <div class="cli-avatar"><span class="cli-initials">${esc(initials)}</span></div>
       <div class="cli-body">
         <div class="cli-top">
-          <span class="cli-name">${esc(lead.nome||'—')}</span>
-          <span class="cli-time">${lastTime}</span>
+          <span class="cli-name">${esc(lead.nome || '—')}</span>
+          <span class="cli-time">${esc(lastTime)}</span>
         </div>
-        <div class="cli-preview">
-          <span class="cli-msg">${lastMsg}</span>
-          ${unread?`<span class="cli-unread-badge">${unread}</span>`:''}
+        <div class="cli-mid">
+          <span class="cli-msg">${esc(lastMsg)}</span>
+          ${unread ? `<span class="cli-unread-badge">${unread}</span>` : ''}
         </div>
+        ${lblHtml ? `<div class="cli-labels">${lblHtml}</div>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -2665,39 +2695,317 @@ function openCentralChat(leadId) {
   renderChatsList();
   const lead = allLeads.find(l => l.id === leadId); if (!lead) return;
   const panel = $('chats-panel'); if (!panel) return;
+
+  const initials = (lead.nome || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const phone    = normalizePhoneForEvolution(lead.celular) || lead.celular || '—';
+
   panel.innerHTML = `
-    <div class="chats-panel-header">
-      <div class="chats-panel-lead">
-        <div class="cli-avatar" style="width:38px;height:38px;font-size:15px">${esc((lead.nome||'?')[0].toUpperCase())}</div>
-        <div>
-          <div class="chats-panel-name">${esc(lead.nome||'—')}</div>
-          <div class="chats-panel-phone">${esc(lead.celular||'—')}</div>
+    <div class="cp-header">
+      <div class="cp-header-left">
+        <div class="cp-avatar"><span class="cp-initials">${esc(initials)}</span></div>
+        <div class="cp-header-info" id="btn-open-lead-info" role="button" title="Ver info do lead">
+          <div class="cp-name">${esc(lead.nome || '—')}</div>
+          <div class="cp-phone">${esc(phone)}</div>
         </div>
       </div>
-      <select id="central-chat-instance" class="filter-select chat-inst-sel">
-        <option value="">Selecionar instância…</option>
-      </select>
+      <div class="cp-header-right">
+        <select id="central-chat-instance" class="filter-select chat-inst-sel"></select>
+        <button class="btn-ghost btn-icon cp-info-btn" id="btn-toggle-info" title="Info do lead">
+          <i data-lucide="info" style="width:18px;height:18px"></i>
+        </button>
+      </div>
     </div>
+    <div class="cp-labels-bar" id="central-chat-labels"></div>
     <div class="chat-messages" id="central-chat-messages">
       <div class="chat-empty" id="central-chat-empty">
-        <span>Nenhuma mensagem ainda.</span>
         <span class="chat-empty-hint">Selecione uma instância e envie a primeira mensagem.</span>
       </div>
     </div>
+    <div class="quick-replies-menu" id="quick-replies-menu" style="display:none"></div>
     <div class="chat-input-bar">
-      <textarea class="chat-input" id="central-chat-input" placeholder="Digite uma mensagem…" rows="2"></textarea>
-      <button class="btn-primary chat-send-btn" id="btn-central-send">↑</button>
+      <textarea class="chat-input" id="central-chat-input" placeholder="Digite uma mensagem ou / para respostas rápidas…" rows="1"></textarea>
+      <button class="btn-primary chat-send-btn" id="btn-central-send"><i data-lucide="send" style="width:16px;height:16px"></i></button>
     </div>`;
-  $('btn-central-send').addEventListener('click', () => sendChatMessage('central-chat-input','central-chat-instance',leadId));
-  $('central-chat-input').addEventListener('keydown', e => {
-    if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage('central-chat-input','central-chat-instance',leadId); }
-  });
+
+  lucide.createIcons({ nodes: [panel] });
   populateChatInstanceSelector('central-chat-instance');
+  renderChatLabels(leadId);
   startChatListener(leadId, 'central-chat-messages', 'central-chat-empty');
-  if (isLive && (lead.unreadCount||0) > 0) {
+
+  $('btn-central-send').addEventListener('click', () =>
+    sendChatMessage('central-chat-input', 'central-chat-instance', leadId)
+  );
+  $('central-chat-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage('central-chat-input', 'central-chat-instance', leadId); }
+    if (e.key === 'Escape') closeQuickRepliesMenu();
+  });
+  $('central-chat-input').addEventListener('input', e => {
+    const val = e.target.value;
+    if (val.startsWith('/')) showQuickRepliesMenu(val.slice(1));
+    else closeQuickRepliesMenu();
+  });
+  $('btn-open-lead-info').addEventListener('click', () => toggleLeadInfoPanel(leadId));
+  $('btn-toggle-info').addEventListener('click', () => toggleLeadInfoPanel(leadId));
+
+  if (isLive && (lead.unread_count || lead.unreadCount || 0) > 0) {
     supabase.from('leads').update({ unread_count: 0 }).eq('id', leadId).catch(console.error);
-    lead.unreadCount = 0; lead.unread_count = 0; renderChatsList();
+    lead.unread_count = 0; lead.unreadCount = 0; renderChatsList();
   }
+}
+
+// ── Lead info side panel ────────────────────────────────────────────────────
+function toggleLeadInfoPanel(leadId) {
+  const panel = $('chats-info-panel'); if (!panel) return;
+  if (panel.style.display === 'none') openLeadInfoPanel(leadId);
+  else { panel.style.display = 'none'; }
+}
+
+function openLeadInfoPanel(leadId) {
+  const panel = $('chats-info-panel'); if (!panel) return;
+  const lead  = allLeads.find(l => l.id === leadId); if (!lead) return;
+  panel.style.display = '';
+  panel.innerHTML = `
+    <div class="cip-header">
+      <span>Dados do lead</span>
+      <button class="btn-ghost btn-icon" id="btn-close-info"><i data-lucide="x" style="width:16px;height:16px"></i></button>
+    </div>
+    <div class="cip-body">
+      <div class="cip-field"><label>Nome</label><span>${esc(lead.nome || '—')}</span></div>
+      <div class="cip-field"><label>Celular</label><span>${esc(lead.celular || '—')}</span></div>
+      <div class="cip-field"><label>Status</label><span>${esc(lead.status || '—')}</span></div>
+      <div class="cip-field"><label>Origem</label><span>${esc(lead.origem || '—')}</span></div>
+      <div class="cip-field"><label>Profissão</label><span>${esc(lead.profissao || '—')}</span></div>
+      <div class="cip-field"><label>Renda</label><span>${esc(lead.renda || '—')}</span></div>
+      ${lead.observacoes ? `<div class="cip-field"><label>Obs.</label><p class="cip-obs">${esc(lead.observacoes)}</p></div>` : ''}
+    </div>
+    <div class="cip-actions">
+      <button class="btn-primary btn-sm" onclick="openDetalhes('${esc(lead.id)}')">Perfil completo</button>
+    </div>`;
+  lucide.createIcons({ nodes: [panel] });
+  $('btn-close-info').addEventListener('click', () => { panel.style.display = 'none'; });
+}
+
+// ── Lead labels in chat ────────────────────────────────────────────────────
+async function loadLeadLabels() {
+  if (!isLive) return;
+  const { data } = await supabase.from('lead_labels').select('lead_id, labels(id, nome, cor)');
+  leadLabelsCache = {};
+  (data || []).forEach(r => {
+    if (!leadLabelsCache[r.lead_id]) leadLabelsCache[r.lead_id] = [];
+    if (r.labels) leadLabelsCache[r.lead_id].push(r.labels);
+  });
+}
+
+async function renderChatLabels(leadId) {
+  const bar = $('central-chat-labels'); if (!bar) return;
+  if (!isLive) { bar.innerHTML = ''; return; }
+  await loadLabels();
+  const { data: ll } = await supabase.from('lead_labels').select('label_id, labels(id, nome, cor)').eq('lead_id', leadId);
+  const applied    = (ll || []).map(r => r.labels).filter(Boolean);
+  const appliedIds = applied.map(l => l.id);
+  leadLabelsCache[leadId] = applied;
+
+  bar.innerHTML = `
+    ${applied.map(l => `
+      <span class="cp-label-pill" style="background:${esc(l.cor)}22;border-color:${esc(l.cor)}55;color:${esc(l.cor)}">
+        ${esc(l.nome)}<button class="cp-label-rm" data-lid="${esc(l.id)}" data-lead="${esc(leadId)}">×</button>
+      </span>`).join('')}
+    <div class="cp-label-picker-wrap">
+      <button class="cp-label-add" id="btn-add-label" title="Adicionar etiqueta">＋</button>
+      <div class="cp-label-picker" id="cp-label-picker" style="display:none">
+        ${labelsData.length
+          ? labelsData.map(l => `
+              <div class="cp-label-opt${appliedIds.includes(l.id) ? ' cp-label-opt--on' : ''}" data-lid="${esc(l.id)}" data-lead="${esc(leadId)}">
+                <span class="label-dot" style="background:${esc(l.cor)}"></span>${esc(l.nome)}
+              </div>`).join('')
+          : '<div class="cp-label-empty">Sem etiquetas. Crie em "Etiquetas".</div>'}
+      </div>
+    </div>`;
+
+  $('btn-add-label')?.addEventListener('click', e => {
+    e.stopPropagation();
+    const pk = $('cp-label-picker');
+    if (pk) pk.style.display = pk.style.display === 'none' ? '' : 'none';
+  });
+  bar.querySelectorAll('.cp-label-opt').forEach(opt => {
+    opt.addEventListener('click', async () => {
+      const lid  = opt.dataset.lid;
+      const lead = opt.dataset.lead;
+      if (opt.classList.contains('cp-label-opt--on'))
+        await supabase.from('lead_labels').delete().match({ lead_id: lead, label_id: lid });
+      else
+        await supabase.from('lead_labels').insert({ lead_id: lead, label_id: lid });
+      renderChatLabels(lead); renderChatsList();
+    });
+  });
+  bar.querySelectorAll('.cp-label-rm').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await supabase.from('lead_labels').delete().match({ lead_id: btn.dataset.lead, label_id: btn.dataset.lid });
+      renderChatLabels(btn.dataset.lead); renderChatsList();
+    });
+  });
+  document.addEventListener('click', function closePk(e) {
+    const pk = $('cp-label-picker');
+    if (pk && !pk.contains(e.target) && e.target.id !== 'btn-add-label') pk.style.display = 'none';
+  }, { once: true });
+}
+
+// ── Quick Replies ────────────────────────────────────────────────────────────
+async function loadQuickReplies() {
+  if (!isLive) return;
+  const { data } = await supabase.from('quick_replies').select('*').order('titulo');
+  quickReplies = data || [];
+}
+
+function showQuickRepliesMenu(query) {
+  const menu = $('quick-replies-menu'); if (!menu) return;
+  if (!quickReplies.length) { menu.style.display = 'none'; return; }
+  const q        = query.toLowerCase();
+  const filtered = q ? quickReplies.filter(r =>
+    r.titulo.toLowerCase().includes(q) || r.texto.toLowerCase().includes(q)
+  ) : quickReplies;
+  if (!filtered.length) { menu.style.display = 'none'; return; }
+  menu.style.display = '';
+  menu.innerHTML = filtered.map(r => `
+    <div class="qrm-item" data-text="${esc(r.texto)}" role="button" tabindex="0">
+      <span class="qrm-title">/${esc(r.titulo)}</span>
+      <span class="qrm-preview">${esc(r.texto.slice(0, 70))}${r.texto.length > 70 ? '…' : ''}</span>
+    </div>`).join('');
+  menu.querySelectorAll('.qrm-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const input = $('central-chat-input');
+      if (input) { input.value = item.dataset.text; input.focus(); }
+      closeQuickRepliesMenu();
+    });
+  });
+}
+
+function closeQuickRepliesMenu() {
+  const menu = $('quick-replies-menu'); if (menu) menu.style.display = 'none';
+}
+
+// CRUD quick replies
+let qrEditId = null;
+
+async function renderQuickRepliesPanel() {
+  const wrap = $('quick-replies-table-wrap'); if (!wrap) return;
+  await loadQuickReplies();
+  if (!quickReplies.length) {
+    wrap.innerHTML = '<div class="qr-empty">Nenhuma resposta cadastrada. Clique em "+ Nova resposta".</div>';
+    return;
+  }
+  wrap.innerHTML = `
+    <table class="qr-table">
+      <thead><tr><th>Atalho</th><th>Texto</th><th></th></tr></thead>
+      <tbody>${quickReplies.map(r => `
+        <tr>
+          <td><code>/${esc(r.titulo)}</code></td>
+          <td class="qr-td-text">${esc(r.texto)}</td>
+          <td class="qr-td-acts">
+            <button class="btn-ghost btn-sm qr-edit" data-id="${esc(r.id)}">Editar</button>
+            <button class="btn-ghost btn-sm qr-del" data-id="${esc(r.id)}" style="color:var(--marsala)">Excluir</button>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+  wrap.querySelectorAll('.qr-edit').forEach(btn => btn.addEventListener('click', () => openQrForm(btn.dataset.id)));
+  wrap.querySelectorAll('.qr-del').forEach(btn => btn.addEventListener('click', () => deleteQuickReply(btn.dataset.id)));
+}
+
+function openQrForm(id) {
+  const form = $('quick-reply-form'); if (!form) return;
+  qrEditId = id || null;
+  form.style.display = '';
+  if (id) {
+    const r = quickReplies.find(r => r.id === id);
+    if (r) { $('qr-titulo').value = r.titulo; $('qr-texto').value = r.texto; }
+  } else {
+    $('qr-titulo').value = ''; $('qr-texto').value = '';
+  }
+}
+
+async function saveQuickReply() {
+  const titulo = $('qr-titulo')?.value.trim();
+  const texto  = $('qr-texto')?.value.trim();
+  if (!titulo || !texto) { toast('Preencha título e texto.', 'err'); return; }
+  if (qrEditId) {
+    const { error } = await supabase.from('quick_replies').update({ titulo, texto }).eq('id', qrEditId);
+    if (error) { toast('Erro ao salvar.', 'err'); return; }
+  } else {
+    const { error } = await supabase.from('quick_replies').insert({ titulo, texto });
+    if (error) { toast('Erro ao salvar.', 'err'); return; }
+  }
+  toast('Resposta salva.', 'ok');
+  $('quick-reply-form').style.display = 'none';
+  qrEditId = null;
+  renderQuickRepliesPanel();
+}
+
+async function deleteQuickReply(id) {
+  if (!confirm('Excluir esta resposta rápida?')) return;
+  await supabase.from('quick_replies').delete().eq('id', id);
+  toast('Excluída.', 'ok');
+  renderQuickRepliesPanel();
+}
+
+// ── Labels CRUD ───────────────────────────────────────────────────────────────
+let labelEditId = null;
+
+async function loadLabels() {
+  if (!isLive) return;
+  const { data } = await supabase.from('labels').select('*').order('nome');
+  labelsData = data || [];
+}
+
+async function renderLabelsPanel() {
+  const grid = $('labels-grid'); if (!grid) return;
+  await loadLabels();
+  if (!labelsData.length) {
+    grid.innerHTML = '<div class="labels-empty">Nenhuma etiqueta criada ainda. Clique em "+ Nova etiqueta".</div>';
+    return;
+  }
+  grid.innerHTML = labelsData.map(l => `
+    <div class="label-admin-chip" style="border-color:${esc(l.cor)}33;background:${esc(l.cor)}11">
+      <span class="label-dot" style="background:${esc(l.cor)}"></span>
+      <span class="label-admin-nome">${esc(l.nome)}</span>
+      <button class="btn-icon label-e" data-id="${esc(l.id)}" title="Editar">✏</button>
+      <button class="btn-icon label-d" data-id="${esc(l.id)}" title="Excluir" style="color:var(--marsala)">✕</button>
+    </div>`).join('');
+  grid.querySelectorAll('.label-e').forEach(btn => btn.addEventListener('click', () => openLabelForm(btn.dataset.id)));
+  grid.querySelectorAll('.label-d').forEach(btn => btn.addEventListener('click', () => deleteLabel(btn.dataset.id)));
+}
+
+function openLabelForm(id) {
+  const form = $('label-form'); if (!form) return;
+  labelEditId = id || null;
+  form.style.display = '';
+  if (id) {
+    const l = labelsData.find(l => l.id === id);
+    if (l) { $('label-nome').value = l.nome; $('label-cor').value = l.cor; }
+  } else {
+    $('label-nome').value = ''; $('label-cor').value = '#CE9221';
+  }
+}
+
+async function saveLabel() {
+  const nome = $('label-nome')?.value.trim();
+  const cor  = $('label-cor')?.value || '#CE9221';
+  if (!nome) { toast('Preencha o nome da etiqueta.', 'err'); return; }
+  if (labelEditId)
+    await supabase.from('labels').update({ nome, cor }).eq('id', labelEditId);
+  else
+    await supabase.from('labels').insert({ nome, cor });
+  toast('Etiqueta salva.', 'ok');
+  $('label-form').style.display = 'none';
+  labelEditId = null;
+  renderLabelsPanel();
+}
+
+async function deleteLabel(id) {
+  if (!confirm('Excluir esta etiqueta?')) return;
+  await supabase.from('labels').delete().eq('id', id);
+  toast('Excluída.', 'ok');
+  renderLabelsPanel();
 }
 
 // ─── WHATSAPP / EVOLUTION API ────────────────────────────────────────
@@ -2735,6 +3043,8 @@ function switchWaSub(sub) {
   );
   if      (sub === 'instancias') renderInstancias();
   else if (sub === 'chats')      renderCentralChats();
+  else if (sub === 'respostas')  renderQuickRepliesPanel();
+  else if (sub === 'etiquetas')  renderLabelsPanel();
 }
 
 function renderInstancias() {
@@ -3211,10 +3521,14 @@ function bindEvents() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage('perfil-chat-input','perfil-chat-instance',perfilLeadId); }
   });
 
-  // Central de chats — filtros
+  // Central de chats — filtros + busca
   ['chats-filter-instance','chats-filter-status'].forEach(id =>
     $(id)?.addEventListener('change', renderChatsList)
   );
+  $('chats-search')?.addEventListener('input', e => {
+    chatSearchQuery = e.target.value.trim();
+    renderChatsList();
+  });
 
   // Central de chats — clique na conversa (delegado)
   $('chats-list').addEventListener('click', e => {
@@ -3229,6 +3543,16 @@ function bindEvents() {
   document.querySelectorAll('#tab-whatsapp .sub-link[data-sub]').forEach(btn =>
     btn.addEventListener('click', () => switchWaSub(btn.dataset.sub))
   );
+
+  // Respostas rápidas — CRUD
+  $('btn-nova-resposta')?.addEventListener('click', () => openQrForm(null));
+  $('btn-qr-save')?.addEventListener('click', saveQuickReply);
+  $('btn-qr-cancel')?.addEventListener('click', () => { $('quick-reply-form').style.display = 'none'; qrEditId = null; });
+
+  // Etiquetas — CRUD
+  $('btn-nova-etiqueta')?.addEventListener('click', () => openLabelForm(null));
+  $('btn-label-save')?.addEventListener('click', saveLabel);
+  $('btn-label-cancel')?.addEventListener('click', () => { $('label-form').style.display = 'none'; labelEditId = null; });
 
   // WhatsApp — ações nos cards (delegado)
   $('wa-instances-grid').addEventListener('click', e => {
