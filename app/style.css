@@ -26,6 +26,12 @@
   --gold-22:     rgba(206,146,33,.22);
   --gold-28:     rgba(206,146,33,.28);
 
+  /* Chat bubbles — overridable via applyBubbleColors() */
+  --bubble-sent-bg:  rgba(206,146,33,.45);
+  --bubble-sent-brd: rgba(206,146,33,.60);
+  --bubble-recv-bg:  #2d444a;
+  --bubble-recv-brd: rgba(255,255,255,.10);
+
   --petro:       #0A4751;
   --petro-l:     #4db5c8;
   --petro-10:    rgba(77,181,200,.10);
@@ -1844,14 +1850,14 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
   white-space: pre-wrap;
 }
 .chat-msg--sent .chat-bubble {
-  background: var(--gold-22);
-  border: 1px solid var(--gold-28);
+  background: var(--bubble-sent-bg);
+  border: 1px solid var(--bubble-sent-brd);
   color: var(--t1);
   border-bottom-right-radius: 4px;
 }
 .chat-msg--received .chat-bubble {
-  background: var(--s2);
-  border: 1px solid var(--b1);
+  background: var(--bubble-recv-bg);
+  border: 1px solid var(--bubble-recv-brd);
   color: var(--t1);
   border-bottom-left-radius: 4px;
 }
@@ -2054,7 +2060,7 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
   background: var(--s1); flex-shrink: 0;
 }
 .cp-header-left  { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
-.cp-header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.cp-header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; position: relative; }
 .cp-avatar {
   width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%;
   background: linear-gradient(135deg, var(--s3), var(--s2));
@@ -2066,8 +2072,20 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 .cp-header-info:hover .cp-name { color: var(--gold); }
 .cp-name  { font-size: 14px; font-weight: 600; color: var(--t1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cp-phone { font-size: 11px; color: var(--t3); margin-top: 1px; }
-.cp-info-btn { padding: 6px; border-radius: var(--r-sm); color: var(--t3); }
+.cp-info-btn { padding: 6px; border-radius: var(--r-sm); color: var(--t2); border: none; }
 .cp-info-btn:hover { color: var(--gold); background: var(--gold-10); }
+/* Bubble color settings button + panel */
+.cp-settings-btn { padding: 6px; border-radius: var(--r-sm); color: var(--t2); border: none; }
+.cp-settings-btn:hover { color: var(--gold); background: var(--gold-10); }
+.cp-bubble-settings {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
+  background: var(--s2); border: 1px solid var(--b2);
+  border-radius: var(--r-md); padding: 14px; min-width: 210px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
+}
+.cp-bs-title { font-size: 11px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+.cp-bs-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: var(--t1); }
+.cp-color-input { width: 36px; height: 28px; padding: 2px; border-radius: var(--r-sm); border: 1px solid var(--b1); cursor: pointer; background: none; }
 
 /* Labels bar */
 .cp-labels-bar {
@@ -2163,7 +2181,13 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 .cip-field label { display: block; font-size: 11px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; }
 .cip-field span  { font-size: 13px; color: var(--t1); }
 .cip-obs { font-size: 12px; color: var(--t2); margin: 0; line-height: 1.5; white-space: pre-wrap; }
-.cip-actions { padding: 0 16px 16px; flex-shrink: 0; }
+.cip-actions { padding: 0 16px 16px; flex-shrink: 0; display: flex; gap: 8px; }
+.cip-edit-form { padding: 16px; }
+.cip-edit-input { width: 100%; margin-bottom: 2px; font-size: 13px; padding: 7px 10px; }
+.cip-edit-input[type="textarea"], textarea.cip-edit-input { resize: vertical; min-height: 64px; }
+.cip-edit-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+.cip-edit-toggle { padding: 4px; border-radius: var(--r-sm); color: var(--t3); border: none; background: transparent; cursor: pointer; }
+.cip-edit-toggle:hover { color: var(--gold); background: var(--gold-10); }
 
 /* ── Quick replies CRUD panel ────────────────────────────── */
 .qr-form {

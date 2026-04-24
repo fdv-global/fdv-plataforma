@@ -603,6 +603,14 @@ function loadLeads() {
         histMap[h.lead_id].push({ col: h.col, colLabel: h.col_label, movidoPor: h.movido_por, movidoEm: h.movido_em });
       });
       allLeads = (leads || []).map(d => mapLead(d, histMap));
+      // Keep unread at 0 for the currently open chat
+      if (chatActiveSide) {
+        const ol = allLeads.find(l => l.id === chatActiveSide);
+        if (ol && (ol.unread_count || 0) > 0) {
+          ol.unread_count = 0; ol.unreadCount = 0;
+          supabase.from('leads').update({ unread_count: 0 }).eq('id', chatActiveSide).catch(console.error);
+        }
+      }
       $('loading-layer').style.display = 'none';
       renderAll();
     } catch(err) { $('loading-layer').style.display = 'none'; showDbError(err.message); }
@@ -1104,7 +1112,9 @@ function renderKanban() {
   // Sync quick-filter pills with the select value
   document.querySelectorAll('.kqf-btn').forEach(b => b.classList.toggle('active', b.dataset.closer === closerFilt));
 
-  let leads = allLeads.filter(l => l.status !== 'aguardando');
+  let leads = allLeads.filter(l =>
+    l.kanban_column || ['agendado','noshow','cancelado','realizada'].includes(l.status)
+  );
   if (mesFilt)    leads = leads.filter(l => (l.dataagendamento||l.datachegada||'').startsWith(mesFilt));
   if (closerFilt) leads = leads.filter(l => (l.closer||'') === closerFilt);
 
@@ -2520,7 +2530,14 @@ function startChatListener(leadId, messagesId, emptyId) {
       ({ new: msg }) => {
         chatMessages.push(mapMsg(msg));
         renderChatMessages(chatMessages, messagesId, emptyId);
-        if (activeTab === 'whatsapp' && activeWaSub === 'chats') renderChatsList();
+        if (activeTab === 'whatsapp' && activeWaSub === 'chats') {
+          const ol = allLeads.find(x => x.id === leadId);
+          if (ol && (ol.unread_count || 0) > 0) {
+            ol.unread_count = 0; ol.unreadCount = 0;
+            supabase.from('leads').update({ unread_count: 0 }).eq('id', leadId).catch(console.error);
+          }
+          renderChatsList();
+        }
       })
     .subscribe();
   chatUnsubscribe = () => { supabase.removeChannel(ch); };
@@ -2699,6 +2716,9 @@ function openCentralChat(leadId) {
   const initials = (lead.nome || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   const phone    = normalizePhoneForEvolution(lead.celular) || lead.celular || '—';
 
+  const initSentHex = localStorage.getItem('fdv_bubble_sent_hex') || '#CE9221';
+  const initRecvHex = localStorage.getItem('fdv_bubble_recv_hex') || '#2d444a';
+
   panel.innerHTML = `
     <div class="cp-header">
       <div class="cp-header-left">
@@ -2710,6 +2730,15 @@ function openCentralChat(leadId) {
       </div>
       <div class="cp-header-right">
         <select id="central-chat-instance" class="filter-select chat-inst-sel"></select>
+        <button class="btn-ghost btn-icon cp-settings-btn" id="btn-chat-settings" title="Cores dos balões">
+          <i data-lucide="palette" style="width:16px;height:16px"></i>
+        </button>
+        <div class="cp-bubble-settings" id="cp-bubble-settings" style="display:none">
+          <div class="cp-bs-title">Cores dos balões</div>
+          <div class="cp-bs-row"><label>Enviado</label><input type="color" id="cp-sent-color" class="cp-color-input" value="${esc(initSentHex)}"></div>
+          <div class="cp-bs-row"><label>Recebido</label><input type="color" id="cp-recv-color" class="cp-color-input" value="${esc(initRecvHex)}"></div>
+          <button class="btn-primary btn-sm" id="cp-bs-apply" style="width:100%;margin-top:8px">Aplicar</button>
+        </div>
         <button class="btn-ghost btn-icon cp-info-btn" id="btn-toggle-info" title="Info do lead">
           <i data-lucide="info" style="width:18px;height:18px"></i>
         </button>
@@ -2721,8 +2750,8 @@ function openCentralChat(leadId) {
         <span class="chat-empty-hint">Selecione uma instância e envie a primeira mensagem.</span>
       </div>
     </div>
-    <div class="quick-replies-menu" id="quick-replies-menu" style="display:none"></div>
     <div class="chat-input-bar">
+      <div class="quick-replies-menu" id="quick-replies-menu" style="display:none"></div>
       <textarea class="chat-input" id="central-chat-input" placeholder="Digite uma mensagem ou / para respostas rápidas…" rows="1"></textarea>
       <button class="btn-primary chat-send-btn" id="btn-central-send"><i data-lucide="send" style="width:16px;height:16px"></i></button>
     </div>`;
@@ -2747,6 +2776,25 @@ function openCentralChat(leadId) {
   $('btn-open-lead-info').addEventListener('click', () => toggleLeadInfoPanel(leadId));
   $('btn-toggle-info').addEventListener('click', () => toggleLeadInfoPanel(leadId));
 
+  $('btn-chat-settings')?.addEventListener('click', e => {
+    e.stopPropagation();
+    const s = $('cp-bubble-settings');
+    if (s) s.style.display = s.style.display === 'none' ? '' : 'none';
+  });
+  $('cp-bs-apply')?.addEventListener('click', () => {
+    const sentHex = $('cp-sent-color')?.value || '#CE9221';
+    const recvHex = $('cp-recv-color')?.value || '#2d444a';
+    localStorage.setItem('fdv_bubble_sent_hex', sentHex);
+    localStorage.setItem('fdv_bubble_recv_hex', recvHex);
+    applyBubbleColors();
+    if ($('cp-bubble-settings')) $('cp-bubble-settings').style.display = 'none';
+    toast('Cores dos balões salvas.', 'ok');
+  });
+  document.addEventListener('click', function closeBubbleSettings(e) {
+    const s = $('cp-bubble-settings');
+    if (s && !s.contains(e.target) && e.target.id !== 'btn-chat-settings') s.style.display = 'none';
+  }, { once: true });
+
   if (isLive && (lead.unread_count || lead.unreadCount || 0) > 0) {
     supabase.from('leads').update({ unread_count: 0 }).eq('id', leadId).catch(console.error);
     lead.unread_count = 0; lead.unreadCount = 0; renderChatsList();
@@ -2767,9 +2815,14 @@ function openLeadInfoPanel(leadId) {
   panel.innerHTML = `
     <div class="cip-header">
       <span>Dados do lead</span>
-      <button class="btn-ghost btn-icon" id="btn-close-info"><i data-lucide="x" style="width:16px;height:16px"></i></button>
+      <div style="display:flex;gap:4px;align-items:center">
+        <button class="cip-edit-toggle" id="btn-cip-edit" title="Editar lead">
+          <i data-lucide="pencil" style="width:14px;height:14px"></i>
+        </button>
+        <button class="btn-ghost btn-icon" id="btn-close-info"><i data-lucide="x" style="width:16px;height:16px"></i></button>
+      </div>
     </div>
-    <div class="cip-body">
+    <div class="cip-body" id="cip-view">
       <div class="cip-field"><label>Nome</label><span>${esc(lead.nome || '—')}</span></div>
       <div class="cip-field"><label>Celular</label><span>${esc(lead.celular || '—')}</span></div>
       <div class="cip-field"><label>Status</label><span>${esc(lead.status || '—')}</span></div>
@@ -2778,11 +2831,52 @@ function openLeadInfoPanel(leadId) {
       <div class="cip-field"><label>Renda</label><span>${esc(lead.renda || '—')}</span></div>
       ${lead.observacoes ? `<div class="cip-field"><label>Obs.</label><p class="cip-obs">${esc(lead.observacoes)}</p></div>` : ''}
     </div>
+    <div class="cip-edit-form" id="cip-edit" style="display:none">
+      <div class="cip-field"><label>Nome</label><input class="filter-input cip-edit-input" id="cip-e-nome" value="${esc(lead.nome || '')}"></div>
+      <div class="cip-field"><label>Celular</label><input class="filter-input cip-edit-input" id="cip-e-cel" value="${esc(lead.celular || '')}"></div>
+      <div class="cip-field"><label>Profissão</label><input class="filter-input cip-edit-input" id="cip-e-prof" value="${esc(lead.profissao || '')}"></div>
+      <div class="cip-field"><label>Renda</label><input class="filter-input cip-edit-input" id="cip-e-renda" value="${esc(lead.renda || '')}"></div>
+      <div class="cip-field"><label>Obs.</label><textarea class="filter-input cip-edit-input" id="cip-e-obs" rows="3">${esc(lead.observacoes || '')}</textarea></div>
+      <div class="cip-edit-actions">
+        <button class="btn-ghost btn-sm" id="btn-cip-cancel">Cancelar</button>
+        <button class="btn-primary btn-sm" id="btn-cip-save">Salvar</button>
+      </div>
+    </div>
     <div class="cip-actions">
-      <button class="btn-primary btn-sm" onclick="openDetalhes('${esc(lead.id)}')">Perfil completo</button>
+      <button class="btn-primary btn-sm" id="btn-cip-full">Perfil completo</button>
     </div>`;
   lucide.createIcons({ nodes: [panel] });
   $('btn-close-info').addEventListener('click', () => { panel.style.display = 'none'; });
+  $('btn-cip-edit').addEventListener('click', () => {
+    $('cip-view').style.display = 'none';
+    $('cip-edit').style.display = '';
+  });
+  $('btn-cip-cancel').addEventListener('click', () => {
+    $('cip-edit').style.display = 'none';
+    $('cip-view').style.display = '';
+  });
+  $('btn-cip-save').addEventListener('click', async () => {
+    const updates = {
+      nome:        $('cip-e-nome').value.trim(),
+      celular:     $('cip-e-cel').value.trim(),
+      profissao:   $('cip-e-prof').value.trim(),
+      renda:       $('cip-e-renda').value.trim(),
+      observacoes: $('cip-e-obs').value.trim(),
+      atualizadoem: new Date().toISOString(),
+    };
+    if (!updates.nome) { toast('Nome é obrigatório.', 'err'); return; }
+    if (isLive) {
+      const { error } = await supabase.from('leads').update(updates).eq('id', leadId);
+      if (error) { toast('Erro ao salvar: ' + error.message, 'err'); return; }
+    }
+    Object.assign(lead, updates);
+    toast('Lead atualizado.', 'ok');
+    openLeadInfoPanel(leadId);
+  });
+  $('btn-cip-full').addEventListener('click', () => {
+    const l = allLeads.find(x => x.id === leadId);
+    if (l) openPerfil(l);
+  });
 }
 
 // ── Lead labels in chat ────────────────────────────────────────────────────
@@ -3619,6 +3713,20 @@ function bindEvents() {
 // ─── SHORTHAND ───────────────────────────────────────────────────────
 function $(id) { return document.getElementById(id); }
 
+// ─── BUBBLE COLOR SETTINGS ───────────────────────────────────────────
+function applyBubbleColors() {
+  function hexToRgba(hex, a) {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+  const sentHex = localStorage.getItem('fdv_bubble_sent_hex') || '#CE9221';
+  const recvHex = localStorage.getItem('fdv_bubble_recv_hex') || '#2d444a';
+  document.documentElement.style.setProperty('--bubble-sent-bg',  hexToRgba(sentHex, .50));
+  document.documentElement.style.setProperty('--bubble-sent-brd', hexToRgba(sentHex, .65));
+  document.documentElement.style.setProperty('--bubble-recv-bg',  recvHex);
+}
+
 // ─── BOOT ────────────────────────────────────────────────────────────
+applyBubbleColors();
 bindEvents();
 initAuth();
