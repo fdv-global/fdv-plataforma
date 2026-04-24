@@ -1883,6 +1883,7 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 .chat-bubble {
   padding: 9px 13px;
   border-radius: 14px;
+  font-family: var(--chat-font, inherit);
   font-size: 13px;
   line-height: 1.5;
   word-break: break-word;
@@ -2022,7 +2023,7 @@ body[data-bubble-style="sticker"] .chat-msg--sent .chat-bubble {
   border-radius: var(--r);
   color: var(--t1);
   font-size: 13px;
-  font-family: inherit;
+  font-family: var(--chat-font, inherit);
   padding: 10px 14px;
   resize: none;
   line-height: 1.5;

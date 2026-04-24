@@ -2785,6 +2785,7 @@ function openCentralChat(leadId) {
   const initSentHex     = localStorage.getItem('fdv_bubble_sent_hex') || '#CE9221';
   const initRecvHex     = localStorage.getItem('fdv_bubble_recv_hex') || '#2d444a';
   const initBubbleStyle = localStorage.getItem('fdv_bubble_style') || '';
+  const initChatFont    = localStorage.getItem('fdv_chat_font') || '';
 
   panel.innerHTML = `
     <div class="cp-header">
@@ -2818,6 +2819,27 @@ function openCentralChat(leadId) {
               <option value="gradient" ${initBubbleStyle==='gradient'?'selected':''}>Gradient</option>
               <option value="typewriter" ${initBubbleStyle==='typewriter'?'selected':''}>Typewriter</option>
               <option value="sticker" ${initBubbleStyle==='sticker'?'selected':''}>Sticker</option>
+            </select>
+          </div>
+          <div class="cp-bs-row" style="margin-top:6px">
+            <label>Fonte</label>
+            <select id="cp-chat-font" class="filter-select cp-font-sel">
+              <option value="" ${initChatFont===''?'selected':''}>Padrão</option>
+              <option value="inter" ${initChatFont==='inter'?'selected':''}>Inter</option>
+              <option value="roboto" ${initChatFont==='roboto'?'selected':''}>Roboto</option>
+              <option value="open-sans" ${initChatFont==='open-sans'?'selected':''}>Open Sans</option>
+              <option value="lato" ${initChatFont==='lato'?'selected':''}>Lato</option>
+              <option value="nunito" ${initChatFont==='nunito'?'selected':''}>Nunito</option>
+              <option value="poppins" ${initChatFont==='poppins'?'selected':''}>Poppins</option>
+              <option value="raleway" ${initChatFont==='raleway'?'selected':''}>Raleway</option>
+              <option value="montserrat" ${initChatFont==='montserrat'?'selected':''}>Montserrat</option>
+              <option value="quicksand" ${initChatFont==='quicksand'?'selected':''}>Quicksand</option>
+              <option value="dm-sans" ${initChatFont==='dm-sans'?'selected':''}>DM Sans</option>
+              <option value="playfair" ${initChatFont==='playfair'?'selected':''}>Playfair Display</option>
+              <option value="merriweather" ${initChatFont==='merriweather'?'selected':''}>Merriweather</option>
+              <option value="comic-neue" ${initChatFont==='comic-neue'?'selected':''}>Comic Neue</option>
+              <option value="space-mono" ${initChatFont==='space-mono'?'selected':''}>Space Mono</option>
+              <option value="pacifico" ${initChatFont==='pacifico'?'selected':''}>Pacifico</option>
             </select>
           </div>
           <div class="cp-bs-title" style="margin-top:10px">Cores dos balões</div>
@@ -2875,6 +2897,11 @@ function openCentralChat(leadId) {
     localStorage.setItem('fdv_bubble_style', e.target.value);
     applyBubbleStyle();
     toast('Estilo salvo.', 'ok');
+  });
+  $('cp-chat-font')?.addEventListener('change', e => {
+    localStorage.setItem('fdv_chat_font', e.target.value);
+    applyChatFont();
+    toast('Fonte salva.', 'ok');
   });
   $('cp-bs-apply')?.addEventListener('click', () => {
     const sentHex = $('cp-sent-color')?.value || '#CE9221';
@@ -3886,8 +3913,49 @@ function applyBubbleStyle() {
   else document.body.removeAttribute('data-bubble-style');
 }
 
+// ─── CHAT FONT SETTINGS ───────────────────────────────────────────────
+const CHAT_FONTS = {
+  inter:        { label: 'Inter',            gf: 'Inter:wght@400;500;600',                      css: "'Inter', sans-serif" },
+  roboto:       { label: 'Roboto',           gf: 'Roboto:wght@400;500;700',                     css: "'Roboto', sans-serif" },
+  'open-sans':  { label: 'Open Sans',        gf: 'Open+Sans:wght@400;500;600',                  css: "'Open Sans', sans-serif" },
+  lato:         { label: 'Lato',             gf: 'Lato:wght@400;700',                           css: "'Lato', sans-serif" },
+  nunito:       { label: 'Nunito',           gf: 'Nunito:wght@400;500;600',                     css: "'Nunito', sans-serif" },
+  poppins:      { label: 'Poppins',          gf: 'Poppins:wght@400;500;600',                    css: "'Poppins', sans-serif" },
+  raleway:      { label: 'Raleway',          gf: 'Raleway:wght@400;500;600',                    css: "'Raleway', sans-serif" },
+  montserrat:   { label: 'Montserrat',       gf: 'Montserrat:wght@400;500;600',                 css: "'Montserrat', sans-serif" },
+  quicksand:    { label: 'Quicksand',        gf: 'Quicksand:wght@400;500;600',                  css: "'Quicksand', sans-serif" },
+  'dm-sans':    { label: 'DM Sans',          gf: 'DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500', css: "'DM Sans', sans-serif" },
+  playfair:     { label: 'Playfair Display', gf: 'Playfair+Display:wght@400;700',               css: "'Playfair Display', serif" },
+  merriweather: { label: 'Merriweather',     gf: 'Merriweather:wght@400;700',                   css: "'Merriweather', serif" },
+  'comic-neue': { label: 'Comic Neue',       gf: 'Comic+Neue:wght@400;700',                     css: "'Comic Neue', cursive" },
+  'space-mono': { label: 'Space Mono',       gf: 'Space+Mono:wght@400;700',                     css: "'Space Mono', monospace" },
+  pacifico:     { label: 'Pacifico',         gf: 'Pacifico',                                    css: "'Pacifico', cursive" },
+};
+
+function loadGoogleFont(key) {
+  if (!key || !CHAT_FONTS[key]) return;
+  const id = `gf-${key}`;
+  if (document.getElementById(id)) return;
+  const link = document.createElement('link');
+  link.id   = id;
+  link.rel  = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?family=${CHAT_FONTS[key].gf}&display=swap`;
+  document.head.appendChild(link);
+}
+
+function applyChatFont() {
+  const key = localStorage.getItem('fdv_chat_font') || '';
+  if (key && CHAT_FONTS[key]) {
+    loadGoogleFont(key);
+    document.documentElement.style.setProperty('--chat-font', CHAT_FONTS[key].css);
+  } else {
+    document.documentElement.style.removeProperty('--chat-font');
+  }
+}
+
 // ─── BOOT ────────────────────────────────────────────────────────────
 applyBubbleColors();
 applyBubbleStyle();
+applyChatFont();
 bindEvents();
 initAuth();
