@@ -121,6 +121,7 @@ let chatSearchQuery    = '';
 let leadLabelsCache    = {};   // { leadId: [{id,nome,cor}] }
 let labelsData         = [];
 let quickReplies       = [];
+let waContactPhotos    = {};   // { phone: url|null } — null = fetched, no photo
 
 // Motivo de perda state
 let mpLeadId  = null;
@@ -2634,6 +2635,56 @@ async function sendChatMessage(inputId, instSelectId, leadId) {
   finally    { input.disabled = false; input.focus(); }
 }
 
+// ─── CONTACT PHOTOS ──────────────────────────────────────────────────
+
+async function fetchContactPhoto(instanceName, phone) {
+  if (!phone || !instanceName || !isLive) return null;
+  if (phone in waContactPhotos) return waContactPhotos[phone];
+  try {
+    const data = await fetchEvolution(
+      `/chat/fetchProfilePictureUrl/${instanceName}`,
+      'POST',
+      { number: phone }
+    );
+    const url = data?.profilePictureUrl || null;
+    waContactPhotos[phone] = url;
+    return url;
+  } catch {
+    waContactPhotos[phone] = null;
+    return null;
+  }
+}
+
+function updateChatListPhotos() {
+  const listEl = $('chats-list'); if (!listEl) return;
+  listEl.querySelectorAll('.cli-avatar[data-phone]').forEach(async el => {
+    const phone    = el.dataset.phone;
+    const instance = el.dataset.instance;
+    if (!phone || !instance) return;
+    const url = await fetchContactPhoto(instance, phone);
+    if (!url) return;
+    const img  = el.querySelector('.cli-photo');
+    const span = el.querySelector('.cli-initials');
+    if (!img || !span) return;
+    img.onload  = () => { span.style.display = 'none'; img.style.display = ''; };
+    img.onerror = () => { waContactPhotos[phone] = null; };
+    img.src = url;
+  });
+}
+
+async function updateChatHeaderPhoto(phone, instanceName) {
+  if (!phone || !instanceName) return;
+  const url = await fetchContactPhoto(instanceName, phone);
+  if (!url) return;
+  const el   = $('cp-avatar-wrap'); if (!el) return;
+  const img  = el.querySelector('.cp-photo');
+  const span = el.querySelector('.cp-initials');
+  if (!img || !span) return;
+  img.onload  = () => { span.style.display = 'none'; img.style.display = ''; };
+  img.onerror = () => { waContactPhotos[phone] = null; };
+  img.src = url;
+}
+
 // ─── CENTRAL DE CHATS ────────────────────────────────────────────────
 
 async function renderCentralChats() {
@@ -2685,13 +2736,21 @@ function renderChatsList() {
     const lastMsg   = (lead.last_message_text || lead.lastMessageText || '').slice(0, 50);
     const lastTime  = fmtChatTime(lead.last_message_at || lead.lastMessageAt);
     const initials  = (lead.nome || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const phone     = normalizePhoneForEvolution(lead.celular) || '';
+    const instance  = lead.last_message_instance || lead.lastMessageInstance || '';
     const lbls      = (leadLabelsCache[lead.id] || []);
     const lblHtml   = lbls.map(l =>
       `<span class="cli-label-pill" style="background:${esc(l.cor)}22;color:${esc(l.cor)}">${esc(l.nome)}</span>`
     ).join('');
 
+    // Pre-fill photo if already cached
+    const cachedUrl = phone ? waContactPhotos[phone] : undefined;
+    const avatarInner = cachedUrl
+      ? `<img src="${esc(cachedUrl)}" alt="${esc(initials)}" class="cli-photo">`
+      : `<span class="cli-initials">${esc(initials)}</span><img class="cli-photo" style="display:none" alt="${esc(initials)}">`;
+
     return `<div class="chats-list-item${isActive ? ' chats-list-item--active' : ''}${unread ? ' chats-list-item--unread' : ''}" data-lead-id="${esc(lead.id)}" role="button" tabindex="0">
-      <div class="cli-avatar"><span class="cli-initials">${esc(initials)}</span></div>
+      <div class="cli-avatar" data-phone="${esc(phone)}" data-instance="${esc(instance)}">${avatarInner}</div>
       <div class="cli-body">
         <div class="cli-top">
           <span class="cli-name">${esc(lead.nome || '—')}</span>
@@ -2705,6 +2764,8 @@ function renderChatsList() {
       </div>
     </div>`;
   }).join('');
+
+  updateChatListPhotos();
 }
 
 function openCentralChat(leadId) {
@@ -2722,7 +2783,7 @@ function openCentralChat(leadId) {
   panel.innerHTML = `
     <div class="cp-header">
       <div class="cp-header-left">
-        <div class="cp-avatar"><span class="cp-initials">${esc(initials)}</span></div>
+        <div class="cp-avatar" id="cp-avatar-wrap"><span class="cp-initials">${esc(initials)}</span><img class="cp-photo" style="display:none" alt="${esc(initials)}"></div>
         <div class="cp-header-info" id="btn-open-lead-info" role="button" title="Ver info do lead">
           <div class="cp-name">${esc(lead.nome || '—')}</div>
           <div class="cp-phone">${esc(phone)}</div>
@@ -2760,6 +2821,10 @@ function openCentralChat(leadId) {
   populateChatInstanceSelector('central-chat-instance');
   renderChatLabels(leadId);
   startChatListener(leadId, 'central-chat-messages', 'central-chat-empty');
+
+  const headerPhone    = normalizePhoneForEvolution(lead.celular) || '';
+  const headerInstance = lead.last_message_instance || lead.lastMessageInstance || waInstances[0]?.instanceName || '';
+  if (headerPhone && headerInstance) updateChatHeaderPhoto(headerPhone, headerInstance);
 
   $('btn-central-send').addEventListener('click', () =>
     sendChatMessage('central-chat-input', 'central-chat-instance', leadId)
