@@ -7,9 +7,23 @@ const SB_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
 const supabase = createClient(SB_URL, SB_KEY);
 
+// Strip @domain and :deviceId (multi-device suffix) before extracting digits
 function normalizePhone(jid: string | undefined): string | null {
   if (!jid) return null;
-  return jid.replace(/@.*$/, '').replace(/\D/g, '');
+  const stripped = jid.replace(/@[^@]*$/, '').replace(/:[^:]*$/, '');
+  return stripped.replace(/\D/g, '') || null;
+}
+
+// Normalize any phone to 55 + DDD + number (12–13 digits), same logic as
+// normalizePhoneForEvolution in app.js
+function normalizePhoneForStorage(phone: string): string | null {
+  let d = phone.replace(/\D/g, '');
+  if (!d) return null;
+  if (d.startsWith('55') && (d.length === 12 || d.length === 13)) return d;
+  if (d.startsWith('55') && d.length > 13) d = d.slice(2);
+  if (d.length > 11) d = d.slice(-11);
+  if (d.length < 10) return null;
+  return `55${d}`;
 }
 
 async function findLeadByPhone(phone: string): Promise<{ id: string; unread_count: number } | null> {
@@ -31,12 +45,13 @@ async function createLeadFromWhatsApp(
 ): Promise<{ id: string; unread_count: number } | null> {
   const nome = pushName?.trim() || `WhatsApp ${phone.slice(-4)}`;
   const today = new Date().toISOString().split('T')[0];
+  const celular = normalizePhoneForStorage(phone) ?? phone;
 
   const { data, error } = await supabase
     .from('leads')
     .insert({
       nome,
-      celular: phone,
+      celular,
       status: 'Novo',
       origem: 'WHATSAPP',
       datachegada: today,
