@@ -1194,8 +1194,8 @@ function kanbanCard(l, cols) {
   const daysClass = days === null ? '' : days >= 7 ? 'kc-days-danger' : days >= 3 ? 'kc-days-warn' : '';
 
   // WhatsApp
-  const phone  = (l.celular||l.telefone||'').replace(/\D/g,'');
-  const waHref = phone ? `https://wa.me/55${phone}` : null;
+  const waPhone = normalizePhoneForEvolution(l.celular || l.telefone);
+  const waHref  = waPhone ? `https://wa.me/${waPhone}` : null;
 
   // Move options (exclude current column)
   const allCols   = cols || getKanbanCols();
@@ -2560,6 +2560,20 @@ function renderChatMessages(messages, containerId, emptyId) {
   container.scrollTop = container.scrollHeight;
 }
 
+function normalizePhoneForEvolution(celular) {
+  let d = (celular || '').replace(/\D/g, '');
+  if (!d) return null;
+  // Already correct: 55 + DDD(2) + number(8 or 9) = 12 or 13 digits
+  if (d.startsWith('55') && (d.length === 12 || d.length === 13)) return d;
+  // Has 55 prefix but too long — strip it and re-evaluate
+  if (d.startsWith('55') && d.length > 13) d = d.slice(2);
+  // Still too long — take last 11 digits (DDD + 9-digit mobile)
+  if (d.length > 11) d = d.slice(-11);
+  // Minimum: DDD(2) + number(8) = 10 digits
+  if (d.length < 10) return null;
+  return `55${d}`;
+}
+
 async function sendChatMessage(inputId, instSelectId, leadId) {
   if (!leadId) return;
   const input    = $(inputId);
@@ -2570,10 +2584,8 @@ async function sendChatMessage(inputId, instSelectId, leadId) {
   if (!instName) { toast('Selecione uma instância para enviar.','err'); return; }
   const lead = allLeads.find(l => l.id === leadId);
   if (!lead) return;
-  const rawPhone = (lead.celular||'').replace(/\D/g,'');
-  if (!rawPhone) { toast('Lead sem número de celular.','err'); return; }
-  // Evolution API requires full number with Brazil country code (55)
-  const phone = rawPhone.startsWith('55') ? rawPhone : `55${rawPhone}`;
+  const phone = normalizePhoneForEvolution(lead.celular);
+  if (!phone) { toast('Lead sem número de celular válido.','err'); return; }
   input.disabled = true;
   const ts = new Date().toISOString();
   const msgData = {
