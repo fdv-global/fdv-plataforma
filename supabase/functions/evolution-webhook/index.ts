@@ -24,6 +24,34 @@ async function findLeadByPhone(phone: string): Promise<{ id: string; unread_coun
   }) ?? null;
 }
 
+async function createLeadFromWhatsApp(
+  phone: string,
+  pushName: string | undefined,
+  instance: string,
+): Promise<{ id: string; unread_count: number } | null> {
+  const nome = pushName?.trim() || `WhatsApp ${phone.slice(-4)}`;
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data, error } = await supabase
+    .from('leads')
+    .insert({
+      nome,
+      celular: phone,
+      status: 'Novo',
+      origem: 'WHATSAPP',
+      datachegada: today,
+      last_message_instance: instance,
+    })
+    .select('id, unread_count')
+    .single();
+
+  if (error) {
+    console.error('[leads create]', error.message);
+    return null;
+  }
+  return data;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') {
     return new Response('Method Not Allowed', { status: 405 });
@@ -51,6 +79,7 @@ Deno.serve(async (req: Request) => {
       const extMsg     = (messageObj.extendedTextMessage ?? {}) as Record<string, unknown>;
       const imgMsg     = (messageObj.imageMessage ?? {}) as Record<string, unknown>;
       const vidMsg     = (messageObj.videoMessage  ?? {}) as Record<string, unknown>;
+      const pushName   = data.pushName as string | undefined;
 
       const fromMe = !!key.fromMe;
       const phone  = normalizePhone(key.remoteJid as string);
@@ -66,12 +95,46 @@ Deno.serve(async (req: Request) => {
         headers: { 'Content-Type': 'application/json' },
       });
 
-      const lead = await findLeadByPhone(phone);
-      if (!lead) {
-        console.log(`[no-lead] ${phone}`);
-        return new Response(JSON.stringify({ ok: true, matched: false }), {
+      // Skip messages sent by the bot itself
+      if (fromMe) {
+        let lead = await findLeadByPhone(phone);
+        if (!lead) return new Response(JSON.stringify({ ok: true, matched: false }), {
           headers: { 'Content-Type': 'application/json' },
         });
+
+        const now = new Date().toISOString();
+        await supabase.from('lead_messages').insert({
+          lead_id:       lead.id,
+          text,
+          direction:     'sent',
+          instance_name: instance,
+          timestamp:     now,
+        });
+        await supabase.from('leads').update({
+          last_message_at:       now,
+          last_message_text:     text.slice(0, 200),
+          last_message_instance: instance,
+        }).eq('id', lead.id);
+
+        return new Response(JSON.stringify({ ok: true, leadId: lead.id }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Incoming message: find or create lead
+      let lead = await findLeadByPhone(phone);
+      let created = false;
+
+      if (!lead) {
+        console.log(`[auto-create-lead] ${phone} (${pushName ?? 'sem nome'})`);
+        lead = await createLeadFromWhatsApp(phone, pushName, instance);
+        created = true;
+        if (!lead) {
+          return new Response(JSON.stringify({ ok: false, error: 'failed to create lead' }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
       }
 
       const now = new Date().toISOString();
@@ -79,26 +142,24 @@ Deno.serve(async (req: Request) => {
       const { error: msgErr } = await supabase.from('lead_messages').insert({
         lead_id:       lead.id,
         text,
-        direction:     fromMe ? 'sent' : 'received',
+        direction:     'received',
         instance_name: instance,
         timestamp:     now,
       });
       if (msgErr) console.error('[lead_messages insert]', msgErr.message);
 
-      const update: Record<string, unknown> = {
-        last_message_at:       now,
-        last_message_text:     text.slice(0, 200),
-        last_message_instance: instance,
-      };
-      if (!fromMe) update.unread_count = (lead.unread_count ?? 0) + 1;
-
       const { error: updErr } = await supabase
         .from('leads')
-        .update(update)
+        .update({
+          last_message_at:       now,
+          last_message_text:     text.slice(0, 200),
+          last_message_instance: instance,
+          unread_count:          (lead.unread_count ?? 0) + 1,
+        })
         .eq('id', lead.id);
       if (updErr) console.error('[leads update]', updErr.message);
 
-      return new Response(JSON.stringify({ ok: true, leadId: lead.id }), {
+      return new Response(JSON.stringify({ ok: true, leadId: lead.id, created }), {
         headers: { 'Content-Type': 'application/json' },
       });
     }
