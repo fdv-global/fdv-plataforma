@@ -14,8 +14,7 @@ function normalizePhone(jid: string | undefined): string | null {
   return stripped.replace(/\D/g, '') || null;
 }
 
-// Normalize any phone to 55 + DDD + number (12–13 digits), same logic as
-// normalizePhoneForEvolution in app.js
+// Normalize any phone to 55 + DDD + number (12–13 digits)
 function normalizePhoneForStorage(phone: string): string | null {
   let d = phone.replace(/\D/g, '');
   if (!d) return null;
@@ -26,44 +25,49 @@ function normalizePhoneForStorage(phone: string): string | null {
   return `55${d}`;
 }
 
+// Fuzzy phone match by last 11 digits
+function phoneTailMatch(storedPhone: string, incomingTail: string): boolean {
+  const cel = String(storedPhone ?? '').replace(/\D/g, '');
+  return !!(cel && (cel.endsWith(incomingTail) || incomingTail.endsWith(cel.slice(-8))));
+}
+
 async function findLeadByPhone(phone: string): Promise<{ id: string; unread_count: number } | null> {
   const { data: leads, error } = await supabase
     .from('leads')
     .select('id, celular, unread_count');
   if (error || !leads) return null;
   const tail = phone.slice(-11);
-  return leads.find((l: { celular?: string; id: string; unread_count: number }) => {
-    const cel = String(l.celular ?? '').replace(/\D/g, '');
-    return cel && (cel.endsWith(tail) || tail.endsWith(cel.slice(-8)));
-  }) ?? null;
+  return leads.find((l: { celular?: string; id: string; unread_count: number }) =>
+    phoneTailMatch(l.celular ?? '', tail)
+  ) ?? null;
 }
 
-async function createLeadFromWhatsApp(
+async function findContactByPhone(phone: string): Promise<{ id: string; unread_count: number } | null> {
+  const { data, error } = await supabase
+    .from('whatsapp_contacts')
+    .select('id, phone, unread_count');
+  if (error || !data) return null;
+  const tail = phone.slice(-11);
+  return data.find((c: { phone?: string; id: string; unread_count: number }) =>
+    phoneTailMatch(c.phone ?? '', tail)
+  ) ?? null;
+}
+
+async function createContact(
   phone: string,
   pushName: string | undefined,
   instance: string,
 ): Promise<{ id: string; unread_count: number } | null> {
-  const nome = pushName?.trim() || `WhatsApp ${phone.slice(-4)}`;
-  const today = new Date().toISOString().split('T')[0];
-  const celular = normalizePhoneForStorage(phone) ?? phone;
-
   const { data, error } = await supabase
-    .from('leads')
+    .from('whatsapp_contacts')
     .insert({
-      nome,
-      celular,
-      status: 'Novo',
-      origem: 'WHATSAPP',
-      datachegada: today,
-      last_message_instance: instance,
+      phone:         normalizePhoneForStorage(phone) ?? phone,
+      push_name:     pushName?.trim() || null,
+      instance_name: instance,
     })
     .select('id, unread_count')
     .single();
-
-  if (error) {
-    console.error('[leads create]', error.message);
-    return null;
-  }
+  if (error) { console.error('[contact create]', error.message); return null; }
   return data;
 }
 
@@ -110,71 +114,87 @@ Deno.serve(async (req: Request) => {
         headers: { 'Content-Type': 'application/json' },
       });
 
-      // Skip messages sent by the bot itself
+      const now = new Date().toISOString();
+
+      // ── Mensagem enviada pelo app (fromMe) ─────────────────────────────
       if (fromMe) {
-        let lead = await findLeadByPhone(phone);
-        if (!lead) return new Response(JSON.stringify({ ok: true, matched: false }), {
+        // First try lead, then contact
+        const lead = await findLeadByPhone(phone);
+        if (lead) {
+          await supabase.from('lead_messages').insert({
+            lead_id: lead.id, text, direction: 'sent', instance_name: instance, timestamp: now,
+          });
+          await supabase.from('leads').update({
+            last_message_at: now, last_message_text: text.slice(0, 200), last_message_instance: instance,
+          }).eq('id', lead.id);
+          return new Response(JSON.stringify({ ok: true, leadId: lead.id }), {
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+        const contact = await findContactByPhone(phone);
+        if (contact) {
+          await supabase.from('lead_messages').insert({
+            contact_id: contact.id, text, direction: 'sent', instance_name: instance, timestamp: now,
+          });
+          await supabase.from('whatsapp_contacts').update({
+            last_message_at: now, last_message_text: text.slice(0, 200), instance_name: instance,
+          }).eq('id', contact.id);
+          return new Response(JSON.stringify({ ok: true, contactId: contact.id }), {
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+        return new Response(JSON.stringify({ ok: true, matched: false }), {
           headers: { 'Content-Type': 'application/json' },
         });
+      }
 
-        const now = new Date().toISOString();
-        await supabase.from('lead_messages').insert({
-          lead_id:       lead.id,
-          text,
-          direction:     'sent',
-          instance_name: instance,
-          timestamp:     now,
+      // ── Mensagem recebida ──────────────────────────────────────────────
+      const lead = await findLeadByPhone(phone);
+      if (lead) {
+        // Known lead — store against lead
+        const { error: msgErr } = await supabase.from('lead_messages').insert({
+          lead_id: lead.id, text, direction: 'received', instance_name: instance, timestamp: now,
         });
-        await supabase.from('leads').update({
-          last_message_at:       now,
-          last_message_text:     text.slice(0, 200),
+        if (msgErr) console.error('[lead_messages insert]', msgErr.message);
+
+        const { error: updErr } = await supabase.from('leads').update({
+          last_message_at: now, last_message_text: text.slice(0, 200),
           last_message_instance: instance,
+          unread_count: (lead.unread_count ?? 0) + 1,
         }).eq('id', lead.id);
+        if (updErr) console.error('[leads update]', updErr.message);
 
         return new Response(JSON.stringify({ ok: true, leadId: lead.id }), {
           headers: { 'Content-Type': 'application/json' },
         });
       }
 
-      // Incoming message: find or create lead
-      let lead = await findLeadByPhone(phone);
+      // Unknown number — find or create whatsapp_contact (no lead created)
+      let contact = await findContactByPhone(phone);
       let created = false;
-
-      if (!lead) {
-        console.log(`[auto-create-lead] ${phone} (${pushName ?? 'sem nome'})`);
-        lead = await createLeadFromWhatsApp(phone, pushName, instance);
+      if (!contact) {
+        contact = await createContact(phone, pushName, instance);
         created = true;
-        if (!lead) {
-          return new Response(JSON.stringify({ ok: false, error: 'failed to create lead' }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' },
+        if (!contact) {
+          return new Response(JSON.stringify({ ok: false, error: 'failed to create contact' }), {
+            status: 500, headers: { 'Content-Type': 'application/json' },
           });
         }
       }
 
-      const now = new Date().toISOString();
-
       const { error: msgErr } = await supabase.from('lead_messages').insert({
-        lead_id:       lead.id,
-        text,
-        direction:     'received',
-        instance_name: instance,
-        timestamp:     now,
+        contact_id: contact.id, text, direction: 'received', instance_name: instance, timestamp: now,
       });
-      if (msgErr) console.error('[lead_messages insert]', msgErr.message);
+      if (msgErr) console.error('[lead_messages contact insert]', msgErr.message);
 
-      const { error: updErr } = await supabase
-        .from('leads')
-        .update({
-          last_message_at:       now,
-          last_message_text:     text.slice(0, 200),
-          last_message_instance: instance,
-          unread_count:          (lead.unread_count ?? 0) + 1,
-        })
-        .eq('id', lead.id);
-      if (updErr) console.error('[leads update]', updErr.message);
+      const { error: updErr } = await supabase.from('whatsapp_contacts').update({
+        last_message_at: now, last_message_text: text.slice(0, 200),
+        instance_name: instance,
+        unread_count: (contact.unread_count ?? 0) + 1,
+      }).eq('id', contact.id);
+      if (updErr) console.error('[whatsapp_contacts update]', updErr.message);
 
-      return new Response(JSON.stringify({ ok: true, leadId: lead.id, created }), {
+      return new Response(JSON.stringify({ ok: true, contactId: contact.id, created }), {
         headers: { 'Content-Type': 'application/json' },
       });
     }

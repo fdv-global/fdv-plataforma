@@ -768,6 +768,34 @@
   </div>
 </div>
 
+<!-- ===== MODAL ADICIONAR COMO LEAD ===== -->
+<div class="modal-backdrop" id="add-lead-backdrop">
+  <div class="modal modal--add-lead" role="dialog" aria-modal="true" aria-labelledby="add-lead-title">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="add-lead-title">Adicionar como lead</h2>
+        <p class="modal-subtitle">Confirme ou edite os dados antes de criar</p>
+      </div>
+      <button class="modal-close" id="add-lead-close" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="add-lead-contact-id">
+      <div class="form-group">
+        <label for="add-lead-nome">Nome <span class="req">*</span></label>
+        <input type="text" id="add-lead-nome" class="form-ctrl" placeholder="Nome do contato" autocomplete="off">
+      </div>
+      <div class="form-group" style="margin-top:16px">
+        <label for="add-lead-celular">Celular <span class="req">*</span></label>
+        <input type="text" id="add-lead-celular" class="form-ctrl" placeholder="5511999999999" autocomplete="off">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="add-lead-cancel">Cancelar</button>
+      <button class="btn-primary" id="add-lead-confirm">Criar Lead</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODAL INSTÂNCIAS WHATSAPP ===== -->
 <div class="modal-backdrop" id="instancias-modal-backdrop">
   <div class="modal modal--instancias" role="dialog" aria-modal="true" aria-labelledby="instancias-modal-title">

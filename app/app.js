@@ -114,10 +114,15 @@ let qrSecondsLeft      = 60;
 
 // Chat state
 let chatLeadId         = null;
+let chatContactId      = null;
 let chatUnsubscribe    = null;
 let chatMessages       = [];
 let chatActiveSide     = null;
 let chatSearchQuery    = '';
+
+// WhatsApp contacts (unknown numbers, not yet leads)
+let allContacts        = [];
+let contactsLoaded     = false;
 let leadLabelsCache    = {};   // { leadId: [{id,nome,cor}] }
 let labelsData         = [];
 let quickReplies       = [];
@@ -2513,29 +2518,36 @@ function populateChatInstanceSelector(selectId) {
   if (first) sel.value = first.instanceName;
 }
 
-function startChatListener(leadId, messagesId, emptyId) {
+function startChatListener(id, messagesId, emptyId, isContact = false) {
   stopChatListener();
-  chatLeadId = leadId;
+  chatLeadId    = isContact ? null : id;
+  chatContactId = isContact ? id   : null;
   if (!isLive) {
     chatMessages = [];
     renderChatMessages(chatMessages, messagesId, emptyId); return;
   }
+  const filterCol = isContact ? 'contact_id' : 'lead_id';
   const mapMsg = m => ({ ...m, senderName: m.sender_name, instanceName: m.instance_name });
-  supabase.from('lead_messages').select('*').eq('lead_id', leadId).order('timestamp', { ascending: true })
+  supabase.from('lead_messages').select('*').eq(filterCol, id).order('timestamp', { ascending: true })
     .then(({ data }) => {
       chatMessages = (data || []).map(mapMsg);
       renderChatMessages(chatMessages, messagesId, emptyId);
     });
-  const ch = supabase.channel(`msgs_${leadId}`)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'lead_messages', filter: `lead_id=eq.${leadId}` },
+  const ch = supabase.channel(`msgs_${filterCol}_${id}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'lead_messages', filter: `${filterCol}=eq.${id}` },
       ({ new: msg }) => {
         chatMessages.push(mapMsg(msg));
         renderChatMessages(chatMessages, messagesId, emptyId);
         if (activeTab === 'whatsapp' && activeWaSub === 'chats') {
-          const ol = allLeads.find(x => x.id === leadId);
-          if (ol && (ol.unread_count || 0) > 0) {
-            ol.unread_count = 0; ol.unreadCount = 0;
-            supabase.from('leads').update({ unread_count: 0 }).eq('id', leadId).catch(console.error);
+          if (!isContact) {
+            const ol = allLeads.find(x => x.id === id);
+            if (ol && (ol.unread_count || 0) > 0) {
+              ol.unread_count = 0; ol.unreadCount = 0;
+              supabase.from('leads').update({ unread_count: 0 }).eq('id', id).catch(console.error);
+            }
+          } else {
+            const oc = allContacts.find(x => x.id === id);
+            if (oc) oc.unread_count = 0;
           }
           renderChatsList();
         }
@@ -2546,7 +2558,7 @@ function startChatListener(leadId, messagesId, emptyId) {
 
 function stopChatListener() {
   if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
-  chatMessages = []; chatLeadId = null;
+  chatMessages = []; chatLeadId = null; chatContactId = null;
 }
 
 function renderChatMessages(messages, containerId, emptyId) {
@@ -2691,6 +2703,7 @@ async function renderCentralChats() {
   renderChatsFilters();
   await loadLeadLabels();
   await loadQuickReplies();
+  if (!contactsLoaded) loadContacts();
   renderChatsList();
 }
 
@@ -2710,61 +2723,84 @@ function fmtChatTime(isoStr) {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 }
 
+function renderLeadChatItem(lead) {
+  const isActive = lead.id === chatActiveSide;
+  const unread   = lead.unread_count || lead.unreadCount || 0;
+  const lastMsg  = (lead.last_message_text || lead.lastMessageText || '').slice(0, 50);
+  const lastTime = fmtChatTime(lead.last_message_at || lead.lastMessageAt);
+  const initials = (lead.nome || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const phone    = normalizePhoneForEvolution(lead.celular) || '';
+  const instance = lead.last_message_instance || lead.lastMessageInstance || '';
+  const lblHtml  = (leadLabelsCache[lead.id] || []).map(l =>
+    `<span class="cli-label-pill" style="background:${esc(l.cor)}22;color:${esc(l.cor)}">${esc(l.nome)}</span>`
+  ).join('');
+  const cachedUrl   = phone ? waContactPhotos[phone] : undefined;
+  const avatarInner = cachedUrl
+    ? `<img src="${esc(cachedUrl)}" alt="${esc(initials)}" class="cli-photo">`
+    : `<span class="cli-initials">${esc(initials)}</span><img class="cli-photo" style="display:none" alt="${esc(initials)}">`;
+  return `<div class="chats-list-item${isActive?' chats-list-item--active':''}${unread?' chats-list-item--unread':''}" data-lead-id="${esc(lead.id)}" role="button" tabindex="0">
+    <div class="cli-avatar" data-phone="${esc(phone)}" data-instance="${esc(instance)}">${avatarInner}</div>
+    <div class="cli-body">
+      <div class="cli-top"><span class="cli-name">${esc(lead.nome||'—')}</span><span class="cli-time">${esc(lastTime)}</span></div>
+      <div class="cli-mid"><span class="cli-msg">${esc(lastMsg)}</span>${unread?`<span class="cli-unread-badge">${unread}</span>`:''}</div>
+      ${lblHtml?`<div class="cli-labels">${lblHtml}</div>`:''}
+    </div>
+  </div>`;
+}
+
+function renderContactChatItem(contact) {
+  const isActive = chatActiveSide === 'contact:' + contact.id;
+  const unread   = contact.unread_count || 0;
+  const lastMsg  = (contact.last_message_text || '').slice(0, 50);
+  const lastTime = fmtChatTime(contact.last_message_at);
+  const pushName = contact.push_name || '';
+  const phone    = contact.phone || '';
+  const initials = pushName
+    ? pushName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+    : phone.slice(-4);
+  const instance = contact.instance_name || '';
+  const cachedUrl   = phone ? waContactPhotos[phone] : undefined;
+  const avatarInner = cachedUrl
+    ? `<img src="${esc(cachedUrl)}" alt="${esc(initials)}" class="cli-photo">`
+    : `<span class="cli-initials cli-initials--unknown">${esc(initials)}</span><img class="cli-photo" style="display:none" alt="${esc(initials)}">`;
+  return `<div class="chats-list-item${isActive?' chats-list-item--active':''}${unread?' chats-list-item--unread':''}" data-contact-id="${esc(contact.id)}" role="button" tabindex="0">
+    <div class="cli-avatar" data-phone="${esc(phone)}" data-instance="${esc(instance)}">${avatarInner}</div>
+    <div class="cli-body">
+      <div class="cli-top"><span class="cli-name">${esc(pushName||phone)}</span><span class="cli-time">${esc(lastTime)}</span></div>
+      <div class="cli-mid"><span class="cli-msg">${esc(lastMsg)}</span>${unread?`<span class="cli-unread-badge">${unread}</span>`:''}</div>
+      <div class="cli-labels"><span class="cli-unknown-tag">Desconhecido</span></div>
+    </div>
+  </div>`;
+}
+
 function renderChatsList() {
   const instFilt   = $('chats-filter-instance')?.value || '';
   const statusFilt = $('chats-filter-status')?.value   || '';
   const search     = chatSearchQuery.toLowerCase();
 
-  let convs = allLeads.filter(l => l.last_message_at || l.lastMessageAt);
-  if (instFilt)   convs = convs.filter(l => (l.last_message_instance || l.lastMessageInstance) === instFilt);
-  if (statusFilt) convs = convs.filter(l => l.status === statusFilt);
-  if (search)     convs = convs.filter(l => (l.nome||'').toLowerCase().includes(search) ||
-                                             (l.celular||'').includes(search));
-  convs.sort((a, b) =>
-    ((b.last_message_at||b.lastMessageAt||'')).localeCompare((a.last_message_at||a.lastMessageAt||''))
-  );
+  let leadConvs = allLeads.filter(l => l.last_message_at || l.lastMessageAt);
+  if (instFilt)   leadConvs = leadConvs.filter(l => (l.last_message_instance||l.lastMessageInstance) === instFilt);
+  if (statusFilt) leadConvs = leadConvs.filter(l => l.status === statusFilt);
+  if (search)     leadConvs = leadConvs.filter(l => (l.nome||'').toLowerCase().includes(search) || (l.celular||'').includes(search));
+
+  let contactConvs = allContacts;
+  if (instFilt)   contactConvs = contactConvs.filter(c => c.instance_name === instFilt);
+  if (statusFilt) contactConvs = [];
+  if (search)     contactConvs = contactConvs.filter(c => (c.push_name||'').toLowerCase().includes(search) || (c.phone||'').includes(search));
+
+  const items = [
+    ...leadConvs.map(l  => ({ type: 'lead',    data: l, at: l.last_message_at||l.lastMessageAt||'' })),
+    ...contactConvs.map(c => ({ type: 'contact', data: c, at: c.last_message_at||'' })),
+  ].sort((a, b) => b.at.localeCompare(a.at));
 
   const listEl = $('chats-list'); if (!listEl) return;
-  if (!convs.length) {
+  if (!items.length) {
     listEl.innerHTML = `<div class="chat-list-empty"><div style="font-size:32px;margin-bottom:10px">💬</div><p>Nenhuma conversa ainda.</p></div>`;
     return;
   }
-
-  listEl.innerHTML = convs.map(lead => {
-    const isActive  = lead.id === chatActiveSide;
-    const unread    = lead.unread_count || lead.unreadCount || 0;
-    const lastMsg   = (lead.last_message_text || lead.lastMessageText || '').slice(0, 50);
-    const lastTime  = fmtChatTime(lead.last_message_at || lead.lastMessageAt);
-    const initials  = (lead.nome || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-    const phone     = normalizePhoneForEvolution(lead.celular) || '';
-    const instance  = lead.last_message_instance || lead.lastMessageInstance || '';
-    const lbls      = (leadLabelsCache[lead.id] || []);
-    const lblHtml   = lbls.map(l =>
-      `<span class="cli-label-pill" style="background:${esc(l.cor)}22;color:${esc(l.cor)}">${esc(l.nome)}</span>`
-    ).join('');
-
-    // Pre-fill photo if already cached
-    const cachedUrl = phone ? waContactPhotos[phone] : undefined;
-    const avatarInner = cachedUrl
-      ? `<img src="${esc(cachedUrl)}" alt="${esc(initials)}" class="cli-photo">`
-      : `<span class="cli-initials">${esc(initials)}</span><img class="cli-photo" style="display:none" alt="${esc(initials)}">`;
-
-    return `<div class="chats-list-item${isActive ? ' chats-list-item--active' : ''}${unread ? ' chats-list-item--unread' : ''}" data-lead-id="${esc(lead.id)}" role="button" tabindex="0">
-      <div class="cli-avatar" data-phone="${esc(phone)}" data-instance="${esc(instance)}">${avatarInner}</div>
-      <div class="cli-body">
-        <div class="cli-top">
-          <span class="cli-name">${esc(lead.nome || '—')}</span>
-          <span class="cli-time">${esc(lastTime)}</span>
-        </div>
-        <div class="cli-mid">
-          <span class="cli-msg">${esc(lastMsg)}</span>
-          ${unread ? `<span class="cli-unread-badge">${unread}</span>` : ''}
-        </div>
-        ${lblHtml ? `<div class="cli-labels">${lblHtml}</div>` : ''}
-      </div>
-    </div>`;
-  }).join('');
-
+  listEl.innerHTML = items.map(({ type, data }) =>
+    type === 'lead' ? renderLeadChatItem(data) : renderContactChatItem(data)
+  ).join('');
   updateChatListPhotos();
 }
 
@@ -2798,55 +2834,10 @@ function openCentralChat(leadId) {
       </div>
       <div class="cp-header-right">
         <select id="central-chat-instance" class="filter-select chat-inst-sel"></select>
-        <button class="btn-ghost cp-header-btn cp-settings-btn" id="btn-chat-settings" title="Personalizar cores">
+        <button class="btn-ghost cp-header-btn cp-settings-btn" id="btn-chat-settings" title="Personalizar">
           <i data-lucide="palette" style="width:14px;height:14px"></i><span>Cores</span>
         </button>
-        <div class="cp-bubble-settings" id="cp-bubble-settings" style="display:none">
-          <div class="cp-bs-title">Estilo dos balões</div>
-          <div class="cp-bs-row">
-            <label>Estilo</label>
-            <select id="cp-bubble-style" class="filter-select cp-style-sel">
-              <option value="" ${initBubbleStyle===''?'selected':''}>Padrão</option>
-              <option value="comic-book" ${initBubbleStyle==='comic-book'?'selected':''}>Comic Book</option>
-              <option value="minimalista" ${initBubbleStyle==='minimalista'?'selected':''}>Minimalista</option>
-              <option value="retro" ${initBubbleStyle==='retro'?'selected':''}>Retrô</option>
-              <option value="neon" ${initBubbleStyle==='neon'?'selected':''}>Neon</option>
-              <option value="paper" ${initBubbleStyle==='paper'?'selected':''}>Paper</option>
-              <option value="glass" ${initBubbleStyle==='glass'?'selected':''}>Glassmorphism</option>
-              <option value="bubble" ${initBubbleStyle==='bubble'?'selected':''}>Bubble</option>
-              <option value="sharp" ${initBubbleStyle==='sharp'?'selected':''}>Sharp</option>
-              <option value="shadow" ${initBubbleStyle==='shadow'?'selected':''}>Shadow</option>
-              <option value="gradient" ${initBubbleStyle==='gradient'?'selected':''}>Gradient</option>
-              <option value="typewriter" ${initBubbleStyle==='typewriter'?'selected':''}>Typewriter</option>
-              <option value="sticker" ${initBubbleStyle==='sticker'?'selected':''}>Sticker</option>
-            </select>
-          </div>
-          <div class="cp-bs-row" style="margin-top:6px">
-            <label>Fonte</label>
-            <select id="cp-chat-font" class="filter-select cp-font-sel">
-              <option value="" ${initChatFont===''?'selected':''}>Padrão</option>
-              <option value="inter" ${initChatFont==='inter'?'selected':''}>Inter</option>
-              <option value="roboto" ${initChatFont==='roboto'?'selected':''}>Roboto</option>
-              <option value="open-sans" ${initChatFont==='open-sans'?'selected':''}>Open Sans</option>
-              <option value="lato" ${initChatFont==='lato'?'selected':''}>Lato</option>
-              <option value="nunito" ${initChatFont==='nunito'?'selected':''}>Nunito</option>
-              <option value="poppins" ${initChatFont==='poppins'?'selected':''}>Poppins</option>
-              <option value="raleway" ${initChatFont==='raleway'?'selected':''}>Raleway</option>
-              <option value="montserrat" ${initChatFont==='montserrat'?'selected':''}>Montserrat</option>
-              <option value="quicksand" ${initChatFont==='quicksand'?'selected':''}>Quicksand</option>
-              <option value="dm-sans" ${initChatFont==='dm-sans'?'selected':''}>DM Sans</option>
-              <option value="playfair" ${initChatFont==='playfair'?'selected':''}>Playfair Display</option>
-              <option value="merriweather" ${initChatFont==='merriweather'?'selected':''}>Merriweather</option>
-              <option value="comic-neue" ${initChatFont==='comic-neue'?'selected':''}>Comic Neue</option>
-              <option value="space-mono" ${initChatFont==='space-mono'?'selected':''}>Space Mono</option>
-              <option value="pacifico" ${initChatFont==='pacifico'?'selected':''}>Pacifico</option>
-            </select>
-          </div>
-          <div class="cp-bs-title" style="margin-top:10px">Cores dos balões</div>
-          <div class="cp-bs-row"><label>Enviado</label><input type="color" id="cp-sent-color" class="cp-color-input" value="${esc(initSentHex)}"></div>
-          <div class="cp-bs-row"><label>Recebido</label><input type="color" id="cp-recv-color" class="cp-color-input" value="${esc(initRecvHex)}"></div>
-          <button class="btn-primary btn-sm" id="cp-bs-apply" style="width:100%;margin-top:8px">Aplicar cores</button>
-        </div>
+        ${buildChatSettingsPanelHTML(initSentHex, initRecvHex, initBubbleStyle, initChatFont)}
         <button class="btn-ghost cp-header-btn cp-info-btn" id="btn-toggle-info" title="Perfil do lead">
           <i data-lucide="user" style="width:14px;height:14px"></i><span>Perfil</span>
         </button>
@@ -2887,36 +2878,7 @@ function openCentralChat(leadId) {
   });
   $('btn-open-lead-info').addEventListener('click', () => toggleLeadInfoPanel(leadId));
   $('btn-toggle-info').addEventListener('click', () => toggleLeadInfoPanel(leadId));
-
-  $('btn-chat-settings')?.addEventListener('click', e => {
-    e.stopPropagation();
-    const s = $('cp-bubble-settings');
-    if (s) s.style.display = s.style.display === 'none' ? '' : 'none';
-  });
-  $('cp-bubble-style')?.addEventListener('change', e => {
-    localStorage.setItem('fdv_bubble_style', e.target.value);
-    applyBubbleStyle();
-    toast('Estilo salvo.', 'ok');
-  });
-  $('cp-chat-font')?.addEventListener('change', e => {
-    localStorage.setItem('fdv_chat_font', e.target.value);
-    applyChatFont();
-    toast('Fonte salva.', 'ok');
-  });
-  $('cp-bs-apply')?.addEventListener('click', () => {
-    const sentHex = $('cp-sent-color')?.value || '#CE9221';
-    const recvHex = $('cp-recv-color')?.value || '#2d444a';
-    localStorage.setItem('fdv_bubble_sent_hex', sentHex);
-    localStorage.setItem('fdv_bubble_recv_hex', recvHex);
-    applyBubbleColors();
-    if ($('cp-bubble-settings')) $('cp-bubble-settings').style.display = 'none';
-    toast('Cores dos balões salvas.', 'ok');
-  });
-  document.addEventListener('click', function closeBubbleSettings(e) {
-    const s = $('cp-bubble-settings');
-    if (s && !s.contains(e.target) && e.target.id !== 'btn-chat-settings') s.style.display = 'none';
-  }, { once: true });
-
+  bindChatSettingsEvents();
 }
 
 // ── Lead info side panel ────────────────────────────────────────────────────
@@ -3216,6 +3178,233 @@ async function deleteLabel(id) {
   await supabase.from('labels').delete().eq('id', id);
   toast('Excluída.', 'ok');
   renderLabelsPanel();
+}
+
+// ─── WHATSAPP CONTACTS (números desconhecidos) ───────────────────────
+
+function loadContacts() {
+  if (!isLive) { allContacts = []; contactsLoaded = true; renderChatsList(); return; }
+  const doFetch = () =>
+    supabase.from('whatsapp_contacts').select('*')
+      .order('last_message_at', { ascending: false, nullsFirst: false })
+      .then(({ data }) => {
+        allContacts = (data || []).map(c => ({
+          id: c.id, phone: c.phone, push_name: c.push_name,
+          instance_name: c.instance_name, unread_count: c.unread_count || 0,
+          last_message_at: c.last_message_at, last_message_text: c.last_message_text,
+        }));
+        contactsLoaded = true;
+        if (activeTab === 'whatsapp' && activeWaSub === 'chats') renderChatsList();
+      });
+  doFetch();
+  supabase.channel('wa_contacts_realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'whatsapp_contacts' }, doFetch)
+    .subscribe();
+}
+
+function buildChatSettingsPanelHTML(iSentHex, iRecvHex, iBubStyle, iFont) {
+  const s = (v, cur, l) => `<option value="${v}"${cur===v?' selected':''}>${l}</option>`;
+  return `<div class="cp-bubble-settings" id="cp-bubble-settings" style="display:none">
+    <div class="cp-bs-title">Estilo dos balões</div>
+    <div class="cp-bs-row"><label>Estilo</label>
+      <select id="cp-bubble-style" class="filter-select cp-style-sel">
+        ${s('',iBubStyle,'Padrão')}${s('comic-book',iBubStyle,'Comic Book')}${s('minimalista',iBubStyle,'Minimalista')}
+        ${s('retro',iBubStyle,'Retrô')}${s('neon',iBubStyle,'Neon')}${s('paper',iBubStyle,'Paper')}
+        ${s('glass',iBubStyle,'Glassmorphism')}${s('bubble',iBubStyle,'Bubble')}${s('sharp',iBubStyle,'Sharp')}
+        ${s('shadow',iBubStyle,'Shadow')}${s('gradient',iBubStyle,'Gradient')}${s('typewriter',iBubStyle,'Typewriter')}
+        ${s('sticker',iBubStyle,'Sticker')}
+      </select></div>
+    <div class="cp-bs-row" style="margin-top:6px"><label>Fonte</label>
+      <select id="cp-chat-font" class="filter-select cp-font-sel">
+        ${s('',iFont,'Padrão')}${s('inter',iFont,'Inter')}${s('roboto',iFont,'Roboto')}
+        ${s('open-sans',iFont,'Open Sans')}${s('lato',iFont,'Lato')}${s('nunito',iFont,'Nunito')}
+        ${s('poppins',iFont,'Poppins')}${s('raleway',iFont,'Raleway')}${s('montserrat',iFont,'Montserrat')}
+        ${s('quicksand',iFont,'Quicksand')}${s('dm-sans',iFont,'DM Sans')}${s('playfair',iFont,'Playfair Display')}
+        ${s('merriweather',iFont,'Merriweather')}${s('comic-neue',iFont,'Comic Neue')}
+        ${s('space-mono',iFont,'Space Mono')}${s('pacifico',iFont,'Pacifico')}
+      </select></div>
+    <div class="cp-bs-title" style="margin-top:10px">Cores dos balões</div>
+    <div class="cp-bs-row"><label>Enviado</label><input type="color" id="cp-sent-color" class="cp-color-input" value="${esc(iSentHex)}"></div>
+    <div class="cp-bs-row"><label>Recebido</label><input type="color" id="cp-recv-color" class="cp-color-input" value="${esc(iRecvHex)}"></div>
+    <button class="btn-primary btn-sm" id="cp-bs-apply" style="width:100%;margin-top:8px">Aplicar cores</button>
+  </div>`;
+}
+
+function bindChatSettingsEvents() {
+  $('btn-chat-settings')?.addEventListener('click', e => {
+    e.stopPropagation();
+    const s = $('cp-bubble-settings');
+    if (s) s.style.display = s.style.display === 'none' ? '' : 'none';
+  });
+  $('cp-bubble-style')?.addEventListener('change', e => {
+    localStorage.setItem('fdv_bubble_style', e.target.value); applyBubbleStyle(); toast('Estilo salvo.', 'ok');
+  });
+  $('cp-chat-font')?.addEventListener('change', e => {
+    localStorage.setItem('fdv_chat_font', e.target.value); applyChatFont(); toast('Fonte salva.', 'ok');
+  });
+  $('cp-bs-apply')?.addEventListener('click', () => {
+    const sentHex = $('cp-sent-color')?.value || '#CE9221';
+    const recvHex = $('cp-recv-color')?.value || '#2d444a';
+    localStorage.setItem('fdv_bubble_sent_hex', sentHex);
+    localStorage.setItem('fdv_bubble_recv_hex', recvHex);
+    applyBubbleColors();
+    if ($('cp-bubble-settings')) $('cp-bubble-settings').style.display = 'none';
+    toast('Cores dos balões salvas.', 'ok');
+  });
+  document.addEventListener('click', function closeBubbleSettings(e) {
+    const s = $('cp-bubble-settings');
+    if (s && !s.contains(e.target) && e.target.id !== 'btn-chat-settings') s.style.display = 'none';
+  }, { once: true });
+}
+
+function openContactChat(contactId) {
+  chatActiveSide = 'contact:' + contactId;
+  const contact = allContacts.find(c => c.id === contactId); if (!contact) return;
+  const hadUnread = (contact.unread_count || 0) > 0;
+  contact.unread_count = 0;
+  if (isLive && hadUnread)
+    supabase.from('whatsapp_contacts').update({ unread_count: 0 }).eq('id', contactId).catch(console.error);
+  renderChatsList();
+
+  const panel    = $('chats-panel'); if (!panel) return;
+  const pushName = contact.push_name || '';
+  const phone    = contact.phone || '';
+  const initials = pushName
+    ? pushName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+    : phone.slice(-4);
+  const iSentHex = localStorage.getItem('fdv_bubble_sent_hex') || '#CE9221';
+  const iRecvHex = localStorage.getItem('fdv_bubble_recv_hex') || '#2d444a';
+  const iBubStyle = localStorage.getItem('fdv_bubble_style') || '';
+  const iFont     = localStorage.getItem('fdv_chat_font') || '';
+
+  panel.innerHTML = `
+    <div class="cp-header">
+      <div class="cp-header-left">
+        <div class="cp-avatar" id="cp-avatar-wrap">
+          <span class="cp-initials" style="background:rgba(143,160,162,.20)">${esc(initials)}</span>
+          <img class="cp-photo" style="display:none" alt="${esc(initials)}">
+        </div>
+        <div class="cp-header-info">
+          <div class="cp-name">${esc(pushName || phone)}</div>
+          <div class="cp-phone">${esc(phone)}</div>
+        </div>
+      </div>
+      <div class="cp-header-right">
+        <select id="central-chat-instance" class="filter-select chat-inst-sel"></select>
+        <button class="btn-ghost cp-header-btn cp-settings-btn" id="btn-chat-settings" title="Personalizar">
+          <i data-lucide="palette" style="width:14px;height:14px"></i><span>Cores</span>
+        </button>
+        ${buildChatSettingsPanelHTML(iSentHex, iRecvHex, iBubStyle, iFont)}
+        <button class="btn-primary cp-header-btn" id="btn-add-as-lead">
+          <i data-lucide="user-plus" style="width:14px;height:14px"></i><span>Adicionar como lead</span>
+        </button>
+      </div>
+    </div>
+    <div class="chat-messages" id="central-chat-messages">
+      <div class="chat-empty" id="central-chat-empty">
+        <span class="chat-empty-hint">Nenhuma mensagem ainda.</span>
+      </div>
+    </div>
+    <div class="chat-input-bar">
+      <div class="quick-replies-menu" id="quick-replies-menu" style="display:none"></div>
+      <textarea class="chat-input" id="central-chat-input" placeholder="Digite uma mensagem ou / para respostas rápidas…" rows="1"></textarea>
+      <button class="btn-primary chat-send-btn" id="btn-central-send">
+        <i data-lucide="send" style="width:16px;height:16px"></i>
+      </button>
+    </div>`;
+
+  lucide.createIcons({ nodes: [panel] });
+  populateChatInstanceSelector('central-chat-instance');
+  startChatListener(contactId, 'central-chat-messages', 'central-chat-empty', true);
+
+  const instance = contact.instance_name || waInstances[0]?.instanceName || '';
+  if (phone && instance) updateChatHeaderPhoto(phone, instance);
+
+  $('btn-central-send').addEventListener('click', () =>
+    sendContactMessage('central-chat-input', 'central-chat-instance', contactId)
+  );
+  $('central-chat-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendContactMessage('central-chat-input', 'central-chat-instance', contactId); }
+    if (e.key === 'Escape') closeQuickRepliesMenu();
+  });
+  $('central-chat-input').addEventListener('input', e => {
+    const val = e.target.value;
+    if (val.startsWith('/')) showQuickRepliesMenu(val.slice(1));
+    else closeQuickRepliesMenu();
+  });
+  bindChatSettingsEvents();
+  $('btn-add-as-lead').addEventListener('click', () => openAddAsLeadModal(contactId));
+}
+
+async function sendContactMessage(inputId, instSelectId, contactId) {
+  const contact  = allContacts.find(c => c.id === contactId); if (!contact) return;
+  const input    = $(inputId);
+  const instSel  = $(instSelectId);
+  const text     = input?.value.trim();
+  const instName = instSel?.value;
+  if (!text)     { toast('Digite uma mensagem.', 'err'); return; }
+  if (!instName) { toast('Selecione uma instância.', 'err'); return; }
+  const phone = contact.phone;
+  if (!phone)    { toast('Número não disponível.', 'err'); return; }
+  input.value = '';
+  closeQuickRepliesMenu();
+  if (!isLive) return;
+  try {
+    await fetchEvolution(`/message/sendText/${instName}`, 'POST', {
+      number: phone, text, options: { delay: 1200 },
+    });
+  } catch (e) { toast('Erro ao enviar: ' + e.message, 'err'); return; }
+  const now = new Date().toISOString();
+  await supabase.from('lead_messages').insert({
+    contact_id: contactId, text, direction: 'sent', instance_name: instName, timestamp: now,
+  });
+  await supabase.from('whatsapp_contacts').update({
+    last_message_at: now, last_message_text: text.slice(0, 200), instance_name: instName,
+  }).eq('id', contactId);
+}
+
+function openAddAsLeadModal(contactId) {
+  const contact = allContacts.find(c => c.id === contactId); if (!contact) return;
+  $('add-lead-contact-id').value = contactId;
+  $('add-lead-nome').value       = contact.push_name || '';
+  $('add-lead-celular').value    = contact.phone || '';
+  $('add-lead-backdrop').classList.add('open');
+}
+
+function closeAddAsLeadModal() {
+  $('add-lead-backdrop').classList.remove('open');
+}
+
+async function confirmAddAsLead() {
+  const contactId = $('add-lead-contact-id').value;
+  const nome      = $('add-lead-nome').value.trim();
+  const celular   = $('add-lead-celular').value.trim();
+  if (!nome)    { toast('Preencha o nome.', 'err'); return; }
+  if (!celular) { toast('Preencha o celular.', 'err'); return; }
+  if (!isLive)  { toast('Não disponível no modo demo.', 'err'); return; }
+  const contact = allContacts.find(c => c.id === contactId); if (!contact) return;
+  const today   = new Date().toISOString().split('T')[0];
+
+  const { data: newLead, error: leadErr } = await supabase.from('leads').insert({
+    nome, celular, status: 'Novo', origem: 'WHATSAPP', datachegada: today,
+    last_message_instance: contact.instance_name,
+    last_message_at:       contact.last_message_at,
+    last_message_text:     contact.last_message_text,
+  }).select('id').single();
+  if (leadErr) { toast('Erro ao criar lead: ' + leadErr.message, 'err'); return; }
+
+  await supabase.from('lead_messages')
+    .update({ lead_id: newLead.id, contact_id: null })
+    .eq('contact_id', contactId);
+
+  await supabase.from('whatsapp_contacts').delete().eq('id', contactId);
+  allContacts = allContacts.filter(c => c.id !== contactId);
+
+  closeAddAsLeadModal();
+  toast(`${nome} adicionado(a) como lead.`, 'ok');
+
+  await fetchLeads();
+  openCentralChat(newLead.id);
 }
 
 // ─── WHATSAPP / EVOLUTION API ────────────────────────────────────────
@@ -3802,7 +3991,9 @@ function bindEvents() {
   // Central de chats — clique na conversa (delegado)
   $('chats-list').addEventListener('click', e => {
     const item = e.target.closest('.chats-list-item');
-    if (item) openCentralChat(item.dataset.leadId);
+    if (!item) return;
+    if (item.dataset.leadId)    openCentralChat(item.dataset.leadId);
+    else if (item.dataset.contactId) openContactChat(item.dataset.contactId);
   });
 
   // WhatsApp — botão instâncias (abre modal)
@@ -3885,9 +4076,17 @@ function bindEvents() {
     if (!e.target.closest('#notif-wrapper')) { const p = $('notif-panel'); if (p) p.style.display = 'none'; }
   });
 
+  // Adicionar como lead modal
+  $('add-lead-close').addEventListener('click',   closeAddAsLeadModal);
+  $('add-lead-cancel').addEventListener('click',  closeAddAsLeadModal);
+  $('add-lead-confirm').addEventListener('click', confirmAddAsLead);
+  $('add-lead-backdrop').addEventListener('click', e => {
+    if (e.target === $('add-lead-backdrop')) closeAddAsLeadModal();
+  });
+
   // Keyboard
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeModal(); closePerfil(); closeNovoLead(); closeQRModal(); closeMotivosPerda(); closeVendaGanha(); }
+    if (e.key === 'Escape') { closeModal(); closePerfil(); closeNovoLead(); closeQRModal(); closeMotivosPerda(); closeVendaGanha(); closeAddAsLeadModal(); }
   });
 }
 

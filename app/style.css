@@ -1599,6 +1599,9 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
   padding: 6px 14px;
 }
 
+/* ── Add as Lead Modal ───────────────────────────────────── */
+.modal--add-lead { max-width: 420px; }
+
 /* ── Instâncias Modal ────────────────────────────────────── */
 .modal--instancias { max-width: 640px; }
 
@@ -2153,6 +2156,9 @@ body[data-bubble-style="sticker"] .chat-msg--sent .chat-bubble {
   font-size: 16px; font-weight: 700; color: var(--gold);
   letter-spacing: -0.5px;
 }
+.cli-initials--unknown {
+  font-size: 13px; font-weight: 600; color: var(--t3);
+}
 .cli-photo {
   width: 100%; height: 100%;
   border-radius: 50%; object-fit: cover; display: block;
@@ -2170,6 +2176,11 @@ body[data-bubble-style="sticker"] .chat-msg--sent .chat-bubble {
   display: flex; align-items: center; justify-content: center;
 }
 .cli-labels { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.cli-unknown-tag {
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px;
+  color: var(--t3); background: rgba(255,255,255,.06); border: 1px solid var(--b1);
+  border-radius: 10px; padding: 1px 7px;
+}
 .cli-label-pill {
   font-size: 10px; padding: 1px 6px; border-radius: var(--r-pill);
   font-weight: 600; white-space: nowrap;
