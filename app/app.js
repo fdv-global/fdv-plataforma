@@ -3086,6 +3086,20 @@ async function togglePinConversation(type, id) {
   toast(type === 'lead' && allLeads.find(l=>l.id===id)?.chat_pinned ? 'Conversa fixada.' : 'Conversa desafixada.', 'ok');
 }
 
+// Feature 8: delete a single chat message
+async function deleteChatMessage(msgId) {
+  if (!msgId) return;
+  if (!confirm('Apagar esta mensagem?')) return;
+  if (isLive) {
+    const { error } = await supabase.from('lead_messages').delete().eq('id', msgId);
+    if (error) { toast('Erro ao apagar: ' + error.message, 'err'); return; }
+  }
+  chatMessages = chatMessages.filter(m => m.id !== msgId);
+  const el = document.querySelector(`.chat-msg[data-msg-id="${msgId}"]`);
+  if (el) el.remove();
+  toast('Mensagem apagada.', 'ok');
+}
+
 // Feature 7: mark conversation as unread — called from context menu (showConvContextMenu)
 async function markAsUnread(type, id) {
   if (!isLive) { toast('Não disponível no modo demo.', 'err'); return; }
