@@ -3086,6 +3086,7 @@ async function togglePinConversation(type, id) {
   toast(type === 'lead' && allLeads.find(l=>l.id===id)?.chat_pinned ? 'Conversa fixada.' : 'Conversa desafixada.', 'ok');
 }
 
+// Feature 7: mark conversation as unread — called from context menu (showConvContextMenu)
 async function markAsUnread(type, id) {
   if (!isLive) { toast('Não disponível no modo demo.', 'err'); return; }
   if (type === 'lead') {
