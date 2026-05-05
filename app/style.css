@@ -2531,6 +2531,16 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .crq-sender { font-size: 10px; font-weight: 600; color: var(--gold); display: block; margin-bottom: 2px; }
 .crq-text   { font-size: 11px; color: var(--t3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; display: block; }
 
+/* ── Emoji picker ─────────────────────────────────────────────── */
+#chat-emoji-picker-wrap emoji-picker {
+  --background: var(--s2);
+  --border-color: var(--b1);
+  --input-border-color: var(--b1);
+  --input-font-color: var(--t1);
+  --button-hover-background: var(--s3);
+  height: 320px; width: 280px;
+}
+
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 1100px) {
   .chats-layout { grid-template-columns: 280px 1fr; }

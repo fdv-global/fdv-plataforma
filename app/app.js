@@ -2761,6 +2761,33 @@ function buildChatInputBarHTML(textareaId) {
     <div id="chat-emoji-picker-wrap" style="display:none;position:absolute;bottom:70px;left:0;z-index:50;"></div>`;
 }
 
+function bindChatEmojiEvents(textareaId) {
+  const btn  = $('btn-chat-emoji');
+  const wrap = $('chat-emoji-picker-wrap');
+  if (!btn || !wrap) return;
+
+  // Create picker on first use
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (!wrap.firstChild) {
+      const picker = document.createElement('emoji-picker');
+      picker.classList.add('light');
+      wrap.appendChild(picker);
+      picker.addEventListener('emoji-click', ev => {
+        const ta = $(textareaId);
+        if (!ta) return;
+        const pos = ta.selectionStart ?? ta.value.length;
+        ta.value  = ta.value.slice(0, pos) + ev.detail.unicode + ta.value.slice(pos);
+        ta.selectionStart = ta.selectionEnd = pos + ev.detail.unicode.length;
+        ta.focus();
+      });
+    }
+    wrap.style.display = wrap.style.display === 'none' ? '' : 'none';
+  });
+
+  document.addEventListener('click', () => { if (wrap) wrap.style.display = 'none'; });
+}
+
 function bindChatAttachEvents(instSelectId, phone, isLead, entityId) {
   $('btn-chat-attach')?.addEventListener('click', () => $('chat-file-input')?.click());
   $('chat-file-input')?.addEventListener('change', e => {
@@ -2990,6 +3017,7 @@ function openCentralChat(leadId) {
   $('btn-toggle-info').addEventListener('click', () => toggleLeadInfoPanel(leadId));
   bindChatSettingsEvents();
   bindChatAttachEvents('central-chat-instance', normalizePhoneForEvolution(lead.celular), true, leadId);
+  bindChatEmojiEvents('central-chat-input');
 }
 
 // ── Lead info side panel ────────────────────────────────────────────────────
@@ -3452,6 +3480,7 @@ function openContactChat(contactId) {
   });
   bindChatSettingsEvents();
   bindChatAttachEvents('central-chat-instance', contact.phone, false, contactId);
+  bindChatEmojiEvents('central-chat-input');
   $('btn-add-as-lead').addEventListener('click', () => openAddAsLeadModal(contactId));
 }
 
