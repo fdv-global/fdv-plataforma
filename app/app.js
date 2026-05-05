@@ -2970,7 +2970,7 @@ function renderLeadChatItem(lead) {
   return `<div class="chats-list-item${isActive?' chats-list-item--active':''}${unread?' chats-list-item--unread':''}" data-lead-id="${esc(lead.id)}" role="button" tabindex="0">
     <div class="cli-avatar" data-phone="${esc(phone)}" data-instance="${esc(instance)}">${avatarInner}</div>
     <div class="cli-body">
-      <div class="cli-top"><span class="cli-name">${esc(lead.nome||'—')}</span><span class="cli-time">${esc(lastTime)}</span></div>
+      <div class="cli-top"><span class="cli-name">${esc(lead.nome||'—')}${lead.chat_pinned ? '<span class="cli-pin-icon">📌</span>' : ''}</span><span class="cli-time">${esc(lastTime)}</span></div>
       <div class="cli-mid"><span class="cli-msg">${esc(lastMsg)}</span>${unread?`<span class="cli-unread-badge">${unread}</span>`:''}</div>
       ${lblHtml?`<div class="cli-labels">${lblHtml}</div>`:''}
     </div>
@@ -2996,7 +2996,7 @@ function renderContactChatItem(contact) {
   return `<div class="chats-list-item${isActive?' chats-list-item--active':''}${unread?' chats-list-item--unread':''}" data-contact-id="${esc(contact.id)}" role="button" tabindex="0">
     <div class="cli-avatar" data-phone="${esc(phone)}" data-instance="${esc(instance)}">${avatarInner}</div>
     <div class="cli-body">
-      <div class="cli-top"><span class="cli-name">${esc(pushName||phone)}</span><span class="cli-time">${esc(lastTime)}</span></div>
+      <div class="cli-top"><span class="cli-name">${esc(pushName||phone)}${contact.chat_pinned ? '<span class="cli-pin-icon">📌</span>' : ''}</span><span class="cli-time">${esc(lastTime)}</span></div>
       <div class="cli-mid"><span class="cli-msg">${esc(lastMsg)}</span>${unread?`<span class="cli-unread-badge">${unread}</span>`:''}</div>
       <div class="cli-labels"><span class="cli-unknown-tag">Desconhecido</span></div>
     </div>
@@ -3022,7 +3022,12 @@ function renderChatsList() {
   const items = [
     ...leadConvs.map(l  => ({ type: 'lead',    data: l, at: l.last_message_at||l.lastMessageAt||'' })),
     ...contactConvs.map(c => ({ type: 'contact', data: c, at: c.last_message_at||'' })),
-  ].sort((a, b) => b.at.localeCompare(a.at));
+  ].sort((a, b) => {
+    const ap = a.data.chat_pinned ? 1 : 0;
+    const bp = b.data.chat_pinned ? 1 : 0;
+    if (bp !== ap) return bp - ap; // pinned first
+    return b.at.localeCompare(a.at);
+  });
 
   const listEl = $('chats-list'); if (!listEl) return;
   if (!items.length) {
@@ -3033,6 +3038,74 @@ function renderChatsList() {
     type === 'lead' ? renderLeadChatItem(data) : renderContactChatItem(data)
   ).join('');
   updateChatListPhotos();
+}
+
+function showConvContextMenu(x, y, type, id) {
+  let menu = $('conv-ctx-menu');
+  if (!menu) {
+    menu = document.createElement('div');
+    menu.id = 'conv-ctx-menu';
+    menu.className = 'conv-ctx-menu';
+    document.body.appendChild(menu);
+    menu.addEventListener('click', e => {
+      const btn = e.target.closest('.ccm-btn');
+      if (!btn) return;
+      menu.style.display = 'none';
+      if (btn.dataset.action === 'pin')    togglePinConversation(btn.dataset.type, btn.dataset.id);
+      if (btn.dataset.action === 'unread') markAsUnread(btn.dataset.type, btn.dataset.id);
+    });
+    document.addEventListener('click', () => { menu.style.display = 'none'; });
+  }
+  const isPinned = type === 'lead'
+    ? !!(allLeads.find(l => l.id === id)?.chat_pinned)
+    : !!(allContacts.find(c => c.id === id)?.chat_pinned);
+  menu.innerHTML = `
+    <button class="ccm-btn" data-action="pin" data-type="${type}" data-id="${id}">
+      📌 ${isPinned ? 'Desafixar' : 'Fixar no topo'}
+    </button>
+    <button class="ccm-btn" data-action="unread" data-type="${type}" data-id="${id}">
+      🔴 Marcar como não lida
+    </button>`;
+  menu.style.cssText = `display:block;left:${x}px;top:${y}px;`;
+}
+
+async function togglePinConversation(type, id) {
+  if (!isLive) { toast('Não disponível no modo demo.', 'err'); return; }
+  if (type === 'lead') {
+    const lead = allLeads.find(l => l.id === id); if (!lead) return;
+    const newVal = !lead.chat_pinned;
+    await supabase.from('leads').update({ chat_pinned: newVal }).eq('id', id);
+    lead.chat_pinned = newVal;
+  } else {
+    const c = allContacts.find(x => x.id === id); if (!c) return;
+    const newVal = !c.chat_pinned;
+    await supabase.from('whatsapp_contacts').update({ chat_pinned: newVal }).eq('id', id);
+    c.chat_pinned = newVal;
+  }
+  renderChatsList();
+  toast(type === 'lead' && allLeads.find(l=>l.id===id)?.chat_pinned ? 'Conversa fixada.' : 'Conversa desafixada.', 'ok');
+}
+
+async function markAsUnread(type, id) {
+  if (!isLive) { toast('Não disponível no modo demo.', 'err'); return; }
+  if (type === 'lead') {
+    const lead = allLeads.find(l => l.id === id); if (!lead) return;
+    await supabase.from('leads').update({ unread_count: 1 }).eq('id', id);
+    lead.unread_count = 1; lead.unreadCount = 1;
+  } else {
+    const c = allContacts.find(x => x.id === id); if (!c) return;
+    await supabase.from('whatsapp_contacts').update({ unread_count: 1 }).eq('id', id);
+    c.unread_count = 1;
+  }
+  // Deselect the conversation from active side so badge shows
+  if (chatActiveSide === id || chatActiveSide === 'contact:' + id) {
+    chatActiveSide = null;
+    stopChatListener();
+    const p = $('chats-panel');
+    if (p) p.innerHTML = `<div class="chats-panel-empty"><div style="font-size:40px;margin-bottom:12px">💬</div><h3>Selecione uma conversa</h3><p>Clique em um contato à esquerda para abrir o chat.</p></div>`;
+  }
+  renderChatsList();
+  toast('Marcado como não lida.', 'ok');
 }
 
 function openCentralChat(leadId) {
@@ -4348,6 +4421,16 @@ function bindEvents() {
     if (!item) return;
     if (item.dataset.leadId)    openCentralChat(item.dataset.leadId);
     else if (item.dataset.contactId) openContactChat(item.dataset.contactId);
+  });
+
+  // Central de chats — menu de contexto (botão direito)
+  $('chats-list').addEventListener('contextmenu', e => {
+    e.preventDefault();
+    const item = e.target.closest('.chats-list-item');
+    if (!item) return;
+    const type = item.dataset.leadId ? 'lead' : 'contact';
+    const id   = item.dataset.leadId || item.dataset.contactId;
+    showConvContextMenu(e.clientX, e.clientY, type, id);
   });
 
   // Nova conversa
