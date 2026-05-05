@@ -380,6 +380,13 @@
       <!-- Sidebar: busca + filtros + lista -->
       <div class="chats-sidebar">
         <div class="chats-sidebar-top">
+          <div class="chats-sidebar-header">
+            <span class="csh-title">Conversas</span>
+            <button class="btn-ghost csh-new-btn" id="btn-nova-conversa" title="Nova conversa">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="9" x2="12" y2="15"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+              Nova conversa
+            </button>
+          </div>
           <div class="chats-search-wrap">
             <input type="text" id="chats-search" class="chats-search-input" placeholder="Buscar conversa…" autocomplete="off">
           </div>
@@ -792,6 +799,29 @@
     <div class="modal-footer">
       <button class="btn-ghost" id="add-lead-cancel">Cancelar</button>
       <button class="btn-primary" id="add-lead-confirm">Criar Lead</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL NOVA CONVERSA ===== -->
+<div class="modal-backdrop" id="nova-conversa-backdrop">
+  <div class="modal modal--nova-conversa" role="dialog" aria-modal="true" aria-labelledby="nova-conversa-title">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="nova-conversa-title">Nova conversa</h2>
+        <p class="modal-subtitle">Digite o número para iniciar o chat</p>
+      </div>
+      <button class="modal-close" id="nova-conversa-close" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="nova-conversa-numero">Número (com DDD) <span class="req">*</span></label>
+        <input type="text" id="nova-conversa-numero" class="form-ctrl" placeholder="(11) 99999-9999" autocomplete="off">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="nova-conversa-cancel">Cancelar</button>
+      <button class="btn-primary" id="nova-conversa-confirm">Abrir chat</button>
     </div>
   </div>
 </div>

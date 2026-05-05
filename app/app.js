@@ -2745,6 +2745,7 @@ function renderLeadChatItem(lead) {
       <div class="cli-mid"><span class="cli-msg">${esc(lastMsg)}</span>${unread?`<span class="cli-unread-badge">${unread}</span>`:''}</div>
       ${lblHtml?`<div class="cli-labels">${lblHtml}</div>`:''}
     </div>
+    <button class="cli-delete-btn" data-action="delete-conv" data-type="lead" data-id="${esc(lead.id)}" title="Excluir conversa" aria-label="Excluir conversa">✕</button>
   </div>`;
 }
 
@@ -2770,6 +2771,7 @@ function renderContactChatItem(contact) {
       <div class="cli-mid"><span class="cli-msg">${esc(lastMsg)}</span>${unread?`<span class="cli-unread-badge">${unread}</span>`:''}</div>
       <div class="cli-labels"><span class="cli-unknown-tag">Desconhecido</span></div>
     </div>
+    <button class="cli-delete-btn" data-action="delete-conv" data-type="contact" data-id="${esc(contact.id)}" title="Excluir conversa" aria-label="Excluir conversa">✕</button>
   </div>`;
 }
 
@@ -3204,6 +3206,7 @@ function loadContacts() {
 
 function buildChatSettingsPanelHTML(iSentHex, iRecvHex, iBubStyle, iFont) {
   const s = (v, cur, l) => `<option value="${v}"${cur===v?' selected':''}>${l}</option>`;
+  const iFontSize = localStorage.getItem('fdv_chat_font_size') || '13';
   return `<div class="cp-bubble-settings" id="cp-bubble-settings" style="display:none">
     <div class="cp-bs-title">Estilo dos balões</div>
     <div class="cp-bs-row"><label>Estilo</label>
@@ -3223,6 +3226,11 @@ function buildChatSettingsPanelHTML(iSentHex, iRecvHex, iBubStyle, iFont) {
         ${s('merriweather',iFont,'Merriweather')}${s('comic-neue',iFont,'Comic Neue')}
         ${s('space-mono',iFont,'Space Mono')}${s('pacifico',iFont,'Pacifico')}
       </select></div>
+    <div class="cp-bs-row" style="margin-top:6px"><label>Tamanho</label>
+      <div class="cp-font-size-wrap">
+        <span class="cp-font-size-val" id="cp-font-size-label">${esc(iFontSize)}px</span>
+        <input type="range" id="cp-font-size" min="11" max="18" step="1" value="${esc(iFontSize)}" class="cp-font-size-slider">
+      </div></div>
     <div class="cp-bs-title" style="margin-top:10px">Cores dos balões</div>
     <div class="cp-bs-row"><label>Enviado</label><input type="color" id="cp-sent-color" class="cp-color-input" value="${esc(iSentHex)}"></div>
     <div class="cp-bs-row"><label>Recebido</label><input type="color" id="cp-recv-color" class="cp-color-input" value="${esc(iRecvHex)}"></div>
@@ -3241,6 +3249,13 @@ function bindChatSettingsEvents() {
   });
   $('cp-chat-font')?.addEventListener('change', e => {
     localStorage.setItem('fdv_chat_font', e.target.value); applyChatFont(); toast('Fonte salva.', 'ok');
+  });
+  $('cp-font-size')?.addEventListener('input', e => {
+    const val = e.target.value;
+    const lbl = $('cp-font-size-label');
+    if (lbl) lbl.textContent = val + 'px';
+    localStorage.setItem('fdv_chat_font_size', val);
+    applyChatFontSize();
   });
   $('cp-bs-apply')?.addEventListener('click', () => {
     const sentHex = $('cp-sent-color')?.value || '#CE9221';
@@ -3405,6 +3420,101 @@ async function confirmAddAsLead() {
 
   await fetchLeads();
   openCentralChat(newLead.id);
+}
+
+// ─── EXCLUIR CONVERSA ────────────────────────────────────────────────
+
+async function deleteConversation(type, id) {
+  if (!confirm('Excluir todas as mensagens desta conversa? O lead não será removido.')) return;
+  if (!isLive) { toast('Não disponível no modo demo.', 'err'); return; }
+  if (type === 'lead') {
+    const { error: e1 } = await supabase.from('lead_messages').delete().eq('lead_id', id);
+    if (e1) { toast('Erro ao excluir mensagens: ' + e1.message, 'err'); return; }
+    await supabase.from('leads').update({
+      last_message_at: null, last_message_text: null, last_message_instance: null, unread_count: 0,
+    }).eq('id', id);
+    const lead = allLeads.find(l => l.id === id);
+    if (lead) {
+      lead.last_message_at = null; lead.lastMessageAt = null;
+      lead.last_message_text = ''; lead.lastMessageText = '';
+      lead.last_message_instance = null; lead.lastMessageInstance = null;
+      lead.unread_count = 0; lead.unreadCount = 0;
+    }
+    if (chatActiveSide === id) {
+      stopChatListener();
+      chatActiveSide = null;
+      const p = $('chats-panel');
+      if (p) p.innerHTML = `<div class="chats-panel-empty"><div style="font-size:40px;margin-bottom:12px">💬</div><h3>Selecione uma conversa</h3><p>Clique em um contato à esquerda para abrir o chat.</p></div>`;
+    }
+  } else if (type === 'contact') {
+    const { error: e2 } = await supabase.from('lead_messages').delete().eq('contact_id', id);
+    if (e2) { toast('Erro ao excluir mensagens: ' + e2.message, 'err'); return; }
+    await supabase.from('whatsapp_contacts').delete().eq('id', id);
+    allContacts = allContacts.filter(c => c.id !== id);
+    if (chatActiveSide === 'contact:' + id) {
+      stopChatListener();
+      chatActiveSide = null;
+      const p = $('chats-panel');
+      if (p) p.innerHTML = `<div class="chats-panel-empty"><div style="font-size:40px;margin-bottom:12px">💬</div><h3>Selecione uma conversa</h3><p>Clique em um contato à esquerda para abrir o chat.</p></div>`;
+    }
+  }
+  toast('Conversa excluída.', 'ok');
+  renderChatsList();
+}
+
+// ─── NOVA CONVERSA ───────────────────────────────────────────────────
+
+function openNovaConversaModal() {
+  const el = $('nova-conversa-numero');
+  if (el) el.value = '';
+  $('nova-conversa-backdrop').classList.add('open');
+  if (el) setTimeout(() => el.focus(), 50);
+}
+
+function closeNovaConversaModal() {
+  $('nova-conversa-backdrop').classList.remove('open');
+}
+
+async function confirmNovaConversa() {
+  const rawNum = $('nova-conversa-numero')?.value.trim();
+  if (!rawNum) { toast('Digite um número.', 'err'); return; }
+  const phone = normalizePhoneForEvolution(rawNum);
+  if (!phone) { toast('Número inválido. Use DDD + número (ex: 11 99999-9999).', 'err'); return; }
+
+  const lead = allLeads.find(l => normalizePhoneForEvolution(l.celular) === phone);
+  if (lead) {
+    closeNovaConversaModal();
+    openCentralChat(lead.id);
+    return;
+  }
+
+  const contact = allContacts.find(c => c.phone === phone);
+  if (contact) {
+    closeNovaConversaModal();
+    openContactChat(contact.id);
+    return;
+  }
+
+  if (!isLive) { toast('Não disponível no modo demo.', 'err'); return; }
+  const instance = waInstances.find(i => i.status === 'connected');
+  if (!instance) { toast('Nenhuma instância conectada.', 'err'); return; }
+
+  const { data: newContact, error } = await supabase.from('whatsapp_contacts').insert({
+    phone,
+    instance_name: instance.instanceName,
+    last_message_at: new Date().toISOString(),
+    last_message_text: '',
+  }).select('id').single();
+  if (error) { toast('Erro: ' + error.message, 'err'); return; }
+
+  const newContactObj = {
+    id: newContact.id, phone, push_name: '', instance_name: instance.instanceName,
+    unread_count: 0, last_message_at: new Date().toISOString(), last_message_text: '',
+  };
+  allContacts.unshift(newContactObj);
+  closeNovaConversaModal();
+  renderChatsList();
+  openContactChat(newContact.id);
 }
 
 // ─── WHATSAPP / EVOLUTION API ────────────────────────────────────────
@@ -3990,10 +4100,24 @@ function bindEvents() {
 
   // Central de chats — clique na conversa (delegado)
   $('chats-list').addEventListener('click', e => {
+    const delBtn = e.target.closest('.cli-delete-btn[data-action="delete-conv"]');
+    if (delBtn) { e.stopPropagation(); deleteConversation(delBtn.dataset.type, delBtn.dataset.id); return; }
     const item = e.target.closest('.chats-list-item');
     if (!item) return;
     if (item.dataset.leadId)    openCentralChat(item.dataset.leadId);
     else if (item.dataset.contactId) openContactChat(item.dataset.contactId);
+  });
+
+  // Nova conversa
+  $('btn-nova-conversa').addEventListener('click', openNovaConversaModal);
+  $('nova-conversa-close').addEventListener('click',   closeNovaConversaModal);
+  $('nova-conversa-cancel').addEventListener('click',  closeNovaConversaModal);
+  $('nova-conversa-confirm').addEventListener('click', confirmNovaConversa);
+  $('nova-conversa-numero').addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmNovaConversa();
+  });
+  $('nova-conversa-backdrop').addEventListener('click', e => {
+    if (e.target === $('nova-conversa-backdrop')) closeNovaConversaModal();
   });
 
   // WhatsApp — botão instâncias (abre modal)
@@ -4086,7 +4210,7 @@ function bindEvents() {
 
   // Keyboard
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeModal(); closePerfil(); closeNovoLead(); closeQRModal(); closeMotivosPerda(); closeVendaGanha(); closeAddAsLeadModal(); }
+    if (e.key === 'Escape') { closeModal(); closePerfil(); closeNovoLead(); closeQRModal(); closeMotivosPerda(); closeVendaGanha(); closeAddAsLeadModal(); closeNovaConversaModal(); }
   });
 }
 
@@ -4152,9 +4276,15 @@ function applyChatFont() {
   }
 }
 
+function applyChatFontSize() {
+  const size = localStorage.getItem('fdv_chat_font_size') || '13';
+  document.documentElement.style.setProperty('--chat-font-size', size + 'px');
+}
+
 // ─── BOOT ────────────────────────────────────────────────────────────
 applyBubbleColors();
 applyBubbleStyle();
 applyChatFont();
+applyChatFontSize();
 bindEvents();
 initAuth();
