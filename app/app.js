@@ -2581,12 +2581,43 @@ function renderChatMessages(messages, containerId, emptyId) {
       frag.appendChild(sep); lastDate = dateLbl;
     }
     const el = document.createElement('div');
-    el.className = `chat-msg chat-msg--${msg.direction||'sent'}`;
-    el.innerHTML = `<div class="chat-bubble">${esc(msg.text||'')}</div>
+    const dir = msg.direction || 'sent';
+    el.className = `chat-msg chat-msg--${dir}`;
+    el.dataset.msgId = msg.id || '';
+
+    // reply quote
+    const replyHtml = msg.reply_to_text
+      ? `<div class="chat-reply-quote">${msg.reply_to_sender?`<span class="crq-sender">${esc(msg.reply_to_sender)}</span>`:''}<div class="crq-text">${esc((msg.reply_to_text||'').slice(0,120))}</div></div>`
+      : '';
+
+    // media or text
+    let mediaHtml = '';
+    if (msg.media_type && msg.media_url) {
+      if (msg.media_type === 'image') {
+        mediaHtml = `<img src="${msg.media_url}" class="chat-media-img" alt="imagem">`;
+      } else if (msg.media_type === 'video') {
+        mediaHtml = `<video controls class="chat-media-video"><source src="${msg.media_url}"></video>`;
+      } else if (msg.media_type === 'audio') {
+        mediaHtml = `<audio controls class="chat-media-audio"><source src="${msg.media_url}"></audio>`;
+      } else {
+        const n = esc(msg.media_name || msg.text || 'arquivo');
+        mediaHtml = `<a href="${msg.media_url}" download="${n}" class="chat-media-doc" target="_blank"><span class="chat-media-doc-icon">📄</span><span class="chat-media-doc-name">${n}</span></a>`;
+      }
+    }
+
+    el.innerHTML = `
+      <div class="chat-msg-actions">
+        <button class="chat-action-btn chat-reply-btn" data-msg-id="${esc(msg.id||'')}" title="Responder">↩</button>
+        <button class="chat-action-btn chat-delete-btn" data-msg-id="${esc(msg.id||'')}" title="Apagar">🗑</button>
+      </div>
+      <div class="chat-bubble">
+        ${replyHtml}
+        ${mediaHtml || esc(msg.text||'')}
+      </div>
       <div class="chat-msg-meta">
-        ${msg.senderName ? `<span class="chat-sender">${esc(msg.senderName)}</span>` : ''}
+        ${msg.senderName||msg.sender_name ? `<span class="chat-sender">${esc(msg.senderName||msg.sender_name)}</span>` : ''}
         <span class="chat-time">${ts.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span>
-        ${(msg.direction||'sent')==='sent'?`<span class="chat-tick">${msg.status==='read'?'✓✓':'✓'}</span>`:''}
+        ${dir==='sent'?`<span class="chat-tick">${msg.status==='read'?'✓✓':'✓'}</span>`:''}
       </div>`;
     frag.appendChild(el);
   });
@@ -2698,6 +2729,87 @@ async function updateChatHeaderPhoto(phone, instanceName) {
 }
 
 // ─── CENTRAL DE CHATS ────────────────────────────────────────────────
+
+function buildChatInputBarHTML(textareaId) {
+  return `
+    <div class="quick-replies-menu" id="quick-replies-menu" style="display:none"></div>
+    <div class="chat-reply-bar" id="chat-reply-bar" style="display:none">
+      <div class="crb-line"></div>
+      <div class="crb-body">
+        <span class="crb-sender" id="crb-sender"></span>
+        <span class="crb-text"   id="crb-text"></span>
+      </div>
+      <button class="crb-cancel btn-ghost btn-icon" id="btn-reply-cancel">✕</button>
+    </div>
+    <div class="chat-input-row">
+      <input type="file" id="chat-file-input" class="chat-file-input"
+             accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip">
+      <button class="chat-tool-btn" id="btn-chat-attach" title="Enviar arquivo">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+      </button>
+      <button class="chat-tool-btn" id="btn-chat-emoji" title="Emojis">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+      </button>
+      <textarea class="chat-input" id="${textareaId}" placeholder="Digite uma mensagem ou / para respostas rápidas…" rows="1"></textarea>
+      <button class="chat-tool-btn chat-mic-btn" id="btn-chat-mic" title="Gravar áudio">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </button>
+      <button class="btn-primary chat-send-btn" id="btn-central-send">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+    <div id="chat-emoji-picker-wrap" style="display:none;position:absolute;bottom:70px;left:0;z-index:50;"></div>`;
+}
+
+function bindChatAttachEvents(instSelectId, phone, isLead, entityId) {
+  $('btn-chat-attach')?.addEventListener('click', () => $('chat-file-input')?.click());
+  $('chat-file-input')?.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) handleAttachmentFile(file, instSelectId, phone, isLead, entityId);
+    e.target.value = '';
+  });
+}
+
+async function handleAttachmentFile(file, instSelectId, phone, isLead, entityId) {
+  const instName = $(instSelectId)?.value;
+  if (!instName) { toast('Selecione uma instância.', 'err'); return; }
+  if (!phone)    { toast('Número não disponível.', 'err'); return; }
+  const MAX = 15 * 1024 * 1024;
+  if (file.size > MAX) { toast('Arquivo muito grande (máx. 15MB).', 'err'); return; }
+  const mediaType = file.type.startsWith('image/') ? 'image'
+                  : file.type.startsWith('video/') ? 'video'
+                  : file.type.startsWith('audio/') ? 'audio'
+                  : 'document';
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const dataUrl = reader.result;
+    const base64  = dataUrl.split(',')[1];
+    try {
+      await fetchEvolution(`/message/sendMedia/${instName}`, 'POST', {
+        number: phone, mediatype: mediaType, mimetype: file.type,
+        caption: '', media: base64, fileName: file.name,
+      });
+    } catch(e) { toast('Erro ao enviar: ' + e.message, 'err'); return; }
+    if (!isLive) return;
+    const ts  = new Date().toISOString();
+    const row = {
+      text: `[${mediaType}] ${file.name}`, direction: 'sent', timestamp: ts,
+      instance_name: instName, sender_name: currentUser?.displayName || 'FDV', status: 'sent',
+      media_type: mediaType, media_url: dataUrl, media_name: file.name,
+    };
+    if (isLead) {
+      row.lead_id = entityId;
+      await supabase.from('lead_messages').insert(row);
+      await supabase.from('leads').update({ last_message_at: ts, last_message_text: `[${mediaType}]`, last_message_instance: instName }).eq('id', entityId);
+    } else {
+      row.contact_id = entityId;
+      await supabase.from('lead_messages').insert(row);
+      await supabase.from('whatsapp_contacts').update({ last_message_at: ts, last_message_text: `[${mediaType}]`, instance_name: instName }).eq('id', entityId);
+    }
+    toast('Arquivo enviado.', 'ok');
+  };
+  reader.readAsDataURL(file);
+}
 
 async function renderCentralChats() {
   renderChatsFilters();
@@ -2851,11 +2963,7 @@ function openCentralChat(leadId) {
         <span class="chat-empty-hint">Selecione uma instância e envie a primeira mensagem.</span>
       </div>
     </div>
-    <div class="chat-input-bar">
-      <div class="quick-replies-menu" id="quick-replies-menu" style="display:none"></div>
-      <textarea class="chat-input" id="central-chat-input" placeholder="Digite uma mensagem ou / para respostas rápidas…" rows="1"></textarea>
-      <button class="btn-primary chat-send-btn" id="btn-central-send"><i data-lucide="send" style="width:16px;height:16px"></i></button>
-    </div>`;
+    <div class="chat-input-bar">${buildChatInputBarHTML('central-chat-input')}</div>`;
 
   lucide.createIcons({ nodes: [panel] });
   populateChatInstanceSelector('central-chat-instance');
@@ -2881,6 +2989,7 @@ function openCentralChat(leadId) {
   $('btn-open-lead-info').addEventListener('click', () => toggleLeadInfoPanel(leadId));
   $('btn-toggle-info').addEventListener('click', () => toggleLeadInfoPanel(leadId));
   bindChatSettingsEvents();
+  bindChatAttachEvents('central-chat-instance', normalizePhoneForEvolution(lead.celular), true, leadId);
 }
 
 // ── Lead info side panel ────────────────────────────────────────────────────
@@ -3320,13 +3429,7 @@ function openContactChat(contactId) {
         <span class="chat-empty-hint">Nenhuma mensagem ainda.</span>
       </div>
     </div>
-    <div class="chat-input-bar">
-      <div class="quick-replies-menu" id="quick-replies-menu" style="display:none"></div>
-      <textarea class="chat-input" id="central-chat-input" placeholder="Digite uma mensagem ou / para respostas rápidas…" rows="1"></textarea>
-      <button class="btn-primary chat-send-btn" id="btn-central-send">
-        <i data-lucide="send" style="width:16px;height:16px"></i>
-      </button>
-    </div>`;
+    <div class="chat-input-bar">${buildChatInputBarHTML('central-chat-input')}</div>`;
 
   lucide.createIcons({ nodes: [panel] });
   populateChatInstanceSelector('central-chat-instance');
@@ -3348,6 +3451,7 @@ function openContactChat(contactId) {
     else closeQuickRepliesMenu();
   });
   bindChatSettingsEvents();
+  bindChatAttachEvents('central-chat-instance', contact.phone, false, contactId);
   $('btn-add-as-lead').addEventListener('click', () => openAddAsLeadModal(contactId));
 }
 
