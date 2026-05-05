@@ -119,6 +119,7 @@ let chatUnsubscribe    = null;
 let chatMessages       = [];
 let chatActiveSide     = null;
 let chatSearchQuery    = '';
+let chatReplyTo        = null; // { id, text, sender }
 
 // WhatsApp contacts (unknown numbers, not yet leads)
 let allContacts        = [];
@@ -2653,6 +2654,8 @@ async function sendChatMessage(inputId, instSelectId, leadId) {
   if (!phone) { toast('Lead sem número de celular válido.','err'); return; }
   input.disabled = true;
   const ts = new Date().toISOString();
+  const replyRef = chatReplyTo ? { reply_to_text: chatReplyTo.text, reply_to_sender: chatReplyTo.sender } : {};
+  clearReplyTo();
   const msgData = {
     text, direction: 'sent', timestamp: ts, instanceName: instName,
     senderName: currentUser?.displayName || 'FDV', status: 'sent',
@@ -2663,11 +2666,12 @@ async function sendChatMessage(inputId, instSelectId, leadId) {
       await supabase.from('lead_messages').insert({
         lead_id: leadId, text, direction: 'sent', timestamp: ts,
         instance_name: instName, sender_name: currentUser?.displayName || 'FDV', status: 'sent',
+        ...replyRef,
       });
       await supabase.from('leads').update({ last_message_at: ts, last_message_text: text, last_message_instance: instName, atualizadoem: ts }).eq('id', leadId);
       lead.lastMessageAt = ts; lead.lastMessageText = text; lead.lastMessageInstance = instName;
     } else {
-      chatMessages.push({ id:'local-'+Date.now(), ...msgData });
+      chatMessages.push({ id:'local-'+Date.now(), ...msgData, ...replyRef });
       renderChatMessages(chatMessages, inputId.includes('perfil') ? 'perfil-chat-messages' : 'central-chat-messages',
                                        inputId.includes('perfil') ? 'perfil-chat-empty'    : 'central-chat-empty');
       lead.lastMessageAt = ts; lead.lastMessageText = text; lead.lastMessageInstance = instName;
@@ -2729,6 +2733,23 @@ async function updateChatHeaderPhoto(phone, instanceName) {
 }
 
 // ─── CENTRAL DE CHATS ────────────────────────────────────────────────
+
+function setReplyTo(msg) {
+  chatReplyTo = { id: msg.id, text: msg.text || '', sender: msg.senderName || msg.sender_name || '' };
+  const bar = $('chat-reply-bar');
+  if (bar) {
+    $('crb-sender').textContent = chatReplyTo.sender || 'Mensagem';
+    $('crb-text').textContent   = (chatReplyTo.text || '').slice(0, 100);
+    bar.style.display = '';
+  }
+  $('central-chat-input')?.focus();
+}
+
+function clearReplyTo() {
+  chatReplyTo = null;
+  const bar = $('chat-reply-bar');
+  if (bar) bar.style.display = 'none';
+}
 
 function buildChatInputBarHTML(textareaId) {
   return `
@@ -3006,7 +3027,7 @@ function openCentralChat(leadId) {
   );
   $('central-chat-input').addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage('central-chat-input', 'central-chat-instance', leadId); }
-    if (e.key === 'Escape') closeQuickRepliesMenu();
+    if (e.key === 'Escape') { closeQuickRepliesMenu(); clearReplyTo(); }
   });
   $('central-chat-input').addEventListener('input', e => {
     const val = e.target.value;
@@ -3018,6 +3039,13 @@ function openCentralChat(leadId) {
   bindChatSettingsEvents();
   bindChatAttachEvents('central-chat-instance', normalizePhoneForEvolution(lead.celular), true, leadId);
   bindChatEmojiEvents('central-chat-input');
+  $('central-chat-messages').addEventListener('click', e => {
+    const rb = e.target.closest('.chat-reply-btn');
+    if (rb) { const m = chatMessages.find(x => x.id === rb.dataset.msgId); if (m) setReplyTo(m); }
+    const db = e.target.closest('.chat-delete-btn');
+    if (db) deleteChatMessage(db.dataset.msgId);
+  });
+  $('btn-reply-cancel')?.addEventListener('click', clearReplyTo);
 }
 
 // ── Lead info side panel ────────────────────────────────────────────────────
@@ -3481,6 +3509,13 @@ function openContactChat(contactId) {
   bindChatSettingsEvents();
   bindChatAttachEvents('central-chat-instance', contact.phone, false, contactId);
   bindChatEmojiEvents('central-chat-input');
+  $('central-chat-messages').addEventListener('click', e => {
+    const rb = e.target.closest('.chat-reply-btn');
+    if (rb) { const m = chatMessages.find(x => x.id === rb.dataset.msgId); if (m) setReplyTo(m); }
+    const db = e.target.closest('.chat-delete-btn');
+    if (db) deleteChatMessage(db.dataset.msgId);
+  });
+  $('btn-reply-cancel')?.addEventListener('click', clearReplyTo);
   $('btn-add-as-lead').addEventListener('click', () => openAddAsLeadModal(contactId));
 }
 
@@ -3494,8 +3529,10 @@ async function sendContactMessage(inputId, instSelectId, contactId) {
   if (!instName) { toast('Selecione uma instância.', 'err'); return; }
   const phone = contact.phone;
   if (!phone)    { toast('Número não disponível.', 'err'); return; }
+  const replyRef = chatReplyTo ? { reply_to_text: chatReplyTo.text, reply_to_sender: chatReplyTo.sender } : {};
   input.value = '';
   closeQuickRepliesMenu();
+  clearReplyTo();
   if (!isLive) return;
   try {
     await fetchEvolution(`/message/sendText/${instName}`, 'POST', {
@@ -3505,6 +3542,7 @@ async function sendContactMessage(inputId, instSelectId, contactId) {
   const now = new Date().toISOString();
   await supabase.from('lead_messages').insert({
     contact_id: contactId, text, direction: 'sent', instance_name: instName, timestamp: now,
+    ...replyRef,
   });
   await supabase.from('whatsapp_contacts').update({
     last_message_at: now, last_message_text: text.slice(0, 200), instance_name: instName,
