@@ -120,6 +120,9 @@ let chatMessages       = [];
 let chatActiveSide     = null;
 let chatSearchQuery    = '';
 let chatReplyTo        = null; // { id, text, sender }
+let mediaRecorder      = null;
+let audioChunks        = [];
+let isRecording        = false;
 
 // WhatsApp contacts (unknown numbers, not yet leads)
 let allContacts        = [];
@@ -2859,6 +2862,72 @@ async function handleAttachmentFile(file, instSelectId, phone, isLead, entityId)
   reader.readAsDataURL(file);
 }
 
+async function startAudioRecording() {
+  if (isRecording) return;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioChunks  = [];
+    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.start();
+    isRecording = true;
+    $('btn-chat-mic')?.classList.add('recording');
+    // Store stream to stop tracks later
+    mediaRecorder._stream = stream;
+  } catch(e) { toast('Sem permissão para microfone.', 'err'); }
+}
+
+async function stopAudioRecording(instSelectId, phone, isLead, entityId) {
+  if (!isRecording || !mediaRecorder) return;
+  isRecording = false;
+  $('btn-chat-mic')?.classList.remove('recording');
+  mediaRecorder.stop();
+  mediaRecorder._stream?.getTracks().forEach(t => t.stop());
+  mediaRecorder.onstop = async () => {
+    const blob    = new Blob(audioChunks, { type: 'audio/webm' });
+    if (blob.size < 1000) return; // too short
+    const instName = $(instSelectId)?.value;
+    if (!instName) { toast('Selecione uma instância.', 'err'); return; }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result;
+      const base64  = dataUrl.split(',')[1];
+      try {
+        await fetchEvolution(`/message/sendWhatsAppAudio/${instName}`, 'POST', {
+          number: phone, audio: base64, encoding: true,
+        });
+      } catch(e) { toast('Erro ao enviar áudio: ' + e.message, 'err'); return; }
+      if (!isLive) return;
+      const ts  = new Date().toISOString();
+      const row = {
+        text: '[áudio]', direction: 'sent', timestamp: ts,
+        instance_name: instName, sender_name: currentUser?.displayName || 'FDV', status: 'sent',
+        media_type: 'audio', media_url: dataUrl, media_name: 'audio.webm',
+      };
+      if (isLead) {
+        row.lead_id = entityId;
+        await supabase.from('lead_messages').insert(row);
+        await supabase.from('leads').update({ last_message_at: ts, last_message_text: '[áudio]', last_message_instance: instName }).eq('id', entityId);
+      } else {
+        row.contact_id = entityId;
+        await supabase.from('lead_messages').insert(row);
+        await supabase.from('whatsapp_contacts').update({ last_message_at: ts, last_message_text: '[áudio]', instance_name: instName }).eq('id', entityId);
+      }
+      toast('Áudio enviado.', 'ok');
+    };
+    reader.readAsDataURL(blob);
+  };
+}
+
+function bindChatMicEvents(instSelectId, phone, isLead, entityId) {
+  const btn = $('btn-chat-mic'); if (!btn) return;
+  btn.addEventListener('mousedown', e => { e.preventDefault(); startAudioRecording(); });
+  btn.addEventListener('mouseup',   () => stopAudioRecording(instSelectId, phone, isLead, entityId));
+  btn.addEventListener('mouseleave',() => { if (isRecording) stopAudioRecording(instSelectId, phone, isLead, entityId); });
+  btn.addEventListener('touchstart', e => { e.preventDefault(); startAudioRecording(); }, { passive: false });
+  btn.addEventListener('touchend',   e => { e.preventDefault(); stopAudioRecording(instSelectId, phone, isLead, entityId); }, { passive: false });
+}
+
 async function renderCentralChats() {
   renderChatsFilters();
   await loadLeadLabels();
@@ -3039,6 +3108,7 @@ function openCentralChat(leadId) {
   bindChatSettingsEvents();
   bindChatAttachEvents('central-chat-instance', normalizePhoneForEvolution(lead.celular), true, leadId);
   bindChatEmojiEvents('central-chat-input');
+  bindChatMicEvents('central-chat-instance', normalizePhoneForEvolution(lead.celular), true, leadId);
   $('central-chat-messages').addEventListener('click', e => {
     const rb = e.target.closest('.chat-reply-btn');
     if (rb) { const m = chatMessages.find(x => x.id === rb.dataset.msgId); if (m) setReplyTo(m); }
@@ -3509,6 +3579,7 @@ function openContactChat(contactId) {
   bindChatSettingsEvents();
   bindChatAttachEvents('central-chat-instance', contact.phone, false, contactId);
   bindChatEmojiEvents('central-chat-input');
+  bindChatMicEvents('central-chat-instance', contact.phone, false, contactId);
   $('central-chat-messages').addEventListener('click', e => {
     const rb = e.target.closest('.chat-reply-btn');
     if (rb) { const m = chatMessages.find(x => x.id === rb.dataset.msgId); if (m) setReplyTo(m); }
