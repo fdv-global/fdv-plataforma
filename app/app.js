@@ -2596,16 +2596,34 @@ function renderChatMessages(messages, containerId, emptyId) {
 
     // media or text
     let mediaHtml = '';
-    if (msg.media_type && msg.media_url) {
-      if (msg.media_type === 'image') {
-        mediaHtml = `<img src="${msg.media_url}" class="chat-media-img" alt="imagem">`;
-      } else if (msg.media_type === 'video') {
-        mediaHtml = `<video controls class="chat-media-video"><source src="${msg.media_url}"></video>`;
-      } else if (msg.media_type === 'audio') {
-        mediaHtml = `<audio controls class="chat-media-audio"><source src="${msg.media_url}"></audio>`;
+    if (msg.media_type) {
+      const mt = msg.media_type;
+      const mu = msg.media_url || '';
+      if (mt === 'image' || mt === 'sticker') {
+        if (mu) {
+          mediaHtml = `<img src="${mu}" class="chat-media-img${mt === 'sticker' ? ' chat-sticker' : ''}" alt="${mt}">`;
+        } else {
+          mediaHtml = `<span class="chat-media-placeholder">${mt === 'sticker' ? '🎭 Figurinha' : '🖼 Imagem'}</span>`;
+        }
+      } else if (mt === 'video') {
+        if (mu) {
+          mediaHtml = `<video controls class="chat-media-video"><source src="${mu}"></video>`;
+        } else {
+          mediaHtml = `<span class="chat-media-placeholder">🎬 Vídeo</span>`;
+        }
+      } else if (mt === 'audio') {
+        if (mu) {
+          mediaHtml = `<audio controls class="chat-media-audio"><source src="${mu}"></audio>`;
+        } else {
+          mediaHtml = `<span class="chat-media-placeholder">🎤 Áudio</span>`;
+        }
       } else {
         const n = esc(msg.media_name || msg.text || 'arquivo');
-        mediaHtml = `<a href="${msg.media_url}" download="${n}" class="chat-media-doc" target="_blank"><span class="chat-media-doc-icon">📄</span><span class="chat-media-doc-name">${n}</span></a>`;
+        if (mu) {
+          mediaHtml = `<a href="${mu}" download="${n}" class="chat-media-doc" target="_blank"><span class="chat-media-doc-icon">📄</span><span class="chat-media-doc-name">${n}</span></a>`;
+        } else {
+          mediaHtml = `<span class="chat-media-placeholder">📄 ${n}</span>`;
+        }
       }
     }
 
@@ -2867,12 +2885,13 @@ async function startAudioRecording() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     audioChunks  = [];
-    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+    const mimeType = ['audio/webm;codecs=opus','audio/ogg;codecs=opus','audio/webm','audio/mp4']
+      .find(t => MediaRecorder.isTypeSupported(t)) || '';
+    mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
     mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
     mediaRecorder.start();
     isRecording = true;
     $('btn-chat-mic')?.classList.add('recording');
-    // Store stream to stop tracks later
     mediaRecorder._stream = stream;
   } catch(e) { toast('Sem permissão para microfone.', 'err'); }
 }
@@ -2881,11 +2900,10 @@ async function stopAudioRecording(instSelectId, phone, isLead, entityId) {
   if (!isRecording || !mediaRecorder) return;
   isRecording = false;
   $('btn-chat-mic')?.classList.remove('recording');
-  mediaRecorder.stop();
-  mediaRecorder._stream?.getTracks().forEach(t => t.stop());
+  const recMimeType = mediaRecorder.mimeType || 'audio/webm';
   mediaRecorder.onstop = async () => {
-    const blob    = new Blob(audioChunks, { type: 'audio/webm' });
-    if (blob.size < 1000) return; // too short
+    const blob = new Blob(audioChunks, { type: recMimeType });
+    if (blob.size < 1000) return;
     const instName = $(instSelectId)?.value;
     if (!instName) { toast('Selecione uma instância.', 'err'); return; }
     const reader = new FileReader();
@@ -2899,10 +2917,11 @@ async function stopAudioRecording(instSelectId, phone, isLead, entityId) {
       } catch(e) { toast('Erro ao enviar áudio: ' + e.message, 'err'); return; }
       if (!isLive) return;
       const ts  = new Date().toISOString();
+      const ext = recMimeType.includes('ogg') ? 'ogg' : recMimeType.includes('mp4') ? 'mp4' : 'webm';
       const row = {
         text: '[áudio]', direction: 'sent', timestamp: ts,
         instance_name: instName, sender_name: currentUser?.displayName || 'FDV', status: 'sent',
-        media_type: 'audio', media_url: dataUrl, media_name: 'audio.webm',
+        media_type: 'audio', media_url: dataUrl, media_name: `audio.${ext}`,
       };
       if (isLead) {
         row.lead_id = entityId;
@@ -2917,6 +2936,8 @@ async function stopAudioRecording(instSelectId, phone, isLead, entityId) {
     };
     reader.readAsDataURL(blob);
   };
+  mediaRecorder.stop();
+  mediaRecorder._stream?.getTracks().forEach(t => t.stop());
 }
 
 function bindChatMicEvents(instSelectId, phone, isLead, entityId) {

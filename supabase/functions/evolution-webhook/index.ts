@@ -7,6 +7,31 @@ const SB_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
 const supabase = createClient(SB_URL, SB_KEY);
 
+const EVO_URL = Deno.env.get('EVOLUTION_API_URL') ?? 'https://ayub-evolution.8z6sbs.easypanel.host';
+const EVO_KEY = Deno.env.get('EVOLUTION_API_KEY') ?? '943BFEBDE2188DF38D176E5FC8AFD';
+
+// Fetch media as base64 data URL via Evolution API (stickers, audio PTT)
+async function getMediaBase64(
+  instance: string,
+  messageData: Record<string, unknown>,
+  maxBase64Bytes = 2_500_000,
+): Promise<string | null> {
+  try {
+    const res = await fetch(`${EVO_URL}/chat/getBase64FromMediaMessage/${instance}`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', apikey: EVO_KEY },
+      body:    JSON.stringify({ message: messageData }),
+    });
+    if (!res.ok) return null;
+    const d        = await res.json() as Record<string, unknown>;
+    const base64   = d.base64   as string | undefined;
+    const mimetype = d.mimetype as string | undefined;
+    if (!base64 || !mimetype) return null;
+    if (base64.length > maxBase64Bytes) return null; // skip if too large
+    return `data:${mimetype};base64,${base64}`;
+  } catch { return null; }
+}
+
 // Strip @domain and :deviceId (multi-device suffix) before extracting digits
 function normalizePhone(jid: string | undefined): string | null {
   if (!jid) return null;
@@ -96,8 +121,12 @@ Deno.serve(async (req: Request) => {
       const key        = (data.key  ?? {}) as Record<string, unknown>;
       const messageObj = (data.message ?? {}) as Record<string, unknown>;
       const extMsg     = (messageObj.extendedTextMessage ?? {}) as Record<string, unknown>;
-      const imgMsg     = (messageObj.imageMessage ?? {}) as Record<string, unknown>;
-      const vidMsg     = (messageObj.videoMessage  ?? {}) as Record<string, unknown>;
+      const imgMsg     = (messageObj.imageMessage     ?? {}) as Record<string, unknown>;
+      const vidMsg     = (messageObj.videoMessage     ?? {}) as Record<string, unknown>;
+      const stickerMsg = (messageObj.stickerMessage   ?? {}) as Record<string, unknown>;
+      const audioMsg   = (messageObj.audioMessage     ?? {}) as Record<string, unknown>;
+      const pttMsg     = (messageObj.pttMessage       ?? {}) as Record<string, unknown>;
+      const docMsg     = (messageObj.documentMessage  ?? {}) as Record<string, unknown>;
       const pushName   = data.pushName as string | undefined;
 
       // Skip group and broadcast messages
@@ -110,11 +139,23 @@ Deno.serve(async (req: Request) => {
 
       const fromMe = !!key.fromMe;
       const phone  = normalizePhone(remoteJid);
-      const text   = (
+
+      // Determine media type from message structure
+      const isAudio   = !!(audioMsg.mimetype || audioMsg.url || pttMsg.mimetype || pttMsg.url);
+      const isSticker = !!(stickerMsg.mimetype || stickerMsg.url);
+      const isImage   = !!(imgMsg.mimetype || imgMsg.url);
+      const isVideo   = !!(vidMsg.mimetype || vidMsg.url);
+      const isDoc     = !!(docMsg.mimetype || docMsg.url);
+      const mediaType = isSticker ? 'sticker' : isAudio ? 'audio' : isImage ? 'image' : isVideo ? 'video' : isDoc ? 'document' : null;
+
+      const text = (
         (messageObj.conversation as string) ||
-        (extMsg.text as string)             ||
-        (imgMsg.caption as string)          ||
-        (vidMsg.caption as string)          ||
+        (extMsg.text            as string)  ||
+        (imgMsg.caption         as string)  ||
+        (vidMsg.caption         as string)  ||
+        (docMsg.caption         as string)  ||
+        (isSticker ? '[sticker]' : null)    ||
+        (isAudio   ? '[áudio]'   : null)    ||
         '[mídia]'
       );
 
@@ -124,13 +165,13 @@ Deno.serve(async (req: Request) => {
 
       const now = new Date().toISOString();
 
-      // ── Mensagem enviada pelo app (fromMe) ─────────────────────────────
+      // ── Mensagem enviada pelo app (fromMe) — não precisamos re-armazenar mídia ──
       if (fromMe) {
-        // First try lead, then contact
         const lead = await findLeadByPhone(phone);
         if (lead) {
           await supabase.from('lead_messages').insert({
             lead_id: lead.id, text, direction: 'sent', instance_name: instance, timestamp: now,
+            ...(mediaType && { media_type: mediaType }),
           });
           await supabase.from('leads').update({
             last_message_at: now, last_message_text: text.slice(0, 200), last_message_instance: instance,
@@ -143,6 +184,7 @@ Deno.serve(async (req: Request) => {
         if (contact) {
           await supabase.from('lead_messages').insert({
             contact_id: contact.id, text, direction: 'sent', instance_name: instance, timestamp: now,
+            ...(mediaType && { media_type: mediaType }),
           });
           await supabase.from('whatsapp_contacts').update({
             last_message_at: now, last_message_text: text.slice(0, 200), instance_name: instance,
@@ -156,12 +198,25 @@ Deno.serve(async (req: Request) => {
         });
       }
 
-      // ── Mensagem recebida ──────────────────────────────────────────────
+      // ── Mensagem recebida — buscar base64 para sticker e áudio ────────────
+      let mediaUrl: string | null = null;
+      if (mediaType === 'sticker' || mediaType === 'audio') {
+        // Limit: stickers ~3 MB base64, audio ~2 MB base64 (~1.5 MB original)
+        const limit = mediaType === 'sticker' ? 3_000_000 : 2_000_000;
+        mediaUrl = await getMediaBase64(instance, data, limit);
+      }
+
+      const msgExtra = {
+        ...(mediaType && { media_type: mediaType }),
+        ...(mediaUrl  && { media_url:  mediaUrl  }),
+      };
+
+      // ── Lead conhecido ─────────────────────────────────────────────────────
       const lead = await findLeadByPhone(phone);
       if (lead) {
-        // Known lead — store against lead
         const { error: msgErr } = await supabase.from('lead_messages').insert({
           lead_id: lead.id, text, direction: 'received', instance_name: instance, timestamp: now,
+          ...msgExtra,
         });
         if (msgErr) console.error('[lead_messages insert]', msgErr.message);
 
@@ -192,6 +247,7 @@ Deno.serve(async (req: Request) => {
 
       const { error: msgErr } = await supabase.from('lead_messages').insert({
         contact_id: contact.id, text, direction: 'received', instance_name: instance, timestamp: now,
+        ...msgExtra,
       });
       if (msgErr) console.error('[lead_messages contact insert]', msgErr.message);
 

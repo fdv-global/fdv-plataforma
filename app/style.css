@@ -2481,6 +2481,8 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 
 /* ── Media in bubbles ────────────────────────────────────────── */
 .chat-media-img   { max-width: 220px; max-height: 200px; border-radius: 10px; display: block; cursor: zoom-in; margin-bottom: 4px; }
+.chat-sticker     { max-width: 140px; max-height: 140px; border-radius: 0; background: transparent; }
+.chat-media-placeholder { font-size: 12px; opacity: .7; display: block; margin-bottom: 2px; }
 .chat-media-video { max-width: 220px; border-radius: 10px; display: block; }
 .chat-media-audio { width: 200px; }
 .chat-media-doc {
