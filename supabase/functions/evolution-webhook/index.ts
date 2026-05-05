@@ -100,8 +100,16 @@ Deno.serve(async (req: Request) => {
       const vidMsg     = (messageObj.videoMessage  ?? {}) as Record<string, unknown>;
       const pushName   = data.pushName as string | undefined;
 
+      // Skip group and broadcast messages
+      const remoteJid = key.remoteJid as string;
+      if (!remoteJid || remoteJid.endsWith('@g.us') || remoteJid.endsWith('@broadcast')) {
+        return new Response(JSON.stringify({ ok: true, skipped: 'group_or_broadcast' }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
       const fromMe = !!key.fromMe;
-      const phone  = normalizePhone(key.remoteJid as string);
+      const phone  = normalizePhone(remoteJid);
       const text   = (
         (messageObj.conversation as string) ||
         (extMsg.text as string)             ||
