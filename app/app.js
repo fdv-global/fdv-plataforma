@@ -618,7 +618,7 @@ function loadLeads() {
         const ol = allLeads.find(l => l.id === chatActiveSide);
         if (ol && (ol.unread_count || 0) > 0) {
           ol.unread_count = 0; ol.unreadCount = 0;
-          supabase.from('leads').update({ unread_count: 0 }).eq('id', chatActiveSide).catch(console.error);
+          supabase.from('leads').update({ unread_count: 0 }).eq('id', chatActiveSide).then(null, console.error);
         }
       }
       $('loading-layer').style.display = 'none';
@@ -2505,7 +2505,7 @@ function openChatForLead(leadId) {
   populateChatInstanceSelector('perfil-chat-instance');
   startChatListener(leadId, 'perfil-chat-messages', 'perfil-chat-empty');
   if (isLive && (lead.unreadCount || 0) > 0) {
-    supabase.from('leads').update({ unread_count: 0 }).eq('id', leadId).catch(console.error);
+    supabase.from('leads').update({ unread_count: 0 }).eq('id', leadId).then(null, console.error);
     lead.unreadCount = 0; lead.unread_count = 0;
   }
   const badge = $('perfil-unread-badge');
@@ -2548,11 +2548,11 @@ function startChatListener(id, messagesId, emptyId, isContact = false) {
           if (!isContact) {
             const ol = allLeads.find(x => x.id === id);
             if (ol) { ol.unread_count = 0; ol.unreadCount = 0; }
-            if (isLive) supabase.from('leads').update({ unread_count: 0 }).eq('id', id).catch(console.error);
+            if (isLive) supabase.from('leads').update({ unread_count: 0 }).eq('id', id).then(null, console.error);
           } else {
             const oc = allContacts.find(x => x.id === id);
             if (oc) oc.unread_count = 0;
-            if (isLive) supabase.from('whatsapp_contacts').update({ unread_count: 0 }).eq('id', id).catch(console.error);
+            if (isLive) supabase.from('whatsapp_contacts').update({ unread_count: 0 }).eq('id', id).then(null, console.error);
           }
           renderChatsList();
         }
@@ -3150,7 +3150,7 @@ function openCentralChat(leadId) {
   const lead = allLeads.find(l => l.id === leadId); if (!lead) return;
   lead.unread_count = 0; lead.unreadCount = 0;
   if (isLive)
-    supabase.from('leads').update({ unread_count: 0 }).eq('id', leadId).catch(console.error);
+    supabase.from('leads').update({ unread_count: 0 }).eq('id', leadId).then(null, console.error);
   renderChatsList();
   const panel = $('chats-panel'); if (!panel) return;
 
@@ -3544,7 +3544,7 @@ function loadContacts() {
           const oc = allContacts.find(c => c.id === activeContactId);
           if (oc && (oc.unread_count || 0) > 0) {
             oc.unread_count = 0;
-            supabase.from('whatsapp_contacts').update({ unread_count: 0 }).eq('id', activeContactId).catch(console.error);
+            supabase.from('whatsapp_contacts').update({ unread_count: 0 }).eq('id', activeContactId).then(null, console.error);
           }
         }
         contactsLoaded = true;
@@ -3629,7 +3629,7 @@ function openContactChat(contactId) {
   const contact = allContacts.find(c => c.id === contactId); if (!contact) return;
   contact.unread_count = 0;
   if (isLive)
-    supabase.from('whatsapp_contacts').update({ unread_count: 0 }).eq('id', contactId).catch(console.error);
+    supabase.from('whatsapp_contacts').update({ unread_count: 0 }).eq('id', contactId).then(null, console.error);
   renderChatsList();
 
   const panel    = $('chats-panel'); if (!panel) return;
