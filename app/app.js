@@ -2632,6 +2632,7 @@ function renderChatMessages(messages, containerId, emptyId) {
       <div class="chat-msg-actions">
         <button class="chat-action-btn chat-reply-btn"   data-msg-id="${esc(msg.id||'')}" title="Responder">↩</button>
         <button class="chat-action-btn chat-copy-btn"    data-msg-id="${esc(msg.id||'')}" title="Copiar">⎘</button>
+        <button class="chat-action-btn chat-star-btn${msg.starred?' chat-star-btn--on':''}" data-msg-id="${esc(msg.id||'')}" title="Estrelar">★</button>
         <button class="chat-action-btn chat-forward-btn" data-msg-id="${esc(msg.id||'')}" title="Encaminhar">⟶</button>
         <button class="chat-action-btn chat-delete-btn"  data-msg-id="${esc(msg.id||'')}" title="Apagar">🗑</button>
       </div>
@@ -3228,6 +3229,8 @@ function openCentralChat(leadId) {
     if (fb) openForwardModal(fb.dataset.msgId);
     const cb = e.target.closest('.chat-copy-btn');
     if (cb) { const m = chatMessages.find(x => x.id === cb.dataset.msgId); if (m) copyChatMsg(m); }
+    const sb = e.target.closest('.chat-star-btn');
+    if (sb) toggleStarMessage(sb.dataset.msgId);
   });
   $('btn-reply-cancel')?.addEventListener('click', clearReplyTo);
 }
@@ -3711,6 +3714,8 @@ function openContactChat(contactId) {
     if (fb) openForwardModal(fb.dataset.msgId);
     const cb = e.target.closest('.chat-copy-btn');
     if (cb) { const m = chatMessages.find(x => x.id === cb.dataset.msgId); if (m) copyChatMsg(m); }
+    const sb = e.target.closest('.chat-star-btn');
+    if (sb) toggleStarMessage(sb.dataset.msgId);
   });
   $('btn-reply-cancel')?.addEventListener('click', clearReplyTo);
   $('btn-add-as-lead').addEventListener('click', () => openAddAsLeadModal(contactId));
@@ -4663,6 +4668,18 @@ function applyChatFontSize() {
   document.querySelectorAll('.chat-messages').forEach(el =>
     el.style.setProperty('--chat-font-size', px)
   );
+}
+
+// ─── ESTRELAR MENSAGEM ───────────────────────────────────────────────
+async function toggleStarMessage(msgId) {
+  const msg = chatMessages.find(m => m.id === msgId); if (!msg || !isLive) return;
+  const newVal = !msg.starred;
+  const { error } = await supabase.from('lead_messages').update({ starred: newVal }).eq('id', msgId);
+  if (error) { toast('Erro ao estrelar.', 'err'); return; }
+  msg.starred = newVal;
+  const btn = document.querySelector(`.chat-star-btn[data-msg-id="${msgId}"]`);
+  if (btn) btn.classList.toggle('chat-star-btn--on', newVal);
+  toast(newVal ? 'Mensagem estrelada.' : 'Estrela removida.', 'ok');
 }
 
 // ─── COPIAR MENSAGEM ─────────────────────────────────────────────────

@@ -2503,8 +2503,8 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   display: flex; gap: 4px; position: absolute; top: -6px;
   opacity: 0; transition: opacity var(--fast) var(--ease); z-index: 5;
 }
-.chat-msg--sent     .chat-msg-actions { left: -126px; flex-direction: row-reverse; }
-.chat-msg--received .chat-msg-actions { right: -126px; }
+.chat-msg--sent     .chat-msg-actions { left: -156px; flex-direction: row-reverse; }
+.chat-msg--received .chat-msg-actions { right: -156px; }
 .chat-msg:hover .chat-msg-actions { opacity: 1; }
 .chat-action-btn {
   background: var(--s3); border: 1px solid var(--b1); border-radius: var(--r-sm);
@@ -2514,6 +2514,8 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 }
 .chat-action-btn:hover { color: var(--gold); background: var(--gold-10); }
 .chat-delete-btn:hover { color: #ff5252; background: rgba(255,82,82,.12); }
+.chat-star-btn--on { color: var(--gold) !important; }
+.chat-star-btn--on:hover { color: var(--gold) !important; background: var(--gold-10) !important; }
 
 /* ── Reply bar above input ───────────────────────────────────── */
 .chat-reply-bar {
