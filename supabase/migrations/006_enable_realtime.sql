@@ -15,5 +15,6 @@ alter table whatsapp_contacts  replica identity full;
 -- Política anon para whatsapp_contacts
 -- A migration 005 só criou acesso para service_role; o app.js usa anon key
 -- e não conseguia ler nem atualizar a tabela.
+drop policy if exists "wa_contacts_anon_all" on whatsapp_contacts;
 create policy "wa_contacts_anon_all" on whatsapp_contacts
   for all to anon using (true) with check (true);
