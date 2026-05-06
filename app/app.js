@@ -2611,7 +2611,7 @@ function renderChatMessages(messages, containerId, emptyId) {
         } else {
           mediaHtml = `<span class="chat-media-placeholder">🎬 Vídeo</span>`;
         }
-      } else if (mt === 'audio') {
+      } else if (mt === 'audio' || mt === 'ptt') {
         if (mu) {
           mediaHtml = `<audio controls class="chat-media-audio"><source src="${mu}"></audio>`;
         } else {
@@ -3539,6 +3539,15 @@ function loadContacts() {
           instance_name: c.instance_name, unread_count: c.unread_count || 0,
           last_message_at: c.last_message_at, last_message_text: c.last_message_text,
         }));
+        // Keep unread at 0 for the currently open contact chat
+        if (chatActiveSide?.startsWith('contact:')) {
+          const activeContactId = chatActiveSide.slice(8);
+          const oc = allContacts.find(c => c.id === activeContactId);
+          if (oc && (oc.unread_count || 0) > 0) {
+            oc.unread_count = 0;
+            supabase.from('whatsapp_contacts').update({ unread_count: 0 }).eq('id', activeContactId).catch(console.error);
+          }
+        }
         contactsLoaded = true;
         if (activeTab === 'whatsapp' && activeWaSub === 'chats') renderChatsList();
       });

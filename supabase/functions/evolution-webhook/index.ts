@@ -140,12 +140,15 @@ Deno.serve(async (req: Request) => {
       const fromMe = !!key.fromMe;
       const phone  = normalizePhone(remoteJid);
 
-      // Determine media type from message structure
-      const isAudio   = !!(audioMsg.mimetype || audioMsg.url || pttMsg.mimetype || pttMsg.url);
-      const isSticker = !!(stickerMsg.mimetype || stickerMsg.url);
-      const isImage   = !!(imgMsg.mimetype || imgMsg.url);
-      const isVideo   = !!(vidMsg.mimetype || vidMsg.url);
-      const isDoc     = !!(docMsg.mimetype || docMsg.url);
+      // Determine media type — check sub-message fields first, fall back to messageType
+      const messageType = data.messageType as string | undefined;
+      const isAudio   = !!(audioMsg.mimetype || audioMsg.url || pttMsg.mimetype || pttMsg.url)
+                        || messageType === 'audioMessage' || messageType === 'pttMessage';
+      const isSticker = !!(stickerMsg.mimetype || stickerMsg.url) || messageType === 'stickerMessage';
+      const isImage   = !!(imgMsg.mimetype || imgMsg.url) || messageType === 'imageMessage';
+      const isVideo   = !!(vidMsg.mimetype || vidMsg.url) || messageType === 'videoMessage';
+      const isDoc     = !!(docMsg.mimetype || docMsg.url)
+                        || messageType === 'documentMessage' || messageType === 'documentWithCaptionMessage';
       const mediaType = isSticker ? 'sticker' : isAudio ? 'audio' : isImage ? 'image' : isVideo ? 'video' : isDoc ? 'document' : null;
 
       const text = (
@@ -165,13 +168,22 @@ Deno.serve(async (req: Request) => {
 
       const now = new Date().toISOString();
 
-      // ── Mensagem enviada pelo app (fromMe) — não precisamos re-armazenar mídia ──
+      // ── Mensagem enviada (fromMe) — buscar base64 para sticker e áudio também ──
       if (fromMe) {
+        let sentMediaUrl: string | null = null;
+        if (mediaType === 'sticker' || mediaType === 'audio') {
+          const limit = mediaType === 'sticker' ? 3_000_000 : 2_000_000;
+          sentMediaUrl = await getMediaBase64(instance, data, limit);
+        }
+        const sentExtra = {
+          ...(mediaType    && { media_type: mediaType    }),
+          ...(sentMediaUrl && { media_url:  sentMediaUrl }),
+        };
         const lead = await findLeadByPhone(phone);
         if (lead) {
           await supabase.from('lead_messages').insert({
             lead_id: lead.id, text, direction: 'sent', instance_name: instance, timestamp: now,
-            ...(mediaType && { media_type: mediaType }),
+            ...sentExtra,
           });
           await supabase.from('leads').update({
             last_message_at: now, last_message_text: text.slice(0, 200), last_message_instance: instance,
@@ -184,7 +196,7 @@ Deno.serve(async (req: Request) => {
         if (contact) {
           await supabase.from('lead_messages').insert({
             contact_id: contact.id, text, direction: 'sent', instance_name: instance, timestamp: now,
-            ...(mediaType && { media_type: mediaType }),
+            ...sentExtra,
           });
           await supabase.from('whatsapp_contacts').update({
             last_message_at: now, last_message_text: text.slice(0, 200), instance_name: instance,

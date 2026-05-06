@@ -52,7 +52,7 @@ const HOT_SCRIPT = `
 (function(){
   const es = new EventSource('/__hot');
   es.onmessage = () => location.reload();
-  es.onerror   = () => setTimeout(() => location.reload(), 1000);
+  es.onerror   = () => {};
 })();
 </script>
 `;
