@@ -1914,7 +1914,9 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
   padding: 0 2px;
 }
 .chat-sender { color: var(--t2); font-weight: 500; }
-.chat-tick   { color: var(--gold); font-size: 10px; }
+.chat-tick            { color: #888;    font-size: 10px; }
+.chat-tick--delivered { color: #888; }
+.chat-tick--read      { color: #4fc3f7; }
 
 /* ── Bubble Styles ─────────────────────────────────────── */
 body[data-bubble-style="comic-book"] .chat-bubble {

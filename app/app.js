@@ -2640,7 +2640,7 @@ function renderChatMessages(messages, containerId, emptyId) {
       <div class="chat-msg-meta">
         ${msg.senderName||msg.sender_name ? `<span class="chat-sender">${esc(msg.senderName||msg.sender_name)}</span>` : ''}
         <span class="chat-time">${ts.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span>
-        ${dir==='sent'?`<span class="chat-tick">${msg.status==='read'?'✓✓':'✓'}</span>`:''}
+        ${dir==='sent' ? (msg.status==='read' ? '<span class="chat-tick chat-tick--read">✓✓</span>' : msg.status==='delivered' ? '<span class="chat-tick chat-tick--delivered">✓✓</span>' : '<span class="chat-tick">✓</span>') : ''}
       </div>`;
     frag.appendChild(el);
   });
