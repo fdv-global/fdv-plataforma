@@ -119,6 +119,7 @@ let chatUnsubscribe    = null;
 let chatMessages       = [];
 let chatActiveSide     = null;
 let chatSearchQuery    = '';
+let chatMsgSearch      = '';   // busca dentro da conversa aberta
 let chatReplyTo        = null; // { id, text, sender }
 let mediaRecorder      = null;
 let audioChunks        = [];
@@ -2570,14 +2571,17 @@ function renderChatMessages(messages, containerId, emptyId) {
   const container = $(containerId); if (!container) return;
   const emptyEl   = $(emptyId);
   container.querySelectorAll('.chat-msg, .chat-date-sep').forEach(el => el.remove());
-  if (messages.length === 0) {
+  const filtered = chatMsgSearch
+    ? messages.filter(m => (m.text || '').toLowerCase().includes(chatMsgSearch.toLowerCase()))
+    : messages;
+  if (filtered.length === 0) {
     if (emptyEl) emptyEl.style.display = '';
     return;
   }
   if (emptyEl) emptyEl.style.display = 'none';
   const frag    = document.createDocumentFragment();
   let lastDate  = '';
-  messages.forEach(msg => {
+  filtered.forEach(msg => {
     const ts      = new Date(msg.timestamp);
     const dateLbl = ts.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
     if (dateLbl !== lastDate) {
@@ -2822,6 +2826,32 @@ function buildChatInputBarHTML(textareaId) {
       </button>
     </div>
     <div id="chat-emoji-picker-wrap" style="display:none;position:absolute;bottom:70px;left:0;z-index:50;"></div>`;
+}
+
+function bindChatSearchEvents() {
+  chatMsgSearch = '';
+  $('btn-chat-search')?.addEventListener('click', () => {
+    const bar = $('chat-search-bar');
+    if (!bar) return;
+    const isOpen = bar.style.display !== 'none';
+    bar.style.display = isOpen ? 'none' : '';
+    if (!isOpen) { $('chat-msg-search')?.focus(); }
+    else { chatMsgSearch = ''; reRenderChatMessages(); }
+  });
+  $('btn-chat-search-close')?.addEventListener('click', () => {
+    const bar = $('chat-search-bar'); if (bar) bar.style.display = 'none';
+    chatMsgSearch = ''; reRenderChatMessages();
+  });
+  $('chat-msg-search')?.addEventListener('input', e => {
+    chatMsgSearch = e.target.value.trim();
+    reRenderChatMessages();
+  });
+}
+
+function reRenderChatMessages() {
+  const msgs = $('perfil-chat-messages') ? 'perfil-chat-messages' : 'central-chat-messages';
+  const empty = $('perfil-chat-empty') ? 'perfil-chat-empty' : 'central-chat-empty';
+  renderChatMessages(chatMessages, msgs, empty);
 }
 
 function bindChatFormatEvents(textareaId) {
@@ -3203,6 +3233,9 @@ function openCentralChat(leadId) {
       </div>
       <div class="cp-header-right">
         <select id="central-chat-instance" class="filter-select chat-inst-sel"></select>
+        <button class="btn-ghost cp-header-btn" id="btn-chat-search" title="Buscar na conversa">
+          <i data-lucide="search" style="width:14px;height:14px"></i>
+        </button>
         <button class="btn-ghost cp-header-btn cp-settings-btn" id="btn-chat-settings" title="Personalizar">
           <i data-lucide="palette" style="width:14px;height:14px"></i><span>Personalizar</span>
         </button>
@@ -3213,6 +3246,10 @@ function openCentralChat(leadId) {
       </div>
     </div>
     <div class="cp-labels-bar" id="central-chat-labels"></div>
+    <div class="chat-search-bar" id="chat-search-bar" style="display:none">
+      <input class="chat-search-input" id="chat-msg-search" placeholder="Buscar na conversa…">
+      <button class="btn-ghost btn-icon chat-search-close" id="btn-chat-search-close">✕</button>
+    </div>
     <div class="chat-messages" id="central-chat-messages">
       <div class="chat-empty" id="central-chat-empty">
         <span class="chat-empty-hint">Selecione uma instância e envie a primeira mensagem.</span>
@@ -3244,6 +3281,7 @@ function openCentralChat(leadId) {
   $('btn-open-lead-info').addEventListener('click', () => toggleLeadInfoPanel(leadId));
   $('btn-toggle-info').addEventListener('click', () => toggleLeadInfoPanel(leadId));
   bindChatSettingsEvents();
+  bindChatSearchEvents();
   bindChatFormatEvents('central-chat-input');
   bindChatAttachEvents('central-chat-instance', normalizePhoneForEvolution(lead.celular), true, leadId);
   bindChatEmojiEvents('central-chat-input');
@@ -3694,6 +3732,9 @@ function openContactChat(contactId) {
       </div>
       <div class="cp-header-right">
         <select id="central-chat-instance" class="filter-select chat-inst-sel"></select>
+        <button class="btn-ghost cp-header-btn" id="btn-chat-search" title="Buscar na conversa">
+          <i data-lucide="search" style="width:14px;height:14px"></i>
+        </button>
         <button class="btn-ghost cp-header-btn cp-settings-btn" id="btn-chat-settings" title="Personalizar">
           <i data-lucide="palette" style="width:14px;height:14px"></i><span>Personalizar</span>
         </button>
@@ -3702,6 +3743,10 @@ function openContactChat(contactId) {
           <i data-lucide="user-plus" style="width:14px;height:14px"></i><span>Adicionar como lead</span>
         </button>
       </div>
+    </div>
+    <div class="chat-search-bar" id="chat-search-bar" style="display:none">
+      <input class="chat-search-input" id="chat-msg-search" placeholder="Buscar na conversa…">
+      <button class="btn-ghost btn-icon chat-search-close" id="btn-chat-search-close">✕</button>
     </div>
     <div class="chat-messages" id="central-chat-messages">
       <div class="chat-empty" id="central-chat-empty">
@@ -3730,6 +3775,7 @@ function openContactChat(contactId) {
     else closeQuickRepliesMenu();
   });
   bindChatSettingsEvents();
+  bindChatSearchEvents();
   bindChatFormatEvents('central-chat-input');
   bindChatAttachEvents('central-chat-instance', contact.phone, false, contactId);
   bindChatEmojiEvents('central-chat-input');

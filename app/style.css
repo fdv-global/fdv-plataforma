@@ -2518,6 +2518,17 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .chat-star-btn--on:hover { color: var(--gold) !important; background: var(--gold-10) !important; }
 
 /* ── Reply bar above input ───────────────────────────────────── */
+.chat-search-bar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 10px; border-bottom: 1px solid var(--b0); background: var(--s2);
+}
+.chat-search-input {
+  flex: 1; background: var(--s3); border: 1px solid var(--b1); border-radius: var(--r-sm);
+  color: var(--t1); font-size: 13px; padding: 5px 10px; outline: none;
+}
+.chat-search-input:focus { border-color: var(--gold-28); }
+.chat-search-close { flex-shrink: 0; font-size: 12px; }
+
 .chat-format-bar {
   display: flex; gap: 4px; padding: 4px 10px 2px;
 }
