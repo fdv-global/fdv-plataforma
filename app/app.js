@@ -2542,16 +2542,17 @@ function startChatListener(id, messagesId, emptyId, isContact = false) {
       ({ new: msg }) => {
         chatMessages.push(mapMsg(msg));
         renderChatMessages(chatMessages, messagesId, emptyId);
-        if (activeTab === 'whatsapp' && activeWaSub === 'chats') {
+        // Para mensagens recebidas enquanto o chat está aberto: zera badge
+        // localmente E salva no Supabase para neutralizar o incremento do webhook
+        if (msg.direction === 'received' && activeTab === 'whatsapp' && activeWaSub === 'chats') {
           if (!isContact) {
             const ol = allLeads.find(x => x.id === id);
-            if (ol && (ol.unread_count || 0) > 0) {
-              ol.unread_count = 0; ol.unreadCount = 0;
-              supabase.from('leads').update({ unread_count: 0 }).eq('id', id).catch(console.error);
-            }
+            if (ol) { ol.unread_count = 0; ol.unreadCount = 0; }
+            if (isLive) supabase.from('leads').update({ unread_count: 0 }).eq('id', id).catch(console.error);
           } else {
             const oc = allContacts.find(x => x.id === id);
             if (oc) oc.unread_count = 0;
+            if (isLive) supabase.from('whatsapp_contacts').update({ unread_count: 0 }).eq('id', id).catch(console.error);
           }
           renderChatsList();
         }
@@ -3146,11 +3147,9 @@ async function markAsUnread(type, id) {
 
 function openCentralChat(leadId) {
   chatActiveSide = leadId;
-  // Zero badge BEFORE re-rendering the list so it never flickers
   const lead = allLeads.find(l => l.id === leadId); if (!lead) return;
-  const hadUnread = (lead.unread_count || lead.unreadCount || 0) > 0;
   lead.unread_count = 0; lead.unreadCount = 0;
-  if (isLive && hadUnread)
+  if (isLive)
     supabase.from('leads').update({ unread_count: 0 }).eq('id', leadId).catch(console.error);
   renderChatsList();
   const panel = $('chats-panel'); if (!panel) return;
@@ -3628,9 +3627,8 @@ function bindChatSettingsEvents() {
 function openContactChat(contactId) {
   chatActiveSide = 'contact:' + contactId;
   const contact = allContacts.find(c => c.id === contactId); if (!contact) return;
-  const hadUnread = (contact.unread_count || 0) > 0;
   contact.unread_count = 0;
-  if (isLive && hadUnread)
+  if (isLive)
     supabase.from('whatsapp_contacts').update({ unread_count: 0 }).eq('id', contactId).catch(console.error);
   renderChatsList();
 
