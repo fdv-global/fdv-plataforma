@@ -2776,6 +2776,17 @@ function clearReplyTo() {
   if (bar) bar.style.display = 'none';
 }
 
+function applyTextFormat(textareaId, wrap) {
+  const ta = $(textareaId); if (!ta) return;
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  const sel = ta.value.slice(s, e);
+  const [l, r] = Array.isArray(wrap) ? wrap : [wrap, wrap];
+  ta.value = ta.value.slice(0, s) + l + sel + r + ta.value.slice(e);
+  ta.selectionStart = s + l.length;
+  ta.selectionEnd   = e + l.length;
+  ta.focus();
+}
+
 function buildChatInputBarHTML(textareaId) {
   return `
     <div class="quick-replies-menu" id="quick-replies-menu" style="display:none"></div>
@@ -2786,6 +2797,12 @@ function buildChatInputBarHTML(textareaId) {
         <span class="crb-text"   id="crb-text"></span>
       </div>
       <button class="crb-cancel btn-ghost btn-icon" id="btn-reply-cancel">✕</button>
+    </div>
+    <div class="chat-format-bar">
+      <button class="chat-fmt-btn" data-fmt="bold"   title="Negrito (*texto*)"><b>B</b></button>
+      <button class="chat-fmt-btn" data-fmt="italic" title="Itálico (_texto_)"><i>I</i></button>
+      <button class="chat-fmt-btn" data-fmt="strike" title="Tachado (~texto~)"><s>S</s></button>
+      <button class="chat-fmt-btn" data-fmt="mono"   title="Monoespaçado (\`\`\`texto\`\`\`)"><code>M</code></button>
     </div>
     <div class="chat-input-row">
       <input type="file" id="chat-file-input" class="chat-file-input"
@@ -2805,6 +2822,16 @@ function buildChatInputBarHTML(textareaId) {
       </button>
     </div>
     <div id="chat-emoji-picker-wrap" style="display:none;position:absolute;bottom:70px;left:0;z-index:50;"></div>`;
+}
+
+function bindChatFormatEvents(textareaId) {
+  const fmtMap = { bold: ['*','*'], italic: ['_','_'], strike: ['~','~'], mono: ['```','```'] };
+  document.querySelectorAll('.chat-fmt-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      applyTextFormat(textareaId, fmtMap[btn.dataset.fmt] || ['','']);
+    });
+  });
 }
 
 function bindChatEmojiEvents(textareaId) {
@@ -3217,6 +3244,7 @@ function openCentralChat(leadId) {
   $('btn-open-lead-info').addEventListener('click', () => toggleLeadInfoPanel(leadId));
   $('btn-toggle-info').addEventListener('click', () => toggleLeadInfoPanel(leadId));
   bindChatSettingsEvents();
+  bindChatFormatEvents('central-chat-input');
   bindChatAttachEvents('central-chat-instance', normalizePhoneForEvolution(lead.celular), true, leadId);
   bindChatEmojiEvents('central-chat-input');
   bindChatMicEvents('central-chat-instance', normalizePhoneForEvolution(lead.celular), true, leadId);
@@ -3702,6 +3730,7 @@ function openContactChat(contactId) {
     else closeQuickRepliesMenu();
   });
   bindChatSettingsEvents();
+  bindChatFormatEvents('central-chat-input');
   bindChatAttachEvents('central-chat-instance', contact.phone, false, contactId);
   bindChatEmojiEvents('central-chat-input');
   bindChatMicEvents('central-chat-instance', contact.phone, false, contactId);

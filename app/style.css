@@ -2518,6 +2518,21 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .chat-star-btn--on:hover { color: var(--gold) !important; background: var(--gold-10) !important; }
 
 /* ── Reply bar above input ───────────────────────────────────── */
+.chat-format-bar {
+  display: flex; gap: 4px; padding: 4px 10px 2px;
+}
+.chat-fmt-btn {
+  background: none; border: 1px solid var(--b1); border-radius: var(--r-sm);
+  color: var(--t3); cursor: pointer; font-size: 11px;
+  width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+  padding: 0; line-height: 1;
+}
+.chat-fmt-btn:hover { color: var(--gold); border-color: var(--gold-28); background: var(--gold-10); }
+.chat-fmt-btn b  { font-weight: 700; }
+.chat-fmt-btn i  { font-style: italic; }
+.chat-fmt-btn s  { text-decoration: line-through; }
+.chat-fmt-btn code { font-family: monospace; font-size: 10px; }
+
 .chat-reply-bar {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 10px; background: var(--s2); border-radius: var(--r-sm);
