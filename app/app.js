@@ -2630,8 +2630,9 @@ function renderChatMessages(messages, containerId, emptyId) {
 
     el.innerHTML = `
       <div class="chat-msg-actions">
-        <button class="chat-action-btn chat-reply-btn" data-msg-id="${esc(msg.id||'')}" title="Responder">↩</button>
-        <button class="chat-action-btn chat-delete-btn" data-msg-id="${esc(msg.id||'')}" title="Apagar">🗑</button>
+        <button class="chat-action-btn chat-reply-btn"   data-msg-id="${esc(msg.id||'')}" title="Responder">↩</button>
+        <button class="chat-action-btn chat-forward-btn" data-msg-id="${esc(msg.id||'')}" title="Encaminhar">⟶</button>
+        <button class="chat-action-btn chat-delete-btn"  data-msg-id="${esc(msg.id||'')}" title="Apagar">🗑</button>
       </div>
       <div class="chat-bubble">
         ${replyHtml}
@@ -3222,6 +3223,8 @@ function openCentralChat(leadId) {
     if (rb) { const m = chatMessages.find(x => x.id === rb.dataset.msgId); if (m) setReplyTo(m); }
     const db = e.target.closest('.chat-delete-btn');
     if (db) deleteChatMessage(db.dataset.msgId);
+    const fb = e.target.closest('.chat-forward-btn');
+    if (fb) openForwardModal(fb.dataset.msgId);
   });
   $('btn-reply-cancel')?.addEventListener('click', clearReplyTo);
 }
@@ -3701,6 +3704,8 @@ function openContactChat(contactId) {
     if (rb) { const m = chatMessages.find(x => x.id === rb.dataset.msgId); if (m) setReplyTo(m); }
     const db = e.target.closest('.chat-delete-btn');
     if (db) deleteChatMessage(db.dataset.msgId);
+    const fb = e.target.closest('.chat-forward-btn');
+    if (fb) openForwardModal(fb.dataset.msgId);
   });
   $('btn-reply-cancel')?.addEventListener('click', clearReplyTo);
   $('btn-add-as-lead').addEventListener('click', () => openAddAsLeadModal(contactId));
@@ -4653,6 +4658,72 @@ function applyChatFontSize() {
   document.querySelectorAll('.chat-messages').forEach(el =>
     el.style.setProperty('--chat-font-size', px)
   );
+}
+
+// ─── ENCAMINHAR MENSAGEM ─────────────────────────────────────────────
+function openForwardModal(msgId) {
+  const msg = chatMessages.find(m => m.id === msgId); if (!msg) return;
+  let existing = $('forward-modal');
+  if (existing) existing.remove();
+
+  const convs = [
+    ...allLeads.filter(l => l.last_message_at || l.lastMessageAt).map(l => ({
+      id: l.id, type: 'lead', name: l.nome || l.celular || '—',
+    })),
+    ...allContacts.map(c => ({
+      id: c.id, type: 'contact', name: c.push_name || c.phone || '—',
+    })),
+  ].filter(c => !(c.type === 'lead' && c.id === chatLeadId) && !(c.type === 'contact' && c.id === chatContactId));
+
+  const modal = document.createElement('div');
+  modal.id = 'forward-modal';
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:380px">
+      <div class="modal-header"><h3>Encaminhar mensagem</h3><button class="btn-ghost btn-icon" id="fwd-close">✕</button></div>
+      <input class="filter-input" id="fwd-search" placeholder="Buscar conversa…" style="margin:12px 0;width:100%;box-sizing:border-box">
+      <div id="fwd-list" style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:4px"></div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  const renderList = (q = '') => {
+    const filtered = convs.filter(c => c.name.toLowerCase().includes(q.toLowerCase()));
+    $('fwd-list').innerHTML = filtered.map(c =>
+      `<button class="fwd-conv-btn" data-id="${esc(c.id)}" data-type="${c.type}">${esc(c.name)}</button>`
+    ).join('') || '<p style="color:var(--t3);font-size:12px;text-align:center">Nenhuma conversa</p>';
+  };
+  renderList();
+
+  $('fwd-search').addEventListener('input', e => renderList(e.target.value));
+  $('fwd-close').addEventListener('click', () => modal.remove());
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+  $('fwd-list').addEventListener('click', async e => {
+    const btn = e.target.closest('.fwd-conv-btn'); if (!btn) return;
+    const { id, type } = btn.dataset;
+    modal.remove();
+    const instSel = $('central-chat-instance');
+    const inst = instSel?.value || waInstances[0]?.instanceName || '';
+    if (!inst) { toast('Selecione uma instância.', 'err'); return; }
+    let phone = null;
+    if (type === 'lead') {
+      const lead = allLeads.find(l => l.id === id);
+      phone = normalizePhoneForEvolution(lead?.celular);
+    } else {
+      const contact = allContacts.find(c => c.id === id);
+      phone = contact?.phone ? normalizePhoneForEvolution(contact.phone) || contact.phone : null;
+    }
+    if (!phone) { toast('Contato sem número.', 'err'); return; }
+    try {
+      const res = await fetch(`${EVOLUTION_API_URL}/message/sendText/${inst}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: EVOLUTION_API_KEY },
+        body: JSON.stringify({ number: phone, text: msg.text }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      toast('Mensagem encaminhada.', 'ok');
+    } catch(err) { toast('Erro ao encaminhar: ' + err.message, 'err'); }
+  });
 }
 
 // ─── BOOT ────────────────────────────────────────────────────────────

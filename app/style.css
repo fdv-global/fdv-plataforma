@@ -2503,8 +2503,8 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   display: flex; gap: 4px; position: absolute; top: -6px;
   opacity: 0; transition: opacity var(--fast) var(--ease); z-index: 5;
 }
-.chat-msg--sent     .chat-msg-actions { left: -72px; flex-direction: row-reverse; }
-.chat-msg--received .chat-msg-actions { right: -72px; }
+.chat-msg--sent     .chat-msg-actions { left: -96px; flex-direction: row-reverse; }
+.chat-msg--received .chat-msg-actions { right: -96px; }
 .chat-msg:hover .chat-msg-actions { opacity: 1; }
 .chat-action-btn {
   background: var(--s3); border: 1px solid var(--b1); border-radius: var(--r-sm);
@@ -2547,6 +2547,12 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 }
 .ccm-btn:hover { background: var(--s3); }
 .cli-pin-icon { font-size: 10px; margin-left: 4px; }
+.fwd-conv-btn {
+  display: block; width: 100%; padding: 9px 14px; text-align: left;
+  background: none; border: 1px solid var(--b0); border-radius: var(--r-sm);
+  cursor: pointer; font-size: 13px; color: var(--t1);
+}
+.fwd-conv-btn:hover { background: var(--gold-10); color: var(--gold); }
 
 /* ── Emoji picker ─────────────────────────────────────────────── */
 #chat-emoji-picker-wrap emoji-picker {
