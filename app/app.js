@@ -2631,6 +2631,7 @@ function renderChatMessages(messages, containerId, emptyId) {
     el.innerHTML = `
       <div class="chat-msg-actions">
         <button class="chat-action-btn chat-reply-btn"   data-msg-id="${esc(msg.id||'')}" title="Responder">↩</button>
+        <button class="chat-action-btn chat-copy-btn"    data-msg-id="${esc(msg.id||'')}" title="Copiar">⎘</button>
         <button class="chat-action-btn chat-forward-btn" data-msg-id="${esc(msg.id||'')}" title="Encaminhar">⟶</button>
         <button class="chat-action-btn chat-delete-btn"  data-msg-id="${esc(msg.id||'')}" title="Apagar">🗑</button>
       </div>
@@ -3225,6 +3226,8 @@ function openCentralChat(leadId) {
     if (db) deleteChatMessage(db.dataset.msgId);
     const fb = e.target.closest('.chat-forward-btn');
     if (fb) openForwardModal(fb.dataset.msgId);
+    const cb = e.target.closest('.chat-copy-btn');
+    if (cb) { const m = chatMessages.find(x => x.id === cb.dataset.msgId); if (m) copyChatMsg(m); }
   });
   $('btn-reply-cancel')?.addEventListener('click', clearReplyTo);
 }
@@ -3706,6 +3709,8 @@ function openContactChat(contactId) {
     if (db) deleteChatMessage(db.dataset.msgId);
     const fb = e.target.closest('.chat-forward-btn');
     if (fb) openForwardModal(fb.dataset.msgId);
+    const cb = e.target.closest('.chat-copy-btn');
+    if (cb) { const m = chatMessages.find(x => x.id === cb.dataset.msgId); if (m) copyChatMsg(m); }
   });
   $('btn-reply-cancel')?.addEventListener('click', clearReplyTo);
   $('btn-add-as-lead').addEventListener('click', () => openAddAsLeadModal(contactId));
@@ -4658,6 +4663,14 @@ function applyChatFontSize() {
   document.querySelectorAll('.chat-messages').forEach(el =>
     el.style.setProperty('--chat-font-size', px)
   );
+}
+
+// ─── COPIAR MENSAGEM ─────────────────────────────────────────────────
+function copyChatMsg(msg) {
+  const text = msg.text || '';
+  navigator.clipboard.writeText(text)
+    .then(() => toast('Texto copiado.', 'ok'))
+    .catch(() => toast('Não foi possível copiar.', 'err'));
 }
 
 // ─── ENCAMINHAR MENSAGEM ─────────────────────────────────────────────

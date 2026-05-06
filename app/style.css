@@ -2503,8 +2503,8 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   display: flex; gap: 4px; position: absolute; top: -6px;
   opacity: 0; transition: opacity var(--fast) var(--ease); z-index: 5;
 }
-.chat-msg--sent     .chat-msg-actions { left: -96px; flex-direction: row-reverse; }
-.chat-msg--received .chat-msg-actions { right: -96px; }
+.chat-msg--sent     .chat-msg-actions { left: -126px; flex-direction: row-reverse; }
+.chat-msg--received .chat-msg-actions { right: -126px; }
 .chat-msg:hover .chat-msg-actions { opacity: 1; }
 .chat-action-btn {
   background: var(--s3); border: 1px solid var(--b1); border-radius: var(--r-sm);
