@@ -3174,7 +3174,7 @@ function openCentralChat(leadId) {
       <div class="cp-header-right">
         <select id="central-chat-instance" class="filter-select chat-inst-sel"></select>
         <button class="btn-ghost cp-header-btn cp-settings-btn" id="btn-chat-settings" title="Personalizar">
-          <i data-lucide="palette" style="width:14px;height:14px"></i><span>Cores</span>
+          <i data-lucide="palette" style="width:14px;height:14px"></i><span>Personalizar</span>
         </button>
         ${buildChatSettingsPanelHTML(initSentHex, initRecvHex, initBubbleStyle, initChatFont)}
         <button class="btn-ghost cp-header-btn cp-info-btn" id="btn-toggle-info" title="Perfil do lead">
@@ -3658,7 +3658,7 @@ function openContactChat(contactId) {
       <div class="cp-header-right">
         <select id="central-chat-instance" class="filter-select chat-inst-sel"></select>
         <button class="btn-ghost cp-header-btn cp-settings-btn" id="btn-chat-settings" title="Personalizar">
-          <i data-lucide="palette" style="width:14px;height:14px"></i><span>Cores</span>
+          <i data-lucide="palette" style="width:14px;height:14px"></i><span>Personalizar</span>
         </button>
         ${buildChatSettingsPanelHTML(iSentHex, iRecvHex, iBubStyle, iFont)}
         <button class="btn-primary cp-header-btn" id="btn-add-as-lead">
