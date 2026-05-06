@@ -121,6 +121,9 @@ let chatActiveSide     = null;
 let chatSearchQuery    = '';
 let chatMsgSearch      = '';   // busca dentro da conversa aberta
 let chatReplyTo        = null; // { id, text, sender }
+let chatTypingTimer    = null;
+let chatTypingUnsub    = null;
+let chatQuickFilter    = 'all'; // 'all' | 'unread' | 'starred' | 'archived'
 let mediaRecorder      = null;
 let audioChunks        = [];
 let isRecording        = false;
@@ -240,6 +243,9 @@ function initAuth() {
       if (role === 'admin') loadUsuarios();
       loadNotifications(user.uid);
       switchTab('inicio');
+      if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
     } else {
       currentUser = null;
       currentRole = null;
@@ -2543,6 +2549,13 @@ function startChatListener(id, messagesId, emptyId, isContact = false) {
       ({ new: msg }) => {
         chatMessages.push(mapMsg(msg));
         renderChatMessages(chatMessages, messagesId, emptyId);
+        if (msg.direction === 'received') {
+          playChatSound();
+          const contactName = isContact
+            ? (allContacts.find(x => x.id === id)?.push_name || 'WhatsApp')
+            : (allLeads.find(x => x.id === id)?.nome || 'WhatsApp');
+          showPushNotification(contactName, msg.text || '[mídia]');
+        }
         // Para mensagens recebidas enquanto o chat está aberto: zera badge
         // localmente E salva no Supabase para neutralizar o incremento do webhook
         if (msg.direction === 'received' && activeTab === 'whatsapp' && activeWaSub === 'chats') {
@@ -2559,12 +2572,62 @@ function startChatListener(id, messagesId, emptyId, isContact = false) {
         }
       })
     .subscribe();
+  if (chatTypingUnsub) { chatTypingUnsub(); chatTypingUnsub = null; }
+  const typingCh = supabase.channel(`typing:${id}`)
+    .on('broadcast', { event: 'presence' }, ({ payload }) => handlePresenceBroadcast(payload?.status || ''))
+    .subscribe();
+  chatTypingUnsub = () => supabase.removeChannel(typingCh);
   chatUnsubscribe = () => { supabase.removeChannel(ch); };
 }
 
 function stopChatListener() {
   if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
+  if (chatTypingUnsub) { chatTypingUnsub(); chatTypingUnsub = null; }
+  clearTimeout(chatTypingTimer); chatTypingTimer = null;
   chatMessages = []; chatLeadId = null; chatContactId = null;
+}
+
+function handlePresenceBroadcast(status) {
+  const indicator = $('chat-typing');
+  const statusEl  = $('cp-status');
+  if (status === 'composing') {
+    if (indicator) indicator.style.display = '';
+    if (statusEl)  { statusEl.textContent = 'digitando…'; statusEl.className = 'cp-status cp-status--composing'; }
+    clearTimeout(chatTypingTimer);
+    chatTypingTimer = setTimeout(() => {
+      if (indicator) indicator.style.display = 'none';
+      if (statusEl)  { statusEl.textContent = ''; statusEl.className = 'cp-status'; }
+    }, 5000);
+  } else {
+    if (indicator) { indicator.style.display = 'none'; clearTimeout(chatTypingTimer); }
+    if (statusEl) {
+      statusEl.className = `cp-status${status === 'available' ? ' cp-status--online' : ''}`;
+      statusEl.textContent = status === 'available' ? '● online' : '';
+    }
+  }
+}
+
+function playChatSound() {
+  try {
+    const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 880; osc.type = 'sine';
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.3);
+    osc.onended = () => ctx.close();
+  } catch(_) {}
+}
+
+function showPushNotification(title, body) {
+  if (document.hasFocus()) return;
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+  try {
+    const n = new Notification(title, { body: body.slice(0, 100), icon: '/favicon.ico', tag: 'fdv-chat' });
+    setTimeout(() => n.close(), 5000);
+  } catch(_) {}
 }
 
 function renderChatMessages(messages, containerId, emptyId) {
@@ -3052,7 +3115,7 @@ function renderLeadChatItem(lead) {
   return `<div class="chats-list-item${isActive?' chats-list-item--active':''}${unread?' chats-list-item--unread':''}" data-lead-id="${esc(lead.id)}" role="button" tabindex="0">
     <div class="cli-avatar" data-phone="${esc(phone)}" data-instance="${esc(instance)}">${avatarInner}</div>
     <div class="cli-body">
-      <div class="cli-top"><span class="cli-name">${esc(lead.nome||'—')}${lead.chat_pinned ? '<span class="cli-pin-icon">📌</span>' : ''}</span><span class="cli-time">${esc(lastTime)}</span></div>
+      <div class="cli-top"><span class="cli-name">${esc(lead.nome||'—')}${lead.chat_pinned ? '<span class="cli-pin-icon">📌</span>' : ''}${lead.chat_starred ? '<span class="cli-pin-icon">⭐</span>' : ''}</span><span class="cli-time">${esc(lastTime)}</span></div>
       <div class="cli-mid"><span class="cli-msg">${esc(lastMsg)}</span>${unread?`<span class="cli-unread-badge">${unread}</span>`:''}</div>
       ${lblHtml?`<div class="cli-labels">${lblHtml}</div>`:''}
     </div>
@@ -3078,7 +3141,7 @@ function renderContactChatItem(contact) {
   return `<div class="chats-list-item${isActive?' chats-list-item--active':''}${unread?' chats-list-item--unread':''}" data-contact-id="${esc(contact.id)}" role="button" tabindex="0">
     <div class="cli-avatar" data-phone="${esc(phone)}" data-instance="${esc(instance)}">${avatarInner}</div>
     <div class="cli-body">
-      <div class="cli-top"><span class="cli-name">${esc(pushName||phone)}${contact.chat_pinned ? '<span class="cli-pin-icon">📌</span>' : ''}</span><span class="cli-time">${esc(lastTime)}</span></div>
+      <div class="cli-top"><span class="cli-name">${esc(pushName||phone)}${contact.chat_pinned ? '<span class="cli-pin-icon">📌</span>' : ''}${contact.chat_starred ? '<span class="cli-pin-icon">⭐</span>' : ''}</span><span class="cli-time">${esc(lastTime)}</span></div>
       <div class="cli-mid"><span class="cli-msg">${esc(lastMsg)}</span>${unread?`<span class="cli-unread-badge">${unread}</span>`:''}</div>
       <div class="cli-labels"><span class="cli-unknown-tag">Desconhecido</span></div>
     </div>
@@ -3100,6 +3163,21 @@ function renderChatsList() {
   if (instFilt)   contactConvs = contactConvs.filter(c => c.instance_name === instFilt);
   if (statusFilt) contactConvs = [];
   if (search)     contactConvs = contactConvs.filter(c => (c.push_name||'').toLowerCase().includes(search) || (c.phone||'').includes(search));
+
+  // Quick filter
+  if (chatQuickFilter === 'unread') {
+    leadConvs    = leadConvs.filter(l => (l.unread_count || l.unreadCount || 0) > 0);
+    contactConvs = contactConvs.filter(c => (c.unread_count || 0) > 0);
+  } else if (chatQuickFilter === 'starred') {
+    leadConvs    = leadConvs.filter(l => l.chat_starred);
+    contactConvs = contactConvs.filter(c => c.chat_starred);
+  } else if (chatQuickFilter === 'archived') {
+    leadConvs    = allLeads.filter(l => l.chat_archived && (l.last_message_at || l.lastMessageAt));
+    contactConvs = allContacts.filter(c => c.chat_archived);
+  } else {
+    leadConvs    = leadConvs.filter(l => !l.chat_archived);
+    contactConvs = contactConvs.filter(c => !c.chat_archived);
+  }
 
   const items = [
     ...leadConvs.map(l  => ({ type: 'lead',    data: l, at: l.last_message_at||l.lastMessageAt||'' })),
@@ -3133,17 +3211,26 @@ function showConvContextMenu(x, y, type, id) {
       const btn = e.target.closest('.ccm-btn');
       if (!btn) return;
       menu.style.display = 'none';
-      if (btn.dataset.action === 'pin')    togglePinConversation(btn.dataset.type, btn.dataset.id);
-      if (btn.dataset.action === 'unread') markAsUnread(btn.dataset.type, btn.dataset.id);
+      if (btn.dataset.action === 'pin')     togglePinConversation(btn.dataset.type, btn.dataset.id);
+      if (btn.dataset.action === 'unread')  markAsUnread(btn.dataset.type, btn.dataset.id);
+      if (btn.dataset.action === 'archive') toggleArchiveConversation(btn.dataset.type, btn.dataset.id);
+      if (btn.dataset.action === 'star')    toggleStarConversation(btn.dataset.type, btn.dataset.id);
     });
     document.addEventListener('click', () => { menu.style.display = 'none'; });
   }
-  const isPinned = type === 'lead'
-    ? !!(allLeads.find(l => l.id === id)?.chat_pinned)
-    : !!(allContacts.find(c => c.id === id)?.chat_pinned);
+  const rec        = type === 'lead' ? allLeads.find(l => l.id === id) : allContacts.find(c => c.id === id);
+  const isPinned   = !!rec?.chat_pinned;
+  const isStarred  = !!rec?.chat_starred;
+  const isArchived = !!rec?.chat_archived;
   menu.innerHTML = `
     <button class="ccm-btn" data-action="pin" data-type="${type}" data-id="${id}">
       📌 ${isPinned ? 'Desafixar' : 'Fixar no topo'}
+    </button>
+    <button class="ccm-btn" data-action="star" data-type="${type}" data-id="${id}">
+      ⭐ ${isStarred ? 'Remover dos favoritos' : 'Favoritar conversa'}
+    </button>
+    <button class="ccm-btn" data-action="archive" data-type="${type}" data-id="${id}">
+      🗄️ ${isArchived ? 'Desarquivar' : 'Arquivar conversa'}
     </button>
     <button class="ccm-btn" data-action="unread" data-type="${type}" data-id="${id}">
       🔴 Marcar como não lida
@@ -3166,6 +3253,42 @@ async function togglePinConversation(type, id) {
   }
   renderChatsList();
   toast(type === 'lead' && allLeads.find(l=>l.id===id)?.chat_pinned ? 'Conversa fixada.' : 'Conversa desafixada.', 'ok');
+}
+
+async function toggleArchiveConversation(type, id) {
+  if (!isLive) { toast('Não disponível no modo demo.', 'err'); return; }
+  if (type === 'lead') {
+    const lead = allLeads.find(l => l.id === id); if (!lead) return;
+    const newVal = !lead.chat_archived;
+    await supabase.from('leads').update({ chat_archived: newVal }).eq('id', id);
+    lead.chat_archived = newVal;
+    toast(newVal ? 'Conversa arquivada.' : 'Conversa desarquivada.', 'ok');
+  } else {
+    const c = allContacts.find(x => x.id === id); if (!c) return;
+    const newVal = !c.chat_archived;
+    await supabase.from('whatsapp_contacts').update({ chat_archived: newVal }).eq('id', id);
+    c.chat_archived = newVal;
+    toast(newVal ? 'Conversa arquivada.' : 'Conversa desarquivada.', 'ok');
+  }
+  renderChatsList();
+}
+
+async function toggleStarConversation(type, id) {
+  if (!isLive) { toast('Não disponível no modo demo.', 'err'); return; }
+  if (type === 'lead') {
+    const lead = allLeads.find(l => l.id === id); if (!lead) return;
+    const newVal = !lead.chat_starred;
+    await supabase.from('leads').update({ chat_starred: newVal }).eq('id', id);
+    lead.chat_starred = newVal;
+    toast(newVal ? 'Conversa favoritada.' : 'Removida dos favoritos.', 'ok');
+  } else {
+    const c = allContacts.find(x => x.id === id); if (!c) return;
+    const newVal = !c.chat_starred;
+    await supabase.from('whatsapp_contacts').update({ chat_starred: newVal }).eq('id', id);
+    c.chat_starred = newVal;
+    toast(newVal ? 'Conversa favoritada.' : 'Removida dos favoritos.', 'ok');
+  }
+  renderChatsList();
 }
 
 // Feature 8: delete a single chat message
@@ -3229,6 +3352,7 @@ function openCentralChat(leadId) {
         <div class="cp-header-info" id="btn-open-lead-info" role="button" title="Ver info do lead">
           <div class="cp-name">${esc(lead.nome || '—')}</div>
           <div class="cp-phone">${esc(phone)}</div>
+          <div class="cp-status" id="cp-status"></div>
         </div>
       </div>
       <div class="cp-header-right">
@@ -3254,6 +3378,9 @@ function openCentralChat(leadId) {
       <div class="chat-empty" id="central-chat-empty">
         <span class="chat-empty-hint">Selecione uma instância e envie a primeira mensagem.</span>
       </div>
+    </div>
+    <div class="chat-typing-indicator" id="chat-typing" style="display:none">
+      <div class="chat-typing-dots"><span></span><span></span><span></span></div>
     </div>
     <div class="chat-input-bar">${buildChatInputBarHTML('central-chat-input')}</div>`;
 
@@ -3728,6 +3855,7 @@ function openContactChat(contactId) {
         <div class="cp-header-info">
           <div class="cp-name">${esc(pushName || phone)}</div>
           <div class="cp-phone">${esc(phone)}</div>
+          <div class="cp-status" id="cp-status"></div>
         </div>
       </div>
       <div class="cp-header-right">
@@ -3752,6 +3880,9 @@ function openContactChat(contactId) {
       <div class="chat-empty" id="central-chat-empty">
         <span class="chat-empty-hint">Nenhuma mensagem ainda.</span>
       </div>
+    </div>
+    <div class="chat-typing-indicator" id="chat-typing" style="display:none">
+      <div class="chat-typing-dots"><span></span><span></span><span></span></div>
     </div>
     <div class="chat-input-bar">${buildChatInputBarHTML('central-chat-input')}</div>`;
 
@@ -4545,6 +4676,13 @@ function bindEvents() {
     chatSearchQuery = e.target.value.trim();
     renderChatsList();
   });
+  document.querySelectorAll('.cqf-btn').forEach(btn =>
+    btn.addEventListener('click', () => {
+      chatQuickFilter = btn.dataset.filter || 'all';
+      document.querySelectorAll('.cqf-btn').forEach(b => b.classList.toggle('cqf-btn--active', b === btn));
+      renderChatsList();
+    })
+  );
 
   // Central de chats — clique na conversa (delegado)
   $('chats-list').addEventListener('click', e => {

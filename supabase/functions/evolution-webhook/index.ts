@@ -296,6 +296,42 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // ── PRESENCE UPDATE ────────────────────────────────────────────────────
+    if (event === 'presence.update' || event === 'PRESENCE_UPDATE') {
+      const data      = (body.data ?? {}) as Record<string, unknown>;
+      const presences = (data.presences ?? {}) as Record<string, Record<string, unknown>>;
+      const jid       = Object.keys(presences)[0];
+      if (!jid) return new Response(JSON.stringify({ ok: true, skipped: 'no_jid' }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const presData = presences[jid] ?? {};
+      const status   = (presData.lastKnownPresence as string) ?? 'unavailable';
+      const phone    = normalizePhone(jid);
+      if (!phone) return new Response(JSON.stringify({ ok: true, skipped: 'no_phone' }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const lead    = await findLeadByPhone(phone);
+      const contact = lead ? null : await findContactByPhone(phone);
+      const targetId = lead?.id ?? contact?.id;
+      if (!targetId) return new Response(JSON.stringify({ ok: true, skipped: 'no_target' }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      await fetch(`${SB_URL}/realtime/v1/api/broadcast`, {
+        method:  'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${SB_KEY}`,
+          'apikey':        SB_KEY,
+        },
+        body: JSON.stringify({
+          messages: [{ topic: `realtime:typing:${targetId}`, event: 'presence', payload: { status } }],
+        }),
+      });
+      return new Response(JSON.stringify({ ok: true, targetId, status }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     console.log(`[event-ignored] ${event}`);
     return new Response(JSON.stringify({ ok: true, ignored: event }), {
       headers: { 'Content-Type': 'application/json' },
