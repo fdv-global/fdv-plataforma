@@ -2025,7 +2025,7 @@ body[data-bubble-style="sticker"] .chat-msg--sent .chat-bubble {
   border: 1px solid var(--b1);
   border-radius: var(--r);
   color: var(--t1);
-  font-size: 13px;
+  font-size: 13px !important;
   font-family: var(--chat-font, inherit);
   padding: 10px 14px;
   resize: none;

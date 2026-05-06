@@ -3581,7 +3581,7 @@ function buildChatSettingsPanelHTML(iSentHex, iRecvHex, iBubStyle, iFont) {
     <div class="cp-bs-row" style="margin-top:6px"><label>Tamanho</label>
       <div class="cp-font-size-wrap">
         <span class="cp-font-size-val" id="cp-font-size-label">${esc(iFontSize)}px</span>
-        <input type="range" id="cp-font-size" min="11" max="18" step="1" value="${esc(iFontSize)}" class="cp-font-size-slider">
+        <input type="range" id="cp-font-size" min="11" max="22" step="1" value="${esc(iFontSize)}" class="cp-font-size-slider">
       </div></div>
     <div class="cp-bs-title" style="margin-top:10px">Cores dos balões</div>
     <div class="cp-bs-row"><label>Enviado</label><input type="color" id="cp-sent-color" class="cp-color-input" value="${esc(iSentHex)}"></div>
@@ -4646,7 +4646,13 @@ function applyChatFont() {
 
 function applyChatFontSize() {
   const size = localStorage.getItem('fdv_chat_font_size') || '13';
-  document.documentElement.style.setProperty('--chat-font-size', size + 'px');
+  const px = size + 'px';
+  // Aplica como variável CSS no root (usado pelo .chat-bubble)
+  document.documentElement.style.setProperty('--chat-font-size', px);
+  // Força direto nos contêineres de mensagens para garantir herança correta
+  document.querySelectorAll('.chat-messages').forEach(el =>
+    el.style.setProperty('--chat-font-size', px)
+  );
 }
 
 // ─── BOOT ────────────────────────────────────────────────────────────
