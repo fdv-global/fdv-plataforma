@@ -724,8 +724,12 @@ function renderComercial() {
   const el = $('comercial-content');
   if (!el) return;
   el.innerHTML = `
-    <div class="page-top">
-      <div class="page-title-block">
+    <div class="module-landing-header">
+      <div class="module-landing-header-icon"
+           style="background:var(--gold-10);border:1px solid var(--gold-22)">
+        <i data-lucide="crown" style="color:var(--gold)"></i>
+      </div>
+      <div>
         <h1>Comercial</h1>
         <p>Funil de captação, agendamento e fechamento de vendas</p>
       </div>
@@ -737,7 +741,7 @@ function renderComercial() {
         <span class="mlc-desc">Pipeline pré-call — qualificação e agendamento de leads</span>
       </button>
       <button class="module-landing-card" data-go="closer">
-        <span class="mlc-icon" style="color:#4db5c8"><i data-lucide="user"></i></span>
+        <span class="mlc-icon" style="color:var(--petro-l)"><i data-lucide="user"></i></span>
         <span class="mlc-title">Closer</span>
         <span class="mlc-desc">Funil de vendas Kanban — acompanhe cada negociação</span>
       </button>
@@ -779,6 +783,16 @@ function renderSucesso() {
 
   if (!activeSucessoSub) {
     el.innerHTML = `
+      <div class="module-landing-header">
+        <div class="module-landing-header-icon"
+             style="background:var(--petro-10);border:1px solid var(--petro-18)">
+          <i data-lucide="graduation-cap" style="color:var(--petro-l)"></i>
+        </div>
+        <div>
+          <h1>Alunos</h1>
+          <p>Gestão de alunas, sessões e contratos</p>
+        </div>
+      </div>
       <div class="module-landing-cards">
         ${Object.entries(SUCESSO_SUBS).map(([key, s]) => `
           <button class="module-landing-card" data-go-sucesso="${key}">
@@ -794,6 +808,11 @@ function renderSucesso() {
   } else {
     const s = SUCESSO_SUBS[activeSucessoSub];
     el.innerHTML = `
+      <div class="page-top">
+        <div class="page-title-block">
+          <h1>Alunos <span style="color:var(--t3);font-weight:400;font-size:18px">/ ${s ? s.label : activeSucessoSub}</span></h1>
+        </div>
+      </div>
       <div class="placeholder-module">
         <div class="placeholder-icon">🚧</div>
         <h3>${s ? s.label : activeSucessoSub}</h3>
@@ -827,6 +846,16 @@ function renderFinanceiro() {
 
   if (!activeFinanceiroSub) {
     el.innerHTML = `
+      <div class="module-landing-header">
+        <div class="module-landing-header-icon"
+             style="background:rgba(46,204,113,.10);border:1px solid rgba(46,204,113,.25)">
+          <i data-lucide="coins" style="color:#2ecc71"></i>
+        </div>
+        <div>
+          <h1>Financeiro</h1>
+          <p>Inadimplência, pagamentos e relatórios financeiros</p>
+        </div>
+      </div>
       <div class="module-landing-cards">
         ${Object.entries(FINANCEIRO_SUBS).map(([key, s]) => `
           <button class="module-landing-card" data-go-financeiro="${key}">
@@ -842,6 +871,11 @@ function renderFinanceiro() {
   } else {
     const s = FINANCEIRO_SUBS[activeFinanceiroSub];
     el.innerHTML = `
+      <div class="page-top">
+        <div class="page-title-block">
+          <h1>Financeiro <span style="color:var(--t3);font-weight:400;font-size:18px">/ ${s ? s.label : activeFinanceiroSub}</span></h1>
+        </div>
+      </div>
       <div class="placeholder-module">
         <div class="placeholder-icon">🚧</div>
         <h3>${s ? s.label : activeFinanceiroSub}</h3>

@@ -275,36 +275,68 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 .placeholder-module h3 { font-size: 20px; font-weight: 700; color: var(--t1); margin-bottom: 8px; }
 .placeholder-module p  { font-size: 14px; max-width: 360px; }
 
-/* ─── Module landing cards ─── */
-.module-landing {
-  padding: 8px 0 32px;
+/* ─── Module landing — header com ícone do módulo ─── */
+.module-landing-header {
+  display: flex; align-items: center; gap: 18px;
+  margin-bottom: 28px; padding-bottom: 24px;
+  border-bottom: 1px solid var(--b1);
 }
+.module-landing-header-icon {
+  width: 56px; height: 56px; border-radius: var(--r-lg);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.module-landing-header-icon svg { width: 28px; height: 28px; }
+.module-landing-header h1 {
+  font-size: 22px; font-weight: 700; color: var(--t1); margin-bottom: 4px;
+  font-family: 'Red Hat Display', sans-serif;
+}
+.module-landing-header p { font-size: 13.5px; color: var(--t2); }
+
+/* ─── Module landing cards ─── */
 .module-landing-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
-  margin-top: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+  padding-bottom: 32px;
 }
 .module-landing-card {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 14px;
-  padding: 24px; text-align: left;
-  background: var(--b1); border: 1px solid var(--b2); border-radius: var(--r-md);
+  display: flex; flex-direction: column; align-items: flex-start; gap: 16px;
+  padding: 28px 24px; text-align: left;
+  background: rgba(18,24,26,0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: var(--r-xl);
   cursor: pointer;
-  transition: border-color var(--fast) var(--ease),
-              background var(--fast) var(--ease),
-              transform 0.12s var(--ease);
+  box-shadow: 0 2px 14px rgba(0,0,0,0.28);
+  transition: border-color .2s ease, box-shadow .2s ease,
+              transform .15s ease, background .2s ease;
+  position: relative; overflow: hidden;
+}
+.module-landing-card::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.035) 0%, transparent 55%);
+  pointer-events: none;
 }
 .module-landing-card:hover {
-  border-color: var(--gold-22); background: var(--b0); transform: translateY(-2px);
+  border-color: var(--gold-28);
+  background: rgba(22,30,33,0.88);
+  box-shadow: 0 10px 36px rgba(0,0,0,0.36), 0 0 28px rgba(206,146,33,0.13);
+  transform: translateY(-4px);
 }
 .mlc-icon {
-  width: 44px; height: 44px; border-radius: var(--r-sm);
+  width: 50px; height: 50px; border-radius: var(--r-md);
   display: flex; align-items: center; justify-content: center;
-  background: rgba(255,255,255,.04);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.09);
 }
-.mlc-icon svg { width: 22px; height: 22px; }
-.mlc-title { font-size: 15px; font-weight: 700; color: var(--t1); }
-.mlc-desc  { font-size: 13px; color: var(--t2); line-height: 1.5; }
+.mlc-icon svg { width: 24px; height: 24px; }
+.mlc-title {
+  font-size: 16px; font-weight: 700; color: var(--t1);
+  font-family: 'Red Hat Display', sans-serif;
+}
+.mlc-desc { font-size: 13px; color: var(--t2); line-height: 1.55; }
 
 .header-right {
   display: flex; align-items: center; gap: 8px;
