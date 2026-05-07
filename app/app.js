@@ -116,6 +116,15 @@ let closerView    = 'kanban'; // 'kanban' | 'vendas' | 'descartados'
 let activeAgendadosSub   = 'hoje'; // 'hoje' | 'todos' | 'briefing'
 let activeSucessoSub    = null;   // null = landing page
 let activeFinanceiroSub = null;   // null = landing page
+let allAlunas           = [];
+let allSessoes          = [];
+let allContratos        = [];
+let alunasLoaded        = false;
+let alunaEdit           = null;   // null = nova, obj = editar
+let sessaoEdit          = null;
+let contratoEdit        = null;
+let sessaoAlunaId       = null;
+let contratoAlunaId     = null;
 
 // Descarte state
 let descarteLeadId   = null;
@@ -3192,18 +3201,34 @@ async function confirmarVendaGanha() {
       atualizadoem: new Date().toISOString(),
     });
 
-    // Insert into vendas table
+    // Insert into vendas table + create aluna record
     if (isLive) {
       await supabase.from('vendas').insert({
-        lead_id:        vgLeadId,
-        closer,
-        programa,
-        valor,
-        valor_entrada:  entrada,
-        forma_pagamento: forma,
-        observacoes:    obs,
-        criadoem:       new Date().toISOString(),
+        lead_id: vgLeadId, closer, programa, valor,
+        valor_entrada: entrada, forma_pagamento: forma, observacoes: obs,
+        criadoem: new Date().toISOString(),
       });
+
+      // Create aluna from lead data
+      const hoje = new Date().toISOString().slice(0, 10);
+      const { data: novaAluna } = await supabase.from('alunas').insert({
+        nome:          lead?.nome,
+        email:         lead?.email,
+        celular:       lead?.celular || lead?.telefone,
+        produto:       programa,
+        status:        'Nova compra',
+        data_inscricao: hoje,
+        lead_id:       vgLeadId,
+        criadoem:      new Date().toISOString(),
+        atualizadoem:  new Date().toISOString(),
+      }).select().single();
+
+      if (novaAluna) {
+        await supabase.from('leads').update({ aluna_id: novaAluna.id }).eq('id', vgLeadId);
+        const lIdx = allLeads.findIndex(l => l.id === vgLeadId);
+        if (lIdx >= 0) allLeads[lIdx].aluna_id = novaAluna.id;
+        allAlunas.unshift(novaAluna);
+      }
     }
 
     toast('Venda registrada! 🏆', 'ok');
