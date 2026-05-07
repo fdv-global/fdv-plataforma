@@ -496,11 +496,13 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   content: ''; flex-shrink: 0;
   width: 5.5px; height: 5.5px; border-radius: 50%; background: currentColor;
 }
-.badge-status.aguardando { background: var(--gold-10);  color: #d4982a; }
-.badge-status.agendado   { background: var(--petro-10); color: #5bc0d4; }
-.badge-status.realizada  { background: var(--green-10); color: #52bd96; }
-.badge-status.noshow     { background: rgba(192,57,43,.09); color: #e06450; }
-.badge-status.cancelado  { background: var(--marsala-14);   color: #b07080; }
+.badge-status.aguardando   { background: var(--gold-10);  color: #d4982a; }
+.badge-status.qualificado  { background: rgba(77,181,200,.10); color: #4db5c8; }
+.badge-status.agendado     { background: var(--petro-10); color: #5bc0d4; }
+.badge-status.realizada    { background: var(--green-10); color: #52bd96; }
+.badge-status.noshow       { background: rgba(192,57,43,.09); color: #e06450; }
+.badge-status.cancelado    { background: var(--marsala-14);   color: #b07080; }
+.badge-status.descartado   { background: rgba(107,39,55,.12);  color: #c07080; }
 
 /* ── Ações na tabela ──────────────────────────── */
 .btn-acao {
@@ -673,6 +675,34 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
               background var(--fast) var(--ease);
   white-space: nowrap;
 }
+/* Badge de contagem na sub-aba */
+.sub-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  background: var(--gold); color: #0d1a1c;
+  border-radius: var(--r-pill); font-size: 10px; font-weight: 700;
+  margin-left: 5px; vertical-align: middle;
+}
+
+/* Sub-nav secundário (dentro de Agendados) */
+.sub-nav--secondary {
+  background: transparent; border: none; padding: 0;
+  margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,.07);
+  border-radius: 0; padding-bottom: 2px; width: 100%;
+}
+.sub-nav--secondary .sub-link {
+  padding: 6px 16px; border-radius: 8px 8px 0 0; font-size: 12px;
+}
+
+/* Painéis internos do bloco Agendados */
+.sub-panel--inner { display: block; }
+
+/* Botão WhatsApp no lead */
+.btn-wa-lead {
+  color: #25d366 !important;
+}
+.btn-wa-lead:hover { background: rgba(37,211,102,.12) !important; }
+
 .sub-link:hover:not(.active) { color: var(--t1); background: rgba(255,255,255,.05); }
 .sub-link.active {
   background: rgba(255,255,255,.10); color: var(--t1);
