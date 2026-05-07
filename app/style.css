@@ -991,6 +991,39 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
   padding: 3px 10px; border-radius: var(--r-pill); border: 1px solid var(--b1);
 }
 
+/* ============================================================
+   MÓDULO ALUNAS — badges de status
+   ============================================================ */
+.bp {
+  display: inline-block; padding: 2px 8px; border-radius: var(--r-pill);
+  font-size: 11px; font-weight: 700; white-space: nowrap; border: 1px solid transparent;
+}
+.bp-gold    { background: rgba(206,146,33,.16); color: var(--gold);      border-color: rgba(206,146,33,.28); }
+.bp-green   { background: rgba(46,204,113,.14); color: #2ecc71;          border-color: rgba(46,204,113,.28); }
+.bp-petro   { background: var(--petro-10);      color: var(--petro-l);   border-color: var(--petro-18); }
+.bp-gray    { background: rgba(255,255,255,.06);color: var(--t2);        border-color: var(--b1); }
+.bp-dark    { background: rgba(255,255,255,.03);color: var(--t3);        border-color: var(--b0); }
+.bp-red     { background: rgba(192,57,43,.11);  color: #e06450;          border-color: rgba(192,57,43,.22); }
+.bp-red-dk  { background: rgba(150,30,20,.13);  color: #c0392b;          border-color: rgba(150,30,20,.26); }
+.bp-orange  { background: rgba(230,126,34,.11); color: #e67e22;          border-color: rgba(230,126,34,.22); }
+.bp-purple  { background: rgba(155,89,182,.11); color: #9b59b6;          border-color: rgba(155,89,182,.22); }
+
+/* Quick-status dropdown */
+.status-quick-dropdown {
+  position: absolute; z-index: 9999;
+  background: var(--s2); border: 1px solid var(--b2);
+  border-radius: var(--r-md); padding: 6px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.4);
+  display: flex; flex-direction: column; gap: 2px; min-width: 160px;
+}
+.sqd-item {
+  background: none; border: none; cursor: pointer; text-align: left;
+  padding: 5px 8px; border-radius: var(--r-xs);
+  transition: background var(--fast) var(--ease);
+}
+.sqd-item:hover  { background: var(--b1); }
+.sqd-item.active { background: var(--b1); }
+
 .kanban-board {
   display: flex; gap: 14px;
   overflow-x: auto; padding-bottom: 24px; min-height: 68vh;

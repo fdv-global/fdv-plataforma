@@ -1232,6 +1232,129 @@
   </div>
 </div>
 
+<!-- ===== MODAL ALUNA ===== -->
+<div class="modal-backdrop" id="am-backdrop" style="display:none">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:560px">
+    <div class="modal-header">
+      <h2 id="am-title">Nova Aluna</h2>
+      <button class="modal-close" id="am-close" aria-label="Fechar"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">Nome *<input type="text" class="form-ctrl" id="am-nome" placeholder="Nome completo"></label>
+        <label class="form-label">Celular<input type="text" class="form-ctrl" id="am-celular" placeholder="(11) 99999-9999"></label>
+      </div>
+      <div class="form-row">
+        <label class="form-label">E-mail<input type="email" class="form-ctrl" id="am-email" placeholder="email@exemplo.com"></label>
+        <label class="form-label">Produto
+          <select class="form-ctrl" id="am-produto">
+            <option value="">Selecione…</option>
+            <option>Individual</option><option>Comunidade +3</option><option>Comunidade +1</option>
+            <option>Reprogramação Mensal</option><option>Águia Club</option><option>PRM</option>
+          </select>
+        </label>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Status
+          <select class="form-ctrl" id="am-status">
+            <option>Nova compra</option><option>Dentro do Prazo</option><option>Migrou</option>
+            <option>Finalizado</option><option>Cancelado</option><option>Cliente Off</option>
+            <option>Reembolso</option><option>Inadimplente</option>
+          </select>
+        </label>
+        <label class="form-label">Está no grupo?
+          <label class="toggle-switch" style="margin-top:8px">
+            <input type="checkbox" id="am-no-grupo">
+            <span class="toggle-slider"></span>
+          </label>
+        </label>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Data de inscrição<input type="date" class="form-ctrl" id="am-data-inscricao"></label>
+        <label class="form-label">Data de término<input type="date" class="form-ctrl" id="am-data-termino"></label>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Total de sessões<input type="number" class="form-ctrl" id="am-sessoes-total" min="0" value="0"></label>
+        <label class="form-label">Sessões realizadas<input type="number" class="form-ctrl" id="am-sessoes-realizadas" min="0" value="0"></label>
+      </div>
+      <label class="form-label">Observações<textarea class="form-ctrl" id="am-obs" rows="3" placeholder="Observações gerais…"></textarea></label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="am-cancelar">Cancelar</button>
+      <button class="btn-confirm" id="am-salvar">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL SESSÃO ===== -->
+<div class="modal-backdrop" id="sm-backdrop" style="display:none">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:480px">
+    <div class="modal-header">
+      <h2 id="sm-title">Nova Sessão</h2>
+      <button class="modal-close" id="sm-close" aria-label="Fechar"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <label class="form-label">Aluna *
+        <select class="form-ctrl" id="sm-aluna"><option value="">Selecione a aluna…</option></select>
+      </label>
+      <div class="form-row">
+        <label class="form-label">Data<input type="date" class="form-ctrl" id="sm-data"></label>
+        <label class="form-label">Hora<input type="time" class="form-ctrl" id="sm-hora"></label>
+      </div>
+      <label class="form-label">Status
+        <select class="form-ctrl" id="sm-status">
+          <option>Aguardando</option><option>Marcada</option><option>Realizada</option>
+          <option>Cancelada</option><option>Em contato</option><option>Falta</option><option>Inadimplente</option>
+        </select>
+      </label>
+      <label class="form-label">Observações<textarea class="form-ctrl" id="sm-obs" rows="3" placeholder="Notas da sessão…"></textarea></label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="sm-cancelar">Cancelar</button>
+      <button class="btn-confirm" id="sm-salvar">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL CONTRATO ===== -->
+<div class="modal-backdrop" id="cm-backdrop" style="display:none">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:500px">
+    <div class="modal-header">
+      <h2 id="cm-title">Novo Contrato</h2>
+      <button class="modal-close" id="cm-close" aria-label="Fechar"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <label class="form-label">Aluna *
+        <select class="form-ctrl" id="cm-aluna"><option value="">Selecione a aluna…</option></select>
+      </label>
+      <label class="form-label">Produto
+        <select class="form-ctrl" id="cm-produto">
+          <option value="">Selecione…</option>
+          <option>Individual</option><option>Comunidade +3</option><option>Comunidade +1</option>
+          <option>Reprogramação Mensal</option><option>Águia Club</option><option>PRM</option>
+        </select>
+      </label>
+      <div class="form-row">
+        <label class="form-label">Data de início<input type="date" class="form-ctrl" id="cm-data-inicio"></label>
+        <label class="form-label">Data de vencimento<input type="date" class="form-ctrl" id="cm-data-vencimento"></label>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Contrato assinado?
+          <label class="toggle-switch" style="margin-top:8px"><input type="checkbox" id="cm-assinado"><span class="toggle-slider"></span></label>
+        </label>
+        <label class="form-label">Está no grupo?
+          <label class="toggle-switch" style="margin-top:8px"><input type="checkbox" id="cm-no-grupo"><span class="toggle-slider"></span></label>
+        </label>
+      </div>
+      <label class="form-label">Observações<textarea class="form-ctrl" id="cm-obs" rows="3" placeholder="Notas do contrato…"></textarea></label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="cm-cancelar">Cancelar</button>
+      <button class="btn-confirm" id="cm-salvar">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== TOASTS ===== -->
 <div class="toast-dock" id="toast-dock"></div>
 

@@ -688,6 +688,28 @@ function showDbError(msg) {
   </div>`;
 }
 
+// ─── ALUNAS — carregamento ────────────────────────────────────────────
+async function loadAlunas() {
+  if (!isLive) { alunasLoaded = true; if (activeSucessoSub) renderSucesso(); return; }
+  try {
+    const [{ data: a }, { data: s }, { data: c }] = await Promise.all([
+      supabase.from('alunas').select('*').order('criadoem', { ascending: false }),
+      supabase.from('sessoes').select('*').order('data', { ascending: true }),
+      supabase.from('contratos').select('*').order('data_inicio', { ascending: false }),
+    ]);
+    allAlunas    = a || [];
+    allSessoes   = s || [];
+    allContratos = c || [];
+    alunasLoaded = true;
+    supabase.channel('alunas_rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'alunas' },    () => loadAlunas())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sessoes' },   () => loadAlunas())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contratos' }, () => loadAlunas())
+      .subscribe();
+  } catch(e) { console.error('[FDV] loadAlunas:', e); alunasLoaded = true; }
+  if (activeSucessoSub) renderSucesso();
+}
+
 // ─── TAB / SUB SWITCHING ─────────────────────────────────────────────
 const COMERCIAL_TABS = ['comercial', 'agendamentos', 'closer', 'relatorios'];
 
@@ -783,6 +805,39 @@ function renderComercial() {
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
+// ─── ALUNAS — constantes ─────────────────────────────────────────────
+const ALUNAS_PRODUTOS  = ['Individual','Comunidade +3','Comunidade +1','Reprogramação Mensal','Águia Club','PRM'];
+const ALUNAS_STATUS    = ['Nova compra','Dentro do Prazo','Migrou','Finalizado','Cancelado','Cliente Off','Reembolso','Inadimplente'];
+const SESSAO_STATUS    = ['Realizada','Marcada','Aguardando','Cancelada','Em contato','Falta','Inadimplente'];
+const ALUNA_STATUS_CLS = {
+  'Nova compra':     'bp-gold',
+  'Dentro do Prazo': 'bp-green',
+  'Migrou':          'bp-petro',
+  'Finalizado':      'bp-gray',
+  'Cancelado':       'bp-red',
+  'Cliente Off':     'bp-dark',
+  'Reembolso':       'bp-orange',
+  'Inadimplente':    'bp-red-dk',
+};
+const SESSAO_STATUS_CLS = {
+  'Realizada':    'bp-green',
+  'Marcada':      'bp-petro',
+  'Aguardando':   'bp-gold',
+  'Cancelada':    'bp-red',
+  'Em contato':   'bp-purple',
+  'Falta':        'bp-orange',
+  'Inadimplente': 'bp-red-dk',
+};
+
+function badgeAluna(status) {
+  const cls = ALUNA_STATUS_CLS[status] || 'bp-gray';
+  return `<span class="bp ${cls}">${esc(status||'—')}</span>`;
+}
+function badgeSessao(status) {
+  const cls = SESSAO_STATUS_CLS[status] || 'bp-gray';
+  return `<span class="bp ${cls}">${esc(status||'—')}</span>`;
+}
+
 // ─── ALUNOS ──────────────────────────────────────────────────────────
 const SUCESSO_SUBS = {
   alunas:     { label: 'Alunas',      icon: 'users',          color: '#4db5c8',  desc: 'Gestão de alunas ativas e histórico de engajamento' },
@@ -796,6 +851,10 @@ function switchSucessoSub(sub) {
   document.querySelectorAll('[data-sucesso-sub]').forEach(b =>
     b.classList.toggle('active', b.dataset.sucessoSub === sub)
   );
+  if (['alunas','sessoes','contratos'].includes(sub) && !alunasLoaded) {
+    loadAlunas(); // renderSucesso() será chamado dentro de loadAlunas()
+    return;
+  }
   renderSucesso();
 }
 
@@ -833,18 +892,22 @@ function renderSucesso() {
       btn.addEventListener('click', () => switchSucessoSub(btn.dataset.goSucesso))
     );
     if (typeof lucide !== 'undefined') lucide.createIcons();
+  } else if (activeSucessoSub === 'alunas') {
+    renderAlunasTab(el);
+  } else if (activeSucessoSub === 'sessoes') {
+    renderSessoesTab(el);
+  } else if (activeSucessoSub === 'contratos') {
+    renderContratosTab(el);
   } else {
     const s = SUCESSO_SUBS[activeSucessoSub];
     el.innerHTML = `
-      <div class="page-top">
-        <div class="page-title-block">
-          <h1>Alunas <span style="color:var(--t3);font-weight:400;font-size:18px">/ ${s ? s.label : activeSucessoSub}</span></h1>
-        </div>
-      </div>
+      <div class="page-top"><div class="page-title-block">
+        <h1>Alunas <span style="color:var(--t3);font-weight:400;font-size:18px">/ ${s ? s.label : activeSucessoSub}</span></h1>
+      </div></div>
       <div class="placeholder-module">
         <div class="placeholder-icon">🚧</div>
         <h3>${s ? s.label : activeSucessoSub}</h3>
-        <p>Este módulo está em desenvolvimento e estará disponível em breve.</p>
+        <p>Em desenvolvimento.</p>
       </div>`;
   }
 }
@@ -862,6 +925,399 @@ function switchFinanceiroSub(sub) {
     b.classList.toggle('active', b.dataset.financeiroSub === sub)
   );
   renderFinanceiro();
+}
+
+// ─── MÓDULO ALUNAS — renders ─────────────────────────────────────────
+function subPageTop(title, sub, btnId, btnLabel) {
+  const s = SUCESSO_SUBS[activeSucessoSub];
+  return `<div class="page-top" style="margin-bottom:20px">
+    <div class="page-title-block">
+      <button class="link-btn" style="font-size:14px;color:var(--t3)" onclick="switchSucessoSub(null)">← Alunas</button>
+      <h1 style="margin-top:4px">${esc(title)}</h1>
+    </div>
+    ${btnId ? `<div class="page-actions"><button class="btn-primary btn-sm" id="${btnId}">${esc(btnLabel)}</button></div>` : ''}
+  </div>`;
+}
+
+function renderAlunasTab(el) {
+  const search  = '';
+  const statFil = '';
+  const rows = allAlunas;
+
+  el.innerHTML = `
+    ${subPageTop('Alunas', 'alunas', 'btn-nova-aluna', '+ Nova Aluna')}
+    <div class="filter-bar" style="margin-bottom:18px">
+      <input type="text" class="filter-select" id="al-search" placeholder="Buscar aluna…" style="min-width:180px">
+      <select class="filter-select" id="al-filter-status">
+        <option value="">Todos os status</option>
+        ${ALUNAS_STATUS.map(s => `<option value="${s}">${s}</option>`).join('')}
+      </select>
+      <select class="filter-select" id="al-filter-produto">
+        <option value="">Todos os produtos</option>
+        ${ALUNAS_PRODUTOS.map(p => `<option value="${p}">${p}</option>`).join('')}
+      </select>
+    </div>
+    <div class="table-wrap" id="al-table-wrap">
+      ${renderAlunasTable(rows)}
+    </div>`;
+
+  lucide.createIcons({ nodes: [el] });
+  bindAlunasTableEvents(el);
+
+  $('btn-nova-aluna')?.addEventListener('click', () => openAlunaModal(null));
+
+  const applyFilter = () => {
+    const q = ($('al-search')?.value || '').toLowerCase();
+    const st = $('al-filter-status')?.value || '';
+    const pr = $('al-filter-produto')?.value || '';
+    const filtered = allAlunas.filter(a =>
+      (!q  || (a.nome||'').toLowerCase().includes(q)) &&
+      (!st || a.status === st) &&
+      (!pr || a.produto === pr)
+    );
+    $('al-table-wrap').innerHTML = renderAlunasTable(filtered);
+    bindAlunasTableEvents(el);
+  };
+  ['al-search','al-filter-status','al-filter-produto'].forEach(id => {
+    const el2 = $(id);
+    if (el2) el2.addEventListener(id === 'al-search' ? 'input' : 'change', applyFilter);
+  });
+}
+
+function renderAlunasTable(rows) {
+  if (!rows.length) return '<p class="hist-empty" style="margin-top:32px">Nenhuma aluna cadastrada.</p>';
+  return `<table class="data-table">
+    <thead><tr>
+      <th>Nome</th><th>Produto</th><th>Status</th><th>Inscrição</th><th>Término</th><th>Sessões</th><th></th>
+    </tr></thead>
+    <tbody>${rows.map(a => {
+      const restantes = (a.sessoes_total||0) - (a.sessoes_realizadas||0);
+      const waPhone = normalizePhoneForEvolution(a.celular);
+      const waHref  = waPhone ? `https://wa.me/${waPhone}` : null;
+      return `<tr>
+        <td><button class="link-btn" data-aluna-edit="${a.id}">${esc(a.nome||'—')}</button></td>
+        <td><span class="bp bp-gray">${esc(a.produto||'—')}</span></td>
+        <td>${badgeAluna(a.status)}</td>
+        <td>${fmtDate(a.data_inscricao||'')}</td>
+        <td>${fmtDate(a.data_termino||'')}</td>
+        <td style="text-align:center">${restantes > 0 ? `<span style="color:var(--gold);font-weight:700">${restantes}</span>` : restantes === 0 ? '—' : restantes}</td>
+        <td style="text-align:right">
+          ${waHref ? `<a class="kc-wa-btn" href="${waHref}" target="_blank" rel="noopener" title="WhatsApp"><i data-lucide="message-circle" class="kc-wa-icon"></i></a>` : ''}
+          <button class="btn-ghost btn-sm" data-aluna-status="${a.id}" style="margin-left:4px">Status</button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+function bindAlunasTableEvents(el) {
+  el.querySelectorAll('[data-aluna-edit]').forEach(b =>
+    b.addEventListener('click', () => {
+      const a = allAlunas.find(x => x.id === b.dataset.alunaEdit);
+      if (a) openAlunaModal(a);
+    })
+  );
+  el.querySelectorAll('[data-aluna-status]').forEach(b =>
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      const a = allAlunas.find(x => x.id === b.dataset.alunaStatus);
+      if (!a) return;
+      openStatusQuickChange(b, a);
+    })
+  );
+  lucide.createIcons({ nodes: [el.querySelector('.table-wrap') || el] });
+}
+
+function openStatusQuickChange(anchor, aluna) {
+  document.querySelectorAll('.status-quick-dropdown').forEach(d => d.remove());
+  const dd = document.createElement('div');
+  dd.className = 'status-quick-dropdown';
+  dd.innerHTML = ALUNAS_STATUS.map(s =>
+    `<button class="sqd-item${s === aluna.status ? ' active' : ''}" data-val="${s}">${badgeAluna(s)}</button>`
+  ).join('');
+  document.body.appendChild(dd);
+  const rect = anchor.getBoundingClientRect();
+  dd.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
+  dd.style.left = (rect.left  + window.scrollX)      + 'px';
+  dd.querySelectorAll('.sqd-item').forEach(btn =>
+    btn.addEventListener('click', async () => {
+      dd.remove();
+      if (!isLive) return;
+      const { error } = await supabase.from('alunas').update({ status: btn.dataset.val, atualizadoem: new Date().toISOString() }).eq('id', aluna.id);
+      if (!error) { aluna.status = btn.dataset.val; renderSucesso(); }
+    })
+  );
+  setTimeout(() => document.addEventListener('click', () => dd.remove(), { once: true }), 0);
+}
+
+function renderSessoesTab(el) {
+  el.innerHTML = `
+    ${subPageTop('Sessões', 'sessoes', 'btn-nova-sessao', '+ Nova Sessão')}
+    <div class="filter-bar" style="margin-bottom:18px">
+      <select class="filter-select" id="sess-filter-aluna" style="min-width:200px">
+        <option value="">Todas as alunas</option>
+        ${allAlunas.map(a => `<option value="${a.id}">${esc(a.nome||'—')}</option>`).join('')}
+      </select>
+      <select class="filter-select" id="sess-filter-status">
+        <option value="">Todos os status</option>
+        ${SESSAO_STATUS.map(s => `<option value="${s}">${s}</option>`).join('')}
+      </select>
+    </div>
+    <div id="sessoes-list"></div>`;
+
+  const renderList = () => {
+    const aId = $('sess-filter-aluna')?.value || '';
+    const st  = $('sess-filter-status')?.value || '';
+    const rows = allSessoes.filter(s =>
+      (!aId || s.aluna_id === aId) && (!st || s.status === st)
+    );
+    const alunaMap = Object.fromEntries(allAlunas.map(a => [a.id, a.nome]));
+    const list = $('sessoes-list');
+    if (!list) return;
+    if (!rows.length) { list.innerHTML = '<p class="hist-empty" style="margin-top:32px">Nenhuma sessão encontrada.</p>'; return; }
+    list.innerHTML = `<div class="table-wrap"><table class="data-table">
+      <thead><tr><th>Aluna</th><th>Data</th><th>Hora</th><th>Status</th><th>Observações</th><th></th></tr></thead>
+      <tbody>${rows.map(s => `<tr>
+        <td>${esc(alunaMap[s.aluna_id]||'—')}</td>
+        <td>${fmtDate(s.data||'')}</td>
+        <td>${s.hora ? s.hora.slice(0,5) : '—'}</td>
+        <td>${badgeSessao(s.status)}</td>
+        <td style="max-width:200px;white-space:normal">${esc(s.observacoes||'')}</td>
+        <td><button class="btn-ghost btn-sm" data-sess-edit="${s.id}">Editar</button></td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+    list.querySelectorAll('[data-sess-edit]').forEach(b =>
+      b.addEventListener('click', () => {
+        const sess = allSessoes.find(x => x.id === b.dataset.sessEdit);
+        if (sess) openSessaoModal(sess, sess.aluna_id);
+      })
+    );
+  };
+
+  renderList();
+  lucide.createIcons({ nodes: [el] });
+  $('btn-nova-sessao')?.addEventListener('click', () => openSessaoModal(null, $('sess-filter-aluna')?.value || null));
+  ['sess-filter-aluna','sess-filter-status'].forEach(id => $(id)?.addEventListener('change', renderList));
+}
+
+function renderContratosTab(el) {
+  el.innerHTML = `
+    ${subPageTop('Contratos', 'contratos', 'btn-novo-contrato', '+ Novo Contrato')}
+    <div class="table-wrap">
+      ${allContratos.length === 0 ? '<p class="hist-empty" style="margin-top:32px">Nenhum contrato cadastrado.</p>' : `
+      <table class="data-table">
+        <thead><tr>
+          <th>Aluna</th><th>Produto</th><th>Início</th><th>Vencimento</th>
+          <th style="text-align:center">Assinado</th><th style="text-align:center">No Grupo</th><th></th>
+        </tr></thead>
+        <tbody>${allContratos.map(c => {
+          const aluna = allAlunas.find(a => a.id === c.aluna_id);
+          const venc  = c.data_vencimento;
+          const vencCls = venc && new Date(venc) < new Date() ? 'style="color:#e06450;font-weight:700"' : '';
+          return `<tr>
+            <td>${esc(aluna?.nome || '—')}</td>
+            <td><span class="bp bp-gray">${esc(c.produto||'—')}</span></td>
+            <td>${fmtDate(c.data_inicio||'')}</td>
+            <td ${vencCls}>${fmtDate(c.data_vencimento||'')}</td>
+            <td style="text-align:center">${c.assinado    ? '<span style="color:#2ecc71">✓</span>' : '<span style="color:var(--t3)">—</span>'}</td>
+            <td style="text-align:center">${c.esta_no_grupo ? '<span style="color:#2ecc71">✓</span>' : '<span style="color:var(--t3)">—</span>'}</td>
+            <td><button class="btn-ghost btn-sm" data-cont-edit="${c.id}">Editar</button></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`}
+    </div>`;
+  el.querySelectorAll('[data-cont-edit]').forEach(b =>
+    b.addEventListener('click', () => {
+      const c = allContratos.find(x => x.id === b.dataset.contEdit);
+      if (c) openContratoModal(c, c.aluna_id);
+    })
+  );
+  $('btn-novo-contrato')?.addEventListener('click', () => openContratoModal(null, null));
+}
+
+// ─── MODAL ALUNA ─────────────────────────────────────────────────────
+function openAlunaModal(aluna) {
+  alunaEdit = aluna;
+  $('am-title').textContent = aluna ? 'Editar Aluna' : 'Nova Aluna';
+  $('am-nome').value          = aluna?.nome          || '';
+  $('am-celular').value       = aluna?.celular        || '';
+  $('am-email').value         = aluna?.email          || '';
+  $('am-produto').value       = aluna?.produto        || '';
+  $('am-status').value        = aluna?.status         || 'Nova compra';
+  $('am-data-inscricao').value = aluna?.data_inscricao || '';
+  $('am-data-termino').value  = aluna?.data_termino   || '';
+  $('am-sessoes-total').value  = aluna?.sessoes_total  || 0;
+  $('am-sessoes-realizadas').value = aluna?.sessoes_realizadas || 0;
+  $('am-no-grupo').checked    = aluna?.esta_no_grupo  || false;
+  $('am-obs').value           = aluna?.observacoes    || '';
+  $('am-backdrop').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => $('am-nome').focus(), 50);
+}
+function closeAlunaModal() {
+  $('am-backdrop').style.display = 'none';
+  document.body.style.overflow = '';
+  alunaEdit = null;
+}
+async function salvarAluna() {
+  const nome = $('am-nome').value.trim();
+  if (!nome) { toast('Nome obrigatório.', 'err'); return; }
+  const btn = $('am-salvar'); btn.disabled = true;
+  const dados = {
+    nome,
+    celular:           $('am-celular').value.trim(),
+    email:             $('am-email').value.trim(),
+    produto:           $('am-produto').value,
+    status:            $('am-status').value,
+    data_inscricao:    $('am-data-inscricao').value || null,
+    data_termino:      $('am-data-termino').value   || null,
+    sessoes_total:     parseInt($('am-sessoes-total').value) || 0,
+    sessoes_realizadas: parseInt($('am-sessoes-realizadas').value) || 0,
+    esta_no_grupo:     $('am-no-grupo').checked,
+    observacoes:       $('am-obs').value.trim(),
+    atualizadoem:      new Date().toISOString(),
+  };
+  try {
+    if (isLive) {
+      if (alunaEdit) {
+        const { error } = await supabase.from('alunas').update(dados).eq('id', alunaEdit.id);
+        if (error) throw error;
+        const idx = allAlunas.findIndex(a => a.id === alunaEdit.id);
+        if (idx >= 0) allAlunas[idx] = { ...allAlunas[idx], ...dados };
+      } else {
+        const { data, error } = await supabase.from('alunas').insert({ ...dados, criadoem: new Date().toISOString() }).select().single();
+        if (error) throw error;
+        allAlunas.unshift(data);
+      }
+    } else {
+      if (alunaEdit) {
+        const idx = allAlunas.findIndex(a => a.id === alunaEdit.id);
+        if (idx >= 0) allAlunas[idx] = { ...allAlunas[idx], ...dados };
+      } else {
+        allAlunas.unshift({ id: 'local-' + Date.now(), ...dados, criadoem: new Date().toISOString() });
+      }
+    }
+    toast(alunaEdit ? 'Aluna atualizada.' : 'Aluna cadastrada.', 'ok');
+    closeAlunaModal();
+    renderSucesso();
+  } catch(e) { console.error(e); toast('Erro ao salvar aluna.', 'err'); btn.disabled = false; }
+}
+
+// ─── MODAL SESSÃO ────────────────────────────────────────────────────
+function openSessaoModal(sessao, alunaId) {
+  sessaoEdit    = sessao;
+  sessaoAlunaId = alunaId || sessao?.aluna_id || null;
+  $('sm-title').textContent = sessao ? 'Editar Sessão' : 'Nova Sessão';
+  const sel = $('sm-aluna');
+  sel.innerHTML = `<option value="">Selecione a aluna…</option>` +
+    allAlunas.map(a => `<option value="${a.id}"${a.id === sessaoAlunaId ? ' selected' : ''}>${esc(a.nome||'—')}</option>`).join('');
+  $('sm-data').value   = sessao?.data   || '';
+  $('sm-hora').value   = sessao?.hora?.slice(0,5) || '';
+  $('sm-status').value = sessao?.status || 'Aguardando';
+  $('sm-obs').value    = sessao?.observacoes || '';
+  $('sm-backdrop').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeSessaoModal() {
+  $('sm-backdrop').style.display = 'none';
+  document.body.style.overflow = '';
+  sessaoEdit = null; sessaoAlunaId = null;
+}
+async function salvarSessao() {
+  const aId = $('sm-aluna').value;
+  if (!aId) { toast('Selecione a aluna.', 'err'); return; }
+  const btn = $('sm-salvar'); btn.disabled = true;
+  const dados = {
+    aluna_id:   aId,
+    data:       $('sm-data').value || null,
+    hora:       $('sm-hora').value || null,
+    status:     $('sm-status').value,
+    observacoes: $('sm-obs').value.trim(),
+  };
+  try {
+    if (isLive) {
+      if (sessaoEdit) {
+        const { error } = await supabase.from('sessoes').update(dados).eq('id', sessaoEdit.id);
+        if (error) throw error;
+        const idx = allSessoes.findIndex(s => s.id === sessaoEdit.id);
+        if (idx >= 0) allSessoes[idx] = { ...allSessoes[idx], ...dados };
+      } else {
+        const { data, error } = await supabase.from('sessoes').insert({ ...dados, criadoem: new Date().toISOString() }).select().single();
+        if (error) throw error;
+        allSessoes.push(data);
+        // Increment sessoes_realizadas se Realizada
+        if (dados.status === 'Realizada') {
+          await supabase.from('alunas').update({ sessoes_realizadas: supabase.rpc ? undefined : undefined }).eq('id', aId);
+          const a = allAlunas.find(x => x.id === aId);
+          if (a && dados.status === 'Realizada') {
+            a.sessoes_realizadas = (a.sessoes_realizadas||0) + 1;
+            await supabase.from('alunas').update({ sessoes_realizadas: a.sessoes_realizadas, atualizadoem: new Date().toISOString() }).eq('id', aId);
+          }
+        }
+      }
+    } else {
+      allSessoes.push({ id: 'local-' + Date.now(), ...dados, criadoem: new Date().toISOString() });
+    }
+    toast(sessaoEdit ? 'Sessão atualizada.' : 'Sessão registrada.', 'ok');
+    closeSessaoModal();
+    renderSucesso();
+  } catch(e) { console.error(e); toast('Erro ao salvar sessão.', 'err'); btn.disabled = false; }
+}
+
+// ─── MODAL CONTRATO ──────────────────────────────────────────────────
+function openContratoModal(contrato, alunaId) {
+  contratoEdit    = contrato;
+  contratoAlunaId = alunaId || contrato?.aluna_id || null;
+  $('cm-title').textContent = contrato ? 'Editar Contrato' : 'Novo Contrato';
+  const sel = $('cm-aluna');
+  sel.innerHTML = `<option value="">Selecione a aluna…</option>` +
+    allAlunas.map(a => `<option value="${a.id}"${a.id === contratoAlunaId ? ' selected' : ''}>${esc(a.nome||'—')}</option>`).join('');
+  $('cm-produto').value           = contrato?.produto         || '';
+  $('cm-data-inicio').value       = contrato?.data_inicio     || '';
+  $('cm-data-vencimento').value   = contrato?.data_vencimento || '';
+  $('cm-assinado').checked        = contrato?.assinado        || false;
+  $('cm-no-grupo').checked        = contrato?.esta_no_grupo   || false;
+  $('cm-obs').value               = contrato?.observacoes     || '';
+  $('cm-backdrop').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeContratoModal() {
+  $('cm-backdrop').style.display = 'none';
+  document.body.style.overflow = '';
+  contratoEdit = null; contratoAlunaId = null;
+}
+async function salvarContrato() {
+  const aId = $('cm-aluna').value;
+  if (!aId) { toast('Selecione a aluna.', 'err'); return; }
+  const btn = $('cm-salvar'); btn.disabled = true;
+  const dados = {
+    aluna_id:       aId,
+    produto:        $('cm-produto').value,
+    data_inicio:    $('cm-data-inicio').value     || null,
+    data_vencimento: $('cm-data-vencimento').value || null,
+    assinado:       $('cm-assinado').checked,
+    esta_no_grupo:  $('cm-no-grupo').checked,
+    observacoes:    $('cm-obs').value.trim(),
+  };
+  try {
+    if (isLive) {
+      if (contratoEdit) {
+        const { error } = await supabase.from('contratos').update(dados).eq('id', contratoEdit.id);
+        if (error) throw error;
+        const idx = allContratos.findIndex(c => c.id === contratoEdit.id);
+        if (idx >= 0) allContratos[idx] = { ...allContratos[idx], ...dados };
+      } else {
+        const { data, error } = await supabase.from('contratos').insert({ ...dados, criadoem: new Date().toISOString() }).select().single();
+        if (error) throw error;
+        allContratos.unshift(data);
+      }
+    } else {
+      allContratos.unshift({ id: 'local-' + Date.now(), ...dados, criadoem: new Date().toISOString() });
+    }
+    toast(contratoEdit ? 'Contrato atualizado.' : 'Contrato cadastrado.', 'ok');
+    closeContratoModal();
+    renderSucesso();
+  } catch(e) { console.error(e); toast('Erro ao salvar contrato.', 'err'); btn.disabled = false; }
 }
 
 function renderFinanceiro() {
@@ -5685,9 +6141,32 @@ function bindEvents() {
     if (e.target === $('descarte-backdrop')) closeDescarteModal();
   });
 
+  // Modal Aluna
+  $('am-close').addEventListener('click', closeAlunaModal);
+  $('am-cancelar').addEventListener('click', closeAlunaModal);
+  $('am-salvar').addEventListener('click', salvarAluna);
+  $('am-backdrop').addEventListener('click', e => { if (e.target === $('am-backdrop')) closeAlunaModal(); });
+
+  // Modal Sessão
+  $('sm-close').addEventListener('click', closeSessaoModal);
+  $('sm-cancelar').addEventListener('click', closeSessaoModal);
+  $('sm-salvar').addEventListener('click', salvarSessao);
+  $('sm-backdrop').addEventListener('click', e => { if (e.target === $('sm-backdrop')) closeSessaoModal(); });
+
+  // Modal Contrato
+  $('cm-close').addEventListener('click', closeContratoModal);
+  $('cm-cancelar').addEventListener('click', closeContratoModal);
+  $('cm-salvar').addEventListener('click', salvarContrato);
+  $('cm-backdrop').addEventListener('click', e => { if (e.target === $('cm-backdrop')) closeContratoModal(); });
+
   // Keyboard
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeModal(); closePerfil(); closeNovoLead(); closeQRModal(); closeMotivosPerda(); closeVendaGanha(); closeAddAsLeadModal(); closeNovaConversaModal(); closeDescarteModal(); }
+    if (e.key === 'Escape') {
+      closeModal(); closePerfil(); closeNovoLead(); closeQRModal();
+      closeMotivosPerda(); closeVendaGanha(); closeAddAsLeadModal();
+      closeNovaConversaModal(); closeDescarteModal();
+      closeAlunaModal(); closeSessaoModal(); closeContratoModal();
+    }
   });
 }
 
