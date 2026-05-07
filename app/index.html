@@ -95,20 +95,20 @@
   <div class="page-top">
     <div class="page-title-block">
       <h1>Agendamentos</h1>
-      <p>Gerencie leads e agenda comercial</p>
+      <p>Pipeline pré-call — da chegada do lead até a call agendada</p>
     </div>
-    <button class="btn-primary" id="btn-novo-lead" style="display:none">+ Novo Lead</button>
   </div>
 
-  <!-- Sub-nav -->
+  <!-- Sub-nav principal -->
   <div class="sub-nav">
-    <button class="sub-link active" data-sub="leads">Lista de Leads</button>
-    <button class="sub-link" data-sub="agenda">Agenda de Hoje</button>
-    <button class="sub-link" data-sub="briefing">Briefing</button>
+    <button class="sub-link active" data-sub="novos">Novos <span class="sub-badge" id="badge-novos" style="display:none">0</span></button>
+    <button class="sub-link" data-sub="qualificados">Qualificados <span class="sub-badge" id="badge-qualificados" style="display:none">0</span></button>
+    <button class="sub-link" data-sub="agendados">Agendados</button>
+    <button class="sub-link" data-sub="descartados">Descartados</button>
   </div>
 
-  <!-- ─── SUB: LISTA DE LEADS ─── -->
-  <div id="sub-leads" class="sub-panel">
+  <!-- ─── SUB: NOVOS ─── -->
+  <div id="sub-novos" class="sub-panel">
     <div class="sub-panel-top">
       <button class="btn-primary" id="btn-novo-lead-sub">+ Novo Lead</button>
     </div>
@@ -124,9 +124,9 @@
         <span class="stat-sub">leads cadastrados</span>
       </div>
       <div class="stat-card accent-gold">
-        <div class="stat-top"><span class="stat-label">Aguardando</span><span class="stat-icon">◷</span></div>
+        <div class="stat-top"><span class="stat-label">Novos</span><span class="stat-icon">◷</span></div>
         <strong class="stat-num" id="stat-aguardando">0</strong>
-        <span class="stat-sub">para agendar</span>
+        <span class="stat-sub">aguardando qualificação</span>
       </div>
       <div class="stat-card accent-petro">
         <div class="stat-top"><span class="stat-label">Agendados</span><span class="stat-icon">◉</span></div>
@@ -152,17 +152,15 @@
 
     <div class="filters-bar">
       <div class="filters-row">
-        <div class="filter-group">
-          <label class="filter-label" for="filter-status">Status</label>
-          <select class="filter-select" id="filter-status">
-            <option value="">Todos</option>
-            <option value="aguardando">Aguardando</option>
-            <option value="agendado">Agendado</option>
-            <option value="realizada">Realizada</option>
-            <option value="noshow">No Show</option>
-            <option value="cancelado">Cancelado</option>
-          </select>
-        </div>
+        <!-- hidden — kept for JS compatibility; Novos sub forces status='aguardando' -->
+        <select class="filter-select" id="filter-status" style="display:none">
+          <option value="">Todos</option>
+          <option value="aguardando">Aguardando</option>
+          <option value="agendado">Agendado</option>
+          <option value="realizada">Realizada</option>
+          <option value="noshow">No Show</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
         <div class="filter-group">
           <label class="filter-label" for="filter-origem">Origem</label>
           <select class="filter-select" id="filter-origem">
@@ -237,70 +235,98 @@
       </table>
       <div class="empty-state" id="empty-state" style="display:none">
         <i data-lucide="users" class="empty-lucide"></i>
-        <h3>Nenhum lead encontrado</h3>
-        <p>Ajuste os filtros ou cadastre um novo lead.</p>
+        <h3>Nenhum lead novo</h3>
+        <p>Novos leads chegam automaticamente da planilha.</p>
       </div>
     </div>
 
     <div class="leads-cards" id="leads-cards"></div>
-  </div><!-- /sub-leads -->
+  </div><!-- /sub-novos -->
 
-  <!-- ─── SUB: AGENDA DE HOJE ─── -->
-  <div id="sub-agenda" class="sub-panel" style="display:none">
-    <div class="agenda-top">
-      <div class="agenda-filters">
-        <div>
-          <label class="agenda-date-label" for="agenda-filter-mes">Mês</label>
-          <select class="filter-select" id="agenda-filter-mes">
-            <option value="">Todos os meses</option>
-          </select>
-        </div>
-        <div>
-          <label class="agenda-date-label" for="agenda-filter-closer">Closer</label>
-          <select class="filter-select" id="agenda-filter-closer">
-            <option value="">Todos os closers</option>
-            <option value="fernanda">Fernanda</option>
-            <option value="thomaz">Thomaz</option>
-          </select>
-        </div>
-        <input type="date" class="filter-input filter-input--date" id="agenda-filter-data" style="display:none">
-      </div>
-      <button class="btn-primary" id="btn-gerar-agenda">📱 Copiar para WhatsApp</button>
-    </div>
-    <div class="agenda-layout">
-      <div class="agenda-sidebar">
-        <div id="agenda-mini-cal"></div>
-      </div>
-      <div id="agenda-content"></div>
-    </div>
-  </div><!-- /sub-agenda -->
+  <!-- ─── SUB: QUALIFICADOS ─── -->
+  <div id="sub-qualificados" class="sub-panel" style="display:none">
+    <div id="qualificados-content"></div>
+  </div>
 
-  <!-- ─── SUB: BRIEFING ─── -->
-  <div id="sub-briefing" class="sub-panel" style="display:none">
-    <div class="agenda-top">
-      <div class="agenda-filters">
-        <div>
-          <label class="agenda-date-label" for="briefing-filter-data">Data</label>
-          <input type="date" class="filter-input filter-input--date" id="briefing-filter-data">
+  <!-- ─── SUB: AGENDADOS ─── -->
+  <div id="sub-agendados" class="sub-panel" style="display:none">
+    <div class="sub-nav sub-nav--secondary">
+      <button class="sub-link active" data-agendados-sub="hoje">Agenda de Hoje</button>
+      <button class="sub-link" data-agendados-sub="todos">Todos os Agendamentos</button>
+      <button class="sub-link" data-agendados-sub="briefing">Briefing</button>
+    </div>
+
+    <!-- Agenda de Hoje -->
+    <div id="sub-agendados-hoje" class="sub-panel--inner">
+      <div class="agenda-top">
+        <div class="agenda-filters"></div>
+        <button class="btn-primary" id="btn-gerar-agenda-hoje">📱 Copiar para WhatsApp</button>
+      </div>
+      <div id="agenda-hoje-content"></div>
+    </div>
+
+    <!-- Todos os Agendamentos -->
+    <div id="sub-agendados-todos" class="sub-panel--inner" style="display:none">
+      <div class="agenda-top">
+        <div class="agenda-filters">
+          <div>
+            <label class="agenda-date-label" for="agenda-filter-mes">Mês</label>
+            <select class="filter-select" id="agenda-filter-mes">
+              <option value="">Todos os meses</option>
+            </select>
+          </div>
+          <div>
+            <label class="agenda-date-label" for="agenda-filter-closer">Closer</label>
+            <select class="filter-select" id="agenda-filter-closer">
+              <option value="">Todos os closers</option>
+              <option value="fernanda">Fernanda</option>
+              <option value="thomaz">Thomaz</option>
+            </select>
+          </div>
+          <input type="date" class="filter-input filter-input--date" id="agenda-filter-data" style="display:none">
         </div>
-        <div>
-          <label class="agenda-date-label" for="briefing-filter-mes">Mês</label>
-          <select class="filter-select" id="briefing-filter-mes">
-            <option value="">Todos os meses</option>
-          </select>
+        <button class="btn-primary" id="btn-gerar-agenda">📱 Copiar para WhatsApp</button>
+      </div>
+      <div class="agenda-layout">
+        <div class="agenda-sidebar">
+          <div id="agenda-mini-cal"></div>
         </div>
-        <div>
-          <label class="agenda-date-label" for="briefing-filter-closer">Closer</label>
-          <select class="filter-select" id="briefing-filter-closer">
-            <option value="">Todos os closers</option>
-            <option value="fernanda">Fernanda</option>
-            <option value="thomaz">Thomaz</option>
-          </select>
-        </div>
+        <div id="agenda-content"></div>
       </div>
     </div>
-    <div id="briefing-content"></div>
-  </div><!-- /sub-briefing -->
+
+    <!-- Briefing -->
+    <div id="sub-agendados-briefing" class="sub-panel--inner" style="display:none">
+      <div class="agenda-top">
+        <div class="agenda-filters">
+          <div>
+            <label class="agenda-date-label" for="briefing-filter-data">Data</label>
+            <input type="date" class="filter-input filter-input--date" id="briefing-filter-data">
+          </div>
+          <div>
+            <label class="agenda-date-label" for="briefing-filter-mes">Mês</label>
+            <select class="filter-select" id="briefing-filter-mes">
+              <option value="">Todos os meses</option>
+            </select>
+          </div>
+          <div>
+            <label class="agenda-date-label" for="briefing-filter-closer">Closer</label>
+            <select class="filter-select" id="briefing-filter-closer">
+              <option value="">Todos os closers</option>
+              <option value="fernanda">Fernanda</option>
+              <option value="thomaz">Thomaz</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div id="briefing-content"></div>
+    </div>
+  </div><!-- /sub-agendados -->
+
+  <!-- ─── SUB: DESCARTADOS ─── -->
+  <div id="sub-descartados" class="sub-panel" style="display:none">
+    <div id="descartados-content"></div>
+  </div>
 
 </div><!-- /tab-agendamentos -->
 
@@ -1129,6 +1155,24 @@
     <div class="modal-footer">
       <button class="btn-ghost" id="vg-cancelar">Cancelar</button>
       <button class="btn-confirm" id="vg-confirmar" style="background:#2ecc71;color:#0d1a1c;border:none">Confirmar Venda</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DESCARTE MODAL ===== -->
+<div class="modal-backdrop" id="descarte-backdrop" style="display:none">
+  <div class="modal" role="dialog" aria-modal="true" style="border-top:3px solid var(--marsala)">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">Descartar Lead</h2>
+        <p class="modal-subtitle" id="descarte-lead-nome">—</p>
+      </div>
+      <button class="modal-close" id="descarte-close" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-body" id="descarte-body"></div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="descarte-cancelar">Cancelar</button>
+      <button class="btn-confirm" id="descarte-confirmar" disabled style="background:var(--marsala);color:#fff;border:none">Confirmar Descarte</button>
     </div>
   </div>
 </div>
