@@ -2700,6 +2700,7 @@ function renderPerfilHistorico(lead, kanbanRows) {
   $('perfil-historico').innerHTML = all.length
     ? all.map(h=>`<div class="hist-item"><span class="hist-ico">${h.ico}</span><div class="hist-body"><div class="hist-label">${esc(h.label)}</div>${h.sub?`<div class="hist-sub">${esc(h.sub)}</div>`:''}</div></div>`).join('')
     : '<p class="hist-empty">Nenhuma ação registrada.</p>';
+}
 
 function closePerfil() {
   stopChatListener();
