@@ -66,14 +66,26 @@ const KANBAN_LS_KEY = 'fdv_kanban_columns';
 const DEFAULT_KANBAN_COLS = [
   { id: 'agendado',       label: 'Agendado' },
   { id: 'call_realizada', label: 'Call Realizada' },
-  { id: 'fechamento',     label: 'Fechamento' },
-  { id: 'followup',       label: 'Follow Up' },
-  { id: 'venda_ganha',    label: 'Venda Ganha' },
-  { id: 'venda_perdida',  label: 'Venda Perdida' },
+  { id: 'negociacao',     label: 'Negociação' },
+  { id: 'decisao',        label: 'Decisão' },
 ];
 
 function getKanbanCols() {
-  try { const s = localStorage.getItem(KANBAN_LS_KEY); if (s) return JSON.parse(s); } catch(e) {}
+  try {
+    const s = localStorage.getItem(KANBAN_LS_KEY);
+    if (s) {
+      let cols = JSON.parse(s);
+      // Migrate old column IDs
+      cols = cols
+        .filter(c => c.id !== 'venda_ganha' && c.id !== 'venda_perdida')
+        .map(c => {
+          if (c.id === 'fechamento') return { id: 'negociacao', label: c.label === 'Fechamento' ? 'Negociação' : c.label };
+          if (c.id === 'followup')   return { id: 'decisao',    label: c.label === 'Follow Up'  ? 'Decisão'    : c.label };
+          return c;
+        });
+      if (cols.length) return cols;
+    }
+  } catch(e) {}
   return structuredClone(DEFAULT_KANBAN_COLS);
 }
 function saveKanbanCols(cols) { localStorage.setItem(KANBAN_LS_KEY, JSON.stringify(cols)); }
@@ -1606,15 +1618,19 @@ function renderMiniCal(year, month) {
 
 // ─── KANBAN ──────────────────────────────────────────────────────────
 function getLeadKanbanCol(lead) {
-  if (lead.kanban_column) return lead.kanban_column;
+  const col = lead.kanban_column;
+  if (col === 'fechamento')    return 'negociacao';
+  if (col === 'followup')      return 'decisao';
+  if (col === 'venda_perdida') return 'descartado';
+  if (col) return col;
   if (lead.status === 'agendado') return 'agendado';
-  if (lead.status === 'noshow' || lead.status === 'cancelado') return 'venda_perdida';
+  if (lead.status === 'noshow' || lead.status === 'cancelado') return 'descartado';
   if (lead.status === 'realizada') {
     const sc = lead.status_closer;
-    if (sc === 'followup')     return 'followup';
-    if (sc === 'fechamento')   return 'fechamento';
+    if (sc === 'followup')      return 'decisao';
+    if (sc === 'fechamento')    return 'negociacao';
     if (sc === 'venda_ganha')   return 'venda_ganha';
-    if (sc === 'venda_perdida') return 'venda_perdida';
+    if (sc === 'venda_perdida') return 'descartado';
     return 'call_realizada';
   }
   return 'agendado';
