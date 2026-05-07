@@ -99,7 +99,9 @@ let allUsuarios   = [];
 let activeTab     = 'inicio';
 let activeSub     = 'novos';
 let dragLeadId    = null;
-let activeAgendadosSub = 'hoje'; // 'hoje' | 'todos' | 'briefing'
+let activeAgendadosSub   = 'hoje'; // 'hoje' | 'todos' | 'briefing'
+let activeSucessoSub    = 'alunas';
+let activeFinanceiroSub = 'inadimplencia';
 
 // Descarte state
 let descarteLeadId  = null;
@@ -663,20 +665,38 @@ function showDbError(msg) {
 }
 
 // ─── TAB / SUB SWITCHING ─────────────────────────────────────────────
+const COMERCIAL_TABS = ['agendamentos', 'closer', 'relatorios'];
+
 function switchTab(tab) {
   activeTab = tab;
   document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
   const panel = $('tab-' + tab);
   if (panel) panel.style.display = '';
+
+  // Direct nav-links (Início, WhatsApp, Usuários)
   document.querySelectorAll('.nav-link[data-tab]').forEach(l =>
     l.classList.toggle('active', l.dataset.tab === tab)
   );
+  // Dropdown group buttons
+  $('nav-group-comercial')?.querySelector('.nav-group-btn')?.classList
+    .toggle('active', COMERCIAL_TABS.includes(tab));
+  $('nav-group-sucesso')?.querySelector('.nav-group-btn')?.classList
+    .toggle('active', tab === 'sucesso');
+  $('nav-group-financeiro')?.querySelector('.nav-group-btn')?.classList
+    .toggle('active', tab === 'financeiro');
+  // Dropdown items
+  document.querySelectorAll('.nav-dropdown-item[data-tab]').forEach(l =>
+    l.classList.toggle('active', l.dataset.tab === tab && !l.dataset.sucessoSub && !l.dataset.financeiroSub)
+  );
+
   populateAllMonths();
   if      (tab === 'inicio')       renderInicio();
   else if (tab === 'agendamentos') renderActiveSub();
   else if (tab === 'closer')       renderKanban();
   else if (tab === 'relatorios')   renderRelatorios();
   else if (tab === 'whatsapp')     { if (!waInstancesLoaded) loadWaInstances(); switchWaSub('chats'); }
+  else if (tab === 'sucesso')      renderSucesso();
+  else if (tab === 'financeiro')   renderFinanceiro();
 }
 
 function switchSub(sub) {
@@ -698,6 +718,61 @@ function renderActiveSub() {
   else if (activeSub === 'descartados')  renderDescartados();
 }
 
+// ─── SUCESSO DO CLIENTE ──────────────────────────────────────────────
+const SUCESSO_SUBS = {
+  alunas:     'Alunas',
+  sessoes:    'Sessões',
+  contratos:  'Contratos',
+  relatorios: 'Relatórios',
+};
+
+function switchSucessoSub(sub) {
+  activeSucessoSub = sub;
+  document.querySelectorAll('[data-sucesso-sub]').forEach(b =>
+    b.classList.toggle('active', b.dataset.sucessoSub === sub)
+  );
+  renderSucesso();
+}
+
+function renderSucesso() {
+  const label = SUCESSO_SUBS[activeSucessoSub] || activeSucessoSub;
+  const el = $('sucesso-content');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="placeholder-module">
+      <div class="placeholder-icon">🚧</div>
+      <h3>${label}</h3>
+      <p>Este módulo está em desenvolvimento e estará disponível em breve.</p>
+    </div>`;
+}
+
+// ─── FINANCEIRO ───────────────────────────────────────────────────────
+const FINANCEIRO_SUBS = {
+  inadimplencia: 'Inadimplência',
+  pagamentos:    'Pagamentos',
+  relatorios:    'Relatórios',
+};
+
+function switchFinanceiroSub(sub) {
+  activeFinanceiroSub = sub;
+  document.querySelectorAll('[data-financeiro-sub]').forEach(b =>
+    b.classList.toggle('active', b.dataset.financeiroSub === sub)
+  );
+  renderFinanceiro();
+}
+
+function renderFinanceiro() {
+  const label = FINANCEIRO_SUBS[activeFinanceiroSub] || activeFinanceiroSub;
+  const el = $('financeiro-content');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="placeholder-module">
+      <div class="placeholder-icon">🚧</div>
+      <h3>${label}</h3>
+      <p>Este módulo está em desenvolvimento e estará disponível em breve.</p>
+    </div>`;
+}
+
 // ─── RENDER ALL ──────────────────────────────────────────────────────
 function renderAll() {
   allLeads.sort((a, b) => (b.datachegada || '').localeCompare(a.datachegada || ''));
@@ -708,6 +783,8 @@ function renderAll() {
   else if (activeTab === 'closer')       renderKanban();
   else if (activeTab === 'relatorios')   renderRelatorios();
   else if (activeTab === 'whatsapp')     renderCentralChats();
+  else if (activeTab === 'sucesso')      renderSucesso();
+  else if (activeTab === 'financeiro')   renderFinanceiro();
 }
 
 // ─── INÍCIO ──────────────────────────────────────────────────────────
@@ -4837,10 +4914,50 @@ function bindEvents() {
   // Agenda de Hoje — copiar
   $('btn-gerar-agenda-hoje').addEventListener('click', gerarAgendaHoje);
 
-  // Tab nav
+  // Tab nav — direct links (Início, WhatsApp, Usuários)
   document.querySelectorAll('.nav-link[data-tab]').forEach(btn =>
     btn.addEventListener('click', () => switchTab(btn.dataset.tab))
   );
+
+  // Nav dropdown toggles
+  document.querySelectorAll('.nav-group-btn[data-menu]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const group = btn.closest('.nav-group');
+      const wasOpen = group.classList.contains('open');
+      document.querySelectorAll('.nav-group.open').forEach(g => g.classList.remove('open'));
+      if (!wasOpen) group.classList.add('open');
+    });
+  });
+
+  // Nav dropdown items
+  document.querySelectorAll('.nav-dropdown-item[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-group.open').forEach(g => g.classList.remove('open'));
+      const tab = btn.dataset.tab;
+      switchTab(tab);
+      if (tab === 'sucesso' && btn.dataset.sucessoSub)
+        switchSucessoSub(btn.dataset.sucessoSub);
+      else if (tab === 'financeiro' && btn.dataset.financeiroSub)
+        switchFinanceiroSub(btn.dataset.financeiroSub);
+    });
+  });
+
+  // Close dropdowns on outside click
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.nav-group'))
+      document.querySelectorAll('.nav-group.open').forEach(g => g.classList.remove('open'));
+  });
+
+  // Sucesso / Financeiro sub-nav (tab panel only — skip dropdown items handled above)
+  document.querySelectorAll('[data-sucesso-sub]').forEach(btn => {
+    if (btn.classList.contains('nav-dropdown-item')) return;
+    btn.addEventListener('click', () => switchSucessoSub(btn.dataset.sucessoSub));
+  });
+  document.querySelectorAll('[data-financeiro-sub]').forEach(btn => {
+    if (btn.classList.contains('nav-dropdown-item')) return;
+    btn.addEventListener('click', () => switchFinanceiroSub(btn.dataset.financeiroSub));
+  });
 
   // Leads filters
   ['filter-status','filter-origem','filter-mes'].forEach(id => $(id).addEventListener('change', applyFilters));
