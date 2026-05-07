@@ -111,6 +111,7 @@ let allUsuarios   = [];
 let activeTab     = 'inicio';
 let activeSub     = 'novos';
 let dragLeadId    = null;
+let dragColId     = null;
 let activeAgendadosSub   = 'hoje'; // 'hoje' | 'todos' | 'briefing'
 let activeSucessoSub    = null;   // null = landing page
 let activeFinanceiroSub = null;   // null = landing page
@@ -1653,10 +1654,15 @@ function renderKanban() {
 
   board.innerHTML = cols.map(col => {
     const colLeads = leads.filter(l => getLeadKanbanCol(l) === col.id);
-    return `<div class="kanban-col" data-col="${col.id}">
+    const canDelete = colLeads.length === 0;
+    return `<div class="kanban-col" draggable="true" data-col="${col.id}">
       <div class="kanban-col-header">
+        <span class="kc-drag-handle" data-drag-col="${col.id}" title="Arrastar coluna">⠿</span>
         <span class="kanban-col-title" contenteditable="true" data-col="${col.id}">${esc(col.label)}</span>
-        <span class="kanban-col-count">${colLeads.length}</span>
+        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+          <span class="kanban-col-count">${colLeads.length}</span>
+          ${canDelete ? `<button class="kc-del-col" data-del-col="${col.id}" title="Remover coluna">×</button>` : ''}
+        </div>
       </div>
       <div class="kanban-col-body" data-col="${col.id}">
         ${colLeads.length ? colLeads.map(l => kanbanCard(l, cols)).join('') : '<div class="kanban-empty"><i data-lucide="inbox" class="empty-lucide-sm"></i><span>Sem leads</span></div>'}
@@ -1723,6 +1729,26 @@ function renderKanban() {
       e.stopPropagation();
       const hist = btn.closest('.kanban-card').querySelector('.kc-historico');
       if (hist) hist.style.display = hist.style.display === 'none' ? '' : 'none';
+    });
+  });
+
+  // Delete column (only shown when empty)
+  board.querySelectorAll('.kc-del-col').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const colId = btn.dataset.delCol;
+      const cols  = getKanbanCols();
+      const updated = cols.filter(c => c.id !== colId);
+      saveKanbanCols(updated);
+      renderKanban();
+    });
+  });
+
+  // Column drag handle — initiate column drag, stop card drag propagation
+  board.querySelectorAll('.kc-drag-handle').forEach(handle => {
+    handle.addEventListener('mousedown', e => {
+      const col = handle.closest('.kanban-col');
+      if (col) col.dataset.colDragging = '1';
     });
   });
 }
@@ -5003,6 +5029,13 @@ function bindEvents() {
   // survive renderKanban() innerHTML replacements (fixes modal not firing mid-session)
   const kboard = $('kanban-board');
   kboard.addEventListener('dragstart', e => {
+    const col = e.target.closest('.kanban-col[draggable]');
+    if (col && col.dataset.colDragging) {
+      dragColId = col.dataset.col;
+      delete col.dataset.colDragging;
+      setTimeout(() => col.classList.add('col-dragging'), 0);
+      return;
+    }
     const card = e.target.closest('.kanban-card[draggable]');
     if (!card) return;
     dragLeadId = card.dataset.id;
@@ -5012,8 +5045,18 @@ function bindEvents() {
     const card = e.target.closest('.kanban-card');
     if (card) card.classList.remove('dragging');
     dragLeadId = null;
+    kboard.querySelectorAll('.kanban-col').forEach(c => c.classList.remove('col-dragging', 'col-drag-over'));
+    dragColId = null;
   });
   kboard.addEventListener('dragover', e => {
+    if (dragColId) {
+      const col = e.target.closest('.kanban-col');
+      if (!col) return;
+      e.preventDefault();
+      kboard.querySelectorAll('.kanban-col').forEach(c => c.classList.remove('col-drag-over'));
+      col.classList.add('col-drag-over');
+      return;
+    }
     const body = e.target.closest('.kanban-col-body');
     if (!body) return;
     e.preventDefault();
@@ -5024,6 +5067,25 @@ function bindEvents() {
     if (body && !body.contains(e.relatedTarget)) body.classList.remove('drag-over');
   });
   kboard.addEventListener('drop', async e => {
+    if (dragColId) {
+      const targetCol = e.target.closest('.kanban-col');
+      if (!targetCol) return;
+      e.preventDefault();
+      kboard.querySelectorAll('.kanban-col').forEach(c => c.classList.remove('col-drag-over'));
+      const fromId = dragColId;
+      const toId   = targetCol.dataset.col;
+      dragColId = null;
+      if (fromId === toId) return;
+      const cols    = getKanbanCols();
+      const fromIdx = cols.findIndex(c => c.id === fromId);
+      const toIdx   = cols.findIndex(c => c.id === toId);
+      if (fromIdx < 0 || toIdx < 0) return;
+      const [moved] = cols.splice(fromIdx, 1);
+      cols.splice(toIdx, 0, moved);
+      saveKanbanCols(cols);
+      renderKanban();
+      return;
+    }
     const body = e.target.closest('.kanban-col-body');
     if (!body) return;
     e.preventDefault();
