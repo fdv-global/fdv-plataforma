@@ -957,6 +957,32 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-left: auto;
 }
 
+/* Closer view tabs (Kanban / Vendas / Descartados) */
+.closer-view-tabs {
+  display: flex; gap: 4px; background: var(--s1);
+  border: 1px solid var(--b1); border-radius: var(--r-md); padding: 3px;
+}
+.cvt-btn {
+  padding: 5px 14px; font-size: 13px; font-weight: 500;
+  border-radius: calc(var(--r-md) - 3px); border: none; background: none;
+  color: var(--t2); cursor: pointer; transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.cvt-btn.active { background: var(--gold); color: #000; font-weight: 700; }
+.cvt-btn:hover:not(.active) { background: var(--b1); color: var(--t1); }
+
+/* Closer sub-views (Vendas, Descartados) */
+.subview-header {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 20px;
+}
+.subview-title {
+  font-size: 20px; font-weight: 700; color: var(--t1);
+  display: flex; align-items: center; gap: 8px; margin: 0;
+}
+.subview-count {
+  font-size: 13px; color: var(--t2); background: var(--b1);
+  padding: 3px 10px; border-radius: var(--r-pill); border: 1px solid var(--b1);
+}
+
 .kanban-board {
   display: flex; gap: 14px;
   overflow-x: auto; padding-bottom: 24px; min-height: 68vh;

@@ -370,24 +370,32 @@
       <p>Funil de vendas — arraste os cards entre colunas</p>
     </div>
     <div class="kanban-controls">
-      <input type="text" class="filter-select kanban-search" id="kanban-search" placeholder="Buscar lead…">
-      <select class="filter-select" id="kanban-filter-mes">
-        <option value="">Todos os meses</option>
-      </select>
-      <div class="kanban-quick-filter">
-        <button class="kqf-btn active" data-closer="">Todos</button>
-        <button class="kqf-btn" data-closer="fernanda">Fernanda</button>
-        <button class="kqf-btn" data-closer="thomaz">Thomaz</button>
+      <div class="closer-view-tabs">
+        <button class="cvt-btn active" data-view="kanban">Kanban</button>
+        <button class="cvt-btn" data-view="vendas">Vendas</button>
+        <button class="cvt-btn" data-view="descartados">Descartados</button>
       </div>
-      <select class="filter-select" id="kanban-filter-closer" style="display:none">
-        <option value="">Todos os closers</option>
-        <option value="fernanda">Fernanda</option>
-        <option value="thomaz">Thomaz</option>
-      </select>
-      <button class="btn-ghost btn-sm" id="btn-add-column">+ Coluna</button>
+      <div id="kanban-filters" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <input type="text" class="filter-select kanban-search" id="kanban-search" placeholder="Buscar lead…">
+        <select class="filter-select" id="kanban-filter-mes">
+          <option value="">Todos os meses</option>
+        </select>
+        <div class="kanban-quick-filter">
+          <button class="kqf-btn active" data-closer="">Todos</button>
+          <button class="kqf-btn" data-closer="fernanda">Fernanda</button>
+          <button class="kqf-btn" data-closer="thomaz">Thomaz</button>
+        </div>
+        <select class="filter-select" id="kanban-filter-closer" style="display:none">
+          <option value="">Todos os closers</option>
+          <option value="fernanda">Fernanda</option>
+          <option value="thomaz">Thomaz</option>
+        </select>
+        <button class="btn-ghost btn-sm" id="btn-add-column">+ Coluna</button>
+      </div>
     </div>
   </div>
   <div class="kanban-board" id="kanban-board"></div>
+  <div id="closer-subview" style="display:none"></div>
 </div><!-- /tab-closer -->
 
 <!-- ===== TAB: RELATÓRIOS ===== -->

@@ -112,6 +112,7 @@ let activeTab     = 'inicio';
 let activeSub     = 'novos';
 let dragLeadId    = null;
 let dragColId     = null;
+let closerView    = 'kanban'; // 'kanban' | 'vendas' | 'descartados'
 let activeAgendadosSub   = 'hoje'; // 'hoje' | 'todos' | 'briefing'
 let activeSucessoSub    = null;   // null = landing page
 let activeFinanceiroSub = null;   // null = landing page
@@ -1872,6 +1873,118 @@ function addKanbanColumn() {
   cols.push({ id: 'col_' + Date.now(), label: label.trim() });
   saveKanbanCols(cols);
   renderKanban();
+}
+
+// ─── CLOSER SUB-VIEWS ────────────────────────────────────────────────
+function switchCloserView(view) {
+  closerView = view;
+  const board    = $('kanban-board');
+  const subview  = $('closer-subview');
+  const filters  = $('kanban-filters');
+  const addCol   = $('btn-add-column');
+
+  document.querySelectorAll('.cvt-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+
+  if (view === 'kanban') {
+    board.style.display   = '';
+    subview.style.display = 'none';
+    filters.style.display = 'flex';
+    if (addCol) addCol.style.display = '';
+    renderKanban();
+  } else {
+    board.style.display   = 'none';
+    subview.style.display = '';
+    filters.style.display = 'none';
+    if (addCol) addCol.style.display = 'none';
+    if (view === 'vendas')       renderVendasView();
+    else if (view === 'descartados') renderDescartadosView();
+  }
+}
+
+async function renderVendasView() {
+  const el = $('closer-subview');
+  el.innerHTML = '<div class="table-wrap"><p style="color:var(--t2);padding:24px">Carregando vendas…</p></div>';
+
+  let rows = [];
+  if (isLive) {
+    try {
+      const { data, error } = await supabase.from('vendas').select('*, leads(nome, celular)').order('criadoem', { ascending: false });
+      if (!error) rows = data || [];
+    } catch(_) {}
+  }
+
+  const fmtBRL = v => v ? 'R$ ' + String(v).replace(/[^\d,]/g,'') : '—';
+
+  el.innerHTML = `
+    <div class="subview-header">
+      <h2 class="subview-title"><i data-lucide="trophy"></i> Vendas Ganhas</h2>
+      <span class="subview-count">${rows.length} venda${rows.length !== 1 ? 's' : ''}</span>
+    </div>
+    ${rows.length === 0 ? '<p class="hist-empty" style="margin-top:32px">Nenhuma venda registrada.</p>' : `
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr>
+          <th>Lead</th><th>Programa</th><th>Valor</th><th>Entrada</th><th>Forma Pgto</th><th>Closer</th><th>Data</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(r => `<tr>
+            <td><button class="link-btn" data-perfil-venda="${r.lead_id}">${esc(r.leads?.nome || r.lead_id || '—')}</button></td>
+            <td>${esc(r.programa||'—')}</td>
+            <td>${esc(r.valor||'—')}</td>
+            <td>${esc(r.valor_entrada||'—')}</td>
+            <td>${esc(r.forma_pagamento||'—')}</td>
+            <td>${esc(r.closer ? (CLOSERS[r.closer]?.name||r.closer) : '—')}</td>
+            <td>${fmtDate(r.criadoem?.slice(0,10)||'')}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`}`;
+  lucide.createIcons({ nodes: [el] });
+
+  el.querySelectorAll('[data-perfil-venda]').forEach(b => {
+    b.addEventListener('click', () => {
+      const l = allLeads.find(x => x.id === b.dataset.perfilVenda);
+      if (l) openPerfil(l);
+    });
+  });
+}
+
+function renderDescartadosView() {
+  const el = $('closer-subview');
+  const leads = allLeads.filter(l => {
+    const col = getLeadKanbanCol(l);
+    return col === 'descartado';
+  });
+
+  const MOTIVO_LABEL = Object.fromEntries(MOTIVOS_DESCARTE.map(m => [m.id, m.label]));
+
+  el.innerHTML = `
+    <div class="subview-header">
+      <h2 class="subview-title"><i data-lucide="archive-x"></i> Descartados</h2>
+      <span class="subview-count">${leads.length} lead${leads.length !== 1 ? 's' : ''}</span>
+    </div>
+    ${leads.length === 0 ? '<p class="hist-empty" style="margin-top:32px">Nenhum lead descartado.</p>' : `
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr>
+          <th>Lead</th><th>Motivo</th><th>Observação</th><th>Closer</th><th>Descartado em</th>
+        </tr></thead>
+        <tbody>
+          ${leads.map(l => `<tr>
+            <td><button class="link-btn" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
+            <td>${esc(l.motivo_descarte_label || MOTIVO_LABEL[l.motivo_descarte] || l.motivo_descarte || '—')}</td>
+            <td>${esc(l.motivo_descarte_obs||'')}</td>
+            <td>${esc(l.closer ? (CLOSERS[l.closer]?.name||l.closer) : '—')}</td>
+            <td>${fmtDate((l.kanban_column_since||l.atualizadoem||'').slice(0,10))}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`}`;
+  lucide.createIcons({ nodes: [el] });
+
+  el.querySelectorAll('[data-perfil]').forEach(b => {
+    b.addEventListener('click', () => { const l = allLeads.find(x => x.id === b.dataset.perfil); if (l) openPerfil(l); });
+  });
 }
 
 // ─── MOTIVO DE PERDA ─────────────────────────────────────────────────
@@ -5177,6 +5290,11 @@ function bindEvents() {
   // Briefing filters
   ['briefing-filter-mes','briefing-filter-closer'].forEach(id => $(id).addEventListener('change', renderBriefingSub));
   $('briefing-filter-data')?.addEventListener('change', renderBriefingSub);
+
+  // Closer view tabs
+  document.querySelectorAll('.cvt-btn').forEach(btn =>
+    btn.addEventListener('click', () => switchCloserView(btn.dataset.view))
+  );
 
   // Kanban filters
   ['kanban-filter-mes','kanban-filter-closer'].forEach(id => $(id).addEventListener('change', renderKanban));
