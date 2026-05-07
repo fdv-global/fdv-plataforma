@@ -1674,12 +1674,18 @@ function renderKanban() {
   if (mesFilt)    leads = leads.filter(l => (l.dataagendamento||l.datachegada||'').startsWith(mesFilt));
   if (closerFilt) leads = leads.filter(l => (l.closer||'') === closerFilt);
 
+  // All leads that belong to the kanban (unfiltered) — used for delete safety check
+  const allKanbanLeads = allLeads.filter(l =>
+    l.kanban_column || ['agendado','noshow','cancelado','realizada'].includes(l.status)
+  );
+
   board.innerHTML = cols.map(col => {
     const colLeads = leads.filter(l => getLeadKanbanCol(l) === col.id);
-    const canDelete = colLeads.length === 0;
-    return `<div class="kanban-col" draggable="true" data-col="${col.id}">
+    // canDelete must check ALL leads (not filtered), so a column with leads hidden by filters can't be deleted
+    const canDelete = allKanbanLeads.filter(l => getLeadKanbanCol(l) === col.id).length === 0;
+    return `<div class="kanban-col" data-col="${col.id}">
       <div class="kanban-col-header">
-        <span class="kc-drag-handle" data-drag-col="${col.id}" title="Arrastar coluna">⠿</span>
+        <span class="kc-drag-handle" draggable="true" data-drag-col="${col.id}" title="Arrastar coluna">⠿</span>
         <span class="kanban-col-title" contenteditable="true" data-col="${col.id}">${esc(col.label)}</span>
         <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
           <span class="kanban-col-count">${colLeads.length}</span>
@@ -1774,13 +1780,6 @@ function renderKanban() {
     });
   });
 
-  // Column drag handle — initiate column drag, stop card drag propagation
-  board.querySelectorAll('.kc-drag-handle').forEach(handle => {
-    handle.addEventListener('mousedown', e => {
-      const col = handle.closest('.kanban-col');
-      if (col) col.dataset.colDragging = '1';
-    });
-  });
 }
 
 function kanbanCard(l, cols) {
@@ -5222,13 +5221,14 @@ function bindEvents() {
   // survive renderKanban() innerHTML replacements (fixes modal not firing mid-session)
   const kboard = $('kanban-board');
   kboard.addEventListener('dragstart', e => {
-    const col = e.target.closest('.kanban-col[draggable]');
-    if (col && col.dataset.colDragging) {
-      dragColId = col.dataset.col;
-      delete col.dataset.colDragging;
-      setTimeout(() => col.classList.add('col-dragging'), 0);
+    // Column drag — initiated from the drag handle span (which has draggable=true)
+    const handle = e.target.closest('.kc-drag-handle[draggable]');
+    if (handle) {
+      dragColId = handle.dataset.dragCol;
+      setTimeout(() => handle.closest('.kanban-col')?.classList.add('col-dragging'), 0);
       return;
     }
+    // Card drag
     const card = e.target.closest('.kanban-card[draggable]');
     if (!card) return;
     dragLeadId = card.dataset.id;
