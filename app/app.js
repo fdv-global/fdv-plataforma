@@ -711,7 +711,6 @@ async function loadAlunas() {
 }
 
 // ─── TAB / SUB SWITCHING ─────────────────────────────────────────────
-const COMERCIAL_TABS = ['comercial', 'agendamentos', 'closer', 'relatorios'];
 
 function switchTab(tab) {
   activeTab = tab;
@@ -719,18 +718,8 @@ function switchTab(tab) {
   const panel = $('tab-' + tab);
   if (panel) panel.style.display = '';
 
-  // Direct nav-links (Início, WhatsApp, Usuários)
   document.querySelectorAll('.nav-link[data-tab]').forEach(l =>
     l.classList.toggle('active', l.dataset.tab === tab)
-  );
-  // Dropdown group buttons
-  $('nav-group-comercial')?.querySelector('.nav-group-btn')?.classList
-    .toggle('active', COMERCIAL_TABS.includes(tab));
-  $('nav-group-financeiro')?.querySelector('.nav-group-btn')?.classList
-    .toggle('active', tab === 'financeiro');
-  // Dropdown items
-  document.querySelectorAll('.nav-dropdown-item[data-tab]').forEach(l =>
-    l.classList.toggle('active', l.dataset.tab === tab && !l.dataset.sucessoSub && !l.dataset.financeiroSub)
   );
 
   populateAllMonths();
@@ -741,7 +730,7 @@ function switchTab(tab) {
   else if (tab === 'relatorios')   renderRelatorios();
   else if (tab === 'whatsapp')     { if (!waInstancesLoaded) loadWaInstances(); switchWaSub('chats'); }
   else if (tab === 'sucesso')      { activeSucessoSub = null; renderSucesso(); }
-  else if (tab === 'financeiro')   renderFinanceiro();
+  else if (tab === 'financeiro')   { activeFinanceiroSub = null; renderFinanceiro(); }
 }
 
 function switchSub(sub) {
@@ -5815,50 +5804,13 @@ function bindEvents() {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab))
   );
 
-  // Nav dropdown toggles — abrir dropdown + navegar para landing do módulo
-  document.querySelectorAll('.nav-group-btn[data-menu]').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      const group = btn.closest('.nav-group');
-      const wasOpen = group.classList.contains('open');
-      document.querySelectorAll('.nav-group.open').forEach(g => g.classList.remove('open'));
-      if (!wasOpen) group.classList.add('open');
-
-      const menu = btn.dataset.menu;
-      if      (menu === 'comercial')   switchTab('comercial');
-      else if (menu === 'sucesso')   { activeSucessoSub = null;    switchTab('sucesso'); }
-      else if (menu === 'financeiro'){ activeFinanceiroSub = null; switchTab('financeiro'); }
-    });
-  });
-
-  // Nav dropdown items
-  document.querySelectorAll('.nav-dropdown-item[data-tab]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.nav-group.open').forEach(g => g.classList.remove('open'));
-      const tab = btn.dataset.tab;
-      switchTab(tab);
-      if (tab === 'sucesso' && btn.dataset.sucessoSub)
-        switchSucessoSub(btn.dataset.sucessoSub);
-      else if (tab === 'financeiro' && btn.dataset.financeiroSub)
-        switchFinanceiroSub(btn.dataset.financeiroSub);
-    });
-  });
-
-  // Close dropdowns on outside click
-  document.addEventListener('click', e => {
-    if (!e.target.closest('.nav-group'))
-      document.querySelectorAll('.nav-group.open').forEach(g => g.classList.remove('open'));
-  });
-
-  // Sucesso / Financeiro sub-nav (tab panel only — skip dropdown items handled above)
-  document.querySelectorAll('[data-sucesso-sub]').forEach(btn => {
-    if (btn.classList.contains('nav-dropdown-item')) return;
-    btn.addEventListener('click', () => switchSucessoSub(btn.dataset.sucessoSub));
-  });
-  document.querySelectorAll('[data-financeiro-sub]').forEach(btn => {
-    if (btn.classList.contains('nav-dropdown-item')) return;
-    btn.addEventListener('click', () => switchFinanceiroSub(btn.dataset.financeiroSub));
-  });
+  // Sucesso / Financeiro sub-nav
+  document.querySelectorAll('[data-sucesso-sub]').forEach(btn =>
+    btn.addEventListener('click', () => switchSucessoSub(btn.dataset.sucessoSub))
+  );
+  document.querySelectorAll('[data-financeiro-sub]').forEach(btn =>
+    btn.addEventListener('click', () => switchFinanceiroSub(btn.dataset.financeiroSub))
+  );
 
   // Leads filters
   ['filter-status','filter-origem','filter-mes'].forEach(id => $(id).addEventListener('change', applyFilters));
