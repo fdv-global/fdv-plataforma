@@ -118,8 +118,9 @@ let activeSucessoSub    = null;   // null = landing page
 let activeFinanceiroSub = null;   // null = landing page
 
 // Descarte state
-let descarteLeadId  = null;
+let descarteLeadId   = null;
 let descarteSelected = null;
+let descarteContext  = 'agendamentos'; // 'agendamentos' | 'kanban'
 let cal = { step: 1, closer: null, leadSnap: null };
 let agendaCalYear  = 0;
 let agendaCalMonth = 0;
@@ -1379,9 +1380,10 @@ function renderDescartados() {
 }
 
 // ─── DESCARTE MODAL ──────────────────────────────────────────────────
-function openDescarteModal(leadId) {
+function openDescarteModal(leadId, ctx = 'agendamentos') {
   descarteLeadId   = leadId;
   descarteSelected = null;
+  descarteContext  = ctx;
   const lead = allLeads.find(l => l.id === leadId);
   $('descarte-lead-nome').textContent = lead?.nome || '—';
   $('descarte-confirmar').disabled = true;
@@ -1431,20 +1433,39 @@ async function confirmarDescarte() {
   const outroText = descarteSelected === 'outro' ? ($('descarte-outro-text')?.value || '').trim() : '';
 
   try {
-    await saveLead(descarteLeadId, {
-      status:                'descartado',
-      motivo_descarte:       descarteSelected,
-      motivo_descarte_label: motivo?.label || descarteSelected,
-      ...(outroText && { motivo_descarte_obs: outroText }),
-      atualizadoem:          new Date().toISOString(),
-    });
+    if (descarteContext === 'kanban') {
+      await ensureObsSaved(descarteLeadId);
+      const hist = buildHistoryEntry(descarteLeadId, 'descartado', 'Descartado');
+      await saveLead(descarteLeadId, {
+        kanban_column:         'descartado',
+        kanban_column_since:   new Date().toISOString(),
+        motivo_descarte:       descarteSelected,
+        motivo_descarte_label: motivo?.label || descarteSelected,
+        ...(outroText && { motivo_descarte_obs: outroText }),
+        ...(hist && { historico_kanban: hist }),
+        atualizadoem:          new Date().toISOString(),
+      });
+    } else {
+      await saveLead(descarteLeadId, {
+        status:                'descartado',
+        motivo_descarte:       descarteSelected,
+        motivo_descarte_label: motivo?.label || descarteSelected,
+        ...(outroText && { motivo_descarte_obs: outroText }),
+        atualizadoem:          new Date().toISOString(),
+      });
+    }
     toast('Lead descartado.', 'ok');
     closeDescarteModal();
+    if (descarteContext === 'kanban' && !isLive) renderKanban();
   } catch(e) {
     console.error(e);
     toast(e.message || 'Erro ao descartar.', 'err');
     btn.disabled = false;
   }
+}
+
+function openKanbanDescarte(leadId) {
+  openDescarteModal(leadId, 'kanban');
 }
 
 // ─── PIPELINE ACTIONS ────────────────────────────────────────────────
