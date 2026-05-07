@@ -52,7 +52,7 @@
 
     <div class="nav-group" id="nav-group-comercial">
       <button class="nav-link nav-group-btn" data-menu="comercial">
-        <i data-lucide="briefcase"></i>Comercial<i data-lucide="chevron-down" class="nav-chevron"></i>
+        <i data-lucide="crown"></i>Comercial<i data-lucide="chevron-down" class="nav-chevron"></i>
       </button>
       <div class="nav-dropdown" id="nav-dropdown-comercial">
         <button class="nav-dropdown-item" data-tab="agendamentos"><i data-lucide="calendar"></i>Agendamentos</button>
@@ -63,7 +63,7 @@
 
     <div class="nav-group" id="nav-group-sucesso">
       <button class="nav-link nav-group-btn" data-menu="sucesso">
-        <i data-lucide="heart-handshake"></i>Sucesso do Cliente<i data-lucide="chevron-down" class="nav-chevron"></i>
+        <i data-lucide="graduation-cap"></i>Alunos<i data-lucide="chevron-down" class="nav-chevron"></i>
       </button>
       <div class="nav-dropdown" id="nav-dropdown-sucesso">
         <button class="nav-dropdown-item" data-tab="sucesso" data-sucesso-sub="alunas"><i data-lucide="users"></i>Alunas</button>
@@ -75,7 +75,7 @@
 
     <div class="nav-group" id="nav-group-financeiro">
       <button class="nav-link nav-group-btn" data-menu="financeiro">
-        <i data-lucide="landmark"></i>Financeiro<i data-lucide="chevron-down" class="nav-chevron"></i>
+        <i data-lucide="coins"></i>Financeiro<i data-lucide="chevron-down" class="nav-chevron"></i>
       </button>
       <div class="nav-dropdown" id="nav-dropdown-financeiro">
         <button class="nav-dropdown-item" data-tab="financeiro" data-financeiro-sub="inadimplencia"><i data-lucide="alert-triangle"></i>Inadimplência</button>
@@ -577,16 +577,21 @@
   </div>
 </div>
 
-<!-- ===== TAB: SUCESSO DO CLIENTE ===== -->
+<!-- ===== TAB: COMERCIAL (landing) ===== -->
+<div id="tab-comercial" class="tab-panel" style="display:none">
+  <div id="comercial-content"></div>
+</div>
+
+<!-- ===== TAB: ALUNOS ===== -->
 <div id="tab-sucesso" class="tab-panel" style="display:none">
   <div class="page-top">
     <div class="page-title-block">
-      <h1>Sucesso do Cliente</h1>
+      <h1>Alunos</h1>
       <p>Gestão de alunas, sessões e contratos</p>
     </div>
   </div>
   <div class="sub-nav">
-    <button class="sub-link active" data-sucesso-sub="alunas">Alunas</button>
+    <button class="sub-link" data-sucesso-sub="alunas">Alunas</button>
     <button class="sub-link" data-sucesso-sub="sessoes">Sessões</button>
     <button class="sub-link" data-sucesso-sub="contratos">Contratos</button>
     <button class="sub-link" data-sucesso-sub="relatorios">Relatórios</button>
@@ -603,7 +608,7 @@
     </div>
   </div>
   <div class="sub-nav">
-    <button class="sub-link active" data-financeiro-sub="inadimplencia">Inadimplência</button>
+    <button class="sub-link" data-financeiro-sub="inadimplencia">Inadimplência</button>
     <button class="sub-link" data-financeiro-sub="pagamentos">Pagamentos</button>
     <button class="sub-link" data-financeiro-sub="relatorios">Relatórios</button>
   </div>

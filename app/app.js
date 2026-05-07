@@ -100,8 +100,8 @@ let activeTab     = 'inicio';
 let activeSub     = 'novos';
 let dragLeadId    = null;
 let activeAgendadosSub   = 'hoje'; // 'hoje' | 'todos' | 'briefing'
-let activeSucessoSub    = 'alunas';
-let activeFinanceiroSub = 'inadimplencia';
+let activeSucessoSub    = null;   // null = landing page
+let activeFinanceiroSub = null;   // null = landing page
 
 // Descarte state
 let descarteLeadId  = null;
@@ -665,7 +665,7 @@ function showDbError(msg) {
 }
 
 // ─── TAB / SUB SWITCHING ─────────────────────────────────────────────
-const COMERCIAL_TABS = ['agendamentos', 'closer', 'relatorios'];
+const COMERCIAL_TABS = ['comercial', 'agendamentos', 'closer', 'relatorios'];
 
 function switchTab(tab) {
   activeTab = tab;
@@ -691,6 +691,7 @@ function switchTab(tab) {
 
   populateAllMonths();
   if      (tab === 'inicio')       renderInicio();
+  else if (tab === 'comercial')    renderComercial();
   else if (tab === 'agendamentos') renderActiveSub();
   else if (tab === 'closer')       renderKanban();
   else if (tab === 'relatorios')   renderRelatorios();
@@ -718,12 +719,46 @@ function renderActiveSub() {
   else if (activeSub === 'descartados')  renderDescartados();
 }
 
-// ─── SUCESSO DO CLIENTE ──────────────────────────────────────────────
+// ─── COMERCIAL (landing) ─────────────────────────────────────────────
+function renderComercial() {
+  const el = $('comercial-content');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="page-top">
+      <div class="page-title-block">
+        <h1>Comercial</h1>
+        <p>Funil de captação, agendamento e fechamento de vendas</p>
+      </div>
+    </div>
+    <div class="module-landing-cards">
+      <button class="module-landing-card" data-go="agendamentos">
+        <span class="mlc-icon" style="color:var(--gold)"><i data-lucide="calendar"></i></span>
+        <span class="mlc-title">Agendamentos</span>
+        <span class="mlc-desc">Pipeline pré-call — qualificação e agendamento de leads</span>
+      </button>
+      <button class="module-landing-card" data-go="closer">
+        <span class="mlc-icon" style="color:#4db5c8"><i data-lucide="user"></i></span>
+        <span class="mlc-title">Closer</span>
+        <span class="mlc-desc">Funil de vendas Kanban — acompanhe cada negociação</span>
+      </button>
+      <button class="module-landing-card" data-go="relatorios">
+        <span class="mlc-icon" style="color:#9b59b6"><i data-lucide="bar-chart-2"></i></span>
+        <span class="mlc-title">Relatórios</span>
+        <span class="mlc-desc">Métricas de performance e conversão comercial</span>
+      </button>
+    </div>`;
+  el.querySelectorAll('[data-go]').forEach(btn =>
+    btn.addEventListener('click', () => switchTab(btn.dataset.go))
+  );
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// ─── ALUNOS ──────────────────────────────────────────────────────────
 const SUCESSO_SUBS = {
-  alunas:     'Alunas',
-  sessoes:    'Sessões',
-  contratos:  'Contratos',
-  relatorios: 'Relatórios',
+  alunas:     { label: 'Alunas',      icon: 'users',          color: '#4db5c8',  desc: 'Gestão de alunas ativas e histórico de engajamento' },
+  sessoes:    { label: 'Sessões',     icon: 'calendar-check', color: 'var(--gold)',  desc: 'Sessões de mentoria e acompanhamento individualizado' },
+  contratos:  { label: 'Contratos',   icon: 'file-text',      color: '#9b59b6',  desc: 'Contratos, renovações e documentação das alunas' },
+  relatorios: { label: 'Relatórios',  icon: 'bar-chart-2',    color: '#2ecc71',  desc: 'Métricas de sucesso, retenção e engajamento' },
 };
 
 function switchSucessoSub(sub) {
@@ -735,22 +770,43 @@ function switchSucessoSub(sub) {
 }
 
 function renderSucesso() {
-  const label = SUCESSO_SUBS[activeSucessoSub] || activeSucessoSub;
   const el = $('sucesso-content');
   if (!el) return;
-  el.innerHTML = `
-    <div class="placeholder-module">
-      <div class="placeholder-icon">🚧</div>
-      <h3>${label}</h3>
-      <p>Este módulo está em desenvolvimento e estará disponível em breve.</p>
-    </div>`;
+
+  document.querySelectorAll('[data-sucesso-sub]').forEach(b =>
+    b.classList.toggle('active', b.dataset.sucessoSub === activeSucessoSub)
+  );
+
+  if (!activeSucessoSub) {
+    el.innerHTML = `
+      <div class="module-landing-cards">
+        ${Object.entries(SUCESSO_SUBS).map(([key, s]) => `
+          <button class="module-landing-card" data-go-sucesso="${key}">
+            <span class="mlc-icon" style="color:${s.color}"><i data-lucide="${s.icon}"></i></span>
+            <span class="mlc-title">${s.label}</span>
+            <span class="mlc-desc">${s.desc}</span>
+          </button>`).join('')}
+      </div>`;
+    el.querySelectorAll('[data-go-sucesso]').forEach(btn =>
+      btn.addEventListener('click', () => switchSucessoSub(btn.dataset.goSucesso))
+    );
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  } else {
+    const s = SUCESSO_SUBS[activeSucessoSub];
+    el.innerHTML = `
+      <div class="placeholder-module">
+        <div class="placeholder-icon">🚧</div>
+        <h3>${s ? s.label : activeSucessoSub}</h3>
+        <p>Este módulo está em desenvolvimento e estará disponível em breve.</p>
+      </div>`;
+  }
 }
 
 // ─── FINANCEIRO ───────────────────────────────────────────────────────
 const FINANCEIRO_SUBS = {
-  inadimplencia: 'Inadimplência',
-  pagamentos:    'Pagamentos',
-  relatorios:    'Relatórios',
+  inadimplencia: { label: 'Inadimplência', icon: 'alert-triangle', color: '#c07080',  desc: 'Alunas com pagamentos pendentes ou em atraso' },
+  pagamentos:    { label: 'Pagamentos',    icon: 'credit-card',    color: '#2ecc71',  desc: 'Histórico de recebimentos e confirmações' },
+  relatorios:    { label: 'Relatórios',    icon: 'bar-chart-2',    color: '#9b59b6',  desc: 'Métricas financeiras e fluxo de caixa' },
 };
 
 function switchFinanceiroSub(sub) {
@@ -762,15 +818,36 @@ function switchFinanceiroSub(sub) {
 }
 
 function renderFinanceiro() {
-  const label = FINANCEIRO_SUBS[activeFinanceiroSub] || activeFinanceiroSub;
   const el = $('financeiro-content');
   if (!el) return;
-  el.innerHTML = `
-    <div class="placeholder-module">
-      <div class="placeholder-icon">🚧</div>
-      <h3>${label}</h3>
-      <p>Este módulo está em desenvolvimento e estará disponível em breve.</p>
-    </div>`;
+
+  document.querySelectorAll('[data-financeiro-sub]').forEach(b =>
+    b.classList.toggle('active', b.dataset.financeiroSub === activeFinanceiroSub)
+  );
+
+  if (!activeFinanceiroSub) {
+    el.innerHTML = `
+      <div class="module-landing-cards">
+        ${Object.entries(FINANCEIRO_SUBS).map(([key, s]) => `
+          <button class="module-landing-card" data-go-financeiro="${key}">
+            <span class="mlc-icon" style="color:${s.color}"><i data-lucide="${s.icon}"></i></span>
+            <span class="mlc-title">${s.label}</span>
+            <span class="mlc-desc">${s.desc}</span>
+          </button>`).join('')}
+      </div>`;
+    el.querySelectorAll('[data-go-financeiro]').forEach(btn =>
+      btn.addEventListener('click', () => switchFinanceiroSub(btn.dataset.goFinanceiro))
+    );
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  } else {
+    const s = FINANCEIRO_SUBS[activeFinanceiroSub];
+    el.innerHTML = `
+      <div class="placeholder-module">
+        <div class="placeholder-icon">🚧</div>
+        <h3>${s ? s.label : activeFinanceiroSub}</h3>
+        <p>Este módulo está em desenvolvimento e estará disponível em breve.</p>
+      </div>`;
+  }
 }
 
 // ─── RENDER ALL ──────────────────────────────────────────────────────
@@ -779,6 +856,7 @@ function renderAll() {
   populateAllMonths();
   updateStats();
   if      (activeTab === 'inicio')       renderInicio();
+  else if (activeTab === 'comercial')    renderComercial();
   else if (activeTab === 'agendamentos') renderActiveSub();
   else if (activeTab === 'closer')       renderKanban();
   else if (activeTab === 'relatorios')   renderRelatorios();
@@ -4919,7 +4997,7 @@ function bindEvents() {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab))
   );
 
-  // Nav dropdown toggles
+  // Nav dropdown toggles — abrir dropdown + navegar para landing do módulo
   document.querySelectorAll('.nav-group-btn[data-menu]').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
@@ -4927,6 +5005,11 @@ function bindEvents() {
       const wasOpen = group.classList.contains('open');
       document.querySelectorAll('.nav-group.open').forEach(g => g.classList.remove('open'));
       if (!wasOpen) group.classList.add('open');
+
+      const menu = btn.dataset.menu;
+      if      (menu === 'comercial')   switchTab('comercial');
+      else if (menu === 'sucesso')   { activeSucessoSub = null;    switchTab('sucesso'); }
+      else if (menu === 'financeiro'){ activeFinanceiroSub = null; switchTab('financeiro'); }
     });
   });
 
