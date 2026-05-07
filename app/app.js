@@ -726,8 +726,6 @@ function switchTab(tab) {
   // Dropdown group buttons
   $('nav-group-comercial')?.querySelector('.nav-group-btn')?.classList
     .toggle('active', COMERCIAL_TABS.includes(tab));
-  $('nav-group-sucesso')?.querySelector('.nav-group-btn')?.classList
-    .toggle('active', tab === 'sucesso');
   $('nav-group-financeiro')?.querySelector('.nav-group-btn')?.classList
     .toggle('active', tab === 'financeiro');
   // Dropdown items
@@ -742,7 +740,7 @@ function switchTab(tab) {
   else if (tab === 'closer')       renderKanban();
   else if (tab === 'relatorios')   renderRelatorios();
   else if (tab === 'whatsapp')     { if (!waInstancesLoaded) loadWaInstances(); switchWaSub('chats'); }
-  else if (tab === 'sucesso')      renderSucesso();
+  else if (tab === 'sucesso')      { activeSucessoSub = null; renderSucesso(); }
   else if (tab === 'financeiro')   renderFinanceiro();
 }
 
@@ -946,8 +944,8 @@ function renderAlunasTab(el) {
 
   el.innerHTML = `
     ${subPageTop('Alunas', 'alunas', 'btn-nova-aluna', '+ Nova Aluna')}
-    <div class="filter-bar" style="margin-bottom:18px">
-      <input type="text" class="filter-select" id="al-search" placeholder="Buscar aluna…" style="min-width:180px">
+    <div class="alunas-filters">
+      <input type="text" class="filter-select" id="al-search" placeholder="Buscar aluna…" style="min-width:200px">
       <select class="filter-select" id="al-filter-status">
         <option value="">Todos os status</option>
         ${ALUNAS_STATUS.map(s => `<option value="${s}">${s}</option>`).join('')}
@@ -994,8 +992,11 @@ function renderAlunasTable(rows) {
       const restantes = (a.sessoes_total||0) - (a.sessoes_realizadas||0);
       const waPhone = normalizePhoneForEvolution(a.celular);
       const waHref  = waPhone ? `https://wa.me/${waPhone}` : null;
+      const avatarHtml = a.foto_url
+        ? `<img src="${a.foto_url}" class="aluna-avatar">`
+        : `<span class="aluna-avatar aluna-avatar--placeholder"></span>`;
       return `<tr>
-        <td><button class="link-btn" data-aluna-edit="${a.id}">${esc(a.nome||'—')}</button></td>
+        <td><div class="aluna-name-cell">${avatarHtml}<button class="link-btn" data-aluna-edit="${a.id}">${esc(a.nome||'—')}</button></div></td>
         <td><span class="bp bp-gray">${esc(a.produto||'—')}</span></td>
         <td>${badgeAluna(a.status)}</td>
         <td>${fmtDate(a.data_inscricao||'')}</td>
@@ -1148,8 +1149,16 @@ function openAlunaModal(aluna) {
   $('am-data-termino').value  = aluna?.data_termino   || '';
   $('am-sessoes-total').value  = aluna?.sessoes_total  || 0;
   $('am-sessoes-realizadas').value = aluna?.sessoes_realizadas || 0;
-  $('am-no-grupo').checked    = aluna?.esta_no_grupo  || false;
+  $('am-nome-grupo').value    = aluna?.nome_grupo     || '';
   $('am-obs').value           = aluna?.observacoes    || '';
+  $('am-foto-file').value     = '';
+  const prev = $('am-foto-preview');
+  if (aluna?.foto_url) {
+    prev.innerHTML = `<img src="${aluna.foto_url}" alt="">`;
+  } else {
+    prev.innerHTML = '<i data-lucide="user"></i>';
+    lucide.createIcons({ nodes: [prev] });
+  }
   $('am-backdrop').style.display = 'flex';
   document.body.style.overflow = 'hidden';
   setTimeout(() => $('am-nome').focus(), 50);
@@ -1163,6 +1172,22 @@ async function salvarAluna() {
   const nome = $('am-nome').value.trim();
   if (!nome) { toast('Nome obrigatório.', 'err'); return; }
   const btn = $('am-salvar'); btn.disabled = true;
+
+  let fotoUrl = alunaEdit?.foto_url || null;
+  const fotoFile = $('am-foto-file')?.files?.[0];
+  if (fotoFile && isLive) {
+    try {
+      const ext = fotoFile.name.split('.').pop().toLowerCase();
+      const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { data: upData, error: upErr } = await supabase.storage
+        .from('alunas-fotos').upload(path, fotoFile, { upsert: true });
+      if (!upErr) {
+        const { data: { publicUrl } } = supabase.storage.from('alunas-fotos').getPublicUrl(upData.path);
+        fotoUrl = publicUrl;
+      } else { console.warn('[FDV] foto upload:', upErr); }
+    } catch(e) { console.warn('[FDV] foto upload:', e); }
+  }
+
   const dados = {
     nome,
     celular:           $('am-celular').value.trim(),
@@ -1173,7 +1198,8 @@ async function salvarAluna() {
     data_termino:      $('am-data-termino').value   || null,
     sessoes_total:     parseInt($('am-sessoes-total').value) || 0,
     sessoes_realizadas: parseInt($('am-sessoes-realizadas').value) || 0,
-    esta_no_grupo:     $('am-no-grupo').checked,
+    nome_grupo:        $('am-nome-grupo').value.trim(),
+    foto_url:          fotoUrl,
     observacoes:       $('am-obs').value.trim(),
     atualizadoem:      new Date().toISOString(),
   };

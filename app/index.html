@@ -61,17 +61,7 @@
       </div>
     </div>
 
-    <div class="nav-group" id="nav-group-sucesso">
-      <button class="nav-link nav-group-btn" data-menu="sucesso">
-        <i data-lucide="graduation-cap"></i>Alunas<i data-lucide="chevron-down" class="nav-chevron"></i>
-      </button>
-      <div class="nav-dropdown" id="nav-dropdown-sucesso">
-        <button class="nav-dropdown-item" data-tab="sucesso" data-sucesso-sub="alunas"><i data-lucide="users"></i>Alunas</button>
-        <button class="nav-dropdown-item" data-tab="sucesso" data-sucesso-sub="sessoes"><i data-lucide="calendar-check"></i>Sessões</button>
-        <button class="nav-dropdown-item" data-tab="sucesso" data-sucesso-sub="contratos"><i data-lucide="file-text"></i>Contratos</button>
-        <button class="nav-dropdown-item" data-tab="sucesso" data-sucesso-sub="relatorios"><i data-lucide="bar-chart-2"></i>Relatórios</button>
-      </div>
-    </div>
+    <button class="nav-link" data-tab="sucesso"><i data-lucide="graduation-cap"></i>Alunas</button>
 
     <div class="nav-group" id="nav-group-financeiro">
       <button class="nav-link nav-group-btn" data-menu="financeiro">
@@ -1240,6 +1230,16 @@
       <button class="modal-close" id="am-close" aria-label="Fechar"><i data-lucide="x"></i></button>
     </div>
     <div class="modal-body">
+      <div class="am-foto-section">
+        <div class="am-foto-preview" id="am-foto-preview"><i data-lucide="user"></i></div>
+        <div>
+          <label class="btn-ghost btn-sm am-foto-upload-label">
+            <i data-lucide="upload" style="width:14px;height:14px;margin-right:6px"></i>Adicionar foto
+            <input type="file" id="am-foto-file" accept="image/*" style="display:none">
+          </label>
+          <p class="am-foto-info">JPG, PNG ou WebP · máx. 2 MB</p>
+        </div>
+      </div>
       <div class="form-row">
         <label class="form-label">Nome *<input type="text" class="form-ctrl" id="am-nome" placeholder="Nome completo"></label>
         <label class="form-label">Celular<input type="text" class="form-ctrl" id="am-celular" placeholder="(11) 99999-9999"></label>
@@ -1262,12 +1262,7 @@
             <option>Reembolso</option><option>Inadimplente</option>
           </select>
         </label>
-        <label class="form-label">Está no grupo?
-          <label class="toggle-switch" style="margin-top:8px">
-            <input type="checkbox" id="am-no-grupo">
-            <span class="toggle-slider"></span>
-          </label>
-        </label>
+        <label class="form-label">Está no grupo?<input type="text" class="form-ctrl" id="am-nome-grupo" placeholder="Nome do grupo…"></label>
       </div>
       <div class="form-row">
         <label class="form-label">Data de inscrição<input type="date" class="form-ctrl" id="am-data-inscricao"></label>

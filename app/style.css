@@ -1024,6 +1024,58 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 .sqd-item:hover  { background: var(--b1); }
 .sqd-item.active { background: var(--b1); }
 
+/* ── Alunas — foto upload section ──────────────────────────────── */
+.am-foto-section {
+  display: flex; align-items: center; gap: 18px;
+  margin-bottom: 22px; padding-bottom: 22px;
+  border-bottom: 1px solid var(--b0);
+}
+.am-foto-preview {
+  width: 76px; height: 76px; border-radius: 50%;
+  background: var(--b1); border: 2px solid var(--b2);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; flex-shrink: 0; color: var(--t3);
+}
+.am-foto-preview img { width: 100%; height: 100%; object-fit: cover; }
+.am-foto-upload-label {
+  display: inline-flex; align-items: center; cursor: pointer;
+}
+.am-foto-info { font-size: 11px; color: var(--t3); margin-top: 6px; line-height: 1.5; }
+
+/* ── Alunas — tabela ────────────────────────────────────────────── */
+.data-table { width: 100%; border-collapse: collapse; min-width: 560px; }
+.data-table thead tr { background: var(--s2); }
+.data-table th {
+  padding: 13px 18px;
+  font-size: 10.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1.2px;
+  color: var(--t3); white-space: nowrap; text-align: left;
+  border-bottom: 1px solid var(--b0);
+}
+.data-table td {
+  padding: 15px 18px;
+  font-size: 13.5px; font-weight: 500; color: var(--t1);
+  border-bottom: 1px solid var(--b0); vertical-align: middle;
+}
+.data-table tbody tr { transition: background var(--fast) var(--ease); }
+.data-table tbody tr:hover  { background: var(--s-hover); }
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+.aluna-name-cell { display: flex; align-items: center; gap: 11px; }
+.aluna-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  object-fit: cover; flex-shrink: 0;
+}
+.aluna-avatar--placeholder {
+  background: var(--b1); border: 1px solid var(--b2);
+}
+
+/* ── Alunas — filter bar spacing ────────────────────────────────── */
+.alunas-filters {
+  display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px;
+}
+.alunas-filters .filter-select { flex: 1; min-width: 150px; }
+
 .kanban-board {
   display: flex; gap: 14px;
   overflow-x: auto; padding-bottom: 24px; min-height: 68vh;
