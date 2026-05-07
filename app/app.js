@@ -1733,6 +1733,14 @@ function renderKanban() {
     });
   });
 
+  // Venda Ganha + Descartar action buttons
+  board.querySelectorAll('.btn-kc-venda').forEach(btn => {
+    btn.addEventListener('click', e => { e.stopPropagation(); openVendaGanha(btn.dataset.id); });
+  });
+  board.querySelectorAll('.btn-kc-descartar').forEach(btn => {
+    btn.addEventListener('click', e => { e.stopPropagation(); openKanbanDescarte(btn.dataset.id); });
+  });
+
   // Delete column (only shown when empty)
   board.querySelectorAll('.kc-del-col').forEach(btn => {
     btn.addEventListener('click', e => {
@@ -1807,6 +1815,10 @@ function kanbanCard(l, cols) {
       <button class="btn-kanban-resultado" data-id="${l.id}">${isAgendado?'Resultado →':'Ver →'}</button>
       ${waHref ? `<a class="kc-wa-btn" href="${waHref}" target="_blank" rel="noopener" title="WhatsApp"><i data-lucide="message-circle" class="kc-wa-icon"></i></a>` : ''}
       ${hist.length ? `<button class="kc-hist-toggle" title="Histórico"><i data-lucide="history"></i></button>` : ''}
+    </div>
+    <div class="kc-actions">
+      <button class="btn-kc-venda" data-id="${l.id}" title="Registrar venda ganha"><i data-lucide="trophy"></i> Venda Ganha</button>
+      <button class="btn-kc-descartar" data-id="${l.id}" title="Descartar lead"><i data-lucide="archive-x"></i> Descartar</button>
     </div>
     ${histHtml}
     <div class="kc-move-wrap">
@@ -3113,22 +3125,37 @@ async function confirmarVendaGanha() {
   const btn = $('vg-confirmar');
   btn.disabled = true;
   try {
-    const allCols  = getKanbanCols();
-    const colLabel = allCols.find(c => c.id === 'venda_ganha')?.label || 'Venda Ganha';
-    const hist     = buildHistoryEntry(vgLeadId, 'venda_ganha', colLabel);
+    const lead  = allLeads.find(l => l.id === vgLeadId);
+    const valor    = $('vg-valor').value.trim();
+    const entrada  = $('vg-entrada').value.trim();
+    const forma    = $('vg-forma').value;
+    const programa = $('vg-programa').value;
+    const obs      = $('vg-obs').value.trim();
+    const hist     = buildHistoryEntry(vgLeadId, 'venda_ganha', 'Venda Ganha');
+    const closer   = lead?.closer || null;
+
     await saveLead(vgLeadId, {
       kanban_column:       'venda_ganha',
       kanban_column_since: new Date().toISOString(),
-      venda_ganha_dados: {
-        valor:    $('vg-valor').value.trim(),
-        entrada:  $('vg-entrada').value.trim(),
-        forma:    $('vg-forma').value,
-        programa: $('vg-programa').value,
-        obs:      $('vg-obs').value.trim(),
-      },
+      venda_ganha_dados:   { valor, entrada, forma, programa, obs },
       ...(hist && { historico_kanban: hist }),
       atualizadoem: new Date().toISOString(),
     });
+
+    // Insert into vendas table
+    if (isLive) {
+      await supabase.from('vendas').insert({
+        lead_id:        vgLeadId,
+        closer,
+        programa,
+        valor,
+        valor_entrada:  entrada,
+        forma_pagamento: forma,
+        observacoes:    obs,
+        criadoem:       new Date().toISOString(),
+      });
+    }
+
     toast('Venda registrada! 🏆', 'ok');
     notifyVendaGanha(vgLeadId);
     closeVendaGanha();
@@ -3141,11 +3168,13 @@ async function confirmarVendaGanha() {
 }
 
 async function notifyVendaGanha(leadId) {
-  const lead   = allLeads.find(l => l.id === leadId);
+  const lead = allLeads.find(l => l.id === leadId);
   if (!lead) return;
-  const admins = allUsuarios.filter(u => u.role === 'admin' && u.id);
-  for (const admin of admins) {
-    await createNotification(admin.id, {
+  // Notify Tati specifically, fall back to all admins if not found
+  const tati = allUsuarios.find(u => (u.nome||'').toLowerCase().includes('tati') || (u.badge||'').toLowerCase() === 'tati');
+  const targets = tati ? [tati] : allUsuarios.filter(u => u.role === 'admin' && u.id);
+  for (const user of targets) {
+    await createNotification(user.id, {
       message: `🏆 Venda ganha! ${lead.nome || '—'} fechou negócio.`,
     });
   }

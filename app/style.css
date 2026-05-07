@@ -1098,6 +1098,27 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 }
 .btn-kanban-noshow:hover { background: rgba(192,57,43,.18); }
 
+/* Venda Ganha + Descartar action buttons on kanban card */
+.kc-actions {
+  display: flex; gap: 6px; margin-top: 8px;
+}
+.btn-kc-venda, .btn-kc-descartar {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 5px 8px; border-radius: var(--r-xs);
+  font-size: 11px; font-weight: 700; font-family: inherit;
+  border: 1px solid transparent; cursor: pointer; white-space: nowrap;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.btn-kc-venda {
+  background: rgba(206,146,33,.10); color: var(--gold); border-color: rgba(206,146,33,.22);
+}
+.btn-kc-venda:hover { background: rgba(206,146,33,.22); }
+.btn-kc-descartar {
+  background: rgba(255,255,255,.04); color: var(--t3); border-color: var(--b1);
+}
+.btn-kc-descartar:hover { background: rgba(192,57,43,.10); color: #e06450; border-color: rgba(192,57,43,.22); }
+.btn-kc-venda svg, .btn-kc-descartar svg { width: 12px; height: 12px; flex-shrink: 0; }
+
 /* ============================================================
    AGENDAR MODAL
    ============================================================ */
