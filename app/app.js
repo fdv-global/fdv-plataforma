@@ -2663,14 +2663,43 @@ function openPerfil(lead) {
 
   $('perfil-obs').value = lead.observacoes || '';
 
-  const hist = buildHistorico(lead);
-  $('perfil-historico').innerHTML = hist.length
-    ? hist.map(h=>`<div class="hist-item"><span class="hist-ico">${h.ico}</span><div class="hist-body"><div class="hist-label">${esc(h.label)}</div>${h.sub?`<div class="hist-sub">${esc(h.sub)}</div>`:''}</div></div>`).join('')
-    : '<p class="hist-empty">Nenhuma ação registrada.</p>';
-
+  // Show static history immediately, then enrich with lead_historico
+  renderPerfilHistorico(lead, []);
   $('perfil-backdrop').classList.add('open');
   document.body.style.overflow = 'hidden';
+
+  if (isLive) {
+    supabase.from('lead_historico').select('*').eq('lead_id', lead.id).order('movido_em', { ascending: true })
+      .then(({ data }) => {
+        if (data && perfilLeadId === lead.id) renderPerfilHistorico(lead, data);
+      });
+  }
 }
+
+function renderPerfilHistorico(lead, kanbanRows) {
+  const base = buildHistorico(lead);
+
+  // Add kanban movement history from lead_historico table
+  const KANBAN_COL_LBL = {
+    agendado:'Agendado', call_realizada:'Call Realizada', negociacao:'Negociação', decisao:'Decisão',
+    fechamento:'Negociação', followup:'Decisão', venda_ganha:'Venda Ganha', descartado:'Descartado', venda_perdida:'Descartado',
+  };
+  const kanbanItems = kanbanRows.map(r => ({
+    ico: r.col === 'venda_ganha' ? '🏆' : r.col === 'descartado' ? '🗑️' : '↪',
+    label: `Kanban → ${r.col_label || KANBAN_COL_LBL[r.col] || r.col}`,
+    sub: [
+      r.movido_por || null,
+      r.movido_em ? new Date(r.movido_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : null,
+    ].filter(Boolean).join(' · '),
+    ts: r.movido_em,
+  }));
+
+  // Merge and sort by approximate time (base items use lead date fields)
+  const all = [...base, ...kanbanItems];
+
+  $('perfil-historico').innerHTML = all.length
+    ? all.map(h=>`<div class="hist-item"><span class="hist-ico">${h.ico}</span><div class="hist-body"><div class="hist-label">${esc(h.label)}</div>${h.sub?`<div class="hist-sub">${esc(h.sub)}</div>`:''}</div></div>`).join('')
+    : '<p class="hist-empty">Nenhuma ação registrada.</p>';
 
 function closePerfil() {
   stopChatListener();
