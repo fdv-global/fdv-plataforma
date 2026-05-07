@@ -97,8 +97,13 @@ let leadsLoaded   = false;
 let usuariosUnsub = null;
 let allUsuarios   = [];
 let activeTab     = 'inicio';
-let activeSub     = 'leads';
+let activeSub     = 'novos';
 let dragLeadId    = null;
+let activeAgendadosSub = 'hoje'; // 'hoje' | 'todos' | 'briefing'
+
+// Descarte state
+let descarteLeadId  = null;
+let descarteSelected = null;
 let cal = { step: 1, closer: null, leadSnap: null };
 let agendaCalYear  = 0;
 let agendaCalMonth = 0;
@@ -178,6 +183,15 @@ const MOTIVOS_PERDA = [
       { id: 'outro', icon: 'pencil', label: 'Outro (campo livre)' },
     ]
   },
+];
+
+const MOTIVOS_DESCARTE = [
+  { id: 'sem_perfil_financeiro', label: 'Sem perfil financeiro' },
+  { id: 'sem_interesse',         label: 'Sem interesse' },
+  { id: 'nao_respondeu',         label: 'Não respondeu' },
+  { id: 'ja_aluna',              label: 'Já é aluna' },
+  { id: 'fora_publico',          label: 'Fora do público' },
+  { id: 'outro',                 label: 'Outro (campo livre)' },
 ];
 
 const ETIQUETAS_DEFAULT = ['Super Lead', 'Bom', 'Neutro', 'Frio'];
@@ -677,9 +691,11 @@ function switchSub(sub) {
 }
 
 function renderActiveSub() {
-  if      (activeSub === 'leads')   { populateMonths(); applyFilters(); }
-  else if (activeSub === 'agenda')  renderAgendaSub();
-  else if (activeSub === 'briefing') renderBriefingSub();
+  updateSubBadges();
+  if      (activeSub === 'novos')        { populateMonths(); applyFilters(); }
+  else if (activeSub === 'qualificados') renderQualificados();
+  else if (activeSub === 'agendados')    renderAgendadosSub();
+  else if (activeSub === 'descartados')  renderDescartados();
 }
 
 // ─── RENDER ALL ──────────────────────────────────────────────────────
@@ -805,7 +821,8 @@ function renderInicio() {
 
 // ─── LEADS LIST ──────────────────────────────────────────────────────
 function applyFilters() {
-  const status = $('filter-status').value;
+  // Novos sub sempre mostra apenas leads 'aguardando'
+  const status = activeSub === 'novos' ? 'aguardando' : ($('filter-status')?.value || '');
   const origem = $('filter-origem').value;
   const mes    = $('filter-mes').value;
   const busca  = $('filter-busca').value.toLowerCase().trim();
@@ -954,6 +971,294 @@ function renderBriefingSub() {
   content.querySelectorAll('.btn-briefing').forEach(b =>
     b.addEventListener('click', () => { const l = allLeads.find(x=>x.id===b.dataset.id); if(l) gerarBriefingLead(l); })
   );
+}
+
+// ─── SUB-BADGE COUNTS ────────────────────────────────────────────────
+function updateSubBadges() {
+  const novos = allLeads.filter(l => l.status === 'aguardando').length;
+  const quals = allLeads.filter(l => l.status === 'qualificado').length;
+  const bn = $('badge-novos'), bq = $('badge-qualificados');
+  if (bn) { bn.textContent = novos; bn.style.display = novos ? '' : 'none'; }
+  if (bq) { bq.textContent = quals; bq.style.display = quals ? '' : 'none'; }
+}
+
+// ─── QUALIFICADOS SUB ────────────────────────────────────────────────
+function renderQualificados() {
+  const leads = allLeads.filter(l => l.status === 'qualificado');
+  const el = $('qualificados-content');
+  if (!el) return;
+  if (!leads.length) {
+    el.innerHTML = `<div class="agenda-empty">
+      <i data-lucide="user-check" class="empty-lucide"></i>
+      <h3>Nenhum lead qualificado</h3>
+      <p>Use a aba "Novos" para qualificar leads e eles aparecerão aqui.</p>
+    </div>`;
+    lucide.createIcons({ nodes: [el] });
+    return;
+  }
+  el.innerHTML = `<div class="table-wrap"><table class="leads-table">
+    <thead><tr>
+      <th>Nome</th><th>Celular</th><th>Origem</th><th>Renda</th><th>Etiqueta</th><th>Chegou em</th><th>Ações</th>
+    </tr></thead>
+    <tbody>${leads.map(l => `<tr>
+      <td><button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
+      <td>${esc(l.celular||'—')}</td>
+      <td>${badgeOrigem(l.origem)}</td>
+      <td class="cell-renda">${esc(l.renda||'—')}</td>
+      <td>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</td>
+      <td>${fmtDate(l.datachegada)}</td>
+      <td class="cell-acoes">
+        <button class="btn-primary btn-sm" data-agendar="${l.id}">📅 Agendar</button>
+        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">💬</button>
+        <button class="btn-ghost btn-sm" data-descartar="${l.id}" style="color:var(--marsala)">🚫 Descartar</button>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+  el.querySelectorAll('[data-perfil]').forEach(b =>
+    b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
+  );
+  el.querySelectorAll('[data-agendar]').forEach(b =>
+    b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.agendar); if(l) openAgendar(l); })
+  );
+  el.querySelectorAll('.btn-wa-lead').forEach(b =>
+    b.addEventListener('click', () => openWaChatFromLead(b.dataset.id))
+  );
+  el.querySelectorAll('[data-descartar]').forEach(b =>
+    b.addEventListener('click', () => openDescarteModal(b.dataset.descartar))
+  );
+}
+
+// ─── AGENDADOS SUB (wrapper nested) ──────────────────────────────────
+function switchAgendadosSub(sub) {
+  activeAgendadosSub = sub;
+  document.querySelectorAll('#sub-agendados .sub-panel--inner').forEach(p => p.style.display = 'none');
+  const panel = $('sub-agendados-' + sub);
+  if (panel) panel.style.display = '';
+  document.querySelectorAll('#sub-agendados [data-agendados-sub]').forEach(l =>
+    l.classList.toggle('active', l.dataset.agendadosSub === sub)
+  );
+  renderAgendadosSub();
+}
+
+function renderAgendadosSub() {
+  if      (activeAgendadosSub === 'hoje')     renderAgendaHoje();
+  else if (activeAgendadosSub === 'todos')    renderAgendaSub();
+  else if (activeAgendadosSub === 'briefing') renderBriefingSub();
+}
+
+// ─── AGENDA DE HOJE ──────────────────────────────────────────────────
+function renderAgendaHoje() {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const content  = $('agenda-hoje-content');
+  if (!content) return;
+
+  let leads = allLeads.filter(l => l.status === 'agendado' && l.dataagendamento === todayStr);
+  leads.sort((a,b) => (a.horaagendamento||'').localeCompare(b.horaagendamento||''));
+
+  if (!leads.length) {
+    content.innerHTML = `<div class="agenda-empty">
+      <i data-lucide="calendar-check" class="empty-lucide"></i>
+      <h3>Nenhuma call hoje</h3>
+      <p>Sem calls agendadas para hoje (${fmtDate(todayStr)}).</p>
+    </div>`;
+    lucide.createIcons({ nodes: [content] });
+    return;
+  }
+
+  const groups = {};
+  leads.forEach(l => { const k = l.closer||'_sem'; if(!groups[k]) groups[k]=[]; groups[k].push(l); });
+  const order = ['fernanda','thomaz',...Object.keys(groups).filter(k=>k!=='fernanda'&&k!=='thomaz')];
+
+  content.innerHTML = order.filter(k => groups[k]?.length).map(key => {
+    const c = CLOSERS[key];
+    const name  = c ? c.name : (key==='_sem'?'Sem closer':key);
+    const color = c ? c.color : 'var(--text-muted)';
+    const bg    = c ? c.bg   : 'var(--bg-elevated)';
+    return `<div class="agenda-group">
+      <div class="agenda-group-header">
+        <div class="agenda-avatar" style="color:${color};background:${bg};border:1.5px solid ${color}">${name[0].toUpperCase()}</div>
+        <h3 class="agenda-group-name">${esc(name)}</h3>
+        <span class="agenda-group-count">${groups[key].length} call${groups[key].length!==1?'s':''}</span>
+      </div>
+      <div class="agenda-cards">
+        ${groups[key].map(l => `
+          <div class="agenda-card">
+            <div class="agenda-card-time">${esc(l.horaagendamento||'—')}</div>
+            <div class="agenda-card-info">
+              <button class="agenda-card-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
+              <span class="agenda-card-sub">${[l.celular, l.origem, l.renda].filter(Boolean).map(esc).join(' · ')}</span>
+              ${(l.etiquetas||[]).length ? `<div class="card-etiquetas">${(l.etiquetas||[]).map(t=>etiquetaChip(t,true)).join('')}</div>` : ''}
+            </div>
+            <button class="btn-ghost btn-sm btn-briefing" data-id="${l.id}">Copiar Briefing</button>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  content.querySelectorAll('[data-perfil]').forEach(b =>
+    b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
+  );
+  content.querySelectorAll('.btn-briefing').forEach(b =>
+    b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.id); if(l) gerarBriefingLead(l); })
+  );
+}
+
+function gerarAgendaHoje() {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const leads    = allLeads.filter(l => l.status === 'agendado' && l.dataagendamento === todayStr);
+  if (!leads.length) { toast('Nenhuma call hoje para copiar.', 'err'); return; }
+
+  leads.sort((a,b) => (a.horaagendamento||'').localeCompare(b.horaagendamento||''));
+  const dateStr = fmtDate(todayStr), dayName = getDayOfWeek(todayStr);
+  const groups  = {};
+  leads.forEach(l => { const k=l.closer||'_sem'; if(!groups[k]) groups[k]=[]; groups[k].push(l); });
+
+  let text = `Bom dia! ☀️\n📅 Agenda – ${dateStr} (${dayName})\n`;
+  ['fernanda','thomaz',...Object.keys(groups).filter(k=>k!=='fernanda'&&k!=='thomaz')].filter(k=>groups[k]).forEach(key => {
+    const c = CLOSERS[key];
+    text += `\n${c?.icon||'👤'} @${c?.waName||c?.name||(key==='_sem'?'Sem closer':key)}\n`;
+    groups[key].forEach(l => {
+      text += `🕐 ${l.horaagendamento||'--:--'} – ${l.nome||'—'}\n`;
+      text += `⏳ Status: Aguardando confirmação\n`;
+    });
+  });
+
+  navigator.clipboard.writeText(text.trimEnd())
+    .then(() => toast('Agenda de hoje copiada!', 'ok'))
+    .catch(() => toast('Não foi possível copiar.', 'err'));
+}
+
+// ─── DESCARTADOS SUB ─────────────────────────────────────────────────
+function renderDescartados() {
+  const leads = allLeads.filter(l => l.status === 'descartado');
+  const el    = $('descartados-content');
+  if (!el) return;
+  if (!leads.length) {
+    el.innerHTML = `<div class="agenda-empty">
+      <i data-lucide="user-x" class="empty-lucide"></i>
+      <h3>Nenhum lead descartado</h3>
+      <p>Leads descartados aparecem aqui. Você pode reativá-los a qualquer momento.</p>
+    </div>`;
+    lucide.createIcons({ nodes: [el] });
+    return;
+  }
+  el.innerHTML = `<div class="table-wrap"><table class="leads-table">
+    <thead><tr>
+      <th>Nome</th><th>Celular</th><th>Origem</th><th>Motivo</th><th>Chegou em</th><th>Ações</th>
+    </tr></thead>
+    <tbody>${leads.map(l => `<tr>
+      <td><button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
+      <td>${esc(l.celular||'—')}</td>
+      <td>${badgeOrigem(l.origem)}</td>
+      <td><span class="badge-status descartado">${esc(l.motivo_descarte_label||l.motivo_descarte||'—')}</span></td>
+      <td>${fmtDate(l.datachegada)}</td>
+      <td class="cell-acoes">
+        <button class="btn-ghost btn-sm" data-reativar="${l.id}">↩ Reativar</button>
+        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">💬</button>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+  el.querySelectorAll('[data-perfil]').forEach(b =>
+    b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
+  );
+  el.querySelectorAll('[data-reativar]').forEach(b =>
+    b.addEventListener('click', () => reativarLead(b.dataset.reativar))
+  );
+  el.querySelectorAll('.btn-wa-lead').forEach(b =>
+    b.addEventListener('click', () => openWaChatFromLead(b.dataset.id))
+  );
+}
+
+// ─── DESCARTE MODAL ──────────────────────────────────────────────────
+function openDescarteModal(leadId) {
+  descarteLeadId   = leadId;
+  descarteSelected = null;
+  const lead = allLeads.find(l => l.id === leadId);
+  $('descarte-lead-nome').textContent = lead?.nome || '—';
+  $('descarte-confirmar').disabled = true;
+
+  const body = $('descarte-body');
+  body.innerHTML = `
+    <p class="mp-instr">Selecione o motivo do descarte:</p>
+    <div class="mp-grid">
+      ${MOTIVOS_DESCARTE.map(m => `
+        <button class="mp-item" data-id="${m.id}">
+          <span>${esc(m.label)}</span>
+        </button>`).join('')}
+    </div>
+    <div id="descarte-outro-wrap" style="display:none;margin-top:14px">
+      <textarea id="descarte-outro-text" class="form-ctrl" placeholder="Descreva o motivo…" rows="3" style="width:100%;resize:vertical"></textarea>
+    </div>`;
+
+  body.querySelectorAll('.mp-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      body.querySelectorAll('.mp-item').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      descarteSelected = btn.dataset.id;
+      $('descarte-outro-wrap').style.display = descarteSelected === 'outro' ? 'block' : 'none';
+      $('descarte-confirmar').disabled = false;
+    });
+  });
+
+  $('descarte-backdrop').style.display = 'flex';
+}
+
+function closeDescarteModal() {
+  $('descarte-backdrop').style.display = 'none';
+  descarteLeadId   = null;
+  descarteSelected = null;
+}
+
+async function confirmarDescarte() {
+  if (!descarteLeadId || !descarteSelected) return;
+  if (descarteSelected === 'outro') {
+    const text = ($('descarte-outro-text')?.value || '').trim();
+    if (!text) { toast('Descreva o motivo do descarte.', 'err'); return; }
+  }
+  const btn = $('descarte-confirmar');
+  btn.disabled = true;
+
+  const motivo    = MOTIVOS_DESCARTE.find(m => m.id === descarteSelected);
+  const outroText = descarteSelected === 'outro' ? ($('descarte-outro-text')?.value || '').trim() : '';
+
+  try {
+    await saveLead(descarteLeadId, {
+      status:                'descartado',
+      motivo_descarte:       descarteSelected,
+      motivo_descarte_label: motivo?.label || descarteSelected,
+      ...(outroText && { motivo_descarte_obs: outroText }),
+      atualizadoem:          new Date().toISOString(),
+    });
+    toast('Lead descartado.', 'ok');
+    closeDescarteModal();
+  } catch(e) {
+    console.error(e);
+    toast(e.message || 'Erro ao descartar.', 'err');
+    btn.disabled = false;
+  }
+}
+
+// ─── PIPELINE ACTIONS ────────────────────────────────────────────────
+async function qualificarLead(id) {
+  try {
+    await saveLead(id, { status: 'qualificado', atualizadoem: new Date().toISOString() });
+    toast('Lead qualificado.', 'ok');
+  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+}
+
+async function reativarLead(id) {
+  try {
+    await saveLead(id, { status: 'aguardando', atualizadoem: new Date().toISOString() });
+    toast('Lead reativado na aba Novos.', 'ok');
+  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+}
+
+// ─── ABRIR WHATSAPP PELO LEAD ─────────────────────────────────────────
+function openWaChatFromLead(leadId) {
+  const lead = allLeads.find(l => l.id === leadId);
+  if (!lead) { toast('Lead não encontrado.', 'err'); return; }
+  switchTab('whatsapp');
+  openCentralChat(leadId);
 }
 
 function gerarAgendaDoDia() {
@@ -1650,6 +1955,9 @@ function renderTable() {
   tbody.querySelectorAll('[data-postcall]').forEach(b =>
     b.addEventListener('click', e => { e.stopPropagation(); currentId=b.dataset.id; closeAllDropdowns(); handlePostCall(b.dataset.postcall); })
   );
+  tbody.querySelectorAll('.btn-wa-lead').forEach(b =>
+    b.addEventListener('click', e => { e.stopPropagation(); openWaChatFromLead(b.dataset.id); })
+  );
 }
 
 // ─── MOBILE CARDS ────────────────────────────────────────────────────
@@ -1693,6 +2001,9 @@ function renderCards() {
   wrap.querySelectorAll('[data-postcall]').forEach(b =>
     b.addEventListener('click', e => { e.stopPropagation(); currentId=b.dataset.id; closeAllDropdowns(); handlePostCall(b.dataset.postcall); })
   );
+  wrap.querySelectorAll('.btn-wa-lead').forEach(b =>
+    b.addEventListener('click', e => { e.stopPropagation(); openWaChatFromLead(b.dataset.id); })
+  );
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────
@@ -1701,30 +2012,40 @@ function badgeOrigem(o) {
   return `<span class="badge-origem ${map[o]||'outros'}">${esc(o||'—')}</span>`;
 }
 function badgeStatus(s) {
-  const labels = { aguardando:'Aguardando', agendado:'Agendado', realizada:'Call Realizada', noshow:'No Show', cancelado:'Cancelado' };
+  const labels = { aguardando:'Aguardando', qualificado:'Qualificado', agendado:'Agendado', realizada:'Call Realizada', noshow:'No Show', cancelado:'Cancelado', descartado:'Descartado' };
   return `<span class="badge-status ${s||''}">${labels[s]||s||'—'}</span>`;
 }
 function btnAcao(l) {
   const id = l.id;
-  const canAgendar  = l.status !== 'cancelado';
-  const canRemarcar = l.status === 'agendado' || l.status === 'noshow';
-  const isAgendado  = l.status === 'agendado';
-  const isRealizada = l.status === 'realizada';
+  const isAguardando  = l.status === 'aguardando';
+  const isQualificado = l.status === 'qualificado';
+  const isDescartado  = l.status === 'descartado';
+  const canAgendar    = !isAguardando && !isDescartado && l.status !== 'cancelado';
+  const canRemarcar   = l.status === 'agendado' || l.status === 'noshow';
+  const isAgendado    = l.status === 'agendado';
+  const isRealizada   = l.status === 'realizada';
   const opts = [
-    canAgendar  ? `<button class="acao-opt opt-agendar"   data-id="${id}" data-action="agendar">📅 Agendar</button>`   : '',
-                  `<button class="acao-opt opt-qualificar" data-id="${id}" data-action="qualificar">🔍 Ver Perfil</button>`,
-    canRemarcar ? `<button class="acao-opt opt-remarcar"   data-id="${id}" data-action="agendar">🔄 Remarcar</button>` : '',
-    isRealizada ? `<button class="acao-opt opt-ver"        data-id="${id}" data-action="ver">📋 Ver Resultado</button>`: '',
-    isAgendado  ? `<div class="acao-sep"></div>
-                   <button class="acao-opt opt-realizada" data-id="${id}" data-postcall="realizada">✅ Call Realizada</button>
-                   <button class="acao-opt opt-noshow"    data-id="${id}" data-postcall="noshow">❌ No Show</button>
-                   <button class="acao-opt opt-cancelado" data-id="${id}" data-postcall="cancelado">🚫 Cancelado</button>` : '',
+    isAguardando  ? `<button class="acao-opt opt-qualificar-lead" data-id="${id}" data-action="qualificar-lead">✓ Qualificar</button>` : '',
+    isQualificado ? `<button class="acao-opt opt-agendar" data-id="${id}" data-action="agendar">📅 Agendar</button>` : '',
+    canAgendar && !isQualificado
+                  ? `<button class="acao-opt opt-agendar" data-id="${id}" data-action="agendar">📅 Agendar</button>` : '',
+                    `<button class="acao-opt opt-perfil" data-id="${id}" data-action="qualificar">🔍 Ver Perfil</button>`,
+    canRemarcar   ? `<button class="acao-opt opt-remarcar" data-id="${id}" data-action="agendar">🔄 Remarcar</button>` : '',
+    isRealizada   ? `<button class="acao-opt opt-ver" data-id="${id}" data-action="ver">📋 Ver Resultado</button>` : '',
+    isDescartado  ? `<button class="acao-opt" data-id="${id}" data-action="reativar">↩ Reativar</button>` : '',
+    isAgendado    ? `<div class="acao-sep"></div>
+                     <button class="acao-opt opt-realizada" data-id="${id}" data-postcall="realizada">✅ Call Realizada</button>
+                     <button class="acao-opt opt-noshow"    data-id="${id}" data-postcall="noshow">❌ No Show</button>
+                     <button class="acao-opt opt-cancelado" data-id="${id}" data-postcall="cancelado">🚫 Cancelado</button>` : '',
+    !isDescartado ? `<div class="acao-sep"></div>
+                     <button class="acao-opt" data-id="${id}" data-action="descartar" style="color:var(--marsala)">🚫 Descartar</button>` : '',
   ].filter(Boolean).join('');
   return `<div class="acoes-cell">
     <div class="acoes-wrap" data-leadid="${id}">
       <button class="btn-acao-main" data-id="${id}" data-action="menu" title="Ações">⋯</button>
       <div class="acoes-dropdown">${opts}</div>
     </div>
+    <button class="btn-icon btn-wa-lead" data-id="${id}" title="Abrir no WhatsApp">💬</button>
     <button class="btn-icon btn-editar"  data-id="${id}" data-action="editar"  title="Editar">✏</button>
     <button class="btn-icon btn-excluir" data-id="${id}" data-action="excluir" title="Excluir">🗑</button>
   </div>`;
@@ -1796,11 +2117,14 @@ function handleAction(id, action) {
   if (!lead) return;
   if (action === 'menu') { toggleAcoesDropdown(id); return; }
   closeAllDropdowns();
-  if      (action === 'agendar')    openAgendar(lead);
-  else if (action === 'qualificar') openPerfil(lead);
-  else if (action === 'ver')        verDetalhes(lead);
-  else if (action === 'editar')     openNovoLead(lead);
-  else if (action === 'excluir')    deleteLead(id);
+  if      (action === 'agendar')          openAgendar(lead);
+  else if (action === 'qualificar')       openPerfil(lead);
+  else if (action === 'qualificar-lead')  qualificarLead(id);
+  else if (action === 'descartar')        openDescarteModal(id);
+  else if (action === 'reativar')         reativarLead(id);
+  else if (action === 'ver')              verDetalhes(lead);
+  else if (action === 'editar')           openNovoLead(lead);
+  else if (action === 'excluir')          deleteLead(id);
 }
 
 async function deleteLead(id) {
@@ -4500,10 +4824,18 @@ function bindEvents() {
     }
   });
 
-  // Sub-nav
+  // Sub-nav principal
   document.querySelectorAll('.sub-link[data-sub]').forEach(btn =>
     btn.addEventListener('click', () => switchSub(btn.dataset.sub))
   );
+
+  // Sub-nav secundário (Agendados: hoje/todos/briefing)
+  document.querySelectorAll('[data-agendados-sub]').forEach(btn =>
+    btn.addEventListener('click', () => switchAgendadosSub(btn.dataset.agendadosSub))
+  );
+
+  // Agenda de Hoje — copiar
+  $('btn-gerar-agenda-hoje').addEventListener('click', gerarAgendaHoje);
 
   // Tab nav
   document.querySelectorAll('.nav-link[data-tab]').forEach(btn =>
@@ -4804,9 +5136,17 @@ function bindEvents() {
     if (e.target === $('add-lead-backdrop')) closeAddAsLeadModal();
   });
 
+  // Descarte modal
+  $('descarte-close').addEventListener('click', closeDescarteModal);
+  $('descarte-cancelar').addEventListener('click', closeDescarteModal);
+  $('descarte-confirmar').addEventListener('click', confirmarDescarte);
+  $('descarte-backdrop').addEventListener('click', e => {
+    if (e.target === $('descarte-backdrop')) closeDescarteModal();
+  });
+
   // Keyboard
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeModal(); closePerfil(); closeNovoLead(); closeQRModal(); closeMotivosPerda(); closeVendaGanha(); closeAddAsLeadModal(); closeNovaConversaModal(); }
+    if (e.key === 'Escape') { closeModal(); closePerfil(); closeNovoLead(); closeQRModal(); closeMotivosPerda(); closeVendaGanha(); closeAddAsLeadModal(); closeNovaConversaModal(); closeDescarteModal(); }
   });
 }
 
