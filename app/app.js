@@ -792,7 +792,7 @@ function renderSucesso() {
             <i data-lucide="graduation-cap" style="color:var(--petro-l)"></i>
           </div>
           <div>
-            <h1>Alunos</h1>
+            <h1>Alunas</h1>
             <p>Gestão de alunas, sessões e contratos</p>
           </div>
         </div>
@@ -814,7 +814,7 @@ function renderSucesso() {
     el.innerHTML = `
       <div class="page-top">
         <div class="page-title-block">
-          <h1>Alunos <span style="color:var(--t3);font-weight:400;font-size:18px">/ ${s ? s.label : activeSucessoSub}</span></h1>
+          <h1>Alunas <span style="color:var(--t3);font-weight:400;font-size:18px">/ ${s ? s.label : activeSucessoSub}</span></h1>
         </div>
       </div>
       <div class="placeholder-module">
