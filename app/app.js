@@ -724,32 +724,34 @@ function renderComercial() {
   const el = $('comercial-content');
   if (!el) return;
   el.innerHTML = `
-    <div class="module-landing-header">
-      <div class="module-landing-header-icon"
-           style="background:var(--gold-10);border:1px solid var(--gold-22)">
-        <i data-lucide="crown" style="color:var(--gold)"></i>
+    <div class="module-landing">
+      <div class="module-landing-header">
+        <div class="module-landing-header-icon"
+             style="background:var(--gold-10);border:1px solid var(--gold-22)">
+          <i data-lucide="crown" style="color:var(--gold)"></i>
+        </div>
+        <div>
+          <h1>Comercial</h1>
+          <p>Funil de captação, agendamento e fechamento de vendas</p>
+        </div>
       </div>
-      <div>
-        <h1>Comercial</h1>
-        <p>Funil de captação, agendamento e fechamento de vendas</p>
+      <div class="module-landing-cards">
+        <button class="module-landing-card" data-go="agendamentos">
+          <span class="mlc-icon" style="color:var(--gold)"><i data-lucide="calendar"></i></span>
+          <span class="mlc-title">Agendamentos</span>
+          <span class="mlc-desc">Pipeline pré-call — qualificação e agendamento de leads</span>
+        </button>
+        <button class="module-landing-card" data-go="closer">
+          <span class="mlc-icon" style="color:var(--petro-l)"><i data-lucide="user"></i></span>
+          <span class="mlc-title">Closer</span>
+          <span class="mlc-desc">Funil de vendas Kanban — acompanhe cada negociação</span>
+        </button>
+        <button class="module-landing-card" data-go="relatorios">
+          <span class="mlc-icon" style="color:#9b59b6"><i data-lucide="bar-chart-2"></i></span>
+          <span class="mlc-title">Relatórios</span>
+          <span class="mlc-desc">Métricas de performance e conversão comercial</span>
+        </button>
       </div>
-    </div>
-    <div class="module-landing-cards">
-      <button class="module-landing-card" data-go="agendamentos">
-        <span class="mlc-icon" style="color:var(--gold)"><i data-lucide="calendar"></i></span>
-        <span class="mlc-title">Agendamentos</span>
-        <span class="mlc-desc">Pipeline pré-call — qualificação e agendamento de leads</span>
-      </button>
-      <button class="module-landing-card" data-go="closer">
-        <span class="mlc-icon" style="color:var(--petro-l)"><i data-lucide="user"></i></span>
-        <span class="mlc-title">Closer</span>
-        <span class="mlc-desc">Funil de vendas Kanban — acompanhe cada negociação</span>
-      </button>
-      <button class="module-landing-card" data-go="relatorios">
-        <span class="mlc-icon" style="color:#9b59b6"><i data-lucide="bar-chart-2"></i></span>
-        <span class="mlc-title">Relatórios</span>
-        <span class="mlc-desc">Métricas de performance e conversão comercial</span>
-      </button>
     </div>`;
   el.querySelectorAll('[data-go]').forEach(btn =>
     btn.addEventListener('click', () => switchTab(btn.dataset.go))
@@ -783,23 +785,25 @@ function renderSucesso() {
 
   if (!activeSucessoSub) {
     el.innerHTML = `
-      <div class="module-landing-header">
-        <div class="module-landing-header-icon"
-             style="background:var(--petro-10);border:1px solid var(--petro-18)">
-          <i data-lucide="graduation-cap" style="color:var(--petro-l)"></i>
+      <div class="module-landing">
+        <div class="module-landing-header">
+          <div class="module-landing-header-icon"
+               style="background:var(--petro-10);border:1px solid var(--petro-18)">
+            <i data-lucide="graduation-cap" style="color:var(--petro-l)"></i>
+          </div>
+          <div>
+            <h1>Alunos</h1>
+            <p>Gestão de alunas, sessões e contratos</p>
+          </div>
         </div>
-        <div>
-          <h1>Alunos</h1>
-          <p>Gestão de alunas, sessões e contratos</p>
+        <div class="module-landing-cards">
+          ${Object.entries(SUCESSO_SUBS).map(([key, s]) => `
+            <button class="module-landing-card" data-go-sucesso="${key}">
+              <span class="mlc-icon" style="color:${s.color}"><i data-lucide="${s.icon}"></i></span>
+              <span class="mlc-title">${s.label}</span>
+              <span class="mlc-desc">${s.desc}</span>
+            </button>`).join('')}
         </div>
-      </div>
-      <div class="module-landing-cards">
-        ${Object.entries(SUCESSO_SUBS).map(([key, s]) => `
-          <button class="module-landing-card" data-go-sucesso="${key}">
-            <span class="mlc-icon" style="color:${s.color}"><i data-lucide="${s.icon}"></i></span>
-            <span class="mlc-title">${s.label}</span>
-            <span class="mlc-desc">${s.desc}</span>
-          </button>`).join('')}
       </div>`;
     el.querySelectorAll('[data-go-sucesso]').forEach(btn =>
       btn.addEventListener('click', () => switchSucessoSub(btn.dataset.goSucesso))
@@ -846,23 +850,25 @@ function renderFinanceiro() {
 
   if (!activeFinanceiroSub) {
     el.innerHTML = `
-      <div class="module-landing-header">
-        <div class="module-landing-header-icon"
-             style="background:rgba(46,204,113,.10);border:1px solid rgba(46,204,113,.25)">
-          <i data-lucide="coins" style="color:#2ecc71"></i>
+      <div class="module-landing">
+        <div class="module-landing-header">
+          <div class="module-landing-header-icon"
+               style="background:rgba(46,204,113,.10);border:1px solid rgba(46,204,113,.25)">
+            <i data-lucide="coins" style="color:#2ecc71"></i>
+          </div>
+          <div>
+            <h1>Financeiro</h1>
+            <p>Inadimplência, pagamentos e relatórios financeiros</p>
+          </div>
         </div>
-        <div>
-          <h1>Financeiro</h1>
-          <p>Inadimplência, pagamentos e relatórios financeiros</p>
+        <div class="module-landing-cards">
+          ${Object.entries(FINANCEIRO_SUBS).map(([key, s]) => `
+            <button class="module-landing-card" data-go-financeiro="${key}">
+              <span class="mlc-icon" style="color:${s.color}"><i data-lucide="${s.icon}"></i></span>
+              <span class="mlc-title">${s.label}</span>
+              <span class="mlc-desc">${s.desc}</span>
+            </button>`).join('')}
         </div>
-      </div>
-      <div class="module-landing-cards">
-        ${Object.entries(FINANCEIRO_SUBS).map(([key, s]) => `
-          <button class="module-landing-card" data-go-financeiro="${key}">
-            <span class="mlc-icon" style="color:${s.color}"><i data-lucide="${s.icon}"></i></span>
-            <span class="mlc-title">${s.label}</span>
-            <span class="mlc-desc">${s.desc}</span>
-          </button>`).join('')}
       </div>`;
     el.querySelectorAll('[data-go-financeiro]').forEach(btn =>
       btn.addEventListener('click', () => switchFinanceiroSub(btn.dataset.goFinanceiro))
