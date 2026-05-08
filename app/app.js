@@ -3075,6 +3075,10 @@ function openAgendar(lead) {
     { l:'Renda',     v: lead.renda     || '—' },
     { l:'Chegou em', v: fmtDate(lead.datachegada) },
   ]);
+  $('sched-hint').textContent         = 'Selecione o closer — o link de agendamento abre em nova aba.';
+  $('sched-banner-p').textContent     = 'Link aberto em nova aba. Confirme o horário com o lead e preencha os dados abaixo.';
+  $('sched-closer-label').textContent = 'Closer';
+  $('sched-obs').placeholder          = 'Contexto, interesse demonstrado, pontos de atenção…';
   $('form-resultado').style.display = 'none';
   $('form-agendar').style.display   = 'block';
   $('form-detalhes').style.display  = 'none';
@@ -3089,6 +3093,10 @@ function openAgendarSessao(sessao, aluna) {
   $('modal-subtitle').textContent = (aluna?.nome || '—') + (sessao.numero_sessao ? ` · Sessão ${sessao.numero_sessao}` : '');
   $('lead-strip').innerHTML       = '';
   $('lead-strip').style.display   = 'none';
+  $('sched-hint').textContent         = 'Selecione o responsável — o link de agendamento abre em nova aba.';
+  $('sched-banner-p').textContent     = 'Link aberto em nova aba. Confirme o horário com a aluna e preencha os dados abaixo.';
+  $('sched-closer-label').textContent = 'Responsável';
+  $('sched-obs').placeholder          = 'Observações sobre a sessão…';
   $('form-resultado').style.display = 'none';
   $('form-agendar').style.display   = 'block';
   $('form-detalhes').style.display  = 'none';

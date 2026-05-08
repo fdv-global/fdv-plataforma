@@ -630,7 +630,7 @@
       <!-- AGENDAR -->
       <div id="form-agendar">
         <div class="sched-panel" id="sched-step-1">
-          <p class="sched-hint">Selecione o closer — o link de agendamento abre em nova aba.</p>
+          <p class="sched-hint" id="sched-hint">Selecione o closer — o link de agendamento abre em nova aba.</p>
           <div class="closer-grid">
             <button class="closer-card" data-closer="fernanda">
               <div class="closer-avatar" style="color:#CE9221;background:rgba(206,146,33,.12);border-color:#CE9221">F</div>
@@ -648,11 +648,11 @@
         <div class="sched-panel" id="sched-step-2" style="display:none">
           <div class="sched-banner">
             <span class="sched-banner-ico">📅</span>
-            <p>Link aberto em nova aba. Confirme o horário com o lead e preencha os dados abaixo.</p>
+            <p id="sched-banner-p">Link aberto em nova aba. Confirme o horário com o lead e preencha os dados abaixo.</p>
           </div>
           <div class="form-row-2">
             <div class="form-group">
-              <label for="sched-closer-lbl">Closer</label>
+              <label for="sched-closer-lbl" id="sched-closer-label">Closer</label>
               <input type="text" id="sched-closer-lbl" class="form-ctrl" readonly>
             </div>
             <div class="form-group">
