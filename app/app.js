@@ -530,7 +530,7 @@ function openEditarUsuario(uid) {
   $('eu-uid').value = uid;
   $('eu-nome').value = u.nome || '';
   $('eu-email').value = u.email || '';
-  $('eu-role').value = u.role || 'comercial';
+  $('eu-role').value = u.role || 'closer';
   const perms = u.permissions || ROLE_PERMISSIONS[u.role] || { ...DEFAULT_PERMISSIONS };
   renderPermCheckboxes('eu-perm-grid', perms);
   const preview = $('eu-foto-preview');
@@ -586,7 +586,7 @@ async function updateRoleUsuario(uid, role) {
 
 function openNovoUsuario() {
   ['nu-nome','nu-email','nu-senha'].forEach(id => $(id).value = '');
-  $('nu-role').value = 'comercial';
+  $('nu-role').value = 'closer';
   renderPermCheckboxes('nu-perm-grid', { ...ROLE_PERMISSIONS.comercial });
   $('nu-error').style.display = 'none';
   const fotoInput = $('nu-foto');
