@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>FDV — Importação Planilha Alunas</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Courier New', monospace; background: #0d1117; color: #c9d1d9; min-height: 100vh; padding: 32px; }
+  h1 { color: #58a6ff; font-size: 20px; margin-bottom: 8px; }
+  .subtitle { color: #8b949e; font-size: 13px; margin-bottom: 24px; }
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+  .card h2 { color: #e6edf3; font-size: 14px; margin-bottom: 12px; }
+  input { width: 100%; background: #0d1117; border: 1px solid #30363d; color: #c9d1d9; padding: 8px 12px;
+          border-radius: 6px; font-family: inherit; font-size: 13px; margin-bottom: 8px; }
+  input:focus { outline: none; border-color: #58a6ff; }
+  button { background: #238636; color: #fff; border: none; padding: 10px 20px; border-radius: 6px;
+           font-family: inherit; font-size: 13px; cursor: pointer; margin-right: 8px; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.secondary { background: #21262d; border: 1px solid #30363d; color: #c9d1d9; }
+  #log { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 16px;
+         height: 500px; overflow-y: auto; font-size: 12px; line-height: 1.7; }
+  .ok   { color: #3fb950; }
+  .err  { color: #f85149; }
+  .info { color: #58a6ff; }
+  .warn { color: #d29922; }
+  .dim  { color: #8b949e; }
+  .sep  { color: #30363d; }
+  #progress { display: none; margin-top: 12px; }
+  progress { width: 100%; height: 6px; border-radius: 3px; }
+  .stats { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 12px; }
+  .stat { background: #21262d; border-radius: 6px; padding: 10px; text-align: center; }
+  .stat-num { display: block; font-size: 18px; font-weight: bold; color: #58a6ff; }
+  .stat-lbl { font-size: 10px; color: #8b949e; line-height: 1.4; }
+</style>
+</head>
+<body>
+
+<h1>FDV — Importação Planilha Alunas</h1>
+<p class="subtitle">Lê as 6 abas do Google Sheets e importa alunas + sessões + contratos no Supabase. Idempotente.</p>
+
+<div class="card">
+  <h2>⚙️ Configuração</h2>
+  <input type="text" id="sheet-id" placeholder="Google Sheet ID"
+         value="1Vt_s4RrX29J99O4Av0ItJXnLx8T7bXmZUuk0s2zVH6U">
+  <input type="text" id="sb-url" placeholder="Supabase URL"
+         value="https://yadxcbhginjvoemacdly.supabase.co">
+  <input type="text" id="sb-key" placeholder="Supabase service_role key"
+         value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhZHhjYmhnaW5qdm9lbWFjZGx5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Njk2Nzk4MSwiZXhwIjoyMDkyNTQzOTgxfQ.Vp_JSA4ReP40a25L8GS7stNdROAy5YIIw-7HM98z_RY">
+</div>
+
+<div class="card">
+  <h2>🚀 Importar</h2>
+  <p style="font-size:12px;color:#8b949e;margin-bottom:12px">
+    Abas: Individual · Comunidade +3 · Comunidade +1 · Reprogramação Mensal · Águia Club · PRM
+  </p>
+  <button id="btn-import">▶ Importar Alunas</button>
+  <button id="btn-check" class="secondary">🔍 Verificar tabelas</button>
+  <div id="progress">
+    <progress id="pbar" value="0" max="100"></progress>
+    <span id="ptext" style="font-size:11px;color:#8b949e;margin-left:8px"></span>
+  </div>
+  <div class="stats">
+    <div class="stat"><span class="stat-num" id="s-indiv">—</span><span class="stat-lbl">Individual</span></div>
+    <div class="stat"><span class="stat-num" id="s-com3">—</span><span class="stat-lbl">Comun. +3</span></div>
+    <div class="stat"><span class="stat-num" id="s-com1">—</span><span class="stat-lbl">Comun. +1</span></div>
+    <div class="stat"><span class="stat-num" id="s-repro">—</span><span class="stat-lbl">Reprog.<br>Mensal</span></div>
+    <div class="stat"><span class="stat-num" id="s-aguia">—</span><span class="stat-lbl">Águia Club</span></div>
+    <div class="stat"><span class="stat-num" id="s-prm">—</span><span class="stat-lbl">PRM</span></div>
+    <div class="stat"><span class="stat-num" id="s-sessoes">—</span><span class="stat-lbl">Sessões</span></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>📋 Log</h2>
+  <div id="log"><span class="dim">Pronto. Clique em "Importar Alunas" para começar.</span></div>
+</div>
+
+<script>
+// ─── HELPERS DE UI ────────────────────────────────────────────────────────────
+function cfg(id) { return document.getElementById(id).value.trim(); }
+
+const logEl = document.getElementById('log');
+function log(msg, cls = '') {
+  const d = document.createElement('div');
+  d.className = cls;
+  d.textContent = msg;
+  logEl.appendChild(d);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function sep() { log('─'.repeat(60), 'sep'); }
+function setProgress(pct, txt) {
+  document.getElementById('progress').style.display = '';
+  document.getElementById('pbar').value = pct;
+  document.getElementById('ptext').textContent = txt;
+}
+function setStat(id, n) { document.getElementById('s-' + id).textContent = n; }
+
+// ─── CSV PARSER ───────────────────────────────────────────────────────────────
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+      else if (c === '"') inQ = false;
+      else field += c;
+    } else {
+      if (c === '"') { inQ = true; }
+      else if (c === ',') { row.push(field.trim()); field = ''; }
+      else if (c === '\r' || c === '\n') {
+        if (c === '\r' && text[i + 1] === '\n') i++;
+        row.push(field.trim()); field = '';
+        if (row.some(f => f !== '')) rows.push(row);
+        row = [];
+      } else field += c;
+    }
+  }
+  if (field || row.length) { row.push(field.trim()); if (row.some(f => f !== '')) rows.push(row); }
+  return rows;
+}
+
+// ─── FUNÇÕES DE DATA ──────────────────────────────────────────────────────────
+function parseDateBR(str) {
+  if (!str) return null;
+  const m = (str || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return null;
+  const [, d, mo, y] = m;
+  return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
+}
+
+function addMonths(dateStr, months) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString().split('T')[0];
+}
+
+// Tenta calcular data_termino a partir do campo "tempo contratado"
+function computeTermino(tempoContratado, dataInscricao) {
+  if (!tempoContratado) return null;
+  const asDate = parseDateBR(tempoContratado);
+  if (asDate) return asDate;
+  const mesesM = tempoContratado.match(/(\d+)\s*m[eê]s/i);
+  if (mesesM) return addMonths(dataInscricao, parseInt(mesesM[1]));
+  const anosM = tempoContratado.match(/(\d+)\s*ano/i);
+  if (anosM) return addMonths(dataInscricao, parseInt(anosM[1]) * 12);
+  return null;
+}
+
+// ─── PARSERS DE VALOR ─────────────────────────────────────────────────────────
+function parseQnt(val) {
+  if (!val) return 0;
+  // "4 com Feh e 6 com Flavia" → 10
+  const multiM = val.match(/(\d+)\s+com\s+\w+\s+e\s+(\d+)/i);
+  if (multiM) return parseInt(multiM[1]) + parseInt(multiM[2]);
+  const m = val.match(/(\d+)/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function parseStatusAluna(val) {
+  const v = (val || '').trim();
+  const MAP = {
+    'Finalizado':      'Finalizado',
+    'Dentro do Prazo': 'Ativa',
+    'Atrasado':        'Atrasada',
+    'Atrasada':        'Atrasada',
+    'Cliente Off':     'Inativa',
+    'Reembolso':       'Reembolso',
+    'Cancelado':       'Cancelada',
+    'Cancelada':       'Cancelada',
+    'Migrou':          'Migrou',
+    'Nova compra':     'Nova compra',
+    'Parceria':        'Parceria',
+  };
+  return MAP[v] || (v || 'Nova compra');
+}
+
+function parseSessionStatus(val) {
+  const v = (val || '').toLowerCase().trim();
+  if (!v) return null;
+  if (v.includes('realiz'))  return 'Realizada';
+  if (v.includes('cancel'))  return 'Cancelada';
+  if (v.includes('marc'))    return 'Marcada';
+  if (v.includes('contato')) return 'Em contato';
+  if (v.includes('aguard'))  return 'Aguardando';
+  return val.trim() || null;
+}
+
+function parseBool(val) {
+  const v = (val || '').toUpperCase().trim();
+  return v === 'TRUE' || v === '1' || v === 'VERDADEIRO' || v === 'SIM' || v === 'S';
+}
+
+// Célula de sessão que contém apenas uma data (sem coluna de status separada)
+// Retorna { data, status } ou null se vazia
+function parseSessaoCell(val) {
+  const v = (val || '').trim();
+  if (!v) return null;
+  const data = parseDateBR(v);
+  if (data) return { data, status: 'Realizada' };
+  const status = parseSessionStatus(v);
+  return status ? { data: null, status } : null;
+}
+
+// ─── PARSERS POR TIPO DE ABA ──────────────────────────────────────────────────
+
+// Individual, Comunidade +3, Comunidade +1
+// [0] nome  [1] inscricao  [2] termino  [3] qnt  [4] status  [5..16] sessões 1-12
+function parseBasicRow(row, produto) {
+  const nome = (row[0] || '').trim();
+  if (!nome) return null;
+
+  const dataInscricao = parseDateBR(row[1]);
+  const dataTermino   = parseDateBR(row[2]);
+  const qnt           = parseQnt(row[3]);
+  const status        = parseStatusAluna(row[4]);
+
+  const sessoes = [];
+  for (let i = 5; i < row.length && (i - 5) < 12; i++) {
+    const s = parseSessaoCell(row[i]);
+    if (!s) continue;
+    sessoes.push({ numero_sessao: i - 4, data: s.data, status: s.status });
+  }
+  const sessoes_realizadas = sessoes.filter(s => s.status === 'Realizada').length;
+
+  return {
+    aluna: {
+      nome, produto, status,
+      data_inscricao:    dataInscricao,
+      data_termino:      dataTermino,
+      sessoes_total:     qnt || sessoes.length,
+      sessoes_realizadas,
+      esta_no_grupo:     false,
+    },
+    sessoes,
+    contrato: dataInscricao ? {
+      produto, assinado: true,
+      data_inicio:     dataInscricao,
+      data_vencimento: dataTermino,
+      esta_no_grupo:   false,
+    } : null,
+  };
+}
+
+// Reprogramação Mensal
+// [0] nome  [1] status  [2] assinado  [3] no_grupo  [4] inscricao
+// [5] tempo_contratado  [6] qnt  [7,8] s1_data,s1_status  [9,10] s2_data,s2_status …
+function parseReproRow(row, produto) {
+  const nome = (row[0] || '').trim();
+  if (!nome) return null;
+
+  const status        = parseStatusAluna(row[1]);
+  const assinado      = parseBool(row[2]);
+  const noGrupo       = parseBool(row[3]);
+  const dataInscricao = parseDateBR(row[4]);
+  const dataTermino   = computeTermino(row[5], dataInscricao);
+  const qnt           = parseQnt(row[6]);
+
+  const sessoes = [];
+  for (let i = 7; i + 1 < row.length; i += 2) {
+    const dataVal   = (row[i]     || '').trim();
+    const statusVal = (row[i + 1] || '').trim();
+    if (!dataVal && !statusVal) continue;
+    const num  = Math.floor((i - 7) / 2) + 1;
+    const data = parseDateBR(dataVal);
+    const st   = parseSessionStatus(statusVal) || (data ? 'Realizada' : 'Aguardando');
+    sessoes.push({ numero_sessao: num, data, status: st });
+  }
+  const sessoes_realizadas = sessoes.filter(s => s.status === 'Realizada').length;
+
+  return {
+    aluna: {
+      nome, produto, status,
+      data_inscricao:    dataInscricao,
+      data_termino:      dataTermino,
+      sessoes_total:     qnt || sessoes.length,
+      sessoes_realizadas,
+      esta_no_grupo:     noGrupo,
+    },
+    sessoes,
+    contrato: {
+      produto, assinado,
+      data_inicio:     dataInscricao,
+      data_vencimento: dataTermino,
+      esta_no_grupo:   noGrupo,
+    },
+  };
+}
+
+// Águia Club
+// [0] nome  [1] assinado  [2] inscricao  [3..10] sessões 1-8
+function parseAguiaRow(row, produto) {
+  const nome = (row[0] || '').trim();
+  if (!nome) return null;
+
+  const assinado      = parseBool(row[1]);
+  const dataInscricao = parseDateBR(row[2]);
+
+  const sessoes = [];
+  for (let i = 3; i < row.length && (i - 3) < 8; i++) {
+    const s = parseSessaoCell(row[i]);
+    if (!s) continue;
+    sessoes.push({ numero_sessao: i - 2, data: s.data, status: s.status });
+  }
+  const sessoes_realizadas = sessoes.filter(s => s.status === 'Realizada').length;
+
+  return {
+    aluna: {
+      nome, produto,
+      status:            'Nova compra',
+      data_inscricao:    dataInscricao,
+      data_termino:      null,
+      sessoes_total:     8,
+      sessoes_realizadas,
+      esta_no_grupo:     false,
+    },
+    sessoes,
+    contrato: {
+      produto, assinado,
+      data_inicio:     dataInscricao,
+      data_vencimento: null,
+      esta_no_grupo:   false,
+    },
+  };
+}
+
+// PRM
+// [0] nome  [1] inscricao  [2] tempo  [3] termino  [4] qnt  [5] status
+// [6,7] s1_data,s1_status  [8,9] s2_data,s2_status …
+function parsePRMRow(row, produto) {
+  const nome = (row[0] || '').trim();
+  if (!nome) return null;
+
+  const dataInscricao = parseDateBR(row[1]);
+  const dataTermino   = parseDateBR(row[3]) || computeTermino(row[2], dataInscricao);
+  const qnt           = parseQnt(row[4]);
+  const status        = parseStatusAluna(row[5]);
+
+  const sessoes = [];
+  for (let i = 6; i + 1 < row.length; i += 2) {
+    const dataVal   = (row[i]     || '').trim();
+    const statusVal = (row[i + 1] || '').trim();
+    if (!dataVal && !statusVal) continue;
+    const num  = Math.floor((i - 6) / 2) + 1;
+    const data = parseDateBR(dataVal);
+    const st   = parseSessionStatus(statusVal) || (data ? 'Realizada' : 'Aguardando');
+    sessoes.push({ numero_sessao: num, data, status: st });
+  }
+  const sessoes_realizadas = sessoes.filter(s => s.status === 'Realizada').length;
+
+  return {
+    aluna: {
+      nome, produto, status,
+      data_inscricao:    dataInscricao,
+      data_termino:      dataTermino,
+      sessoes_total:     qnt || sessoes.length,
+      sessoes_realizadas,
+      esta_no_grupo:     false,
+    },
+    sessoes,
+    contrato: {
+      produto, assinado: true,
+      data_inicio:     dataInscricao,
+      data_vencimento: dataTermino,
+      esta_no_grupo:   false,
+    },
+  };
+}
+
+// ─── DEFINIÇÃO DAS ABAS ───────────────────────────────────────────────────────
+const TABS = [
+  { produto: 'Individual',           encoded: 'Individual',                        type: 'basic', statId: 'indiv' },
+  { produto: 'Comunidade +3',        encoded: 'Comunidade%20%2B3',                 type: 'basic', statId: 'com3'  },
+  { produto: 'Comunidade +1',        encoded: 'Comunidade%20%2B1',                 type: 'basic', statId: 'com1'  },
+  { produto: 'Reprogramação Mensal', encoded: 'Reprograma%C3%A7%C3%A3o%20Mensal', type: 'repro', statId: 'repro' },
+  { produto: 'Águia Club',           encoded: '%C3%81guia%20Club',                 type: 'aguia', statId: 'aguia' },
+  { produto: 'PRM',                  encoded: 'PRM',                               type: 'prm',   statId: 'prm'   },
+];
+
+// ─── API SUPABASE ─────────────────────────────────────────────────────────────
+async function sbReq(method, path, body, SB_URL, SB_KEY, prefer = '') {
+  const headers = {
+    'apikey':        SB_KEY,
+    'Authorization': `Bearer ${SB_KEY}`,
+    'Content-Type':  'application/json',
+  };
+  if (prefer) headers['Prefer'] = prefer;
+  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+    method,
+    headers,
+    body: body != null ? JSON.stringify(body) : undefined,
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`${method} /${path}: HTTP ${res.status} — ${text.slice(0, 300)}`);
+  return text ? JSON.parse(text) : null;
+}
+
+// Upsert com merge-duplicates; retorna linhas com IDs
+async function sbUpsert(table, rows, conflictCols, SB_URL, SB_KEY) {
+  if (!rows.length) return [];
+  const result = await sbReq(
+    'POST',
+    `${table}?on_conflict=${conflictCols}`,
+    rows,
+    SB_URL,
+    SB_KEY,
+    'return=representation,resolution=merge-duplicates',
+  );
+  return Array.isArray(result) ? result : [];
+}
+
+async function sbDelete(table, filter, SB_URL, SB_KEY) {
+  try {
+    await sbReq('DELETE', `${table}?${filter}`, null, SB_URL, SB_KEY);
+  } catch (_) { /* sem registros — ok */ }
+}
+
+async function sbInsert(table, rows, SB_URL, SB_KEY) {
+  if (!rows.length) return;
+  await sbReq('POST', table, rows, SB_URL, SB_KEY, 'return=minimal');
+}
+
+// ─── BUSCAR ABA ───────────────────────────────────────────────────────────────
+async function fetchSheet(sheetId, encoded) {
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encoded}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.text();
+}
+
+// ─── VERIFICAR TABELAS ────────────────────────────────────────────────────────
+document.getElementById('btn-check').addEventListener('click', async () => {
+  const SB_URL = cfg('sb-url'), SB_KEY = cfg('sb-key');
+  logEl.innerHTML = '';
+  sep();
+  log('🔍 Verificando tabelas no Supabase...', 'info');
+  for (const t of ['alunas', 'sessoes', 'contratos']) {
+    try {
+      await sbReq('GET', `${t}?select=id&limit=1`, null, SB_URL, SB_KEY);
+      log(`  ✓ ${t}`, 'ok');
+    } catch (e) {
+      log(`  ✗ ${t} — ${e.message}`, 'err');
+    }
+  }
+  sep();
+});
+
+// ─── IMPORTAÇÃO PRINCIPAL ─────────────────────────────────────────────────────
+document.getElementById('btn-import').addEventListener('click', async () => {
+  const btn     = document.getElementById('btn-import');
+  btn.disabled  = true;
+  logEl.innerHTML = '';
+
+  const SB_URL   = cfg('sb-url');
+  const SB_KEY   = cfg('sb-key');
+  const SHEET_ID = cfg('sheet-id');
+
+  let totalSessoes = 0;
+
+  try {
+    sep();
+    log('🚀 INICIANDO IMPORTAÇÃO', 'info');
+    sep();
+
+    for (let t = 0; t < TABS.length; t++) {
+      const tab = TABS[t];
+      setProgress(Math.round((t / TABS.length) * 85), `Processando ${tab.produto}...`);
+      log(`\n[${t + 1}/${TABS.length}] ${tab.produto}`, 'info');
+
+      // 1. Buscar CSV da aba
+      let csv;
+      try {
+        csv = await fetchSheet(SHEET_ID, tab.encoded);
+      } catch (e) {
+        log(`  ✗ Erro ao buscar aba: ${e.message}`, 'err');
+        setStat(tab.statId, 'ERR');
+        continue;
+      }
+
+      const allRows = parseCSV(csv);
+      if (allRows.length < 2) {
+        log('  ⚠ Aba vazia ou sem dados', 'warn');
+        setStat(tab.statId, '0');
+        continue;
+      }
+      log(`  Planilha: ${allRows.length - 1} linha(s)`, 'dim');
+
+      // 2. Parsear linhas (pular cabeçalho)
+      const parsed = [];
+      for (let i = 1; i < allRows.length; i++) {
+        const row = allRows[i];
+        if (!row[0]) continue;
+        let result = null;
+        if      (tab.type === 'basic') result = parseBasicRow(row, tab.produto);
+        else if (tab.type === 'repro') result = parseReproRow(row, tab.produto);
+        else if (tab.type === 'aguia') result = parseAguiaRow(row, tab.produto);
+        else if (tab.type === 'prm')   result = parsePRMRow(row, tab.produto);
+        if (result) parsed.push(result);
+      }
+
+      if (!parsed.length) {
+        log('  ⚠ Nenhuma linha válida encontrada', 'warn');
+        setStat(tab.statId, '0');
+        continue;
+      }
+      log(`  Parseadas: ${parsed.length} aluna(s)`, 'dim');
+
+      // 3. Upsert alunas (ON CONFLICT nome,produto → merge)
+      //    Preserva campos não enviados: foto_url, lead_id, observacoes, nome_grupo
+      const alunasRows = parsed.map(p => p.aluna);
+      let upserted;
+      try {
+        upserted = await sbUpsert('alunas', alunasRows, 'nome,produto', SB_URL, SB_KEY);
+      } catch (e) {
+        log(`  ✗ Erro ao upsert alunas: ${e.message}`, 'err');
+        setStat(tab.statId, 'ERR');
+        continue;
+      }
+
+      // Mapa nome → id para inserir sessões e contratos
+      const nomeIdMap = {};
+      upserted.forEach(a => { if (a.nome) nomeIdMap[a.nome] = a.id; });
+
+      // Fallback: se o upsert não retornou IDs (ex: sem permissão de return),
+      // busca os IDs via SELECT
+      const semId = parsed.filter(p => !nomeIdMap[p.aluna.nome]);
+      if (semId.length > 0) {
+        try {
+          const existing = await sbReq(
+            'GET',
+            `alunas?produto=eq.${encodeURIComponent(tab.produto)}&select=id,nome`,
+            null, SB_URL, SB_KEY,
+          );
+          (existing || []).forEach(a => { if (a.nome) nomeIdMap[a.nome] = a.id; });
+        } catch (_) {}
+      }
+
+      log(`  ✓ ${upserted.length} aluna(s) upsertada(s)`, 'ok');
+      setStat(tab.statId, upserted.length);
+
+      // 4. Sessões e contratos por aluna
+      let tabSessoes = 0;
+      for (const p of parsed) {
+        const alunaId = nomeIdMap[p.aluna.nome];
+        if (!alunaId) {
+          log(`  ⚠ ID não encontrado: ${p.aluna.nome}`, 'warn');
+          continue;
+        }
+
+        // Sessões: apaga e reinsere (fonte de verdade é a planilha)
+        await sbDelete('sessoes', `aluna_id=eq.${alunaId}`, SB_URL, SB_KEY);
+        if (p.sessoes.length > 0) {
+          const sessRows = p.sessoes.map(s => ({
+            aluna_id:      alunaId,
+            numero_sessao: s.numero_sessao,
+            data:          s.data   || null,
+            status:        s.status,
+          }));
+          try {
+            await sbInsert('sessoes', sessRows, SB_URL, SB_KEY);
+            tabSessoes += sessRows.length;
+          } catch (e) {
+            log(`  ⚠ Sessões de "${p.aluna.nome}": ${e.message.slice(0, 120)}`, 'warn');
+          }
+        }
+
+        // Contratos: apaga e reinsere
+        await sbDelete('contratos', `aluna_id=eq.${alunaId}`, SB_URL, SB_KEY);
+        if (p.contrato) {
+          try {
+            await sbInsert('contratos', [{ aluna_id: alunaId, ...p.contrato }], SB_URL, SB_KEY);
+          } catch (e) {
+            log(`  ⚠ Contrato de "${p.aluna.nome}": ${e.message.slice(0, 120)}`, 'warn');
+          }
+        }
+      }
+
+      totalSessoes += tabSessoes;
+      log(`  ✓ ${tabSessoes} sessão(ões) importada(s)`, 'ok');
+    }
+
+    setStat('sessoes', totalSessoes);
+    setProgress(100, 'Concluído!');
+    sep();
+    log('', '');
+    log('✅ IMPORTAÇÃO CONCLUÍDA COM SUCESSO!', 'ok');
+    sep();
+
+  } catch (err) {
+    log('\n❌ ERRO: ' + err.message, 'err');
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
