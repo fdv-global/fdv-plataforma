@@ -28,7 +28,7 @@ const ADMIN_EMAILS = [
 // ─── ROLE PERMISSIONS TEMPLATES ──────────────────────────────────────
 const ROLE_PERMISSIONS = {
   admin:         { inicio:true,  comercial:true,  alunas:true,  financeiro:true,  whatsapp_tati:true,  whatsapp_fernanda:true,  whatsapp_thomaz:true,  usuarios:true  },
-  ceo:           { inicio:true,  comercial:true,  alunas:true,  financeiro:true,  whatsapp_tati:false, whatsapp_fernanda:true,  whatsapp_thomaz:true,  usuarios:false },
+  ceo:           { inicio:true,  comercial:true,  alunas:true,  financeiro:true,  whatsapp_tati:false, whatsapp_fernanda:true,  whatsapp_thomaz:true,  usuarios:true  },
   cs_financeiro: { inicio:true,  comercial:false, alunas:true,  financeiro:true,  whatsapp_tati:true,  whatsapp_fernanda:false, whatsapp_thomaz:false, usuarios:false },
   comercial:     { inicio:true,  comercial:true,  alunas:false, financeiro:false, whatsapp_tati:false, whatsapp_fernanda:false, whatsapp_thomaz:false, usuarios:false },
 };
