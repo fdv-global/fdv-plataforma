@@ -948,12 +948,65 @@ function subPageTop(title, sub, btnId, btnLabel) {
 }
 
 function renderAlunasTab(el) {
-  const search  = '';
-  const statFil = '';
-  const rows = allAlunas;
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const diffMon = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+  const weekStart = new Date(today); weekStart.setDate(today.getDate() + diffMon); weekStart.setHours(0,0,0,0);
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6); weekEnd.setHours(23,59,59,999);
+
+  const metricas = [
+    {
+      id: 'ativas', color: 'var(--petro-l)',
+      n: allAlunas.filter(a => ['Nova compra','Dentro do Prazo','Migrou'].includes(a.status)).length,
+      lbl: 'Alunas ativas',
+      items: () => allAlunas.filter(a => ['Nova compra','Dentro do Prazo','Migrou'].includes(a.status)),
+      renderItem: a => `<div class="al-mini-row">${avatarInitial(a.nome)}<span class="al-mini-nome">${esc(a.nome||'—')}</span>${badgeAluna(a.status)}</div>`
+    },
+    {
+      id: 'sess-pend', color: 'var(--gold)',
+      n: allSessoes.filter(s => ['Aguardando','Em contato'].includes(s.status)).length,
+      lbl: 'Sessões pendentes',
+      items: () => allSessoes.filter(s => ['Aguardando','Em contato'].includes(s.status)),
+      renderItem: s => {
+        const a = allAlunas.find(x => x.id === s.aluna_id);
+        return `<div class="al-mini-row"><span class="al-mini-nome">${esc(a?.nome||'—')}</span>${badgeSessao(s.status)}<span class="al-mini-date">${fmtDate(s.data||'')}</span></div>`;
+      }
+    },
+    {
+      id: 'cont-pend', color: '#9b59b6',
+      n: allContratos.filter(c => !c.assinado).length,
+      lbl: 'Contratos pendentes',
+      items: () => allContratos.filter(c => !c.assinado),
+      renderItem: c => {
+        const a = allAlunas.find(x => x.id === c.aluna_id);
+        return `<div class="al-mini-row"><span class="al-mini-nome">${esc(a?.nome||'—')}</span><span class="al-mini-date">${esc(c.produto||'—')}</span></div>`;
+      }
+    },
+    {
+      id: 'inadimp', color: '#e06450',
+      n: allAlunas.filter(a => a.status === 'Inadimplente').length,
+      lbl: 'Inadimplentes',
+      items: () => allAlunas.filter(a => a.status === 'Inadimplente'),
+      renderItem: a => `<div class="al-mini-row">${avatarInitial(a.nome)}<span class="al-mini-nome">${esc(a.nome||'—')}</span>${badgeAluna(a.status)}</div>`
+    },
+    {
+      id: 'sess-semana', color: 'var(--green)',
+      n: allSessoes.filter(s => { if (!s.data) return false; const d = new Date(s.data + 'T00:00:00'); return d >= weekStart && d <= weekEnd; }).length,
+      lbl: 'Sessões esta semana',
+      items: () => allSessoes.filter(s => { if (!s.data) return false; const d = new Date(s.data + 'T00:00:00'); return d >= weekStart && d <= weekEnd; }),
+      renderItem: s => {
+        const a = allAlunas.find(x => x.id === s.aluna_id);
+        return `<div class="al-mini-row"><span class="al-mini-nome">${esc(a?.nome||'—')}</span>${badgeSessao(s.status)}<span class="al-mini-date">${fmtDate(s.data||'')} ${s.hora ? s.hora.slice(0,5) : ''}</span></div>`;
+      }
+    }
+  ];
 
   el.innerHTML = `
     ${subPageTop('Gestão de Alunas', 'alunas', 'btn-nova-aluna', '+ Nova Aluna')}
+    <div class="al-metrics">
+      ${metricas.map(m => `<button class="al-metric-card" data-metric="${m.id}"><span class="al-metric-n" style="color:${m.color}">${m.n}</span><span class="al-metric-lbl">${m.lbl}</span></button>`).join('')}
+    </div>
+    <div class="al-metric-panel" id="al-metric-panel" style="display:none"></div>
     <div class="alunas-filters">
       <input type="text" class="filter-select" id="al-search" placeholder="Buscar aluna…" style="min-width:200px">
       <select class="filter-select" id="al-filter-status">
@@ -965,14 +1018,17 @@ function renderAlunasTab(el) {
         ${ALUNAS_PRODUTOS.map(p => `<option value="${p}">${p}</option>`).join('')}
       </select>
     </div>
-    <div class="table-wrap" id="al-table-wrap">
-      ${renderAlunasTable(rows)}
-    </div>`;
+    <div id="al-accordion-wrap"></div>`;
 
-  lucide.createIcons({ nodes: [el] });
-  bindAlunasTableEvents(el);
+  let activeMetric = null;
 
-  $('btn-nova-aluna')?.addEventListener('click', () => openAlunaModal(null));
+  const renderAccordion = (rows) => {
+    const wrap = $('al-accordion-wrap');
+    if (!wrap) return;
+    if (!rows.length) { wrap.innerHTML = '<p class="hist-empty" style="margin-top:32px">Nenhuma aluna encontrada.</p>'; return; }
+    wrap.innerHTML = `<div class="al-accordion">${rows.map(a => renderAlunaRow(a)).join('')}</div>`;
+    bindAccordionEvents(wrap);
+  };
 
   const applyFilter = () => {
     const q = ($('al-search')?.value || '').toLowerCase();
@@ -983,60 +1039,156 @@ function renderAlunasTab(el) {
       (!st || a.status === st) &&
       (!pr || a.produto === pr)
     );
-    $('al-table-wrap').innerHTML = renderAlunasTable(filtered);
-    bindAlunasTableEvents(el);
+    renderAccordion(filtered);
   };
+
+  renderAccordion(allAlunas);
+  lucide.createIcons({ nodes: [el] });
+
+  $('btn-nova-aluna')?.addEventListener('click', () => openAlunaModal(null));
+
   ['al-search','al-filter-status','al-filter-produto'].forEach(id => {
     const el2 = $(id);
     if (el2) el2.addEventListener(id === 'al-search' ? 'input' : 'change', applyFilter);
   });
+
+  el.querySelectorAll('.al-metric-card').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mid = btn.dataset.metric;
+      const panel = $('al-metric-panel');
+      if (!panel) return;
+      if (activeMetric === mid) {
+        activeMetric = null;
+        panel.style.display = 'none';
+        panel.innerHTML = '';
+        el.querySelectorAll('.al-metric-card').forEach(b => b.classList.remove('active'));
+        return;
+      }
+      activeMetric = mid;
+      el.querySelectorAll('.al-metric-card').forEach(b => b.classList.toggle('active', b.dataset.metric === mid));
+      const m = metricas.find(x => x.id === mid);
+      const items = m.items();
+      panel.style.display = '';
+      panel.innerHTML = `<div class="al-metric-panel-inner"><div class="al-metric-panel-hdr">${m.lbl}</div>${items.length ? items.map(m.renderItem).join('') : '<p class="hist-empty" style="margin:0">Nenhum item.</p>'}</div>`;
+    });
+  });
 }
 
-function renderAlunasTable(rows) {
-  if (!rows.length) return '<p class="hist-empty" style="margin-top:32px">Nenhuma aluna cadastrada.</p>';
-  return `<table class="data-table">
-    <thead><tr>
-      <th>Nome</th><th>Produto</th><th>Status</th><th>Inscrição</th><th>Término</th><th>Sessões</th><th></th>
-    </tr></thead>
-    <tbody>${rows.map(a => {
-      const restantes = (a.sessoes_total||0) - (a.sessoes_realizadas||0);
-      const waPhone = normalizePhoneForEvolution(a.celular);
-      const waHref  = waPhone ? `https://wa.me/${waPhone}` : null;
-      const avatarHtml = a.foto_url
-        ? `<img src="${a.foto_url}" class="aluna-avatar">`
-        : avatarInitial(a.nome);
-      return `<tr>
-        <td><div class="aluna-name-cell">${avatarHtml}<button class="aluna-name-btn" data-aluna-edit="${a.id}">${esc(a.nome||'—')}</button></div></td>
-        <td>${badgeProduto(a.produto)}</td>
-        <td>${badgeAluna(a.status)}</td>
-        <td>${fmtDate(a.data_inscricao||'')}</td>
-        <td>${fmtDate(a.data_termino||'')}</td>
-        <td style="text-align:center">${restantes > 0 ? `<span style="color:var(--gold);font-weight:700">${restantes}</span>` : restantes === 0 ? '—' : restantes}</td>
-        <td style="text-align:right">
-          ${waHref ? `<a class="kc-wa-btn" href="${waHref}" target="_blank" rel="noopener" title="WhatsApp"><i data-lucide="message-circle" class="kc-wa-icon"></i></a>` : ''}
-          <button class="btn-ghost btn-sm" data-aluna-status="${a.id}" style="margin-left:4px">Status</button>
-        </td>
-      </tr>`;
-    }).join('')}</tbody>
-  </table>`;
+function renderAlunaRow(a) {
+  const sessoesAluna = allSessoes.filter(s => s.aluna_id === a.id);
+  const contratosAluna = allContratos.filter(c => c.aluna_id === a.id);
+  const contratoAssinado = contratosAluna.some(c => c.assinado);
+  const estaNoGrupo = contratosAluna.some(c => c.esta_no_grupo);
+  const total = a.sessoes_total || 0;
+  const realizadas = a.sessoes_realizadas || 0;
+  const pct = total > 0 ? Math.min(100, Math.round((realizadas / total) * 100)) : 0;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const sessAtrasadas = sessoesAluna.filter(s => {
+    if (!['Aguardando','Em contato'].includes(s.status)) return false;
+    if (!s.data) return false;
+    const d = new Date(s.data + 'T00:00:00');
+    return d < today;
+  });
+  const proximaSessao = sessoesAluna
+    .filter(s => s.status === 'Aguardando' || s.status === 'Marcada')
+    .sort((x, y) => (x.data||'') < (y.data||'') ? -1 : 1)[0] || null;
+
+  let dotColor, dotClass;
+  if (a.status === 'Inadimplente') { dotColor = '●'; dotClass = 'al-ind al-ind--red'; }
+  else if (!contratoAssinado && contratosAluna.length > 0) { dotColor = '●'; dotClass = 'al-ind al-ind--yellow'; }
+  else if (sessAtrasadas.length > 0) { dotColor = '●'; dotClass = 'al-ind al-ind--orange'; }
+  else { dotColor = '●'; dotClass = 'al-ind al-ind--green'; }
+
+  const avatarHtml = a.foto_url
+    ? `<img src="${esc(a.foto_url)}" class="aluna-avatar" style="width:30px;height:30px;border-radius:50%;object-fit:cover">`
+    : avatarInitial(a.nome);
+
+  const waPhone = normalizePhoneForEvolution(a.celular);
+  const waHref  = waPhone ? `https://wa.me/${waPhone}` : null;
+  const nextAguardando = sessoesAluna.find(s => s.status === 'Aguardando');
+
+  const bodyGrid = [
+    { lbl: 'Contrato', val: contratosAluna.length ? (contratoAssinado ? '<span style="color:#4caf8e">Assinado</span>' : '<span style="color:#CE9221">Pendente</span>') : '—' },
+    { lbl: 'No grupo', val: estaNoGrupo ? '<span style="color:#4caf8e">Sim</span>' : '<span style="color:var(--t3)">Não</span>' },
+    { lbl: 'Próxima sessão', val: proximaSessao ? `${fmtDate(proximaSessao.data||'')}${proximaSessao.hora ? ' · ' + proximaSessao.hora.slice(0,5) : ''}` : '—' },
+    ...(sessAtrasadas.length > 0 ? [{ lbl: 'Sessões em atraso', val: `<span style="color:#e06450;font-weight:700">${sessAtrasadas.length}</span>` }] : []),
+    ...(a.celular ? [{ lbl: 'Celular', val: esc(a.celular) }] : [])
+  ];
+
+  return `<div class="al-row" data-aluna-id="${a.id}">
+    <div class="al-row-head">
+      <div class="al-row-left">
+        <span class="${dotClass}" title="Indicador de status">${dotColor}</span>
+        ${avatarHtml}
+        <div class="al-row-info">
+          <span class="al-row-nome">${esc(a.nome||'—')}</span>
+          <div class="al-row-meta">${badgeProduto(a.produto)}${badgeAluna(a.status)}</div>
+        </div>
+      </div>
+      <div class="al-row-right">
+        <div class="al-progress-wrap"><div class="al-progress-bar" style="width:${pct}%"></div></div>
+        <span class="al-row-sess-count">${realizadas}/${total}</span>
+        <span class="al-row-chevron">›</span>
+      </div>
+    </div>
+    <div class="al-row-body" style="display:none">
+      <div class="al-body-inner">
+        <div class="al-body-grid">
+          ${bodyGrid.map(it => `<div class="al-body-item"><span class="al-body-lbl">${it.lbl}</span><span class="al-body-val">${it.val}</span></div>`).join('')}
+        </div>
+        <div class="al-body-actions">
+          ${waHref ? `<a class="btn-ghost btn-sm" href="${waHref}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
+          <button class="btn-ghost btn-sm" data-acc-agendar="${a.id}">Agendar</button>
+          <button class="btn-ghost btn-sm" data-acc-edit="${a.id}">Editar</button>
+          <button class="btn-ghost btn-sm" data-acc-status="${a.id}">Status</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
 }
 
-function bindAlunasTableEvents(el) {
-  el.querySelectorAll('[data-aluna-edit]').forEach(b =>
-    b.addEventListener('click', () => {
-      const a = allAlunas.find(x => x.id === b.dataset.alunaEdit);
+function bindAccordionEvents(wrap) {
+  wrap.querySelectorAll('.al-row-head').forEach(head => {
+    head.addEventListener('click', e => {
+      if (e.target.closest('a,button')) return;
+      const row = head.closest('.al-row');
+      const body = row.querySelector('.al-row-body');
+      const isOpen = row.classList.contains('open');
+      wrap.querySelectorAll('.al-row.open').forEach(r => {
+        r.classList.remove('open');
+        r.querySelector('.al-row-body').style.display = 'none';
+      });
+      if (!isOpen) {
+        row.classList.add('open');
+        body.style.display = '';
+      }
+    });
+  });
+  wrap.querySelectorAll('[data-acc-edit]').forEach(b =>
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      const a = allAlunas.find(x => x.id === b.dataset.accEdit);
       if (a) openAlunaModal(a);
     })
   );
-  el.querySelectorAll('[data-aluna-status]').forEach(b =>
+  wrap.querySelectorAll('[data-acc-agendar]').forEach(b =>
     b.addEventListener('click', e => {
       e.stopPropagation();
-      const a = allAlunas.find(x => x.id === b.dataset.alunaStatus);
+      const a = allAlunas.find(x => x.id === b.dataset.accAgendar);
+      if (!a) return;
+      const nextSess = allSessoes.find(s => s.aluna_id === a.id && s.status === 'Aguardando');
+      openAgendarSessao(nextSess || null, a);
+    })
+  );
+  wrap.querySelectorAll('[data-acc-status]').forEach(b =>
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      const a = allAlunas.find(x => x.id === b.dataset.accStatus);
       if (!a) return;
       openStatusQuickChange(b, a);
     })
   );
-  lucide.createIcons({ nodes: [el.querySelector('.table-wrap') || el] });
 }
 
 function openStatusQuickChange(anchor, aluna) {
@@ -1076,30 +1228,95 @@ function renderSessoesTab(el) {
     </div>
     <div id="sessoes-list"></div>`;
 
+  const dotClass = s => {
+    if (s.status === 'Realizada') return 'sess-dot--green';
+    if (s.status === 'Marcada')   return 'sess-dot--yellow';
+    if (s.status === 'Cancelada' || s.status === 'Falta') return 'sess-dot--red';
+    return 'sess-dot--gray';
+  };
+
   const renderList = () => {
     const aId = $('sess-filter-aluna')?.value || '';
     const st  = $('sess-filter-status')?.value || '';
-    const rows = allSessoes.filter(s =>
+    const filteredSess = allSessoes.filter(s =>
       (!aId || s.aluna_id === aId) && (!st || s.status === st)
     );
-    const alunaMap = Object.fromEntries(allAlunas.map(a => [a.id, a.nome]));
     const list = $('sessoes-list');
     if (!list) return;
-    if (!rows.length) { list.innerHTML = '<p class="hist-empty" style="margin-top:32px">Nenhuma sessão encontrada.</p>'; return; }
-    list.innerHTML = `<div class="table-wrap"><table class="data-table">
-      <thead><tr><th>Aluna</th><th>Data</th><th>Hora</th><th>Status</th><th>Observações</th><th></th></tr></thead>
-      <tbody>${rows.map(s => `<tr>
-        <td>${esc(alunaMap[s.aluna_id]||'—')}</td>
-        <td>${fmtDate(s.data||'')}</td>
-        <td>${s.hora ? s.hora.slice(0,5) : '—'}</td>
-        <td>${badgeSessao(s.status)}</td>
-        <td style="max-width:200px;white-space:normal">${esc(s.observacoes||'')}</td>
-        <td style="text-align:right;white-space:nowrap">
-          <button class="btn-ghost btn-sm" data-sess-agendar="${s.id}" style="margin-right:6px">📅 Agendar</button>
-          <button class="btn-ghost btn-sm" data-sess-edit="${s.id}">Editar</button>
-        </td>
-      </tr>`).join('')}</tbody>
-    </table></div>`;
+    if (!filteredSess.length) { list.innerHTML = '<p class="hist-empty" style="margin-top:32px">Nenhuma sessão encontrada.</p>'; return; }
+
+    const today = new Date(); today.setHours(0,0,0,0);
+    const alunaIds = [...new Set(filteredSess.map(s => s.aluna_id))];
+    const alunas = alunaIds.map(id => allAlunas.find(a => a.id === id)).filter(Boolean);
+
+    const proximaData = a => {
+      const upcoming = allSessoes
+        .filter(s => s.aluna_id === a.id && s.data && (s.status === 'Aguardando' || s.status === 'Marcada'))
+        .sort((x,y) => (x.data||'') < (y.data||'') ? -1 : 1)[0];
+      return upcoming ? new Date(upcoming.data + 'T00:00:00') : null;
+    };
+
+    alunas.sort((a, b) => {
+      const da = proximaData(a), db = proximaData(b);
+      if (da && db) return da - db;
+      if (da) return -1;
+      if (db) return 1;
+      return (a.nome||'').localeCompare(b.nome||'');
+    });
+
+    list.innerHTML = alunas.map(a => {
+      const sessAluna = filteredSess.filter(s => s.aluna_id === a.id).sort((x,y) => {
+        const na = x.numero_sessao || 0, nb = y.numero_sessao || 0;
+        if (na !== nb) return na - nb;
+        return (x.data||'') < (y.data||'') ? -1 : 1;
+      });
+      const allSessAluna = allSessoes.filter(s => s.aluna_id === a.id).sort((x,y) => {
+        const na = x.numero_sessao || 0, nb = y.numero_sessao || 0;
+        if (na !== nb) return na - nb;
+        return (x.data||'') < (y.data||'') ? -1 : 1;
+      });
+      const proxima = allSessAluna.find(s => (s.status === 'Aguardando' || s.status === 'Marcada') && s.data);
+      const avatarHtml = a.foto_url
+        ? `<img src="${esc(a.foto_url)}" class="aluna-avatar" style="width:32px;height:32px;border-radius:50%;object-fit:cover">`
+        : avatarInitial(a.nome);
+
+      const timelineDots = allSessAluna.map((s, i) => {
+        const n = s.numero_sessao || (i + 1);
+        const tooltip = `${s.status}${s.data ? ' · ' + fmtDate(s.data) : ''}${s.hora ? ' ' + s.hora.slice(0,5) : ''}`;
+        return `<div class="sess-dot-wrap"><div class="sess-dot ${dotClass(s)}" title="${esc(tooltip)}">${n}</div>${s.data ? `<span class="sess-dot-date">${fmtDate(s.data)}</span>` : ''}</div>`;
+      }).join('');
+
+      const sessItems = sessAluna.map((s, i) => {
+        const n = s.numero_sessao || (allSessAluna.indexOf(s) + 1);
+        return `<div class="sess-item">
+          <div class="sess-item-left">
+            <span class="sess-item-n">Sessão ${n}</span>
+            <span class="sess-item-date">${fmtDate(s.data||'')}${s.hora ? ' · ' + s.hora.slice(0,5) : ''}</span>
+          </div>
+          <div class="sess-item-right">
+            ${badgeSessao(s.status)}
+            <button class="btn-ghost btn-sm" data-sess-agendar="${s.id}" title="Agendar">📅</button>
+            <button class="btn-ghost btn-sm" data-sess-edit="${s.id}">Editar</button>
+          </div>
+        </div>`;
+      }).join('');
+
+      return `<div class="sess-aluna-block">
+        <div class="sess-aluna-header">
+          ${avatarHtml}
+          <div>
+            <div class="sess-aluna-nome">${esc(a.nome||'—')}</div>
+            <div class="sess-aluna-proxima">${proxima ? `próxima: ${fmtDate(proxima.data)}${proxima.hora ? ' · ' + proxima.hora.slice(0,5) : ''}` : 'sem sessão agendada'}</div>
+          </div>
+          <div class="sess-aluna-actions">
+            <button class="btn-ghost btn-sm" data-nova-sessao-aluna="${a.id}">+ Sessão</button>
+          </div>
+        </div>
+        ${allSessAluna.length ? `<div class="sess-timeline">${timelineDots}</div>` : ''}
+        ${sessItems}
+      </div>`;
+    }).join('');
+
     list.querySelectorAll('[data-sess-agendar]').forEach(b =>
       b.addEventListener('click', () => {
         const sess  = allSessoes.find(x => x.id === b.dataset.sessAgendar);
@@ -1111,6 +1328,12 @@ function renderSessoesTab(el) {
       b.addEventListener('click', () => {
         const sess = allSessoes.find(x => x.id === b.dataset.sessEdit);
         if (sess) openSessaoModal(sess, sess.aluna_id);
+      })
+    );
+    list.querySelectorAll('[data-nova-sessao-aluna]').forEach(b =>
+      b.addEventListener('click', () => {
+        const aluna = allAlunas.find(a => a.id === b.dataset.novaSessaoAluna);
+        openAgendarSessao(null, aluna || null);
       })
     );
   };
