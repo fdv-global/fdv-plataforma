@@ -1,4 +1,4 @@
-import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+﻿import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import {
   getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
   sendPasswordResetEmail, signOut, onAuthStateChanged
@@ -131,6 +131,9 @@ let allSessoes          = [];
 let allContratos        = [];
 let alunasLoaded        = false;
 let alunaEdit           = null;   // null = nova, obj = editar
+let relFiltProduto      = '';
+let relFiltMes          = '';
+let relFiltResp         = '';
 let sessaoEdit          = null;
 let contratoEdit        = null;
 let sessaoAlunaId       = null;
@@ -985,7 +988,7 @@ function switchSucessoSub(sub) {
   document.querySelectorAll('[data-sucesso-sub]').forEach(b =>
     b.classList.toggle('active', b.dataset.sucessoSub === sub)
   );
-  if (['alunas','sessoes','contratos'].includes(sub) && !alunasLoaded) {
+  if (['alunas','sessoes','contratos','relatorios'].includes(sub) && !alunasLoaded) {
     loadAlunas(); // renderSucesso() será chamado dentro de loadAlunas()
     return;
   }
@@ -1032,6 +1035,8 @@ function renderSucesso() {
     renderSessoesTab(el);
   } else if (activeSucessoSub === 'contratos') {
     renderContratosTab(el);
+  } else if (activeSucessoSub === 'relatorios') {
+    renderRelatoriosTab(el);
   } else {
     const s = SUCESSO_SUBS[activeSucessoSub];
     el.innerHTML = `
@@ -1535,6 +1540,283 @@ function renderContratosTab(el) {
     })
   );
   $('btn-novo-contrato')?.addEventListener('click', () => openContratoModal(null, null));
+}
+
+// ─── RELATÓRIOS (ALUNAS) ─────────────────────────────────────────────
+function renderRelatoriosTab(el) {
+  const today    = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const trinta   = new Date(today); trinta.setDate(today.getDate() - 30);
+
+  const render = () => {
+    // Apply product + responsável filters to alunas
+    let alunas = allAlunas;
+    if (relFiltProduto) alunas = alunas.filter(a => a.produto === relFiltProduto);
+    if (relFiltResp) {
+      alunas = alunas.filter(a => {
+        const lead = allLeads.find(l => l.id === a.lead_id);
+        return lead?.closer === relFiltResp;
+      });
+    }
+    const alunaSet = new Set(alunas.map(a => a.id));
+    let sessoes   = allSessoes.filter(s => alunaSet.has(s.aluna_id));
+    let contratos = allContratos.filter(c => alunaSet.has(c.aluna_id));
+
+    // Sessions filtered by month (for month-specific metrics and chart)
+    const mesKey = relFiltMes || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    const sessMesAll = relFiltMes
+      ? sessoes.filter(s => s.data && s.data.startsWith(relFiltMes))
+      : sessoes.filter(s => s.data && s.data.startsWith(mesKey));
+
+    // ── Metric computations ──────────────────────────────────────────
+    const sessMes      = sessMesAll.filter(s => s.status === 'Realizada').length;
+    const sessAtrasadas = sessoes.filter(s => s.status === 'Aguardando' && s.data && s.data < todayStr).length;
+    const contPend     = contratos.filter(c => !c.assinado).length;
+    const inadimp      = alunas.filter(a => a.status === 'Inadimplente').length;
+
+    const semSessaoList = alunas.filter(a =>
+      !sessoes.some(s => s.aluna_id === a.id && (s.status === 'Aguardando' || s.status === 'Marcada'))
+    );
+
+    const concluidas   = alunas.filter(a => ['Migrou','Finalizado','Cancelado','Cliente Off'].includes(a.status)).length;
+    const migraram     = alunas.filter(a => a.status === 'Migrou').length;
+    const taxaRenov    = concluidas > 0 ? Math.round(migraram / concluidas * 100) : 0;
+
+    const cancelList   = alunas.filter(a => ['Cancelado','Cliente Off','Reembolso'].includes(a.status));
+    const taxaCancel   = alunas.length > 0 ? Math.round(cancelList.length / alunas.length * 100) : 0;
+
+    const closerSess = (closer) => sessoes.filter(s => {
+      if (s.status !== 'Realizada') return false;
+      const a    = alunas.find(x => x.id === s.aluna_id);
+      const lead = allLeads.find(l => l.id === a?.lead_id);
+      return lead?.closer === closer;
+    });
+
+    const riscoList = alunas.filter(a => {
+      if (a.status === 'Inadimplente') return true;
+      if (!['Nova compra','Dentro do Prazo'].includes(a.status)) return false;
+      const last = sessoes
+        .filter(s => s.aluna_id === a.id && s.status === 'Realizada' && s.data)
+        .sort((x, y) => y.data.localeCompare(x.data))[0];
+      return !last || new Date(last.data + 'T00:00:00') < trinta;
+    });
+
+    const sem30List = alunas.filter(a => {
+      if (!['Nova compra','Dentro do Prazo'].includes(a.status)) return false;
+      const last = sessoes
+        .filter(s => s.aluna_id === a.id && s.status === 'Realizada' && s.data)
+        .sort((x, y) => y.data.localeCompare(x.data))[0];
+      return !last || new Date(last.data + 'T00:00:00') < trinta;
+    });
+
+    const sessFernandaList = closerSess('fernanda');
+    const sessThomazList   = closerSess('thomaz');
+
+    // ── Metrics array ────────────────────────────────────────────────
+    const metrics = [
+      {
+        id: 'total', color: 'var(--petro-l)', n: alunas.length, lbl: 'Total de alunas',
+        items: () => alunas,
+        ri: a => `<div class="al-mini-row">${avatarInitial(a.nome)}<span class="al-mini-nome">${esc(a.nome||'—')}</span>${badgeProduto(a.produto)}</div>`,
+      },
+      {
+        id: 'sess-mes', color: 'var(--green)', n: sessMes, lbl: 'Sessões no mês',
+        items: () => sessMesAll.filter(s => s.status === 'Realizada'),
+        ri: s => { const a = alunas.find(x => x.id === s.aluna_id); return `<div class="al-mini-row"><span class="al-mini-nome">${esc(a?.nome||'—')}</span><span class="al-mini-date">${fmtDate(s.data||'')}</span></div>`; },
+      },
+      {
+        id: 'sess-atras', color: 'var(--gold)', n: sessAtrasadas, lbl: 'Sessões atrasadas',
+        items: () => sessoes.filter(s => s.status === 'Aguardando' && s.data && s.data < todayStr),
+        ri: s => { const a = alunas.find(x => x.id === s.aluna_id); return `<div class="al-mini-row"><span class="al-mini-nome">${esc(a?.nome||'—')}</span><span class="al-mini-date">${fmtDate(s.data||'')}</span></div>`; },
+      },
+      {
+        id: 'cont-pend', color: '#9b59b6', n: contPend, lbl: 'Contratos pendentes',
+        items: () => contratos.filter(c => !c.assinado),
+        ri: c => { const a = alunas.find(x => x.id === c.aluna_id); return `<div class="al-mini-row"><span class="al-mini-nome">${esc(a?.nome||'—')}</span><span class="al-mini-date">${esc(c.produto||'—')}</span></div>`; },
+      },
+      {
+        id: 'inadimp', color: '#e06450', n: inadimp, lbl: 'Inadimplentes',
+        items: () => alunas.filter(a => a.status === 'Inadimplente'),
+        ri: a => `<div class="al-mini-row">${avatarInitial(a.nome)}<span class="al-mini-nome">${esc(a.nome||'—')}</span>${badgeAluna(a.status)}</div>`,
+      },
+      {
+        id: 'sem-sessao', color: '#e67e22', n: semSessaoList.length, lbl: 'Sem sessão agendada',
+        items: () => semSessaoList,
+        ri: a => `<div class="al-mini-row">${avatarInitial(a.nome)}<span class="al-mini-nome">${esc(a.nome||'—')}</span>${badgeAluna(a.status)}</div>`,
+      },
+      {
+        id: 'renovacao', color: '#2ecc71', n: `${taxaRenov}%`, lbl: 'Taxa de renovação',
+        items: () => alunas.filter(a => a.status === 'Migrou'),
+        ri: a => `<div class="al-mini-row">${avatarInitial(a.nome)}<span class="al-mini-nome">${esc(a.nome||'—')}</span>${badgeAluna(a.status)}</div>`,
+      },
+      {
+        id: 'cancelamento', color: '#e74c3c', n: `${taxaCancel}%`, lbl: 'Taxa de cancelamento',
+        items: () => cancelList,
+        ri: a => `<div class="al-mini-row">${avatarInitial(a.nome)}<span class="al-mini-nome">${esc(a.nome||'—')}</span>${badgeAluna(a.status)}</div>`,
+      },
+      {
+        id: 'sess-fernanda', color: '#4db5c8', n: sessFernandaList.length, lbl: 'Sessões — Fernanda',
+        items: () => sessFernandaList,
+        ri: s => { const a = alunas.find(x => x.id === s.aluna_id); return `<div class="al-mini-row"><span class="al-mini-nome">${esc(a?.nome||'—')}</span><span class="al-mini-date">${fmtDate(s.data||'')}</span></div>`; },
+      },
+      {
+        id: 'sess-thomaz', color: '#d4982a', n: sessThomazList.length, lbl: 'Sessões — Thomaz',
+        items: () => sessThomazList,
+        ri: s => { const a = alunas.find(x => x.id === s.aluna_id); return `<div class="al-mini-row"><span class="al-mini-nome">${esc(a?.nome||'—')}</span><span class="al-mini-date">${fmtDate(s.data||'')}</span></div>`; },
+      },
+      {
+        id: 'risco', color: '#c0392b', n: riscoList.length, lbl: 'Risco de cancelamento',
+        items: () => riscoList,
+        ri: a => `<div class="al-mini-row">${avatarInitial(a.nome)}<span class="al-mini-nome">${esc(a.nome||'—')}</span>${badgeAluna(a.status)}</div>`,
+      },
+      {
+        id: 'sem30', color: '#c07080', n: sem30List.length, lbl: 'Sem sessão há 30+ dias',
+        items: () => sem30List,
+        ri: a => `<div class="al-mini-row">${avatarInitial(a.nome)}<span class="al-mini-nome">${esc(a.nome||'—')}</span>${badgeAluna(a.status)}</div>`,
+      },
+    ];
+
+    // ── Chart data ───────────────────────────────────────────────────
+    const MN = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const monthly = [];
+    for (let i = 5; i >= 0; i--) {
+      const d  = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      monthly.push({
+        label: MN[d.getMonth()],
+        count: sessoes.filter(s => s.status === 'Realizada' && s.data && s.data.startsWith(ym)).length,
+      });
+    }
+    const maxM = Math.max(...monthly.map(m => m.count), 1);
+
+    const prodData = ALUNAS_PRODUTOS.map(p => ({
+      label: p,
+      count: alunas.filter(a => a.produto === p).length,
+    })).filter(p => p.count > 0);
+    const maxP = Math.max(...prodData.map(p => p.count), 1);
+
+    const cancelByProd = ALUNAS_PRODUTOS.map(p => {
+      const tot = alunas.filter(a => a.produto === p).length;
+      const can = alunas.filter(a => a.produto === p && ['Cancelado','Cliente Off','Reembolso'].includes(a.status)).length;
+      return { label: p, pct: tot > 0 ? Math.round(can / tot * 100) : 0, tot };
+    }).filter(p => p.tot > 0);
+
+    // ── Month filter options (last 12 months) ────────────────────────
+    const MNAMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const mesOpts = Array.from({ length: 12 }, (_, i) => {
+      const d  = new Date(today.getFullYear(), today.getMonth() - (11 - i), 1);
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      return `<option value="${ym}"${relFiltMes === ym ? ' selected' : ''}>${MNAMES[d.getMonth()]} ${d.getFullYear()}</option>`;
+    }).join('');
+
+    const scrollTop = el.scrollTop;
+
+    el.innerHTML = `
+      ${subPageTop('Relatórios', 'relatorios')}
+      <div class="alunas-filters" style="margin-bottom:20px">
+        <select class="filter-select" id="rel-fp">
+          <option value="">Todos os produtos</option>
+          ${ALUNAS_PRODUTOS.map(p => `<option value="${p}"${relFiltProduto === p ? ' selected' : ''}>${p}</option>`).join('')}
+        </select>
+        <select class="filter-select" id="rel-fm">
+          <option value="">Todos os meses</option>
+          ${mesOpts}
+        </select>
+        <select class="filter-select" id="rel-fr">
+          <option value="">Todas as responsáveis</option>
+          <option value="fernanda"${relFiltResp === 'fernanda' ? ' selected' : ''}>Fernanda</option>
+          <option value="thomaz"${relFiltResp === 'thomaz' ? ' selected' : ''}>Thomaz</option>
+        </select>
+      </div>
+
+      <div class="rel-metric-grid">
+        ${metrics.map(m => `
+          <button class="al-metric-card" data-rm="${m.id}">
+            <span class="al-metric-n" style="color:${m.color}">${m.n}</span>
+            <span class="al-metric-lbl">${m.lbl}</span>
+          </button>`).join('')}
+      </div>
+      <div class="al-metric-panel" id="rel-panel" style="display:none"></div>
+
+      <div class="rel-charts-row">
+        <div class="rel-chart-card">
+          <div class="rel-chart-title">Sessões realizadas por mês</div>
+          <div class="rel-chart" style="margin-top:10px">
+            ${monthly.map(m => `
+              <div class="rel-chart-row">
+                <span class="rel-chart-lbl">${m.label}</span>
+                <div class="rel-chart-bars">
+                  <div class="rel-bar" style="width:${m.count ? Math.round(m.count / maxM * 100) : 0}%;background:var(--petro-l)"></div>
+                </div>
+                <span class="rel-chart-val">${m.count}</span>
+              </div>`).join('')}
+          </div>
+        </div>
+        <div class="rel-chart-card">
+          <div class="rel-chart-title">Alunas por produto</div>
+          <div class="rel-chart" style="margin-top:10px">
+            ${prodData.length
+              ? prodData.map(p => `
+                <div class="rel-chart-row">
+                  <span class="rel-chart-lbl" style="font-size:10px">${p.label}</span>
+                  <div class="rel-chart-bars">
+                    <div class="rel-bar" style="width:${Math.round(p.count / maxP * 100)}%;background:#2ecc71"></div>
+                  </div>
+                  <span class="rel-chart-val">${p.count}</span>
+                </div>`).join('')
+              : '<p style="color:var(--t4);font-size:13px;margin:6px 0">Nenhum dado.</p>'}
+          </div>
+        </div>
+        <div class="rel-chart-card">
+          <div class="rel-chart-title">Cancelamento por produto</div>
+          <div class="rel-chart" style="margin-top:10px">
+            ${cancelByProd.length
+              ? cancelByProd.map(p => `
+                <div class="rel-chart-row">
+                  <span class="rel-chart-lbl" style="font-size:10px">${p.label}</span>
+                  <div class="rel-chart-bars">
+                    <div class="rel-bar" style="width:${p.pct}%;background:#e06450"></div>
+                  </div>
+                  <span class="rel-chart-val">${p.pct}%</span>
+                </div>`).join('')
+              : '<p style="color:var(--t4);font-size:13px;margin:6px 0">Nenhum dado.</p>'}
+          </div>
+        </div>
+      </div>`;
+
+    el.scrollTop = scrollTop;
+
+    // Filter listeners
+    $('rel-fp')?.addEventListener('change', e => { relFiltProduto = e.target.value; render(); });
+    $('rel-fm')?.addEventListener('change', e => { relFiltMes     = e.target.value; render(); });
+    $('rel-fr')?.addEventListener('change', e => { relFiltResp    = e.target.value; render(); });
+
+    // Metric card panel
+    let activeCard = null;
+    el.querySelectorAll('[data-rm]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mid   = btn.dataset.rm;
+        const panel = $('rel-panel');
+        if (activeCard === mid) {
+          activeCard = null;
+          btn.classList.remove('active');
+          panel.style.display = 'none';
+          return;
+        }
+        el.querySelectorAll('[data-rm]').forEach(b => b.classList.remove('active'));
+        activeCard = mid;
+        btn.classList.add('active');
+        const m     = metrics.find(x => x.id === mid);
+        const items = m?.items() || [];
+        panel.style.display = 'block';
+        panel.innerHTML = items.length
+          ? `<div class="al-metric-panel-inner">${items.map(m.ri).join('')}</div>`
+          : '<div class="al-metric-panel-inner"><p style="color:var(--t3);font-size:13px">Nenhum registro nesta categoria.</p></div>';
+      });
+    });
+  };
+
+  render();
 }
 
 // ─── MODAL ALUNA ─────────────────────────────────────────────────────
