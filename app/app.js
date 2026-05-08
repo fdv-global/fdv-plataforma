@@ -1094,9 +1094,19 @@ function renderSessoesTab(el) {
         <td>${s.hora ? s.hora.slice(0,5) : '—'}</td>
         <td>${badgeSessao(s.status)}</td>
         <td style="max-width:200px;white-space:normal">${esc(s.observacoes||'')}</td>
-        <td><button class="btn-ghost btn-sm" data-sess-edit="${s.id}">Editar</button></td>
+        <td style="text-align:right;white-space:nowrap">
+          <button class="btn-ghost btn-sm" data-sess-agendar="${s.id}" style="margin-right:6px">📅 Agendar</button>
+          <button class="btn-ghost btn-sm" data-sess-edit="${s.id}">Editar</button>
+        </td>
       </tr>`).join('')}</tbody>
     </table></div>`;
+    list.querySelectorAll('[data-sess-agendar]').forEach(b =>
+      b.addEventListener('click', () => {
+        const sess  = allSessoes.find(x => x.id === b.dataset.sessAgendar);
+        const aluna = allAlunas.find(a => a.id === sess?.aluna_id);
+        if (sess) openAgendarSessao(sess, aluna);
+      })
+    );
     list.querySelectorAll('[data-sess-edit]').forEach(b =>
       b.addEventListener('click', () => {
         const sess = allSessoes.find(x => x.id === b.dataset.sessEdit);
@@ -3058,12 +3068,27 @@ function openAgendar(lead) {
   cal = { step: 1, closer: null, leadSnap: lead };
   $('modal-title').textContent    = 'Agendar Call';
   $('modal-subtitle').textContent = `${lead.nome} · ${lead.celular}`;
+  $('lead-strip').style.display   = '';
   $('lead-strip').innerHTML = strip([
     { l:'Origem',    v: lead.origem    || '—' },
     { l:'Profissão', v: lead.profissao || '—' },
     { l:'Renda',     v: lead.renda     || '—' },
     { l:'Chegou em', v: fmtDate(lead.datachegada) },
   ]);
+  $('form-resultado').style.display = 'none';
+  $('form-agendar').style.display   = 'block';
+  $('form-detalhes').style.display  = 'none';
+  schedGoToStep(1);
+  openModal();
+}
+
+function openAgendarSessao(sessao, aluna) {
+  modalMode = 'agendar-sessao';
+  cal = { step: 1, closer: null, sessaoId: sessao.id };
+  $('modal-title').textContent    = 'Agendar Sessão';
+  $('modal-subtitle').textContent = (aluna?.nome || '—') + (sessao.numero_sessao ? ` · Sessão ${sessao.numero_sessao}` : '');
+  $('lead-strip').innerHTML       = '';
+  $('lead-strip').style.display   = 'none';
   $('form-resultado').style.display = 'none';
   $('form-agendar').style.display   = 'block';
   $('form-detalhes').style.display  = 'none';
@@ -3416,8 +3441,10 @@ function closeModal() {
   $('form-resultado').style.display = 'none';
   $('form-detalhes').style.display  = 'none';
   $('form-agendar').style.display   = 'block';
+  $('lead-strip').style.display     = '';
   const btn = $('btn-confirmar');
   btn.style.display=''; btn.style.background=''; btn.style.color=''; btn.style.border=''; btn.textContent='Confirmar';
+  if (activeSucessoSub === 'sessoes') renderSucesso();
 }
 
 // ─── DROPDOWNS ───────────────────────────────────────────────────────
@@ -3448,11 +3475,26 @@ async function handlePostCall(action) {
 
 // ─── CONFIRM ─────────────────────────────────────────────────────────
 async function confirmar() {
-  if (!currentId) return;
+  if (!currentId && modalMode !== 'agendar-sessao') return;
   const btn = $('btn-confirmar');
   btn.disabled = true;
   try {
-    if (modalMode === 'agendar') {
+    if (modalMode === 'agendar-sessao') {
+      const dtVal = $('sched-datetime').value;
+      if (!dtVal) { toast('Preencha a data e hora.', 'err'); btn.disabled=false; return; }
+      const [datePart, timePart] = dtVal.split('T');
+      const hora = timePart.length === 5 ? timePart + ':00' : timePart;
+      const obs  = $('sched-obs').value.trim();
+      const patch = { data: datePart, hora, status: 'Marcada', ...(obs ? { observacoes: obs } : {}) };
+      if (isLive) {
+        const { error } = await supabase.from('sessoes').update(patch).eq('id', cal.sessaoId);
+        if (error) throw error;
+      }
+      const idx = allSessoes.findIndex(s => s.id === cal.sessaoId);
+      if (idx !== -1) allSessoes[idx] = { ...allSessoes[idx], ...patch };
+      toast(`Sessão agendada — ${timePart} · ${fmtDate(datePart)}`, 'ok');
+
+    } else if (modalMode === 'agendar') {
       const dtVal = $('sched-datetime').value;
       if (!dtVal) { toast('Preencha a data e hora.', 'err'); btn.disabled=false; return; }
       const [datePart, timePart] = dtVal.split('T');
