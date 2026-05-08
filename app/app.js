@@ -477,12 +477,11 @@ function renderUsuarios(lista) {
       <td class="usuario-acoes">
         <button class="btn-ghost btn-sm usuario-edit-btn" data-uid="${u.id}">Editar</button>
         <button class="btn-ghost btn-sm" data-reenviar="${u.id}" title="Gera nova senha e envia por email">Reenviar</button>
-        <button class="btn-ghost btn-icon" data-copiar-wa="${u.id}" title="Copiar credenciais para WhatsApp"><i data-lucide="copy" style="width:14px;height:14px;pointer-events:none"></i></button>
+        <button class="btn-ghost btn-icon" data-copiar-wa="${u.id}" title="Copiar credenciais para WhatsApp"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></button>
         <button class="btn-ghost btn-sm usuario-delete-btn" data-uid="${u.id}" data-nome="${esc(u.nome||u.email)}">Excluir</button>
       </td>
     </tr>`;
   }).join('');
-  lucide.createIcons({ nodes: [tbody] });
 }
 
 const PERM_LABELS = {
