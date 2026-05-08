@@ -25,6 +25,15 @@ const ADMIN_EMAILS = [
   'thomaz@faculdadedavida.com.br',
 ];
 
+// ─── ROLE PERMISSIONS TEMPLATES ──────────────────────────────────────
+const ROLE_PERMISSIONS = {
+  admin:         { inicio:true,  comercial:true,  alunas:true,  financeiro:true,  whatsapp_tati:true,  whatsapp_fernanda:true,  whatsapp_thomaz:true,  usuarios:true  },
+  ceo:           { inicio:true,  comercial:true,  alunas:true,  financeiro:true,  whatsapp_tati:false, whatsapp_fernanda:true,  whatsapp_thomaz:true,  usuarios:false },
+  cs_financeiro: { inicio:true,  comercial:false, alunas:true,  financeiro:true,  whatsapp_tati:true,  whatsapp_fernanda:false, whatsapp_thomaz:false, usuarios:false },
+  comercial:     { inicio:true,  comercial:true,  alunas:false, financeiro:false, whatsapp_tati:false, whatsapp_fernanda:false, whatsapp_thomaz:false, usuarios:false },
+};
+const DEFAULT_PERMISSIONS = { inicio:true, comercial:false, alunas:false, financeiro:false, whatsapp_tati:false, whatsapp_fernanda:false, whatsapp_thomaz:false, usuarios:false };
+
 // ─── DATE HELPERS ────────────────────────────────────────────────────
 const DAYS = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 function getDayOfWeek(dateStr) {
@@ -103,8 +112,9 @@ let perfilLeadId  = null;
 let novoLeadId    = null;
 let auth          = null;
 let storage       = null;
-let currentUser   = null;
-let currentRole   = null;
+let currentUser        = null;
+let currentRole        = null;
+let currentPermissions = {};
 let leadsLoaded   = false;
 let usuariosUnsub = null;
 let allUsuarios   = [];
@@ -278,9 +288,10 @@ function initAuth() {
       document.querySelectorAll('.admin-only').forEach(el =>
         el.style.display = role === 'admin' ? '' : 'none'
       );
+      applyPermissionsToUI();
       loadCurrentUserProfile(user.uid);
       if (!leadsLoaded) { leadsLoaded = true; loadLeads(); }
-      if (role === 'admin') loadUsuarios();
+      if (hasPerm('usuarios')) loadUsuarios();
       loadNotifications(user.uid);
       switchTab('inicio');
       if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
@@ -311,6 +322,23 @@ async function loadCurrentUserProfile(uid) {
   } catch(_) {}
 }
 
+function applyPermissionsToUI() {
+  const TAB_PERM = {
+    inicio: 'inicio', comercial: 'comercial', agendamentos: 'comercial',
+    closer: 'comercial', relatorios: 'comercial', sucesso: 'alunas',
+    financeiro: 'financeiro', usuarios: 'usuarios',
+  };
+  document.querySelectorAll('.nav-link[data-tab]').forEach(el => {
+    const tab = el.dataset.tab;
+    if (tab === 'whatsapp') {
+      el.style.display = (hasPerm('whatsapp_tati') || hasPerm('whatsapp_fernanda') || hasPerm('whatsapp_thomaz')) ? '' : 'none';
+    } else {
+      const key = TAB_PERM[tab];
+      el.style.display = (!key || hasPerm(key)) ? '' : 'none';
+    }
+  });
+}
+
 async function resolveRole(user) {
   console.log('[FDV] resolveRole: buscando usuario no Supabase para', user.email);
   try {
@@ -329,7 +357,8 @@ async function resolveRole(user) {
         showLoginErro('Conta desativada. Contate o administrador.');
         return null;
       }
-      currentUserDbId = userRow.id;
+      currentUserDbId    = userRow.id;
+      currentPermissions = userRow.permissions || ROLE_PERMISSIONS[userRow.role] || { ...DEFAULT_PERMISSIONS };
       return userRow.role || (ADMIN_EMAILS.includes(user.email) ? 'admin' : null);
     }
 
@@ -340,7 +369,7 @@ async function resolveRole(user) {
       try {
         const { data: newUser, error: insErr } = await supabase
           .from('usuarios')
-          .insert({ firebase_uid: user.uid, email: user.email, nome: user.email.split('@')[0], role: 'admin', ativo: true })
+          .insert({ firebase_uid: user.uid, email: user.email, nome: user.email.split('@')[0], role: 'admin', ativo: true, permissions: ROLE_PERMISSIONS.admin })
           .select()
           .single();
         if (!insErr && newUser) currentUserDbId = newUser.id;
@@ -348,6 +377,7 @@ async function resolveRole(user) {
       } catch(writeErr) {
         console.warn('[FDV] resolveRole: falha ao provisionar admin:', writeErr.message);
       }
+      currentPermissions = { ...ROLE_PERMISSIONS.admin };
       return 'admin';
     }
 
@@ -424,27 +454,21 @@ function loadUsuarios() {
 function renderUsuarios(lista) {
   const tbody = $('usuarios-tbody');
   if (!tbody) return;
-  const roleBadge = role => {
-    const map    = { admin: 'accent-gold', closer: 'accent-petro', operacoes: 'accent-sand' };
-    const labels = { admin: 'Admin', closer: 'Closer', operacoes: 'Operações' };
-    return `<span class="lead-status-badge ${map[role]||''}">${labels[role]||role}</span>`;
-  };
+  const ROLE_LABELS = { admin:'Admin', ceo:'CEO', cs_financeiro:'CS / Financeiro', comercial:'Comercial', closer:'Closer', operacoes:'Operações' };
+  const ROLE_CLS    = { admin:'accent-gold', ceo:'accent-petro', cs_financeiro:'accent-green', comercial:'accent-sand', closer:'accent-petro', operacoes:'accent-sand' };
+  const roleBadge = role => `<span class="lead-status-badge ${ROLE_CLS[role]||''}">${ROLE_LABELS[role]||role}</span>`;
+  const roleOpts  = Object.entries(ROLE_LABELS).map(([v,l]) => `<option value="${v}">${l}</option>`).join('');
   tbody.innerHTML = lista.map(u => {
     const initials = esc((u.nome||u.email||'?')[0].toUpperCase());
     const avatar   = u.photoURL
       ? `<img class="usuario-avatar" src="${esc(u.photoURL)}" alt="">`
       : `<span class="usuario-avatar usuario-avatar--initials">${initials}</span>`;
+    const sel = `<select class="filter-select usuario-role-sel" data-uid="${u.id}">${roleOpts.replace(`value="${u.role||''}"`,`value="${u.role||''}" selected`)}</select>`;
     return `
     <tr>
       <td><div class="usuario-nome-cell">${avatar}<span>${esc(u.nome||'—')}</span></div></td>
       <td>${esc(u.email)}</td>
-      <td>
-        <select class="filter-select usuario-role-sel" data-uid="${u.id}">
-          <option value="admin"${u.role==='admin'?' selected':''}>Admin</option>
-          <option value="closer"${u.role==='closer'?' selected':''}>Closer</option>
-          <option value="operacoes"${u.role==='operacoes'?' selected':''}>Operações</option>
-        </select>
-      </td>
+      <td>${sel}</td>
       <td>${roleBadge(u.role)}</td>
       <td><span class="lead-status-badge ${u.ativo?'accent-green':'accent-marsala'}">${u.ativo?'Ativo':'Inativo'}</span></td>
       <td class="usuario-acoes">
@@ -457,6 +481,29 @@ function renderUsuarios(lista) {
       </td>
     </tr>`;
   }).join('');
+}
+
+const PERM_LABELS = {
+  inicio:'Início', comercial:'Comercial', alunas:'Alunas (Sucesso)',
+  financeiro:'Financeiro', whatsapp_tati:'WhatsApp Tati',
+  whatsapp_fernanda:'WhatsApp Fernanda', whatsapp_thomaz:'WhatsApp Thomaz',
+  usuarios:'Usuários',
+};
+
+function renderPermCheckboxes(gridId, perms) {
+  const grid = $(gridId); if (!grid) return;
+  grid.innerHTML = Object.entries(PERM_LABELS).map(([key, lbl]) =>
+    `<label class="perm-check-label">
+      <input type="checkbox" class="perm-check" data-key="${key}"${perms[key] ? ' checked' : ''}>
+      <span>${lbl}</span>
+    </label>`
+  ).join('');
+}
+
+function readPermCheckboxes(gridId) {
+  const out = {};
+  document.querySelectorAll(`#${gridId} .perm-check`).forEach(cb => { out[cb.dataset.key] = cb.checked; });
+  return out;
 }
 
 async function toggleAtivoUsuario(uid, ativo) {
@@ -483,7 +530,9 @@ function openEditarUsuario(uid) {
   $('eu-uid').value = uid;
   $('eu-nome').value = u.nome || '';
   $('eu-email').value = u.email || '';
-  $('eu-role').value = u.role || 'closer';
+  $('eu-role').value = u.role || 'comercial';
+  const perms = u.permissions || ROLE_PERMISSIONS[u.role] || { ...DEFAULT_PERMISSIONS };
+  renderPermCheckboxes('eu-perm-grid', perms);
   const preview = $('eu-foto-preview');
   if (u.photoURL) { preview.src = u.photoURL; preview.style.display = ''; }
   else { preview.src = ''; preview.style.display = 'none'; }
@@ -516,8 +565,9 @@ async function salvarEditarUsuario() {
       await uploadBytes(sRef, fotoFile);
       photoURL = await getDownloadURL(sRef);
     }
+    const permissions = readPermCheckboxes('eu-perm-grid');
     const { error: updErr } = await supabase.from('usuarios')
-      .update({ nome, email, role, ...(photoURL && { photo_url: photoURL }) }).eq('id', uid);
+      .update({ nome, email, role, permissions, ...(photoURL && { photo_url: photoURL }) }).eq('id', uid);
     if (updErr) throw updErr;
     closeEditarUsuario();
     toast('Usuário atualizado.', 'ok');
@@ -536,7 +586,8 @@ async function updateRoleUsuario(uid, role) {
 
 function openNovoUsuario() {
   ['nu-nome','nu-email','nu-senha'].forEach(id => $(id).value = '');
-  $('nu-role').value = 'closer';
+  $('nu-role').value = 'comercial';
+  renderPermCheckboxes('nu-perm-grid', { ...ROLE_PERMISSIONS.comercial });
   $('nu-error').style.display = 'none';
   const fotoInput = $('nu-foto');
   if (fotoInput) { fotoInput.value = ''; }
@@ -575,8 +626,9 @@ async function salvarNovoUsuario() {
       photoURL = await getDownloadURL(sRef);
     }
 
+    const permissions = readPermCheckboxes('nu-perm-grid');
     const { error: insErr2 } = await supabase.from('usuarios').insert({
-      firebase_uid: uid, email, nome, role, ativo: true,
+      firebase_uid: uid, email, nome, role, ativo: true, permissions,
       ...(photoURL && { photo_url: photoURL }),
     });
     if (insErr2) throw insErr2;
@@ -626,6 +678,13 @@ function mapLead(row, histMap = {}) {
 
 function mapUsuario(row) {
   return { ...row, photoURL: row.photo_url };
+}
+
+function hasPerm(key) { return currentPermissions[key] === true; }
+
+function getPermittedInstances() {
+  if (hasPerm('usuarios')) return waInstances;
+  return waInstances.filter(i => !i.responsavel || hasPerm('whatsapp_' + i.responsavel));
 }
 
 function mapWaInstance(row) {
@@ -713,6 +772,14 @@ async function loadAlunas() {
 // ─── TAB / SUB SWITCHING ─────────────────────────────────────────────
 
 function switchTab(tab) {
+  // permission guard
+  const TAB_PERM = { comercial:'comercial', agendamentos:'comercial', closer:'comercial', relatorios:'comercial', sucesso:'alunas', financeiro:'financeiro', usuarios:'usuarios' };
+  if (tab === 'whatsapp') {
+    if (!hasPerm('whatsapp_tati') && !hasPerm('whatsapp_fernanda') && !hasPerm('whatsapp_thomaz')) { switchTab('inicio'); return; }
+  } else if (TAB_PERM[tab] && !hasPerm(TAB_PERM[tab])) {
+    switchTab('inicio'); return;
+  }
+
   activeTab = tab;
   document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
   const panel = $('tab-' + tab);
@@ -4124,10 +4191,10 @@ function openChatForLead(leadId) {
 function populateChatInstanceSelector(selectId) {
   const sel = $(selectId); if (!sel) return;
   sel.innerHTML = `<option value="">Selecionar instância…</option>` +
-    waInstances.map(i =>
+    getPermittedInstances().map(i =>
       `<option value="${esc(i.instanceName)}"${i.status!=='connected'?' disabled':''}>${esc(i.displayName)}${i.status==='connected'?' ✓':' (offline)'}</option>`
     ).join('');
-  const first = waInstances.find(i => i.status === 'connected');
+  const first = getPermittedInstances().find(i => i.status === 'connected');
   if (first) sel.value = first.instanceName;
 }
 
@@ -4686,7 +4753,7 @@ async function renderCentralChats() {
 function renderChatsFilters() {
   const sel = $('chats-filter-instance'); if (!sel) return;
   sel.innerHTML = `<option value="">Todas as instâncias</option>` +
-    waInstances.map(i => `<option value="${esc(i.instanceName)}">${esc(i.displayName)}</option>`).join('');
+    getPermittedInstances().map(i => `<option value="${esc(i.instanceName)}">${esc(i.displayName)}</option>`).join('');
 }
 
 function fmtChatTime(isoStr) {
@@ -5745,14 +5812,15 @@ function renderInstancias() {
   if (!waInstancesLoaded) { if (loading) loading.style.display = ''; return; }
   if (loading) loading.style.display = 'none';
   renderWaStats();
-  if (waInstances.length === 0) {
+  const permitted = getPermittedInstances();
+  if (permitted.length === 0) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
       <div class="empty-ico">📱</div>
       <h3>Nenhuma instância configurada</h3>
       <p>Clique em "+ Conectar número" para adicionar seu primeiro número WhatsApp.</p>
     </div>`; return;
   }
-  grid.innerHTML = waInstances.map(renderInstanceCard).join('');
+  grid.innerHTML = permitted.map(renderInstanceCard).join('');
 }
 
 function renderWaStats() {
@@ -6288,6 +6356,12 @@ function bindEvents() {
     if (edit) openEditarUsuario(edit.dataset.uid);
     const del = e.target.closest('.usuario-delete-btn');
     if (del) deleteUsuario(del.dataset.uid, del.dataset.nome);
+  });
+  $('eu-role')?.addEventListener('change', () => {
+    renderPermCheckboxes('eu-perm-grid', ROLE_PERMISSIONS[$('eu-role').value] || { ...DEFAULT_PERMISSIONS });
+  });
+  $('nu-role')?.addEventListener('change', () => {
+    renderPermCheckboxes('nu-perm-grid', ROLE_PERMISSIONS[$('nu-role').value] || { ...DEFAULT_PERMISSIONS });
   });
   $('editar-usuario-close')?.addEventListener('click', closeEditarUsuario);
   $('editar-usuario-cancelar')?.addEventListener('click', closeEditarUsuario);

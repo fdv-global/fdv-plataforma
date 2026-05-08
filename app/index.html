@@ -1050,14 +1050,19 @@
           <label for="nu-role">Perfil</label>
           <select id="nu-role" class="form-ctrl">
             <option value="admin">Admin</option>
-            <option value="closer" selected>Closer</option>
-            <option value="operacoes">Operações</option>
+            <option value="ceo">CEO</option>
+            <option value="cs_financeiro">CS / Financeiro</option>
+            <option value="comercial" selected>Comercial</option>
           </select>
         </div>
         <div class="form-group">
           <label for="nu-senha">Senha temporária <span class="req">*</span></label>
           <input type="password" id="nu-senha" class="form-ctrl" placeholder="Mínimo 6 caracteres">
         </div>
+      </div>
+      <div class="form-group">
+        <label>Permissões</label>
+        <div class="perm-grid" id="nu-perm-grid"></div>
       </div>
       <p class="login-error" id="nu-error" style="display:none;margin-top:8px"></p>
     </div>
@@ -1104,9 +1109,14 @@
         <label for="eu-role">Perfil</label>
         <select id="eu-role" class="form-ctrl">
           <option value="admin">Admin</option>
-          <option value="closer">Closer</option>
-          <option value="operacoes">Operações</option>
+          <option value="ceo">CEO</option>
+          <option value="cs_financeiro">CS / Financeiro</option>
+          <option value="comercial">Comercial</option>
         </select>
+      </div>
+      <div class="form-group">
+        <label>Permissões</label>
+        <div class="perm-grid" id="eu-perm-grid"></div>
       </div>
       <p class="login-error" id="eu-error" style="display:none;margin-top:8px"></p>
     </div>
