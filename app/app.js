@@ -816,6 +816,15 @@ const SESSAO_STATUS_CLS = {
   'Inadimplente': 'bp-red-dk',
 };
 
+const PRODUTO_CLS = {
+  'Individual':           'bp-petro',
+  'Comunidade +3':        'bp-purple',
+  'Comunidade +1':        'bp-purple',
+  'Reprogramação Mensal': 'bp-orange',
+  'Águia Club':           'bp-gold',
+  'PRM':                  'bp-green',
+};
+
 function badgeAluna(status) {
   const cls = ALUNA_STATUS_CLS[status] || 'bp-gray';
   return `<span class="bp ${cls}">${esc(status||'—')}</span>`;
@@ -823,6 +832,18 @@ function badgeAluna(status) {
 function badgeSessao(status) {
   const cls = SESSAO_STATUS_CLS[status] || 'bp-gray';
   return `<span class="bp ${cls}">${esc(status||'—')}</span>`;
+}
+function badgeProduto(produto) {
+  const cls = PRODUTO_CLS[produto] || 'bp-gray';
+  return `<span class="bp ${cls}">${esc(produto||'—')}</span>`;
+}
+function avatarInitial(nome) {
+  const PALETTE = ['#4db5c8','#9b59b6','#e67e22','#2ecc71','#e74c3c','#3498db','#1abc9c','#e91e8c'];
+  let h = 0;
+  for (let i = 0; i < (nome||'').length; i++) h = (h * 31 + nome.charCodeAt(i)) >>> 0;
+  const bg  = PALETTE[h % PALETTE.length];
+  const ini = (nome||'?').trim()[0].toUpperCase();
+  return `<span class="aluna-avatar aluna-avatar--initial" style="background:${bg}">${ini}</span>`;
 }
 
 // ─── ALUNOS ──────────────────────────────────────────────────────────
@@ -862,7 +883,7 @@ function renderSucesso() {
             <i data-lucide="graduation-cap" style="color:var(--petro-l)"></i>
           </div>
           <div>
-            <h1>Alunas</h1>
+            <h1>Gestão de Alunas</h1>
             <p>Gestão de alunas, sessões e contratos</p>
           </div>
         </div>
@@ -932,7 +953,7 @@ function renderAlunasTab(el) {
   const rows = allAlunas;
 
   el.innerHTML = `
-    ${subPageTop('Alunas', 'alunas', 'btn-nova-aluna', '+ Nova Aluna')}
+    ${subPageTop('Gestão de Alunas', 'alunas', 'btn-nova-aluna', '+ Nova Aluna')}
     <div class="alunas-filters">
       <input type="text" class="filter-select" id="al-search" placeholder="Buscar aluna…" style="min-width:200px">
       <select class="filter-select" id="al-filter-status">
@@ -983,10 +1004,10 @@ function renderAlunasTable(rows) {
       const waHref  = waPhone ? `https://wa.me/${waPhone}` : null;
       const avatarHtml = a.foto_url
         ? `<img src="${a.foto_url}" class="aluna-avatar">`
-        : `<span class="aluna-avatar aluna-avatar--placeholder"></span>`;
+        : avatarInitial(a.nome);
       return `<tr>
-        <td><div class="aluna-name-cell">${avatarHtml}<button class="link-btn" data-aluna-edit="${a.id}">${esc(a.nome||'—')}</button></div></td>
-        <td><span class="bp bp-gray">${esc(a.produto||'—')}</span></td>
+        <td><div class="aluna-name-cell">${avatarHtml}<button class="aluna-name-btn" data-aluna-edit="${a.id}">${esc(a.nome||'—')}</button></div></td>
+        <td>${badgeProduto(a.produto)}</td>
         <td>${badgeAluna(a.status)}</td>
         <td>${fmtDate(a.data_inscricao||'')}</td>
         <td>${fmtDate(a.data_termino||'')}</td>

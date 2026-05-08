@@ -436,6 +436,13 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 
 .btn-sm { padding: 7px 13px; font-size: 12px; }
 
+.link-btn {
+  background: none; border: none; padding: 0; cursor: pointer;
+  color: inherit; font-size: inherit; font-family: inherit;
+  font-weight: inherit; text-align: left;
+}
+.link-btn:hover { opacity: .75; }
+
 /* ============================================================
    DEMO BANNER
    ============================================================ */
@@ -1053,7 +1060,7 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
   border-bottom: 1px solid var(--b0);
 }
 .data-table td {
-  padding: 15px 18px;
+  padding: 18px 18px;
   font-size: 13.5px; font-weight: 500; color: var(--t1);
   border-bottom: 1px solid var(--b0); vertical-align: middle;
 }
@@ -1061,14 +1068,23 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 .data-table tbody tr:hover  { background: var(--s-hover); }
 .data-table tbody tr:last-child td { border-bottom: none; }
 
-.aluna-name-cell { display: flex; align-items: center; gap: 11px; }
+.aluna-name-cell { display: flex; align-items: center; gap: 12px; }
 .aluna-avatar {
-  width: 34px; height: 34px; border-radius: 50%;
+  width: 36px; height: 36px; border-radius: 50%;
   object-fit: cover; flex-shrink: 0;
 }
-.aluna-avatar--placeholder {
-  background: var(--b1); border: 1px solid var(--b2);
+.aluna-avatar--initial {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,.25);
+  border: none; flex-shrink: 0; user-select: none;
 }
+.aluna-name-btn {
+  background: none; border: none; padding: 0; cursor: pointer;
+  color: var(--t1); font-size: 13.5px; font-weight: 500;
+  font-family: inherit; text-align: left; line-height: 1.3;
+}
+.aluna-name-btn:hover { color: var(--petro-l); text-decoration: underline; }
 
 /* ── Alunas — filter bar spacing ────────────────────────────────── */
 .alunas-filters {
