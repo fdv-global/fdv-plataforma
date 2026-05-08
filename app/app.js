@@ -1216,7 +1216,7 @@ function openStatusQuickChange(anchor, aluna) {
 function renderSessoesTab(el) {
   el.innerHTML = `
     ${subPageTop('Sessões', 'sessoes', 'btn-nova-sessao', '+ Nova Sessão')}
-    <div class="filter-bar" style="margin-bottom:18px">
+    <div class="alunas-filters" style="margin-bottom:18px">
       <select class="filter-select" id="sess-filter-aluna" style="min-width:200px">
         <option value="">Todas as alunas</option>
         ${allAlunas.map(a => `<option value="${a.id}">${esc(a.nome||'—')}</option>`).join('')}

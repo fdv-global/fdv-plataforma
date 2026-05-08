@@ -2964,15 +2964,15 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 @media(max-width:900px){ .al-metrics { grid-template-columns:repeat(3,1fr); } }
 @media(max-width:600px){ .al-metrics { grid-template-columns:repeat(2,1fr); } }
 
-.al-metric-card { background:rgba(255,255,255,.025); border:1.5px solid var(--b1); border-radius:var(--r); padding:14px 16px; display:flex; flex-direction:column; gap:4px; cursor:pointer; transition:background var(--fast) var(--ease),border-color var(--fast) var(--ease); text-align:left; }
-.al-metric-card:hover { background:rgba(255,255,255,.05); border-color:var(--b2); }
-.al-metric-card.active { background:rgba(255,255,255,.06); border-color:var(--b2); box-shadow:0 0 0 1px var(--b2); }
+.al-metric-card { background:var(--s2); border:1.5px solid var(--b1); border-radius:var(--r); padding:14px 16px; display:flex; flex-direction:column; gap:4px; cursor:pointer; transition:background var(--fast) var(--ease),border-color var(--fast) var(--ease); text-align:left; }
+.al-metric-card:hover { background:var(--s3); border-color:var(--b2); }
+.al-metric-card.active { background:var(--s3); border-color:var(--b2); box-shadow:0 0 0 1px var(--b2); }
 .al-metric-n { font-size:26px; font-weight:800; line-height:1; }
-.al-metric-lbl { font-size:11px; color:var(--t3); font-weight:500; }
+.al-metric-lbl { font-size:11px; color:var(--t2); font-weight:500; }
 
 .al-metric-panel { margin-bottom:18px; }
-.al-metric-panel-inner { background:rgba(255,255,255,.02); border:1px solid var(--b1); border-radius:var(--r); padding:16px 18px; max-height:260px; overflow-y:auto; }
-.al-metric-panel-hdr { font-size:11px; font-weight:700; color:var(--t3); text-transform:uppercase; letter-spacing:.07em; margin-bottom:10px; }
+.al-metric-panel-inner { background:var(--s2); border:1px solid var(--b1); border-radius:var(--r); padding:16px 18px; max-height:260px; overflow-y:auto; }
+.al-metric-panel-hdr { font-size:11px; font-weight:700; color:var(--t2); text-transform:uppercase; letter-spacing:.07em; margin-bottom:10px; }
 .al-mini-row { display:flex; align-items:center; gap:9px; padding:6px 0; border-bottom:1px solid var(--b0); }
 .al-mini-row:last-child { border-bottom:none; }
 .al-mini-nome { font-size:13px; font-weight:500; color:var(--t1); flex:1; }
@@ -2989,9 +2989,9 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .al-accordion { }
 .al-row { border-bottom:1px solid var(--b0); }
 .al-row:last-child { border-bottom:none; }
-.al-row.open { background:rgba(255,255,255,.015); }
+.al-row.open { background:rgba(255,255,255,.04); }
 .al-row-head { display:flex; align-items:center; justify-content:space-between; padding:11px 2px; cursor:pointer; gap:10px; border-radius:var(--r-xs); transition:background var(--fast) var(--ease); }
-.al-row-head:hover { background:rgba(255,255,255,.025); }
+.al-row-head:hover { background:rgba(255,255,255,.05); }
 .al-row-left { display:flex; align-items:center; gap:9px; flex:1; min-width:0; }
 .al-row-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
 .al-row-info { display:flex; flex-direction:column; gap:3px; min-width:0; }
@@ -3004,15 +3004,15 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .al-row.open .al-row-chevron { transform:rotate(90deg); }
 
 .al-row-body { padding:0 2px 14px; }
-.al-body-inner { background:rgba(255,255,255,.02); border:1px solid var(--b0); border-radius:var(--r-sm); padding:14px 16px; }
+.al-body-inner { background:var(--s2); border:1px solid var(--b1); border-radius:var(--r-sm); padding:14px 16px; }
 .al-body-grid { display:flex; flex-wrap:wrap; gap:14px 26px; margin-bottom:12px; }
 .al-body-item { display:flex; flex-direction:column; gap:2px; }
-.al-body-lbl { font-size:10.5px; color:var(--t3); text-transform:uppercase; letter-spacing:.06em; }
+.al-body-lbl { font-size:10.5px; color:var(--t2); text-transform:uppercase; letter-spacing:.06em; }
 .al-body-val { font-size:13px; color:var(--t1); font-weight:500; }
 .al-body-actions { display:flex; gap:7px; flex-wrap:wrap; }
 
 /* ── Sessions timeline ── */
-.sess-aluna-block { background:rgba(255,255,255,.015); border:1px solid var(--b0); border-radius:var(--r); padding:16px 18px; margin-bottom:10px; }
+.sess-aluna-block { background:var(--s2); border:1px solid var(--b1); border-radius:var(--r); padding:16px 18px; margin-bottom:10px; }
 .sess-aluna-header { display:flex; align-items:center; gap:11px; margin-bottom:14px; }
 .sess-aluna-nome { font-size:14px; font-weight:700; color:var(--t1); }
 .sess-aluna-proxima { font-size:11.5px; color:var(--t3); margin-top:2px; }
@@ -3024,7 +3024,7 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .sess-dot:hover { transform:scale(1.18); }
 .sess-dot--green  { background:rgba(76,175,142,.22); color:#4caf8e; border-color:rgba(76,175,142,.38); }
 .sess-dot--yellow { background:rgba(206,146,33,.18); color:#CE9221; border-color:rgba(206,146,33,.36); }
-.sess-dot--gray   { background:rgba(255,255,255,.06); color:var(--t3); border-color:var(--b1); }
+.sess-dot--gray   { background:rgba(255,255,255,.12); color:var(--t2); border-color:var(--b2); }
 .sess-dot--red    { background:rgba(224,100,80,.18); color:#e06450; border-color:rgba(224,100,80,.36); }
 .sess-dot-date { font-size:8.5px; color:var(--t4); white-space:nowrap; max-width:36px; overflow:hidden; text-overflow:ellipsis; }
 
