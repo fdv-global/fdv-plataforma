@@ -1245,48 +1245,48 @@ function renderSessoesTab(el) {
     if (!list) return;
     if (!filteredSess.length) { list.innerHTML = '<p class="hist-empty" style="margin-top:32px">Nenhuma sessão encontrada.</p>'; return; }
 
-    const today = new Date(); today.setHours(0,0,0,0);
     const alunaIds = [...new Set(filteredSess.map(s => s.aluna_id))];
     const alunas = alunaIds.map(id => allAlunas.find(a => a.id === id)).filter(Boolean);
 
-    const proximaData = a => {
-      const upcoming = allSessoes
-        .filter(s => s.aluna_id === a.id && s.data && (s.status === 'Aguardando' || s.status === 'Marcada'))
-        .sort((x,y) => (x.data||'') < (y.data||'') ? -1 : 1)[0];
-      return upcoming ? new Date(upcoming.data + 'T00:00:00') : null;
-    };
+    const proximaRec = a => allSessoes
+      .filter(s => s.aluna_id === a.id && s.data && (s.status === 'Aguardando' || s.status === 'Marcada'))
+      .sort((x,y) => (x.data||'') < (y.data||'') ? -1 : 1)[0];
 
     alunas.sort((a, b) => {
-      const da = proximaData(a), db = proximaData(b);
-      if (da && db) return da - db;
-      if (da) return -1;
-      if (db) return 1;
+      const pa = proximaRec(a), pb = proximaRec(b);
+      if (pa && pb) return (pa.data||'') < (pb.data||'') ? -1 : 1;
+      if (pa) return -1;
+      if (pb) return 1;
       return (a.nome||'').localeCompare(b.nome||'');
     });
 
+    const sortSess = arr => arr.slice().sort((x,y) => {
+      const na = x.numero_sessao || 0, nb = y.numero_sessao || 0;
+      if (na !== nb) return na - nb;
+      return (x.data||'') < (y.data||'') ? -1 : 1;
+    });
+
     list.innerHTML = alunas.map(a => {
-      const sessAluna = filteredSess.filter(s => s.aluna_id === a.id).sort((x,y) => {
-        const na = x.numero_sessao || 0, nb = y.numero_sessao || 0;
-        if (na !== nb) return na - nb;
-        return (x.data||'') < (y.data||'') ? -1 : 1;
-      });
-      const allSessAluna = allSessoes.filter(s => s.aluna_id === a.id).sort((x,y) => {
-        const na = x.numero_sessao || 0, nb = y.numero_sessao || 0;
-        if (na !== nb) return na - nb;
-        return (x.data||'') < (y.data||'') ? -1 : 1;
-      });
-      const proxima = allSessAluna.find(s => (s.status === 'Aguardando' || s.status === 'Marcada') && s.data);
+      const sessAluna    = sortSess(filteredSess.filter(s => s.aluna_id === a.id));
+      const allSessAluna = sortSess(allSessoes.filter(s => s.aluna_id === a.id));
+      const proxima      = proximaRec(a);
+      const realizadas   = allSessAluna.filter(s => s.status === 'Realizada').length;
+      const total        = a.sessoes_total || allSessAluna.length;
+      const proxTxt      = proxima
+        ? `${fmtDate(proxima.data)}${proxima.hora ? ' · ' + proxima.hora.slice(0,5) : ''}`
+        : 'sem agendamento';
+
       const avatarHtml = a.foto_url
-        ? `<img src="${esc(a.foto_url)}" class="aluna-avatar" style="width:32px;height:32px;border-radius:50%;object-fit:cover">`
+        ? `<img src="${esc(a.foto_url)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0">`
         : avatarInitial(a.nome);
 
       const timelineDots = allSessAluna.map((s, i) => {
         const n = s.numero_sessao || (i + 1);
-        const tooltip = `${s.status}${s.data ? ' · ' + fmtDate(s.data) : ''}${s.hora ? ' ' + s.hora.slice(0,5) : ''}`;
-        return `<div class="sess-dot-wrap"><div class="sess-dot ${dotClass(s)}" title="${esc(tooltip)}">${n}</div>${s.data ? `<span class="sess-dot-date">${fmtDate(s.data)}</span>` : ''}</div>`;
+        const tip = `${s.status}${s.data ? ' · ' + fmtDate(s.data) : ''}${s.hora ? ' ' + s.hora.slice(0,5) : ''}`;
+        return `<div class="sess-dot-wrap"><div class="sess-dot ${dotClass(s)}" title="${esc(tip)}">${n}</div>${s.data ? `<span class="sess-dot-date">${fmtDate(s.data)}</span>` : ''}</div>`;
       }).join('');
 
-      const sessItems = sessAluna.map((s, i) => {
+      const sessItems = sessAluna.map(s => {
         const n = s.numero_sessao || (allSessAluna.indexOf(s) + 1);
         return `<div class="sess-item">
           <div class="sess-item-left">
@@ -1301,21 +1301,49 @@ function renderSessoesTab(el) {
         </div>`;
       }).join('');
 
-      return `<div class="sess-aluna-block">
-        <div class="sess-aluna-header">
-          ${avatarHtml}
-          <div>
-            <div class="sess-aluna-nome">${esc(a.nome||'—')}</div>
-            <div class="sess-aluna-proxima">${proxima ? `próxima: ${fmtDate(proxima.data)}${proxima.hora ? ' · ' + proxima.hora.slice(0,5) : ''}` : 'sem sessão agendada'}</div>
+      return `<div class="al-row" data-aluna-id="${a.id}">
+        <div class="al-row-head">
+          <div class="al-row-left">
+            ${avatarHtml}
+            <div class="al-row-info">
+              <span class="al-row-nome">${esc(a.nome||'—')}</span>
+              <div class="al-row-meta">
+                ${badgeProduto(a.produto)}
+                <span class="sa-meta-txt">${realizadas}/${total} sessões</span>
+                <span class="sa-meta-sep">·</span>
+                <span class="sa-meta-txt">${proxTxt}</span>
+              </div>
+            </div>
           </div>
-          <div class="sess-aluna-actions">
+          <div class="al-row-right">
+            ${badgeAluna(a.status)}
             <button class="btn-ghost btn-sm" data-nova-sessao-aluna="${a.id}">+ Sessão</button>
+            <span class="al-row-chevron">›</span>
           </div>
         </div>
-        ${allSessAluna.length ? `<div class="sess-timeline">${timelineDots}</div>` : ''}
-        ${sessItems}
+        <div class="al-row-body" style="display:none">
+          <div class="al-body-inner">
+            ${allSessAluna.length ? `<div class="sess-timeline" style="margin-bottom:14px">${timelineDots}</div>` : ''}
+            ${sessItems || '<p style="font-size:13px;color:var(--t3);padding:4px 0">Nenhuma sessão para os filtros selecionados.</p>'}
+          </div>
+        </div>
       </div>`;
     }).join('');
+
+    // accordion toggle — one open at a time
+    list.querySelectorAll('.al-row-head').forEach(head => {
+      head.addEventListener('click', e => {
+        if (e.target.closest('button')) return;
+        const row    = head.closest('.al-row');
+        const body   = row.querySelector('.al-row-body');
+        const isOpen = row.classList.contains('open');
+        list.querySelectorAll('.al-row.open').forEach(r => {
+          r.classList.remove('open');
+          r.querySelector('.al-row-body').style.display = 'none';
+        });
+        if (!isOpen) { row.classList.add('open'); body.style.display = ''; }
+      });
+    });
 
     list.querySelectorAll('[data-sess-agendar]').forEach(b =>
       b.addEventListener('click', () => {

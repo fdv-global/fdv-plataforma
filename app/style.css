@@ -3011,6 +3011,9 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .al-body-val { font-size:13px; color:var(--t1); font-weight:500; }
 .al-body-actions { display:flex; gap:7px; flex-wrap:wrap; }
 
+.sa-meta-txt { font-size:11.5px; color:var(--t3); }
+.sa-meta-sep { font-size:11.5px; color:var(--t4); }
+
 /* ── Sessions timeline ── */
 .sess-aluna-block { background:var(--s2); border:1px solid var(--b1); border-radius:var(--r); padding:16px 18px; margin-bottom:10px; }
 .sess-aluna-header { display:flex; align-items:center; gap:11px; margin-bottom:14px; }
