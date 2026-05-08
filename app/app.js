@@ -476,7 +476,8 @@ function renderUsuarios(lista) {
       <td><span class="lead-status-badge ${u.ativo?'accent-green':'accent-marsala'}">${u.ativo?'Ativo':'Inativo'}</span></td>
       <td class="usuario-acoes">
         <button class="btn-ghost btn-sm usuario-edit-btn" data-uid="${u.id}">Editar</button>
-        <button class="btn-ghost btn-sm" data-reenviar="${u.id}" title="${u.senha_temp ? 'Reenviar credenciais por email' : 'Senha já alterada pelo usuário'}"${u.senha_temp ? '' : ' style="opacity:.45"'}>Reenviar credenciais</button>
+        <button class="btn-ghost btn-sm" data-reenviar="${u.id}" title="Gera nova senha e envia por email">Reenviar</button>
+        <button class="btn-ghost btn-sm" data-copiar-wa="${u.id}" title="Copiar mensagem pronta para WhatsApp">Copiar p/ WhatsApp</button>
         <button class="btn-ghost btn-sm usuario-delete-btn" data-uid="${u.id}" data-nome="${esc(u.nome||u.email)}">Excluir</button>
       </td>
     </tr>`;
@@ -655,21 +656,56 @@ async function salvarNovoUsuario() {
   }
 }
 
+function gerarSenhaTemp() {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!';
+  return Array.from(crypto.getRandomValues(new Uint8Array(10)))
+    .map(b => chars[b % chars.length]).join('');
+}
+
 async function reenviarCredenciais(uid) {
   const u = allUsuarios.find(x => x.id === uid);
   if (!u) return;
-  if (!u.senha_temp) {
-    toast('Senha temporária não disponível — o usuário já alterou a senha.', 'warn');
-    return;
-  }
+  const novaSenha = gerarSenhaTemp();
   const btn = document.querySelector(`[data-reenviar="${uid}"]`);
   if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
-  const { error } = await supabase.functions.invoke('send-credentials', {
-    body: { email: u.email, nome: u.nome, senha: u.senha_temp },
-  });
-  if (btn) { btn.disabled = false; btn.textContent = 'Reenviar credenciais'; }
-  if (error) { console.warn('[FDV] reenviarCredenciais:', error); toast('Falha ao enviar email.', 'err'); }
-  else toast(`Credenciais reenviadas para ${u.email}.`, 'ok');
+  try {
+    const { error: dbErr } = await supabase.from('usuarios').update({ senha_temp: novaSenha }).eq('id', uid);
+    if (dbErr) throw dbErr;
+    const local = allUsuarios.find(x => x.id === uid);
+    if (local) local.senha_temp = novaSenha;
+    const { error: fnErr } = await supabase.functions.invoke('send-credentials', {
+      body: { email: u.email, nome: u.nome, senha: novaSenha },
+    });
+    if (fnErr) { console.warn('[FDV] send-credentials:', fnErr); toast('Senha gerada, mas falha ao enviar email.', 'warn'); }
+    else toast(`Credenciais enviadas para ${u.email}.`, 'ok');
+    renderUsuarios(allUsuarios);
+  } catch(e) {
+    toast('Erro ao gerar credenciais: ' + (e.message || e), 'err');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Reenviar'; }
+  }
+}
+
+async function copiarCredenciaisWhatsApp(uid) {
+  const u = allUsuarios.find(x => x.id === uid);
+  if (!u) return;
+  let senha = u.senha_temp;
+  if (!senha) {
+    senha = gerarSenhaTemp();
+    const { error } = await supabase.from('usuarios').update({ senha_temp: senha }).eq('id', uid);
+    if (!error) {
+      const local = allUsuarios.find(x => x.id === uid);
+      if (local) local.senha_temp = senha;
+      renderUsuarios(allUsuarios);
+    }
+  }
+  const msg = `Olá! Aqui estão suas credenciais de acesso ao sistema FDV:\n🔗 Link: fdv-global.github.io/fdv-plataforma\n📧 Email: ${u.email}\n🔑 Senha: ${senha}`;
+  try {
+    await navigator.clipboard.writeText(msg);
+    toast('Mensagem copiada para o WhatsApp.', 'ok');
+  } catch(_) {
+    toast('Erro ao copiar — verifique permissão do navegador.', 'err');
+  }
 }
 
 // ─── FIREBASE + SUPABASE ─────────────────────────────────────────────
@@ -6381,6 +6417,8 @@ function bindEvents() {
     if (del) deleteUsuario(del.dataset.uid, del.dataset.nome);
     const reenviar = e.target.closest('[data-reenviar]');
     if (reenviar) reenviarCredenciais(reenviar.dataset.reenviar);
+    const copiarWa = e.target.closest('[data-copiar-wa]');
+    if (copiarWa) copiarCredenciaisWhatsApp(copiarWa.dataset.copiarWa);
   });
   $('eu-role')?.addEventListener('change', () => {
     renderPermCheckboxes('eu-perm-grid', ROLE_PERMISSIONS[$('eu-role').value] || { ...DEFAULT_PERMISSIONS });
