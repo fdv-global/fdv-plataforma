@@ -1117,7 +1117,11 @@ function renderSessoesTab(el) {
 
   renderList();
   lucide.createIcons({ nodes: [el] });
-  $('btn-nova-sessao')?.addEventListener('click', () => openSessaoModal(null, $('sess-filter-aluna')?.value || null));
+  $('btn-nova-sessao')?.addEventListener('click', () => {
+    const alunaId = $('sess-filter-aluna')?.value || null;
+    const aluna   = alunaId ? allAlunas.find(a => a.id === alunaId) || null : null;
+    openAgendarSessao(null, aluna);
+  });
   ['sess-filter-aluna','sess-filter-status'].forEach(id => $(id)?.addEventListener('change', renderList));
 }
 
@@ -3088,15 +3092,25 @@ function openAgendar(lead) {
 
 function openAgendarSessao(sessao, aluna) {
   modalMode = 'agendar-sessao';
-  cal = { step: 1, closer: null, sessaoId: sessao.id };
-  $('modal-title').textContent    = 'Agendar Sessão';
-  $('modal-subtitle').textContent = (aluna?.nome || '—') + (sessao.numero_sessao ? ` · Sessão ${sessao.numero_sessao}` : '');
+  cal = { step: 1, closer: null, sessaoId: sessao?.id || null, alunaId: aluna?.id || null };
+  $('modal-title').textContent    = sessao ? 'Agendar Sessão' : 'Nova Sessão';
+  $('modal-subtitle').textContent = (aluna?.nome || '—') + (sessao?.numero_sessao ? ` · Sessão ${sessao.numero_sessao}` : '');
   $('lead-strip').innerHTML       = '';
   $('lead-strip').style.display   = 'none';
   $('sched-hint').textContent         = 'Selecione o responsável — o link de agendamento abre em nova aba.';
   $('sched-banner-p').textContent     = 'Link aberto em nova aba. Confirme o horário com a aluna e preencha os dados abaixo.';
   $('sched-closer-label').textContent = 'Responsável';
   $('sched-obs').placeholder          = 'Observações sobre a sessão…';
+  // Aluna selector: visible only when creating a new session
+  const alunaRow = $('sched-aluna-row');
+  if (!sessao) {
+    const sel = $('sched-aluna-sel');
+    sel.innerHTML = `<option value="">Selecione a aluna…</option>` +
+      allAlunas.map(a => `<option value="${a.id}"${a.id === aluna?.id ? ' selected' : ''}>${esc(a.nome||'—')}</option>`).join('');
+    alunaRow.style.display = '';
+  } else {
+    alunaRow.style.display = 'none';
+  }
   $('form-resultado').style.display = 'none';
   $('form-agendar').style.display   = 'block';
   $('form-detalhes').style.display  = 'none';
@@ -3493,14 +3507,31 @@ async function confirmar() {
       const [datePart, timePart] = dtVal.split('T');
       const hora = timePart.length === 5 ? timePart + ':00' : timePart;
       const obs  = $('sched-obs').value.trim();
-      const patch = { data: datePart, hora, status: 'Marcada', ...(obs ? { observacoes: obs } : {}) };
-      if (isLive) {
-        const { error } = await supabase.from('sessoes').update(patch).eq('id', cal.sessaoId);
-        if (error) throw error;
+
+      if (cal.sessaoId) {
+        // Update existing session
+        const patch = { data: datePart, hora, status: 'Marcada', ...(obs ? { observacoes: obs } : {}) };
+        if (isLive) {
+          const { error } = await supabase.from('sessoes').update(patch).eq('id', cal.sessaoId);
+          if (error) throw error;
+        }
+        const idx = allSessoes.findIndex(s => s.id === cal.sessaoId);
+        if (idx !== -1) allSessoes[idx] = { ...allSessoes[idx], ...patch };
+        toast(`Sessão agendada — ${timePart} · ${fmtDate(datePart)}`, 'ok');
+      } else {
+        // Create new session
+        const alunaId = $('sched-aluna-sel')?.value || cal.alunaId;
+        if (!alunaId) { toast('Selecione a aluna.', 'err'); btn.disabled=false; return; }
+        const newSess = { aluna_id: alunaId, data: datePart, hora, status: 'Marcada', observacoes: obs || null, criadoem: new Date().toISOString() };
+        if (isLive) {
+          const { data: inserted, error } = await supabase.from('sessoes').insert(newSess).select().single();
+          if (error) throw error;
+          allSessoes.push(inserted);
+        } else {
+          allSessoes.push({ id: 'local-' + Date.now(), ...newSess });
+        }
+        toast(`Sessão criada — ${timePart} · ${fmtDate(datePart)}`, 'ok');
       }
-      const idx = allSessoes.findIndex(s => s.id === cal.sessaoId);
-      if (idx !== -1) allSessoes[idx] = { ...allSessoes[idx], ...patch };
-      toast(`Sessão agendada — ${timePart} · ${fmtDate(datePart)}`, 'ok');
 
     } else if (modalMode === 'agendar') {
       const dtVal = $('sched-datetime').value;
