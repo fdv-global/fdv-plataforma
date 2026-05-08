@@ -359,6 +359,9 @@ async function resolveRole(user) {
       }
       currentUserDbId    = userRow.id;
       currentPermissions = userRow.permissions || ROLE_PERMISSIONS[userRow.role] || { ...DEFAULT_PERMISSIONS };
+      if (userRow.senha_temp) {
+        supabase.from('usuarios').update({ senha_temp: null }).eq('id', userRow.id).then(() => {});
+      }
       return userRow.role || (ADMIN_EMAILS.includes(user.email) ? 'admin' : null);
     }
 
@@ -472,12 +475,9 @@ function renderUsuarios(lista) {
       <td>${roleBadge(u.role)}</td>
       <td><span class="lead-status-badge ${u.ativo?'accent-green':'accent-marsala'}">${u.ativo?'Ativo':'Inativo'}</span></td>
       <td class="usuario-acoes">
-        <button class="btn-ghost btn-sm usuario-edit-btn" data-uid="${u.id}">
-          Editar
-        </button>
-        <button class="btn-ghost btn-sm usuario-delete-btn" data-uid="${u.id}" data-nome="${esc(u.nome||u.email)}">
-          Excluir
-        </button>
+        <button class="btn-ghost btn-sm usuario-edit-btn" data-uid="${u.id}">Editar</button>
+        <button class="btn-ghost btn-sm" data-reenviar="${u.id}" title="${u.senha_temp ? 'Reenviar credenciais por email' : 'Senha já alterada pelo usuário'}"${u.senha_temp ? '' : ' style="opacity:.45"'}>Reenviar credenciais</button>
+        <button class="btn-ghost btn-sm usuario-delete-btn" data-uid="${u.id}" data-nome="${esc(u.nome||u.email)}">Excluir</button>
       </td>
     </tr>`;
   }).join('');
@@ -628,13 +628,19 @@ async function salvarNovoUsuario() {
 
     const permissions = readPermCheckboxes('nu-perm-grid');
     const { error: insErr2 } = await supabase.from('usuarios').insert({
-      firebase_uid: uid, email, nome, role, ativo: true, permissions,
+      firebase_uid: uid, email, nome, role, ativo: true, permissions, senha_temp: senha,
       ...(photoURL && { photo_url: photoURL }),
     });
     if (insErr2) throw insErr2;
     await signOut(tempAuth);
     closeNovoUsuario();
     toast('Usuário criado com sucesso!', 'ok');
+    // enviar credenciais por email (não bloqueia se falhar)
+    supabase.functions.invoke('send-credentials', { body: { email, nome, senha } })
+      .then(({ error: fnErr }) => {
+        if (fnErr) { console.warn('[FDV] send-credentials:', fnErr); toast('Usuário criado, mas falha ao enviar email.', 'warn'); }
+        else toast('Email de credenciais enviado.', 'ok');
+      });
   } catch(e) {
     const msgs = {
       'auth/email-already-in-use': 'Email já cadastrado.',
@@ -647,6 +653,23 @@ async function salvarNovoUsuario() {
     btn.disabled = false; btn.textContent = 'Criar Usuário';
     if (tempApp) try { await deleteApp(tempApp); } catch(_) {}
   }
+}
+
+async function reenviarCredenciais(uid) {
+  const u = allUsuarios.find(x => x.id === uid);
+  if (!u) return;
+  if (!u.senha_temp) {
+    toast('Senha temporária não disponível — o usuário já alterou a senha.', 'warn');
+    return;
+  }
+  const btn = document.querySelector(`[data-reenviar="${uid}"]`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+  const { error } = await supabase.functions.invoke('send-credentials', {
+    body: { email: u.email, nome: u.nome, senha: u.senha_temp },
+  });
+  if (btn) { btn.disabled = false; btn.textContent = 'Reenviar credenciais'; }
+  if (error) { console.warn('[FDV] reenviarCredenciais:', error); toast('Falha ao enviar email.', 'err'); }
+  else toast(`Credenciais reenviadas para ${u.email}.`, 'ok');
 }
 
 // ─── FIREBASE + SUPABASE ─────────────────────────────────────────────
@@ -6352,10 +6375,12 @@ function bindEvents() {
     if (sel) updateRoleUsuario(sel.dataset.uid, sel.value);
   });
   $('usuarios-tbody')?.addEventListener('click', e => {
-    const edit = e.target.closest('.usuario-edit-btn');
+    const edit     = e.target.closest('.usuario-edit-btn');
     if (edit) openEditarUsuario(edit.dataset.uid);
-    const del = e.target.closest('.usuario-delete-btn');
+    const del      = e.target.closest('.usuario-delete-btn');
     if (del) deleteUsuario(del.dataset.uid, del.dataset.nome);
+    const reenviar = e.target.closest('[data-reenviar]');
+    if (reenviar) reenviarCredenciais(reenviar.dataset.reenviar);
   });
   $('eu-role')?.addEventListener('change', () => {
     renderPermCheckboxes('eu-perm-grid', ROLE_PERMISSIONS[$('eu-role').value] || { ...DEFAULT_PERMISSIONS });
