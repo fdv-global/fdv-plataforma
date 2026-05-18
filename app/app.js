@@ -7,6 +7,17 @@ import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
+// ─── GOOGLE CALENDAR OAUTH POPUP CALLBACK ───────────────────────────
+// Roda no popup após redirect do Google — envia o code ao parent e fecha.
+{
+  const _p = new URLSearchParams(window.location.search);
+  const _code = _p.get('code'), _state = _p.get('state') || '';
+  if (_code && _state.startsWith('gcal_') && window.opener) {
+    window.opener.postMessage({ type: 'gcal_oauth_code', code: _code, state: _state }, '*');
+    window.close();
+  }
+}
+
 const SB_URL     = 'https://yadxcbhginjvoemacdly.supabase.co';
 const SB_ANON    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhZHhjYmhnaW5qdm9lbWFjZGx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5Njc5ODEsImV4cCI6MjA5MjU0Mzk4MX0.n0_WC_KDBX4kdag8N6dYe2Xs0E284U2JESmNKyWT4Wo';
 // TODO: após aplicar supabase/migrations/003_anon_rls_policies.sql, remover SB_SERVICE_KEY
@@ -18,6 +29,27 @@ const CLOSERS = {
   fernanda: { name: 'Fernanda', waName: 'Fernanda Ayub',      icon: '⭐', color: '#CE9221', bg: 'rgba(206,146,33,.12)', calLink: 'https://calendar.app.google/hWWi6tVKAhoXg5cUA' },
   thomaz:   { name: 'Thomaz',   waName: 'Thomaz Empresarial', icon: '🧑', color: '#4db5c8', bg: 'rgba(77,181,200,.12)',  calLink: 'https://calendar.app.google/1heVe3395Tsk9GeM8' }
 };
+
+// ─── GOOGLE CALENDAR OAUTH ───────────────────────────────────────────
+// OAuth client: fdv-calendario (projeto annular-cogency-492721-j8)
+// Redirect URI autorizado: https://fdv-global.github.io/fdv-plataforma
+// Credenciais buscadas em runtime da tabela app_settings no Supabase
+// (não ficam no repositório)
+const GCAL_REDIRECT_URI = 'https://fdv-global.github.io/fdv-plataforma';
+const GCAL_SCOPE        = 'https://www.googleapis.com/auth/calendar.readonly';
+let   _gcalCreds        = null; // { id, secret } — carregado uma vez
+
+async function getGcalCreds() {
+  if (_gcalCreds) return _gcalCreds;
+  const { data, error } = await supabase
+    .from('app_settings')
+    .select('key,value')
+    .in('key', ['gcal_client_id', 'gcal_client_secret']);
+  if (error || !data?.length) throw new Error('Credenciais GCAL não encontradas. Insira gcal_client_id e gcal_client_secret em app_settings.');
+  const m = Object.fromEntries(data.map(r => [r.key, r.value]));
+  _gcalCreds = { id: m.gcal_client_id, secret: m.gcal_client_secret };
+  return _gcalCreds;
+}
 
 // ─── ADMIN EMAILS — auto-provisionados como admin no primeiro login ──
 const ADMIN_EMAILS = [
@@ -3724,6 +3756,11 @@ function openAgendar(lead) {
   currentId = lead.id;
   modalMode = 'agendar';
   cal = { step: 1, closer: null, leadSnap: lead };
+  const calWrap = $('cal-connect-wrap');
+  if (calWrap) {
+    calWrap.style.display = hasPerm('usuarios') ? '' : 'none';
+    if (hasPerm('usuarios')) updateCalConnectButtons();
+  }
   $('modal-title').textContent    = 'Agendar Call';
   $('modal-subtitle').textContent = `${lead.nome} · ${lead.celular}`;
   $('lead-strip').style.display   = '';
@@ -3747,6 +3784,8 @@ function openAgendar(lead) {
 function openAgendarSessao(sessao, aluna) {
   modalMode = 'agendar-sessao';
   cal = { step: 1, closer: null, sessaoId: sessao?.id || null, alunaId: aluna?.id || null };
+  const calWrap = $('cal-connect-wrap');
+  if (calWrap) calWrap.style.display = 'none';
   $('modal-title').textContent    = sessao ? 'Agendar Sessão' : 'Nova Sessão';
   $('modal-subtitle').textContent = (aluna?.nome || '—') + (sessao?.numero_sessao ? ` · Sessão ${sessao.numero_sessao}` : '');
   $('lead-strip').innerHTML       = '';
@@ -3782,13 +3821,181 @@ function schedGoToStep(n) {
   else { btn.textContent='Confirmar Agendamento'; btn.style.display=''; btn.style.background='var(--gold)'; btn.style.color='#0d1a1c'; btn.style.border='none'; btn.disabled=false; }
 }
 
+// ─── GOOGLE CALENDAR — OAUTH & API ───────────────────────────────────
+
+async function connectCloserCalendar(closerKey) {
+  const { id: clientId } = await getGcalCreds();
+  const state    = 'gcal_' + closerKey;
+  const oauthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+  oauthUrl.searchParams.set('client_id',    clientId);
+  oauthUrl.searchParams.set('redirect_uri', GCAL_REDIRECT_URI);
+  oauthUrl.searchParams.set('response_type','code');
+  oauthUrl.searchParams.set('scope',        GCAL_SCOPE);
+  oauthUrl.searchParams.set('access_type',  'offline');
+  oauthUrl.searchParams.set('prompt',       'consent');
+  oauthUrl.searchParams.set('state',        state);
+
+  const popup = window.open(oauthUrl.toString(), 'gcal_oauth', 'width=520,height=640');
+  if (!popup) { toast('Popup bloqueado — permita popups para este site.', 'err'); return; }
+
+  const btn = $('cal-connect-' + closerKey);
+  if (btn) { btn.disabled = true; btn.textContent = 'Aguardando…'; }
+
+  new Promise((resolve, reject) => {
+    const handler = async (event) => {
+      if (event.data?.type !== 'gcal_oauth_code') return;
+      if (event.data?.state !== state) return;
+      window.removeEventListener('message', handler);
+      clearInterval(poll);
+      try { await exchangeCalendarCode(event.data.code, closerKey); resolve(); }
+      catch (e) { reject(e); }
+    };
+    window.addEventListener('message', handler);
+    const poll = setInterval(() => {
+      if (popup.closed) {
+        window.removeEventListener('message', handler);
+        clearInterval(poll);
+        reject(new Error('cancelled'));
+      }
+    }, 600);
+  }).then(() => {
+    toast(`Agenda de ${CLOSERS[closerKey]?.name || closerKey} conectada!`, 'ok');
+    updateCalConnectButtons();
+  }).catch(e => {
+    if (e.message !== 'cancelled') toast('Erro ao conectar: ' + e.message, 'err');
+    updateCalConnectButtons();
+  });
+}
+
+async function exchangeCalendarCode(code, closerKey) {
+  const { id: clientId, secret: clientSecret } = await getGcalCreds();
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body:    new URLSearchParams({
+      code,
+      client_id:     clientId,
+      client_secret: clientSecret,
+      redirect_uri:  GCAL_REDIRECT_URI,
+      grant_type:    'authorization_code',
+    }),
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error_description || data.error);
+  const { error } = await supabase.from('calendar_tokens').upsert({
+    closer_key:    closerKey,
+    access_token:  data.access_token,
+    refresh_token: data.refresh_token,
+    token_expiry:  new Date(Date.now() + (data.expires_in || 3600) * 1000).toISOString(),
+    atualizadoem:  new Date().toISOString(),
+  }, { onConflict: 'closer_key' });
+  if (error) throw error;
+}
+
+async function getValidCalendarToken(closerKey) {
+  const { data } = await supabase
+    .from('calendar_tokens')
+    .select('access_token,refresh_token,token_expiry')
+    .eq('closer_key', closerKey)
+    .maybeSingle();
+  if (!data?.refresh_token) return null;
+
+  if (data.token_expiry && new Date(data.token_expiry) > new Date(Date.now() + 120_000)) {
+    return data.access_token;
+  }
+  const { id: clientId, secret: clientSecret } = await getGcalCreds();
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body:    new URLSearchParams({
+      client_id:     clientId,
+      client_secret: clientSecret,
+      refresh_token: data.refresh_token,
+      grant_type:    'refresh_token',
+    }),
+  });
+  const refreshed = await res.json();
+  if (refreshed.error || !refreshed.access_token) return null;
+  const newExpiry = new Date(Date.now() + (refreshed.expires_in || 3600) * 1000).toISOString();
+  await supabase.from('calendar_tokens')
+    .update({ access_token: refreshed.access_token, token_expiry: newExpiry, atualizadoem: new Date().toISOString() })
+    .eq('closer_key', closerKey);
+  return refreshed.access_token;
+}
+
+async function fetchLatestCalendarEvent(closerKey, afterIso) {
+  const token = await getValidCalendarToken(closerKey);
+  if (!token) return null;
+  const params = new URLSearchParams({
+    updatedMin:   afterIso,
+    orderBy:      'updated',
+    singleEvents: 'true',
+    timeMin:      new Date().toISOString(),
+    maxResults:   '5',
+  });
+  const res = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  const data = await res.json();
+  if (!data.items?.length) return null;
+  const items = [...data.items].sort((a, b) => new Date(b.updated) - new Date(a.updated));
+  const ev = items[0];
+  const startDt = ev.start?.dateTime || ev.start?.date;
+  return startDt ? { startDt, summary: ev.summary } : null;
+}
+
+async function updateCalConnectButtons() {
+  for (const key of Object.keys(CLOSERS)) {
+    const btn = $('cal-connect-' + key);
+    if (!btn) continue;
+    const { data } = await supabase.from('calendar_tokens').select('closer_key').eq('closer_key', key).maybeSingle();
+    btn.disabled = false;
+    if (data) {
+      btn.textContent = `✓ ${CLOSERS[key].name}`;
+      btn.style.color = 'var(--green, #4caf50)';
+    } else {
+      btn.textContent = `📅 Conectar ${CLOSERS[key].name}`;
+      btn.style.color = '';
+    }
+  }
+}
+
 function schedSelectCloser(closer) {
-  cal.closer = closer;
+  cal.closer      = closer;
+  cal.calOpenedAt = new Date().toISOString();
   window.open(CLOSERS[closer].calLink, '_blank', 'noopener,noreferrer');
   $('sched-closer-lbl').value = CLOSERS[closer].name;
   $('sched-datetime').value   = '';
   $('sched-obs').value        = '';
   schedGoToStep(2);
+
+  const hint = $('sched-autofill-hint');
+  if (hint) { hint.textContent = 'Aguardando retorno do Google Calendar…'; hint.style.display = ''; hint.style.color = ''; }
+
+  const onFocus = async () => {
+    window.removeEventListener('focus', onFocus);
+    if (modalMode !== 'agendar' || !cal.closer) return;
+    const dtField = $('sched-datetime');
+    if (dtField?.value) { if (hint) hint.style.display = 'none'; return; }
+    if (hint) hint.textContent = 'Buscando na agenda do closer…';
+    try {
+      const ev = await fetchLatestCalendarEvent(cal.closer, cal.calOpenedAt);
+      if (ev?.startDt) {
+        const dt  = new Date(ev.startDt);
+        const pad = n => String(n).padStart(2, '0');
+        dtField.value = `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+        if (hint) { hint.textContent = '✓ Horário preenchido automaticamente'; hint.style.color = 'var(--green, #4caf50)'; }
+      } else {
+        if (hint) { hint.textContent = 'Agenda não conectada ou nenhum evento encontrado — preencha manualmente.'; }
+      }
+    } catch (e) {
+      console.warn('[GCAL auto-fill]', e);
+      if (hint) hint.style.display = 'none';
+    }
+  };
+  cal._focusCleanup = () => window.removeEventListener('focus', onFocus);
+  window.addEventListener('focus', onFocus);
 }
 
 // ─── PERFIL DO LEAD ──────────────────────────────────────────────────
@@ -4109,10 +4316,13 @@ function openModal() {
   $('btn-confirmar').disabled = false;
 }
 function closeModal() {
+  cal._focusCleanup?.();
   $('modal-backdrop').classList.remove('open');
   document.body.style.overflow = '';
   currentId = null; modalMode = 'agendar';
   cal = { step:1, closer:null, leadSnap:null };
+  const hint = $('sched-autofill-hint');
+  if (hint) { hint.style.display = 'none'; hint.textContent = ''; }
   $('btn-voltar').style.display     = 'none';
   $('form-resultado').style.display = 'none';
   $('form-detalhes').style.display  = 'none';
@@ -6627,7 +6837,9 @@ function bindEvents() {
   $('btn-voltar').addEventListener('click', () => schedGoToStep(1));
   $('sched-step-1').addEventListener('click', e => {
     const card = e.target.closest('.closer-card');
-    if (card) schedSelectCloser(card.dataset.closer);
+    if (card) { schedSelectCloser(card.dataset.closer); return; }
+    const btn = e.target.closest('[data-cal-connect]');
+    if (btn) connectCloserCalendar(btn.dataset.calConnect);
   });
 
   // Resultado: toggles
