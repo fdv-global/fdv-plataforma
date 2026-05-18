@@ -3926,12 +3926,12 @@ async function getValidCalendarToken(closerKey) {
 async function fetchLatestCalendarEvent(closerKey, afterIso) {
   const token = await getValidCalendarToken(closerKey);
   if (!token) return null;
+  // timeMin não é compatível com orderBy=updated — usar só updatedMin para filtrar
   const params = new URLSearchParams({
     updatedMin:   afterIso,
     orderBy:      'updated',
     singleEvents: 'true',
-    timeMin:      new Date().toISOString(),
-    maxResults:   '5',
+    maxResults:   '10',
   });
   const res = await fetch(
     `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
@@ -3939,8 +3939,8 @@ async function fetchLatestCalendarEvent(closerKey, afterIso) {
   );
   const data = await res.json();
   if (!data.items?.length) return null;
-  const items = [...data.items].sort((a, b) => new Date(b.updated) - new Date(a.updated));
-  const ev = items[0];
+  const sorted = [...data.items].sort((a, b) => new Date(b.updated) - new Date(a.updated));
+  const ev = sorted[0];
   const startDt = ev.start?.dateTime || ev.start?.date;
   return startDt ? { startDt, summary: ev.summary } : null;
 }
@@ -3978,20 +3978,25 @@ function schedSelectCloser(closer) {
     if (modalMode !== 'agendar' || !cal.closer) return;
     const dtField = $('sched-datetime');
     if (dtField?.value) { if (hint) hint.style.display = 'none'; return; }
-    if (hint) hint.textContent = 'Buscando na agenda do closer…';
-    try {
-      const ev = await fetchLatestCalendarEvent(cal.closer, cal.calOpenedAt);
-      if (ev?.startDt) {
-        const dt  = new Date(ev.startDt);
-        const pad = n => String(n).padStart(2, '0');
-        dtField.value = `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
-        if (hint) { hint.textContent = '✓ Horário preenchido automaticamente'; hint.style.color = 'var(--green, #4caf50)'; }
-      } else {
-        if (hint) { hint.textContent = 'Agenda não conectada ou nenhum evento encontrado — preencha manualmente.'; }
+    if (hint) { hint.textContent = 'Buscando na agenda do closer…'; hint.style.color = ''; }
+
+    let ev = null;
+    for (let attempt = 0; attempt < 4 && !ev; attempt++) {
+      if (attempt > 0) {
+        if (hint) hint.textContent = `Buscando na agenda… (${attempt + 1}/4)`;
+        await new Promise(r => setTimeout(r, 2500));
       }
-    } catch (e) {
-      console.warn('[GCAL auto-fill]', e);
-      if (hint) hint.style.display = 'none';
+      try { ev = await fetchLatestCalendarEvent(cal.closer, cal.calOpenedAt); }
+      catch (e) { console.warn('[GCAL auto-fill]', e); break; }
+    }
+
+    if (ev?.startDt) {
+      const dt  = new Date(ev.startDt);
+      const pad = n => String(n).padStart(2, '0');
+      dtField.value = `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+      if (hint) { hint.textContent = '✓ Horário preenchido automaticamente'; hint.style.color = 'var(--green, #4caf50)'; }
+    } else {
+      if (hint) hint.textContent = 'Nenhum evento encontrado — preencha manualmente.';
     }
   };
   cal._focusCleanup = () => window.removeEventListener('focus', onFocus);
