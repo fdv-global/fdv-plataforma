@@ -3925,22 +3925,30 @@ async function getValidCalendarToken(closerKey) {
 
 async function fetchLatestCalendarEvent(closerKey, afterIso) {
   const token = await getValidCalendarToken(closerKey);
+  console.log('[GCAL] closer:', closerKey);
+  console.log('[GCAL] token (primeiros 20 chars):', token ? token.slice(0, 20) + '…' : 'NULL — sem token');
   if (!token) return null;
-  // timeMin não é compatível com orderBy=updated — usar só updatedMin para filtrar
+
   const params = new URLSearchParams({
     updatedMin:   afterIso,
     orderBy:      'updated',
     singleEvents: 'true',
     maxResults:   '10',
   });
-  const res = await fetch(
-    `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
+  const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`;
+  console.log('[GCAL] calendário: primary');
+  console.log('[GCAL] updatedMin (afterIso):', afterIso);
+  console.log('[GCAL] URL:', url);
+
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
   const data = await res.json();
+  console.log('[GCAL] HTTP status:', res.status);
+  console.log('[GCAL] resposta completa:', JSON.stringify(data, null, 2));
+
   if (!data.items?.length) return null;
   const sorted = [...data.items].sort((a, b) => new Date(b.updated) - new Date(a.updated));
   const ev = sorted[0];
+  console.log('[GCAL] evento selecionado:', ev.summary, '| start:', ev.start?.dateTime || ev.start?.date, '| updated:', ev.updated);
   const startDt = ev.start?.dateTime || ev.start?.date;
   return startDt ? { startDt, summary: ev.summary } : null;
 }
