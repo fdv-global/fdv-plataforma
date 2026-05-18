@@ -2358,13 +2358,7 @@ function renderBriefingSub() {
 }
 
 // ─── SUB-BADGE COUNTS ────────────────────────────────────────────────
-function updateSubBadges() {
-  const novos = allLeads.filter(l => l.status === 'aguardando').length;
-  const quals = allLeads.filter(l => l.status === 'qualificado').length;
-  const bn = $('badge-novos'), bq = $('badge-qualificados');
-  if (bn) { bn.textContent = novos; bn.style.display = novos ? '' : 'none'; }
-  if (bq) { bq.textContent = quals; bq.style.display = quals ? '' : 'none'; }
-}
+function updateSubBadges() {}
 
 // ─── QUALIFICADOS SUB ────────────────────────────────────────────────
 function renderQualificados() {
@@ -3727,6 +3721,7 @@ async function bulkChangeStatus() {
 
 // ─── AGENDAR MODAL ───────────────────────────────────────────────────
 function openAgendar(lead) {
+  currentId = lead.id;
   modalMode = 'agendar';
   cal = { step: 1, closer: null, leadSnap: lead };
   $('modal-title').textContent    = 'Agendar Call';
@@ -4126,6 +4121,7 @@ function closeModal() {
   const btn = $('btn-confirmar');
   btn.style.display=''; btn.style.background=''; btn.style.color=''; btn.style.border=''; btn.textContent='Confirmar';
   if (activeSucessoSub === 'sessoes') renderSucesso();
+  renderActiveSub();
 }
 
 // ─── DROPDOWNS ───────────────────────────────────────────────────────

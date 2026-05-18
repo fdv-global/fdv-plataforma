@@ -38,9 +38,6 @@ var CONFIG = {
   START_ROW_ISCAS:    2038,
   START_ROW_RESPONDI: 1153,
 
-  // Valor do campo "status" na planilha que dispara o envio
-  STATUS_TRIGGER: 'Qualificado',
-
   FLAG_OK:  '✅',
   FLAG_ERR: '❌',
 };
@@ -76,9 +73,6 @@ function processSheet(sheetName, cols, flagCol, fonte, startRow) {
     var flag      = String(flagCell.getValue()).trim();
 
     if (flag === CONFIG.FLAG_OK || flag === CONFIG.FLAG_ERR) return;
-
-    var status = String(row[cols.status - 1] || '').trim();
-    if (status !== CONFIG.STATUS_TRIGGER) return;
 
     var lead    = buildLead(row, cols, fonte);
     var success = sendToSupabase(lead);
