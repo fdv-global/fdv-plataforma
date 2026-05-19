@@ -892,6 +892,7 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
   text-shadow: 0 0 16px rgba(206,146,33,.3);
 }
 .agenda-card-info     { flex: 1; min-width: 0; }
+.agenda-card-btns     { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .agenda-card-nome {
   display: block; font-size: 14.5px; font-weight: 700; color: var(--t1);
   cursor: pointer; background: none; border: none; padding: 0;

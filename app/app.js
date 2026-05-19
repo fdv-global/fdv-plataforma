@@ -2321,7 +2321,11 @@ function renderAgendaSub() {
               ].filter(Boolean).map(esc).join(' · ')}</span>
               ${(l.etiquetas||[]).length ? `<div class="card-etiquetas">${(l.etiquetas||[]).map(t=>etiquetaChip(t,true)).join('')}</div>` : ''}
             </div>
-            <button class="btn-ghost btn-sm btn-briefing" data-id="${l.id}">Copiar Briefing</button>
+            <div class="agenda-card-btns">
+              <button class="btn-ghost btn-sm btn-briefing" data-id="${l.id}">Copiar Briefing</button>
+              <button class="btn-ghost btn-sm btn-editar-agend" data-id="${l.id}" title="Editar agendamento">✏️</button>
+              <button class="btn-ghost btn-sm btn-excluir-agend" data-id="${l.id}" title="Excluir agendamento" style="color:var(--marsala)">🗑️</button>
+            </div>
           </div>`).join('')}
       </div>
     </div>`;
@@ -2332,6 +2336,12 @@ function renderAgendaSub() {
   );
   content.querySelectorAll('.btn-briefing').forEach(b =>
     b.addEventListener('click', () => { const l = allLeads.find(x=>x.id===b.dataset.id); if(l) gerarBriefingLead(l); })
+  );
+  content.querySelectorAll('.btn-editar-agend').forEach(b =>
+    b.addEventListener('click', () => { const l = allLeads.find(x=>x.id===b.dataset.id); if(l) openEditarAgendamento(l); })
+  );
+  content.querySelectorAll('.btn-excluir-agend').forEach(b =>
+    b.addEventListener('click', () => excluirAgendamento(b.dataset.id))
   );
 }
 
@@ -2499,7 +2509,11 @@ function renderAgendaHoje() {
               <span class="agenda-card-sub">${[l.celular, l.origem, l.renda].filter(Boolean).map(esc).join(' · ')}</span>
               ${(l.etiquetas||[]).length ? `<div class="card-etiquetas">${(l.etiquetas||[]).map(t=>etiquetaChip(t,true)).join('')}</div>` : ''}
             </div>
-            <button class="btn-ghost btn-sm btn-briefing" data-id="${l.id}">Copiar Briefing</button>
+            <div class="agenda-card-btns">
+              <button class="btn-ghost btn-sm btn-briefing" data-id="${l.id}">Copiar Briefing</button>
+              <button class="btn-ghost btn-sm btn-editar-agend" data-id="${l.id}" title="Editar agendamento">✏️</button>
+              <button class="btn-ghost btn-sm btn-excluir-agend" data-id="${l.id}" title="Excluir agendamento" style="color:var(--marsala)">🗑️</button>
+            </div>
           </div>`).join('')}
       </div>
     </div>`;
@@ -2510,6 +2524,12 @@ function renderAgendaHoje() {
   );
   content.querySelectorAll('.btn-briefing').forEach(b =>
     b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.id); if(l) gerarBriefingLead(l); })
+  );
+  content.querySelectorAll('.btn-editar-agend').forEach(b =>
+    b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.id); if(l) openEditarAgendamento(l); })
+  );
+  content.querySelectorAll('.btn-excluir-agend').forEach(b =>
+    b.addEventListener('click', () => excluirAgendamento(b.dataset.id))
   );
 }
 
@@ -3809,6 +3829,60 @@ function openAgendarSessao(sessao, aluna) {
   $('form-detalhes').style.display  = 'none';
   schedGoToStep(1);
   openModal();
+}
+
+function openEditarAgendamento(lead) {
+  currentId = lead.id;
+  modalMode = 'agendar';
+  cal = { step: 2, closer: lead.closer, leadSnap: lead };
+  const calWrap = $('cal-connect-wrap');
+  if (calWrap) {
+    calWrap.style.display = hasPerm('usuarios') ? '' : 'none';
+    if (hasPerm('usuarios')) updateCalConnectButtons();
+  }
+  $('modal-title').textContent    = 'Editar Agendamento';
+  $('modal-subtitle').textContent = `${lead.nome} · ${lead.celular}`;
+  $('lead-strip').style.display   = '';
+  $('lead-strip').innerHTML = strip([
+    { l:'Origem',    v: lead.origem    || '—' },
+    { l:'Profissão', v: lead.profissao || '—' },
+    { l:'Renda',     v: lead.renda     || '—' },
+    { l:'Chegou em', v: fmtDate(lead.datachegada) },
+  ]);
+  $('sched-banner-p').textContent     = 'Edite os dados do agendamento abaixo.';
+  $('sched-closer-label').textContent = 'Closer';
+  $('sched-obs').placeholder          = 'Contexto, interesse demonstrado, pontos de atenção…';
+  const closerName = lead.closer ? (CLOSERS[lead.closer]?.name || lead.closer) : '';
+  $('sched-closer-lbl').value = closerName;
+  if (lead.dataagendamento && lead.horaagendamento) {
+    const hora = lead.horaagendamento.length >= 5 ? lead.horaagendamento.slice(0, 5) : lead.horaagendamento;
+    $('sched-datetime').value = `${lead.dataagendamento}T${hora}`;
+  } else {
+    $('sched-datetime').value = '';
+  }
+  $('sched-obs').value = lead.observacoes || '';
+  $('form-resultado').style.display = 'none';
+  $('form-agendar').style.display   = 'block';
+  $('form-detalhes').style.display  = 'none';
+  schedGoToStep(2);
+  openModal();
+}
+
+async function excluirAgendamento(leadId) {
+  const lead = allLeads.find(l => l.id === leadId);
+  if (!lead) return;
+  if (!confirm(`Remover agendamento de ${lead.nome}?\nEsta ação não pode ser desfeita.`)) return;
+  try {
+    await saveLead(leadId, {
+      status: 'qualificado', kanban_column: 'qualificado',
+      closer: null, dataagendamento: null, horaagendamento: null, agendadopor: null,
+      atualizadoem: new Date().toISOString(),
+    });
+    toast(`Agendamento de ${lead.nome} removido.`, 'ok');
+    renderAgendadosSub();
+  } catch(e) {
+    toast(e.message || 'Erro ao remover agendamento.', 'err');
+  }
 }
 
 function schedGoToStep(n) {
