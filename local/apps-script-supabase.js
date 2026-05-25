@@ -39,7 +39,7 @@ var CONFIG = {
   START_ROW_RESPONDI: 1153,
 
   // Data de corte para o backfill (inclusive)
-  BACKFILL_FROM: new Date(2025, 4, 1), // 1º de maio de 2025
+  BACKFILL_FROM: new Date(2026, 4, 1), // 1º de maio de 2026
 
   FLAG_OK: '✅',
   FLAG_ERR: '❌',
