@@ -8,7 +8,7 @@
 
 var CONFIG = {
   // Coluna onde a flag ✅/❌ é gravada
-  FLAG_COLUMN_ISCAS:    'Q',   // coluna 17
+  FLAG_COLUMN_ISCAS: 'Q',   // coluna 17
   FLAG_COLUMN_RESPONDI: 'V',   // coluna 22
 
   // Mapeamento de colunas — ISCAS
@@ -29,16 +29,19 @@ var CONFIG = {
   // TODO: após aplicar supabase/migrations/003_anon_rls_policies.sql,
   // trocar KEY pelo anon key para reduzir escopo de permissões.
   SUPABASE: {
-    url:   'https://yadxcbhginjvoemacdly.supabase.co',
-    key:   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhZHhjYmhnaW5qdm9lbWFjZGx5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Njk2Nzk4MSwiZXhwIjoyMDkyNTQzOTgxfQ.Vp_JSA4ReP40a25L8GS7stNdROAy5YIIw-7HM98z_RY',
+    url: 'https://yadxcbhginjvoemacdly.supabase.co',
+    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhZHhjYmhnaW5qdm9lbWFjZGx5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Njk2Nzk4MSwiZXhwIjoyMDkyNTQzOTgxfQ.Vp_JSA4ReP40a25L8GS7stNdROAy5YIIw-7HM98z_RY',
     table: 'leads',
   },
 
   // Linhas iniciais de cada aba (ignora histórico antigo)
-  START_ROW_ISCAS:    2038,
+  START_ROW_ISCAS: 2038,
   START_ROW_RESPONDI: 1153,
 
-  FLAG_OK:  '✅',
+  // Data de corte para o backfill (inclusive)
+  BACKFILL_FROM: new Date(2025, 4, 1), // 1º de maio de 2025
+
+  FLAG_OK: '✅',
   FLAG_ERR: '❌',
 };
 
@@ -48,33 +51,33 @@ var CONFIG = {
  * Varre as duas abas e envia leads novos ao Supabase.
  */
 function syncLeads() {
-  processSheet('Iscas',        CONFIG.ISCAS_COLUMNS,    CONFIG.FLAG_COLUMN_ISCAS,    'Iscas',        CONFIG.START_ROW_ISCAS);
+  processSheet('Iscas', CONFIG.ISCAS_COLUMNS, CONFIG.FLAG_COLUMN_ISCAS, 'Iscas', CONFIG.START_ROW_ISCAS);
   processSheet('Respondi.app', CONFIG.RESPONDI_COLUMNS, CONFIG.FLAG_COLUMN_RESPONDI, 'Respondi.app', CONFIG.START_ROW_RESPONDI);
 }
 
 // ─── PROCESSAR ABA ───────────────────────────────────────────────────
 function processSheet(sheetName, cols, flagCol, fonte, startRow) {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(sheetName);
   if (!sheet) {
     Logger.log('Aba "' + sheetName + '" não encontrada — pulando.');
     return;
   }
 
-  var lastRow    = sheet.getLastRow();
+  var lastRow = sheet.getLastRow();
   if (lastRow < startRow) return;
 
   var flagColIdx = columnLetterToIndex(flagCol);
-  var data       = sheet.getRange(startRow, 1, lastRow - startRow + 1, flagColIdx).getValues();
+  var data = sheet.getRange(startRow, 1, lastRow - startRow + 1, flagColIdx).getValues();
 
-  data.forEach(function(row, i) {
+  data.forEach(function (row, i) {
     var rowNumber = i + startRow;
-    var flagCell  = sheet.getRange(rowNumber, flagColIdx);
-    var flag      = String(flagCell.getValue()).trim();
+    var flagCell = sheet.getRange(rowNumber, flagColIdx);
+    var flag = String(flagCell.getValue()).trim();
 
     if (flag === CONFIG.FLAG_OK || flag === CONFIG.FLAG_ERR) return;
 
-    var lead    = buildLead(row, cols, fonte);
+    var lead = buildLead(row, cols, fonte);
     var success = sendToSupabase(lead);
 
     flagCell.setValue(success ? CONFIG.FLAG_OK : CONFIG.FLAG_ERR);
@@ -91,26 +94,26 @@ function buildLead(row, cols, fonte) {
   // Campos extras do formulário — guardados em observacoes como JSON
   // (exibidos na seção Perfil do app via parseObs)
   var extras = {};
-  if (cols.desafio      && get(cols.desafio))      extras.desafio      = get(cols.desafio);
-  if (cols.idade        && get(cols.idade))         extras.idade        = get(cols.idade);
-  if (cols.jaParticipou && get(cols.jaParticipou))  extras.jaParticipou = get(cols.jaParticipou);
-  if (cols.jaEAluna     && get(cols.jaEAluna))      extras.jaEAluna     = get(cols.jaEAluna);
-  if (cols.tempoConhece && get(cols.tempoConhece))  extras.tempoConhece = get(cols.tempoConhece);
-  if (cols.motivacao    && get(cols.motivacao))     extras.motivacao    = get(cols.motivacao);
-  if (cols.deOnde       && get(cols.deOnde))        extras.deOnde       = get(cols.deOnde);
+  if (cols.desafio && get(cols.desafio)) extras.desafio = get(cols.desafio);
+  if (cols.idade && get(cols.idade)) extras.idade = get(cols.idade);
+  if (cols.jaParticipou && get(cols.jaParticipou)) extras.jaParticipou = get(cols.jaParticipou);
+  if (cols.jaEAluna && get(cols.jaEAluna)) extras.jaEAluna = get(cols.jaEAluna);
+  if (cols.tempoConhece && get(cols.tempoConhece)) extras.tempoConhece = get(cols.tempoConhece);
+  if (cols.motivacao && get(cols.motivacao)) extras.motivacao = get(cols.motivacao);
+  if (cols.deOnde && get(cols.deOnde)) extras.deOnde = get(cols.deOnde);
 
   return {
-    nome:        get(cols.nome),
-    celular:     get(cols.telefone),   // schema Supabase usa "celular"
-    email:       get(cols.email),
-    instagram:   get(cols.instagram),
-    profissao:   get(cols.profissao),
-    renda:       get(cols.renda),
-    origem:      get(cols.origem) || fonte,
-    status:      'aguardando',
+    nome: get(cols.nome),
+    celular: get(cols.telefone),   // schema Supabase usa "celular"
+    email: get(cols.email),
+    instagram: get(cols.instagram),
+    profissao: get(cols.profissao),
+    renda: get(cols.renda),
+    origem: get(cols.origem) || fonte,
+    status: 'aguardando',
     datachegada: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'),
     observacoes: Object.keys(extras).length > 0 ? JSON.stringify(extras) : null,
-    etiquetas:   [],
+    etiquetas: [],
   };
 }
 
@@ -123,20 +126,20 @@ function sendToSupabase(lead) {
   var url = CONFIG.SUPABASE.url + '/rest/v1/' + CONFIG.SUPABASE.table;
 
   var options = {
-    method:             'post',
-    contentType:        'application/json',
+    method: 'post',
+    contentType: 'application/json',
     headers: {
-      'apikey':         CONFIG.SUPABASE.key,
-      'Authorization':  'Bearer ' + CONFIG.SUPABASE.key,
-      'Prefer':         'return=minimal',
+      'apikey': CONFIG.SUPABASE.key,
+      'Authorization': 'Bearer ' + CONFIG.SUPABASE.key,
+      'Prefer': 'return=minimal',
     },
-    payload:            JSON.stringify(lead),
+    payload: JSON.stringify(lead),
     muteHttpExceptions: true,
   };
 
   try {
     var response = UrlFetchApp.fetch(url, options);
-    var code     = response.getResponseCode();
+    var code = response.getResponseCode();
 
     if (code >= 200 && code < 300) {
       Logger.log('✅ Lead enviado: ' + lead.nome + ' (' + lead.origem + ')');
@@ -167,8 +170,8 @@ function columnLetterToIndex(letters) {
  */
 function createTimeTrigger() {
   ScriptApp.getProjectTriggers()
-    .filter(function(t) { return t.getHandlerFunction() === 'syncLeads'; })
-    .forEach(function(t) { ScriptApp.deleteTrigger(t); });
+    .filter(function (t) { return t.getHandlerFunction() === 'syncLeads'; })
+    .forEach(function (t) { ScriptApp.deleteTrigger(t); });
 
   ScriptApp.newTrigger('syncLeads')
     .timeBased()
@@ -180,8 +183,8 @@ function createTimeTrigger() {
 
 function deleteTimeTrigger() {
   ScriptApp.getProjectTriggers()
-    .filter(function(t) { return t.getHandlerFunction() === 'syncLeads'; })
-    .forEach(function(t) { ScriptApp.deleteTrigger(t); });
+    .filter(function (t) { return t.getHandlerFunction() === 'syncLeads'; })
+    .forEach(function (t) { ScriptApp.deleteTrigger(t); });
 
   Logger.log('Triggers de syncLeads removidos.');
 }
@@ -209,7 +212,7 @@ function backfillLeads() {
   var existing = fetchExistingContacts();
   Logger.log('Contatos já no Supabase: ' + existing.count);
 
-  backfillSheet('Iscas',        CONFIG.ISCAS_COLUMNS,    CONFIG.FLAG_COLUMN_ISCAS,    'Iscas',        existing);
+  backfillSheet('Iscas', CONFIG.ISCAS_COLUMNS, CONFIG.FLAG_COLUMN_ISCAS, 'Iscas', existing);
   backfillSheet('Respondi.app', CONFIG.RESPONDI_COLUMNS, CONFIG.FLAG_COLUMN_RESPONDI, 'Respondi.app', existing);
 
   Logger.log('=== BACKFILL CONCLUÍDO ===');
@@ -222,20 +225,20 @@ function backfillLeads() {
 function fetchExistingContacts() {
   var phones = {};
   var emails = {};
-  var count  = 0;
+  var count = 0;
   var offset = 0;
-  var batch  = 1000;
+  var batch = 1000;
 
   while (true) {
     var url = CONFIG.SUPABASE.url + '/rest/v1/' + CONFIG.SUPABASE.table
       + '?select=celular,email&limit=' + batch + '&offset=' + offset;
 
     var resp = UrlFetchApp.fetch(url, {
-      method:  'get',
+      method: 'get',
       headers: {
-        'apikey':        CONFIG.SUPABASE.key,
+        'apikey': CONFIG.SUPABASE.key,
         'Authorization': 'Bearer ' + CONFIG.SUPABASE.key,
-        'Range-Unit':    'items',
+        'Range-Unit': 'items',
       },
       muteHttpExceptions: true,
     });
@@ -243,9 +246,9 @@ function fetchExistingContacts() {
     var rows = JSON.parse(resp.getContentText());
     if (!rows || rows.length === 0) break;
 
-    rows.forEach(function(r) {
+    rows.forEach(function (r) {
       if (r.celular) phones[r.celular.trim()] = true;
-      if (r.email)   emails[r.email.trim()]   = true;
+      if (r.email) emails[r.email.trim()] = true;
       count++;
     });
 
@@ -261,31 +264,35 @@ function fetchExistingContacts() {
  * Linhas já marcadas com ✅ são ignoradas. Linhas com ❌ são retentadas.
  */
 function backfillSheet(sheetName, cols, flagCol, fonte, existing) {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(sheetName);
   if (!sheet) {
     Logger.log('Aba "' + sheetName + '" não encontrada — pulando.');
     return;
   }
 
-  var lastRow    = sheet.getLastRow();
+  var lastRow = sheet.getLastRow();
   if (lastRow < 2) return;
 
   var flagColIdx = columnLetterToIndex(flagCol);
-  var inserted   = 0;
-  var skipped    = 0;
+  var inserted = 0;
+  var skipped = 0;
 
   var data = sheet.getRange(2, 1, lastRow - 1, flagColIdx).getValues();
 
-  data.forEach(function(row, i) {
+  data.forEach(function (row, i) {
     var rowNumber = i + 2;
-    var flagCell  = sheet.getRange(rowNumber, flagColIdx);
-    var flag      = String(flagCell.getValue()).trim();
+    var flagCell = sheet.getRange(rowNumber, flagColIdx);
+    var flag = String(flagCell.getValue()).trim();
 
     if (flag === CONFIG.FLAG_OK) { skipped++; return; }
 
+    // Filtra por data de corte
+    var rowDate = row[cols.data - 1];
+    if (!(rowDate instanceof Date) || rowDate < CONFIG.BACKFILL_FROM) { skipped++; return; }
+
     var celular = String(row[cols.telefone - 1] || '').trim();
-    var email   = String(row[cols.email    - 1] || '').trim();
+    var email = String(row[cols.email - 1] || '').trim();
 
     if (!celular && !email) { skipped++; return; }
 
@@ -309,7 +316,7 @@ function backfillSheet(sheetName, cols, flagCol, fonte, existing) {
 
     if (success) {
       if (celular) existing.phones[celular] = true;
-      if (email)   existing.emails[email]   = true;
+      if (email) existing.emails[email] = true;
       inserted++;
     }
   });
@@ -325,16 +332,16 @@ function backfillSheet(sheetName, cols, flagCol, fonte, existing) {
 function testConnection() {
   var url = CONFIG.SUPABASE.url + '/rest/v1/' + CONFIG.SUPABASE.table + '?limit=1';
   var options = {
-    method:  'get',
+    method: 'get',
     headers: {
-      'apikey':        CONFIG.SUPABASE.key,
+      'apikey': CONFIG.SUPABASE.key,
       'Authorization': 'Bearer ' + CONFIG.SUPABASE.key,
     },
     muteHttpExceptions: true,
   };
 
   var response = UrlFetchApp.fetch(url, options);
-  var code     = response.getResponseCode();
+  var code = response.getResponseCode();
   Logger.log('Status: ' + code);
   Logger.log('Body: ' + response.getContentText().slice(0, 500));
 
