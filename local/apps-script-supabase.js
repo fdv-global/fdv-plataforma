@@ -195,6 +195,128 @@ function testSync() {
   syncLeads();
 }
 
+// ─── BACKFILL MANUAL ─────────────────────────────────────────────────
+/**
+ * Importação histórica: percorre TODAS as linhas (desde a linha 2) das
+ * abas ISCAS e Respondi.app e insere no Supabase os leads que ainda não
+ * estão lá — verificando duplicatas por celular ou e-mail antes de inserir.
+ *
+ * Execute UMA VEZ manualmente: selecione "backfillLeads" → ▶ Executar
+ * Acompanhe o progresso em: Visualizar → Registros de execução
+ */
+function backfillLeads() {
+  Logger.log('=== BACKFILL INICIADO ===');
+  var existing = fetchExistingContacts();
+  Logger.log('Contatos já no Supabase: ' + existing.count);
+
+  backfillSheet('ISCAS',        CONFIG.ISCAS_COLUMNS,    CONFIG.FLAG_COLUMN_ISCAS,    'ISCAS',        existing);
+  backfillSheet('Respondi.app', CONFIG.RESPONDI_COLUMNS, CONFIG.FLAG_COLUMN_RESPONDI, 'Respondi.app', existing);
+
+  Logger.log('=== BACKFILL CONCLUÍDO ===');
+}
+
+/**
+ * Busca todos os celulares e e-mails já presentes na tabela do Supabase.
+ * Usa paginação para suportar mais de 1 000 registros.
+ */
+function fetchExistingContacts() {
+  var phones = {};
+  var emails = {};
+  var count  = 0;
+  var offset = 0;
+  var batch  = 1000;
+
+  while (true) {
+    var url = CONFIG.SUPABASE.url + '/rest/v1/' + CONFIG.SUPABASE.table
+      + '?select=celular,email&limit=' + batch + '&offset=' + offset;
+
+    var resp = UrlFetchApp.fetch(url, {
+      method:  'get',
+      headers: {
+        'apikey':        CONFIG.SUPABASE.key,
+        'Authorization': 'Bearer ' + CONFIG.SUPABASE.key,
+        'Range-Unit':    'items',
+      },
+      muteHttpExceptions: true,
+    });
+
+    var rows = JSON.parse(resp.getContentText());
+    if (!rows || rows.length === 0) break;
+
+    rows.forEach(function(r) {
+      if (r.celular) phones[r.celular.trim()] = true;
+      if (r.email)   emails[r.email.trim()]   = true;
+      count++;
+    });
+
+    if (rows.length < batch) break;
+    offset += batch;
+  }
+
+  return { phones: phones, emails: emails, count: count };
+}
+
+/**
+ * Percorre uma aba desde a linha 2 e insere os leads ausentes no Supabase.
+ * Linhas já marcadas com ✅ são ignoradas. Linhas com ❌ são retentadas.
+ */
+function backfillSheet(sheetName, cols, flagCol, fonte, existing) {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    Logger.log('Aba "' + sheetName + '" não encontrada — pulando.');
+    return;
+  }
+
+  var lastRow    = sheet.getLastRow();
+  if (lastRow < 2) return;
+
+  var flagColIdx = columnLetterToIndex(flagCol);
+  var inserted   = 0;
+  var skipped    = 0;
+
+  var data = sheet.getRange(2, 1, lastRow - 1, flagColIdx).getValues();
+
+  data.forEach(function(row, i) {
+    var rowNumber = i + 2;
+    var flagCell  = sheet.getRange(rowNumber, flagColIdx);
+    var flag      = String(flagCell.getValue()).trim();
+
+    if (flag === CONFIG.FLAG_OK) { skipped++; return; }
+
+    var celular = String(row[cols.telefone - 1] || '').trim();
+    var email   = String(row[cols.email    - 1] || '').trim();
+
+    if (!celular && !email) { skipped++; return; }
+
+    if ((celular && existing.phones[celular]) || (email && existing.emails[email])) {
+      flagCell.setValue(CONFIG.FLAG_OK);
+      skipped++;
+      return;
+    }
+
+    var lead = buildLead(row, cols, fonte);
+
+    // Preserva a data original da planilha quando disponível
+    var rawDate = row[cols.data - 1];
+    if (rawDate instanceof Date && !isNaN(rawDate.getTime())) {
+      lead.datachegada = Utilities.formatDate(rawDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    }
+
+    var success = sendToSupabase(lead);
+    flagCell.setValue(success ? CONFIG.FLAG_OK : CONFIG.FLAG_ERR);
+    SpreadsheetApp.flush();
+
+    if (success) {
+      if (celular) existing.phones[celular] = true;
+      if (email)   existing.emails[email]   = true;
+      inserted++;
+    }
+  });
+
+  Logger.log(sheetName + ': ' + inserted + ' inseridos, ' + skipped + ' ignorados.');
+}
+
 // ─── TESTE DE CONEXÃO ────────────────────────────────────────────────
 /**
  * Verifica se a conexão com o Supabase está funcionando.
@@ -247,11 +369,16 @@ function testConnection() {
 //     Veja logs em "Visualizar → Registros de execução".
 //
 //  6. LÓGICA DE FLAGS
-//     - Somente linhas com status "Qualificado" são enviadas
+//     - TODOS os leads são enviados, independente do status na planilha
 //     - Após envio: coluna Q (ISCAS) ou V (Respondi.app) recebe ✅
 //     - Em caso de erro: recebe ❌ (apague a flag para tentar novamente)
 //
-//  7. PAUSAR A SYNC
+//  7. BACKFILL HISTÓRICO (executar UMA VEZ)
+//     Selecione "backfillLeads" → ▶ Executar
+//     Importa todos os leads históricos das abas ISCAS e Respondi.app
+//     verificando duplicatas por celular/e-mail antes de inserir.
+//
+//  8. PAUSAR A SYNC
 //     Execute "deleteTimeTrigger" para remover o trigger.
 //
 // ============================================================
