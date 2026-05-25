@@ -1,6 +1,6 @@
 // ============================================================
 //  FDV LEAD SYNC — Google Apps Script
-//  ISCAS e Respondi.app → Supabase (PostgreSQL)
+//  Iscas e Respondi.app → Supabase (PostgreSQL)
 //
 //  Substitui a integração anterior com Firebase Firestore.
 //  Usa a Supabase REST API via UrlFetchApp.
@@ -48,7 +48,7 @@ var CONFIG = {
  * Varre as duas abas e envia leads novos ao Supabase.
  */
 function syncLeads() {
-  processSheet('ISCAS',        CONFIG.ISCAS_COLUMNS,    CONFIG.FLAG_COLUMN_ISCAS,    'ISCAS',        CONFIG.START_ROW_ISCAS);
+  processSheet('Iscas',        CONFIG.ISCAS_COLUMNS,    CONFIG.FLAG_COLUMN_ISCAS,    'Iscas',        CONFIG.START_ROW_ISCAS);
   processSheet('Respondi.app', CONFIG.RESPONDI_COLUMNS, CONFIG.FLAG_COLUMN_RESPONDI, 'Respondi.app', CONFIG.START_ROW_RESPONDI);
 }
 
@@ -198,7 +198,7 @@ function testSync() {
 // ─── BACKFILL MANUAL ─────────────────────────────────────────────────
 /**
  * Importação histórica: percorre TODAS as linhas (desde a linha 2) das
- * abas ISCAS e Respondi.app e insere no Supabase os leads que ainda não
+ * abas Iscas e Respondi.app e insere no Supabase os leads que ainda não
  * estão lá — verificando duplicatas por celular ou e-mail antes de inserir.
  *
  * Execute UMA VEZ manualmente: selecione "backfillLeads" → ▶ Executar
@@ -209,7 +209,7 @@ function backfillLeads() {
   var existing = fetchExistingContacts();
   Logger.log('Contatos já no Supabase: ' + existing.count);
 
-  backfillSheet('ISCAS',        CONFIG.ISCAS_COLUMNS,    CONFIG.FLAG_COLUMN_ISCAS,    'ISCAS',        existing);
+  backfillSheet('Iscas',        CONFIG.ISCAS_COLUMNS,    CONFIG.FLAG_COLUMN_ISCAS,    'Iscas',        existing);
   backfillSheet('Respondi.app', CONFIG.RESPONDI_COLUMNS, CONFIG.FLAG_COLUMN_RESPONDI, 'Respondi.app', existing);
 
   Logger.log('=== BACKFILL CONCLUÍDO ===');
@@ -370,12 +370,12 @@ function testConnection() {
 //
 //  6. LÓGICA DE FLAGS
 //     - TODOS os leads são enviados, independente do status na planilha
-//     - Após envio: coluna Q (ISCAS) ou V (Respondi.app) recebe ✅
+//     - Após envio: coluna Q (Iscas) ou V (Respondi.app) recebe ✅
 //     - Em caso de erro: recebe ❌ (apague a flag para tentar novamente)
 //
 //  7. BACKFILL HISTÓRICO (executar UMA VEZ)
 //     Selecione "backfillLeads" → ▶ Executar
-//     Importa todos os leads históricos das abas ISCAS e Respondi.app
+//     Importa todos os leads históricos das abas Iscas e Respondi.app
 //     verificando duplicatas por celular/e-mail antes de inserir.
 //
 //  8. PAUSAR A SYNC
