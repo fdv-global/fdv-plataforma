@@ -183,6 +183,56 @@
             <option value="">Todos os meses</option>
           </select>
         </div>
+        <div class="filter-group">
+          <label class="filter-label" for="filter-closer">Closer</label>
+          <select class="filter-select" id="filter-closer">
+            <option value="">Todos</option>
+            <option value="fernanda">Fernanda</option>
+            <option value="thomaz">Thomaz</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="filter-renda">Renda</label>
+          <input type="text" class="filter-input filter-input--sm" id="filter-renda" placeholder="Ex: 5.000">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="filter-profissao">Profissão</label>
+          <input type="text" class="filter-input filter-input--sm" id="filter-profissao" placeholder="Ex: Médico">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="filter-etiqueta">Etiqueta</label>
+          <select class="filter-select" id="filter-etiqueta">
+            <option value="">Todas</option>
+            <option value="Super Lead">Super Lead</option>
+            <option value="Bom">Bom</option>
+            <option value="Neutro">Neutro</option>
+            <option value="Frio">Frio</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="filter-kanban">Kanban</label>
+          <select class="filter-select" id="filter-kanban">
+            <option value="">Todos</option>
+            <option value="agendado">Agendado</option>
+            <option value="call_realizada">Call Realizada</option>
+            <option value="negociacao">Negociação</option>
+            <option value="decisao">Decisão</option>
+            <option value="venda_ganha">Venda Ganha</option>
+            <option value="venda_perdida">Venda Perdida</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="filter-chegada-de">Chegada de</label>
+          <input type="date" class="filter-input filter-input--date" id="filter-chegada-de">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="filter-chegada-ate">até</label>
+          <input type="date" class="filter-input filter-input--date" id="filter-chegada-ate">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="filter-agendadopor">Agendado por</label>
+          <input type="text" class="filter-input filter-input--sm" id="filter-agendadopor" placeholder="Nome...">
+        </div>
         <div class="filter-group filter-group--search">
           <label class="filter-label" for="filter-busca">Buscar</label>
           <div class="search-wrap">
@@ -225,6 +275,7 @@
         <thead>
           <tr>
             <th class="cell-chk"><input type="checkbox" id="chk-all" title="Selecionar todos"></th>
+            <th>Chegou em</th>
             <th>Nome</th>
             <th>Celular</th>
             <th>Origem</th>

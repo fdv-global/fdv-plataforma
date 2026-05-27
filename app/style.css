@@ -560,7 +560,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   border-radius: 50%; animation: spin .7s linear infinite;
 }
 
-.leads-table { width: 100%; border-collapse: collapse; min-width: 640px; }
+.leads-table { width: 100%; border-collapse: collapse; min-width: 860px; }
 
 .leads-table thead tr { background: var(--s2); }
 .leads-table th {
@@ -582,9 +582,9 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 .leads-table tbody tr:hover  { background: var(--s-hover); }
 .leads-table tbody tr:last-child td { border-bottom: none; }
 
-/* Attio: soften actions until row hovered */
+/* Soften actions until row hovered */
 .leads-table tbody tr .cell-acoes {
-  opacity: .35;
+  opacity: .65;
   transition: opacity var(--fast) var(--ease);
 }
 .leads-table tbody tr:hover .cell-acoes { opacity: 1; }
@@ -1374,7 +1374,7 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 /* ============================================================
    AÇÕES — Attio dropdown
    ============================================================ */
-.cell-acoes  { display: flex; align-items: center; gap: 6px; }
+.cell-acoes  { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
 .acoes-wrap  { position: relative; display: inline-block; }
 
 .btn-acao-main {
@@ -1426,8 +1426,31 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
               border-color var(--fast) var(--ease),
               background var(--fast) var(--ease);
 }
-.btn-editar:hover  { color: #d4982a;   border-color: var(--gold-22); background: var(--gold-10); }
-.btn-excluir:hover { color: #e06450;   border-color: rgba(192,57,43,.35); background: rgba(192,57,43,.08); }
+.btn-editar:hover   { color: #d4982a;  border-color: var(--gold-22); background: var(--gold-10); }
+.btn-excluir:hover  { color: #e06450;  border-color: rgba(192,57,43,.35); background: rgba(192,57,43,.08); }
+.btn-perfil:hover   { color: var(--petro-l);  border-color: var(--petro-18); background: var(--petro-10); }
+.btn-wa-lead:hover  { color: #25d366;  border-color: rgba(37,211,102,.35); background: rgba(37,211,102,.08); }
+.btn-realizada:hover{ color: var(--green); border-color: var(--green-18); background: var(--green-10); }
+.btn-noshow:hover   { color: #e06450;  border-color: rgba(192,57,43,.35); background: rgba(192,57,43,.08); }
+
+/* ── Inline primary action buttons ─────────── */
+.btn-acao-inline {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: var(--r-xs);
+  font-size: 11.5px; font-weight: 700; letter-spacing: .15px;
+  border: 1px solid var(--b1); background: var(--s2); color: var(--t2);
+  cursor: pointer; white-space: nowrap; font-family: inherit;
+  transition: color var(--fast) var(--ease),
+              border-color var(--fast) var(--ease),
+              background var(--fast) var(--ease);
+}
+.btn-acao-inline:hover                { color: var(--t1); border-color: var(--b2); background: var(--s3); }
+.btn-acao-inline.btn-qualificar       { border-color: var(--petro-18); color: var(--petro-l); background: var(--petro-10); }
+.btn-acao-inline.btn-qualificar:hover { background: var(--petro-18); }
+.btn-acao-inline.btn-agendar          { border-color: var(--gold-22); color: #d4982a; background: var(--gold-10); }
+.btn-acao-inline.btn-agendar:hover    { background: rgba(206,146,33,.22); }
+.btn-acao-inline.btn-remarcar:hover   { color: #3bb8d0; border-color: var(--petro-18); background: var(--petro-10); }
+.btn-acao-inline.btn-reativar:hover   { color: var(--green); border-color: var(--green-18); background: var(--green-10); }
 
 /* ============================================================
    SAVE BUTTONS

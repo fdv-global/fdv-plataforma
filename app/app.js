@@ -2238,20 +2238,36 @@ function renderInicio() {
 // ─── LEADS LIST ──────────────────────────────────────────────────────
 function applyFilters() {
   // Novos sub sempre mostra apenas leads 'aguardando'
-  const status = activeSub === 'novos' ? 'aguardando' : ($('filter-status')?.value || '');
-  const origem = $('filter-origem').value;
-  const mes    = $('filter-mes').value;
-  const busca  = $('filter-busca').value.toLowerCase().trim();
+  const status      = activeSub === 'novos' ? 'aguardando' : ($('filter-status')?.value || '');
+  const origem      = $('filter-origem').value;
+  const mes         = $('filter-mes').value;
+  const busca       = $('filter-busca').value.toLowerCase().trim();
+  const closer      = $('filter-closer')?.value || '';
+  const renda       = $('filter-renda')?.value.toLowerCase().trim() || '';
+  const profissao   = $('filter-profissao')?.value.toLowerCase().trim() || '';
+  const etiqueta    = $('filter-etiqueta')?.value || '';
+  const kanban      = $('filter-kanban')?.value || '';
+  const chegadaDe   = $('filter-chegada-de')?.value || '';
+  const chegadaAte  = $('filter-chegada-ate')?.value || '';
+  const agendadopor = $('filter-agendadopor')?.value.toLowerCase().trim() || '';
 
   filteredLeads = allLeads.filter(l => {
-    if (status && l.status !== status) return false;
-    if (origem && l.origem !== origem) return false;
-    if (mes    && !(l.datachegada || '').startsWith(mes)) return false;
+    if (status      && l.status !== status) return false;
+    if (origem      && l.origem !== origem) return false;
+    if (mes         && !(l.datachegada || '').startsWith(mes)) return false;
     if (busca) {
       const n = (l.nome    || '').toLowerCase();
       const c = (l.celular || '').toLowerCase();
       if (!n.includes(busca) && !c.includes(busca)) return false;
     }
+    if (closer      && l.closer !== closer) return false;
+    if (renda       && !(l.renda      || '').toLowerCase().includes(renda)) return false;
+    if (profissao   && !(l.profissao  || '').toLowerCase().includes(profissao)) return false;
+    if (etiqueta    && !(l.etiquetas  || []).includes(etiqueta)) return false;
+    if (kanban      && l.kanban_column !== kanban) return false;
+    if (chegadaDe   && (l.datachegada || '') < chegadaDe) return false;
+    if (chegadaAte  && (l.datachegada || '') > chegadaAte) return false;
+    if (agendadopor && !(l.agendadopor || '').toLowerCase().includes(agendadopor)) return false;
     return true;
   });
 
@@ -2315,6 +2331,7 @@ function renderAgendaSub() {
             <div class="agenda-card-info">
               <button class="agenda-card-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
               <span class="agenda-card-sub">${[
+                l.datachegada ? 'Chegou '+fmtDate(l.datachegada) : null,
                 fmtDate(l.dataagendamento),
                 l.celular, l.origem, l.renda,
                 l.agendadopor ? 'via '+l.agendadopor : null
@@ -2418,15 +2435,15 @@ function renderQualificados() {
   }
   el.innerHTML = `<div class="table-wrap"><table class="leads-table">
     <thead><tr>
-      <th>Nome</th><th>Celular</th><th>Origem</th><th>Renda</th><th>Etiqueta</th><th>Chegou em</th><th>Ações</th>
+      <th>Chegou em</th><th>Nome</th><th>Celular</th><th>Origem</th><th>Renda</th><th>Etiqueta</th><th>Ações</th>
     </tr></thead>
     <tbody>${leads.map(l => `<tr>
+      <td>${fmtDate(l.datachegada)}</td>
       <td><button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
       <td>${esc(l.celular||'—')}</td>
       <td>${badgeOrigem(l.origem)}</td>
       <td class="cell-renda">${esc(l.renda||'—')}</td>
       <td>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</td>
-      <td>${fmtDate(l.datachegada)}</td>
       <td class="cell-acoes">
         <button class="btn-primary btn-sm" data-agendar="${l.id}">📅 Agendar</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">💬</button>
@@ -2506,7 +2523,7 @@ function renderAgendaHoje() {
             <div class="agenda-card-time">${esc(l.horaagendamento||'—')}</div>
             <div class="agenda-card-info">
               <button class="agenda-card-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
-              <span class="agenda-card-sub">${[l.celular, l.origem, l.renda].filter(Boolean).map(esc).join(' · ')}</span>
+              <span class="agenda-card-sub">${[l.datachegada?'Chegou '+fmtDate(l.datachegada):null, l.celular, l.origem, l.renda].filter(Boolean).map(esc).join(' · ')}</span>
               ${(l.etiquetas||[]).length ? `<div class="card-etiquetas">${(l.etiquetas||[]).map(t=>etiquetaChip(t,true)).join('')}</div>` : ''}
             </div>
             <div class="agenda-card-btns">
@@ -2574,14 +2591,14 @@ function renderDescartados() {
   }
   el.innerHTML = `<div class="table-wrap"><table class="leads-table">
     <thead><tr>
-      <th>Nome</th><th>Celular</th><th>Origem</th><th>Motivo</th><th>Chegou em</th><th>Ações</th>
+      <th>Chegou em</th><th>Nome</th><th>Celular</th><th>Origem</th><th>Motivo</th><th>Ações</th>
     </tr></thead>
     <tbody>${leads.map(l => `<tr>
+      <td>${fmtDate(l.datachegada)}</td>
       <td><button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
       <td>${esc(l.celular||'—')}</td>
       <td>${badgeOrigem(l.origem)}</td>
       <td><span class="badge-status descartado">${esc(l.motivo_descarte_label||l.motivo_descarte||'—')}</span></td>
-      <td>${fmtDate(l.datachegada)}</td>
       <td class="cell-acoes">
         <button class="btn-ghost btn-sm" data-reativar="${l.id}">↩ Reativar</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">💬</button>
@@ -3522,6 +3539,7 @@ function renderTable() {
       : '—';
     return `<tr data-id="${l.id}" class="${selectedIds.has(l.id)?'row-selected':''}">
       <td class="cell-chk"><input type="checkbox" class="row-chk" data-id="${l.id}" ${selectedIds.has(l.id)?'checked':''}></td>
+      <td class="cell-data-chegou">${fmtDate(l.datachegada)}</td>
       <td class="cell-nome"><button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
       <td class="cell-fone">${esc(l.celular||'—')}</td>
       <td>${badgeOrigem(l.origem)}</td>
@@ -3619,37 +3637,31 @@ function badgeStatus(s) {
 }
 function btnAcao(l) {
   const id = l.id;
-  const isAguardando  = l.status === 'aguardando';
-  const isQualificado = l.status === 'qualificado';
-  const isDescartado  = l.status === 'descartado';
-  const canAgendar    = !isAguardando && !isDescartado && l.status !== 'cancelado';
-  const canRemarcar   = l.status === 'agendado' || l.status === 'noshow';
-  const isAgendado    = l.status === 'agendado';
-  const isRealizada   = l.status === 'realizada';
-  const opts = [
-    isAguardando  ? `<button class="acao-opt opt-qualificar-lead" data-id="${id}" data-action="qualificar-lead">✓ Qualificar</button>` : '',
-    isQualificado ? `<button class="acao-opt opt-agendar" data-id="${id}" data-action="agendar">📅 Agendar</button>` : '',
-    canAgendar && !isQualificado
-                  ? `<button class="acao-opt opt-agendar" data-id="${id}" data-action="agendar">📅 Agendar</button>` : '',
-                    `<button class="acao-opt opt-perfil" data-id="${id}" data-action="qualificar">🔍 Ver Perfil</button>`,
-    canRemarcar   ? `<button class="acao-opt opt-remarcar" data-id="${id}" data-action="agendar">🔄 Remarcar</button>` : '',
-    isRealizada   ? `<button class="acao-opt opt-ver" data-id="${id}" data-action="ver">📋 Ver Resultado</button>` : '',
-    isDescartado  ? `<button class="acao-opt" data-id="${id}" data-action="reativar">↩ Reativar</button>` : '',
-    isAgendado    ? `<div class="acao-sep"></div>
-                     <button class="acao-opt opt-realizada" data-id="${id}" data-postcall="realizada">✅ Call Realizada</button>
-                     <button class="acao-opt opt-noshow"    data-id="${id}" data-postcall="noshow">❌ No Show</button>
-                     <button class="acao-opt opt-cancelado" data-id="${id}" data-postcall="cancelado">🚫 Cancelado</button>` : '',
-    !isDescartado ? `<div class="acao-sep"></div>
-                     <button class="acao-opt" data-id="${id}" data-action="descartar" style="color:var(--marsala)">🚫 Descartar</button>` : '',
-  ].filter(Boolean).join('');
+  const st = l.status;
+
+  const icoEye   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
+  const icoChat  = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
+  const icoPen   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>`;
+  const icoTrash = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`;
+
+  let primary = '';
+  if      (st === 'aguardando')                  primary = `<button class="btn-acao-inline btn-qualificar" data-id="${id}" data-action="qualificar-lead" title="Qualificar este lead">✓ Qualificar</button>`;
+  else if (st === 'qualificado')                 primary = `<button class="btn-acao-inline btn-agendar"    data-id="${id}" data-action="agendar"         title="Agendar call">📅 Agendar</button>`;
+  else if (st === 'agendado' || st === 'noshow') primary = `<button class="btn-acao-inline btn-remarcar"   data-id="${id}" data-action="agendar"         title="Remarcar call">🔄 Remarcar</button>`;
+  else if (st === 'realizada')                   primary = `<button class="btn-acao-inline btn-ver"        data-id="${id}" data-action="ver"             title="Ver resultado da call">📋 Resultado</button>`;
+  else if (st === 'descartado')                  primary = `<button class="btn-acao-inline btn-reativar"   data-id="${id}" data-action="reativar"        title="Reativar lead">↩ Reativar</button>`;
+
+  const postcall = st === 'agendado'
+    ? `<button class="btn-icon btn-realizada" data-id="${id}" data-postcall="realizada" title="Marcar como Call Realizada">✅</button>
+       <button class="btn-icon btn-noshow"    data-id="${id}" data-postcall="noshow"    title="Marcar como No Show">❌</button>`
+    : '';
+
   return `<div class="acoes-cell">
-    <div class="acoes-wrap" data-leadid="${id}">
-      <button class="btn-acao-main" data-id="${id}" data-action="menu" title="Ações">⋯</button>
-      <div class="acoes-dropdown">${opts}</div>
-    </div>
-    <button class="btn-icon btn-wa-lead" data-id="${id}" title="Abrir no WhatsApp">💬</button>
-    <button class="btn-icon btn-editar"  data-id="${id}" data-action="editar"  title="Editar">✏</button>
-    <button class="btn-icon btn-excluir" data-id="${id}" data-action="excluir" title="Excluir">🗑</button>
+    ${primary}${postcall}
+    <button class="btn-icon btn-perfil"  data-id="${id}" data-action="qualificar" title="Ver Perfil">${icoEye}</button>
+    <button class="btn-icon btn-wa-lead" data-id="${id}" title="Abrir no WhatsApp">${icoChat}</button>
+    <button class="btn-icon btn-editar"  data-id="${id}" data-action="editar"     title="Editar lead">${icoPen}</button>
+    <button class="btn-icon btn-excluir" data-id="${id}" data-action="excluir"    title="Excluir lead">${icoTrash}</button>
   </div>`;
 }
 function fmtDate(d) {
@@ -6868,11 +6880,11 @@ function bindEvents() {
   );
 
   // Leads filters
-  ['filter-status','filter-origem','filter-mes'].forEach(id => $(id).addEventListener('change', applyFilters));
-  $('filter-busca').addEventListener('input', applyFilters);
+  ['filter-status','filter-origem','filter-mes','filter-closer','filter-etiqueta','filter-kanban','filter-chegada-de','filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', applyFilters); });
+  ['filter-busca','filter-renda','filter-profissao','filter-agendadopor'].forEach(id => { const el=$(id); if(el) el.addEventListener('input', applyFilters); });
   $('btn-limpar').addEventListener('click', () => {
-    ['filter-status','filter-origem','filter-mes'].forEach(id => $(id).value = '');
-    $('filter-busca').value = '';
+    ['filter-status','filter-origem','filter-mes','filter-closer','filter-etiqueta','filter-kanban'].forEach(id => { const el=$(id); if(el) el.value=''; });
+    ['filter-busca','filter-renda','filter-profissao','filter-agendadopor','filter-chegada-de','filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.value=''; });
     applyFilters();
   });
 
