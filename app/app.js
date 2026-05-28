@@ -2442,7 +2442,7 @@ function renderQualificados() {
       <td><button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
       <td>${esc(l.celular||'—')}</td>
       <td>${badgeOrigem(l.origem)}</td>
-      <td class="cell-renda">${esc(l.renda||'—')}</td>
+      <td class="cell-renda" title="${esc(l.renda||'')}">${esc(abrevRenda(l.renda))}</td>
       <td>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</td>
       <td class="cell-acoes">
         <button class="btn-primary btn-sm" data-agendar="${l.id}">📅 Agendar</button>
@@ -3543,7 +3543,7 @@ function renderTable() {
       <td class="cell-nome"><button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
       <td class="cell-fone">${esc(l.celular||'—')}</td>
       <td>${badgeOrigem(l.origem)}</td>
-      <td class="cell-renda">${esc(l.renda||'—')}</td>
+      <td class="cell-renda" title="${esc(l.renda||'')}">${esc(abrevRenda(l.renda))}</td>
       <td>${etiq}</td>
       <td>${badgeStatus(l.status)}</td>
       <td class="cell-data">${agendInfo}</td>
@@ -3629,7 +3629,19 @@ function renderCards() {
 // ─── HELPERS ─────────────────────────────────────────────────────────
 function badgeOrigem(o) {
   const map = { Instagram:'instagram', Facebook:'facebook', Indicação:'indicacao', Google:'google', WhatsApp:'whatsapp', Outros:'outros' };
-  return `<span class="badge-origem ${map[o]||'outros'}">${esc(o||'—')}</span>`;
+  return `<span class="badge-origem ${map[o]||'outros'}" title="${esc(o||'')}">${esc(o||'—')}</span>`;
+}
+function abrevRenda(r) {
+  if (!r) return '—';
+  const nums = [...r.matchAll(/[\d.]+,\d{2}/g)].map(m =>
+    parseFloat(m[0].replace(/\./g,'').replace(',','.'))
+  );
+  if (!nums.length) return r;
+  const fmt = v => v >= 1000 ? (v % 1000 === 0 ? (v/1000)+'k' : (v/1000).toFixed(1)+'k') : 'R$'+v;
+  if (/^até/i.test(r))   return 'até '+fmt(nums[0]);
+  if (/^acima/i.test(r)) return '+'+fmt(nums[0]);
+  if (nums.length >= 2)  return fmt(nums[0])+'–'+fmt(nums[1]);
+  return fmt(nums[0]);
 }
 function badgeStatus(s) {
   const labels = { aguardando:'Aguardando', qualificado:'Qualificado', agendado:'Agendado', realizada:'Call Realizada', noshow:'No Show', cancelado:'Cancelado', descartado:'Descartado' };

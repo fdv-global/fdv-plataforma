@@ -560,7 +560,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   border-radius: 50%; animation: spin .7s linear infinite;
 }
 
-.leads-table { width: 100%; border-collapse: collapse; min-width: 860px; }
+.leads-table { width: 100%; border-collapse: collapse; min-width: 1020px; }
 
 .leads-table thead tr { background: var(--s2); }
 .leads-table th {
@@ -582,24 +582,20 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 .leads-table tbody tr:hover  { background: var(--s-hover); }
 .leads-table tbody tr:last-child td { border-bottom: none; }
 
-/* Soften actions until row hovered */
-.leads-table tbody tr .cell-acoes {
-  opacity: .65;
-  transition: opacity var(--fast) var(--ease);
-}
-.leads-table tbody tr:hover .cell-acoes { opacity: 1; }
-
 /* cell types */
-.cell-nome  { font-weight: 600; }
-.cell-fone  { font-size: 12.5px; color: var(--t2); }
-.cell-renda { font-size: 13px; font-weight: 700; color: var(--sand); }
+.cell-nome  { font-weight: 600; min-width: 150px; max-width: 220px; }
+.cell-nome .nome-link { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+.cell-fone  { font-size: 12.5px; color: var(--t2); white-space: nowrap; }
+.cell-renda { font-size: 13px; font-weight: 700; color: var(--sand); white-space: nowrap; min-width: 70px; }
 .cell-data  { font-size: 11.5px; color: var(--t3); white-space: nowrap; }
+.cell-data-chegou { white-space: nowrap; }
 
 /* ── Badges de origem ─────────────────────────── */
 .badge-origem {
   display: inline-flex; align-items: center;
   padding: 2.5px 9px; border-radius: var(--r-pill);
   font-size: 10.5px; font-weight: 700; white-space: nowrap; letter-spacing: .25px;
+  max-width: 120px; overflow: hidden; text-overflow: ellipsis;
 }
 .badge-origem.instagram  { background: rgba(225,48,108,.11); color: #e05878; }
 .badge-origem.facebook   { background: rgba(100,130,220,.13); color: #7a9be0; }
@@ -1374,7 +1370,8 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 /* ============================================================
    AÇÕES — Attio dropdown
    ============================================================ */
-.cell-acoes  { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.cell-acoes  { white-space: nowrap; min-width: 180px; }
+.acoes-cell  { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
 .acoes-wrap  { position: relative; display: inline-block; }
 
 .btn-acao-main {
@@ -1419,17 +1416,21 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 /* Icon buttons */
 .btn-icon {
   width: 28px; height: 28px; padding: 0; border-radius: var(--r-xs);
-  border: 1px solid var(--b0); background: transparent; color: var(--t3);
+  border: 1px solid var(--b1); background: var(--s2); color: var(--t2);
   font-size: 12.5px; display: inline-flex; align-items: center; justify-content: center;
   cursor: pointer; flex-shrink: 0; font-family: inherit;
   transition: color var(--fast) var(--ease),
               border-color var(--fast) var(--ease),
               background var(--fast) var(--ease);
 }
-.btn-editar:hover   { color: #d4982a;  border-color: var(--gold-22); background: var(--gold-10); }
-.btn-excluir:hover  { color: #e06450;  border-color: rgba(192,57,43,.35); background: rgba(192,57,43,.08); }
-.btn-perfil:hover   { color: var(--petro-l);  border-color: var(--petro-18); background: var(--petro-10); }
-.btn-wa-lead:hover  { color: #25d366;  border-color: rgba(37,211,102,.35); background: rgba(37,211,102,.08); }
+.btn-perfil   { color: var(--petro-l); }
+.btn-wa-lead  { color: #25d366; }
+.btn-editar   { color: #d4982a; }
+.btn-excluir  { color: #e06450; }
+.btn-editar:hover   { border-color: var(--gold-22); background: var(--gold-10); }
+.btn-excluir:hover  { border-color: rgba(192,57,43,.35); background: rgba(192,57,43,.08); }
+.btn-perfil:hover   { border-color: var(--petro-18); background: var(--petro-10); }
+.btn-wa-lead:hover  { border-color: rgba(37,211,102,.35); background: rgba(37,211,102,.08); }
 .btn-realizada:hover{ color: var(--green); border-color: var(--green-18); background: var(--green-10); }
 .btn-noshow:hover   { color: #e06450;  border-color: rgba(192,57,43,.35); background: rgba(192,57,43,.08); }
 
