@@ -73,15 +73,7 @@ h1, h2, h3, h4,
   border: 1.5px solid rgba(206,146,33,0.50);
 }
 
-/* ── 6. Logo — imagem no lugar do texto ────────────────────── */
-.header-brand {
-  width: 160px;
-  height: 48px;
-  background: url('fdv-logo.png') left center / contain no-repeat;
-  flex-shrink: 0;
-  mix-blend-mode: screen;
-  filter: brightness(0.85) contrast(0.9);
-}
+/* ── 6. Logo ────────────────────────────────────────────────── */
 .brand-abbr,
 .brand-sep,
 .brand-full { display: none !important; }
