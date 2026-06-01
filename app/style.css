@@ -372,7 +372,8 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 /* ============================================================
    LAYOUT
    ============================================================ */
-.app-main { max-width: 2000px; margin: 0 auto; padding: 40px 20px 88px; }
+.app-main { max-width: 2000px; margin: 0 auto; padding: 40px 0 88px; }
+.tab-panel { padding: 0 24px; box-sizing: border-box; }
 
 .page-top {
   display: flex; align-items: flex-start; justify-content: space-between;
@@ -542,10 +543,12 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 /* ============================================================
    DATA TABLE — Attio rows
    ============================================================ */
+.leads-page-wrap { width: 100%; box-sizing: border-box; }
+
 .table-wrap {
   background: var(--s1); border: 1px solid var(--b0);
   border-radius: var(--r-lg); overflow-x: auto; position: relative;
-  width: fit-content; max-width: 100%; padding-right: 20px;
+  width: 100%; padding-right: 20px; box-sizing: border-box;
 }
 
 .loading-layer {
