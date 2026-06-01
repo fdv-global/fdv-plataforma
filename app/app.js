@@ -3656,14 +3656,15 @@ function badgeOrigem(o) {
 }
 function abrevRenda(r) {
   if (!r) return '—';
-  const nums = [...r.matchAll(/[\d.]+,\d{2}/g)].map(m =>
-    parseFloat(m[0].replace(/\./g,'').replace(',','.'))
-  );
+  // Handle both "2.000" (BR thousands) and "2.000,00" (BR with cents)
+  const nums = [...r.matchAll(/\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?/g)]
+    .map(m => parseFloat(m[0].replace(/\./g,'').replace(',','.')))
+    .filter(n => !isNaN(n) && n >= 100);
   if (!nums.length) return r;
   const fmt = v => v >= 1000 ? (v % 1000 === 0 ? (v/1000)+'k' : (v/1000).toFixed(1)+'k') : 'R$'+v;
-  if (/^até/i.test(r))   return 'até '+fmt(nums[0]);
-  if (/^acima/i.test(r)) return '+'+fmt(nums[0]);
-  if (nums.length >= 2)  return fmt(nums[0])+'–'+fmt(nums[1]);
+  if (/acima|mais\s+de/i.test(r)) return '+'+fmt(Math.max(...nums));
+  if (/até|menos\s+de/i.test(r))  return 'até '+fmt(Math.min(...nums));
+  if (nums.length >= 2)           return fmt(Math.min(...nums))+'–'+fmt(Math.max(...nums));
   return fmt(nums[0]);
 }
 function badgeStatus(s) {

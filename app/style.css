@@ -372,7 +372,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 /* ============================================================
    LAYOUT
    ============================================================ */
-.app-main { max-width: 1480px; margin: 0 auto; padding: 40px 40px 88px; }
+.app-main { max-width: 2000px; margin: 0 auto; padding: 40px 20px 88px; }
 
 .page-top {
   display: flex; align-items: flex-start; justify-content: space-between;
@@ -572,7 +572,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 }
 
 .leads-table td {
-  padding: 13px 16px;
+  padding: 16px 16px;
   font-size: 13.5px; font-weight: 500; color: var(--t1);
   border-bottom: 1px solid var(--b0); vertical-align: middle;
 }
@@ -1376,12 +1376,13 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 
 .btn-acao-main {
   padding: 6px 12px; border-radius: var(--r-xs);
-  font-size: 12px; font-weight: 700; border: 1px solid var(--b1);
-  background: var(--s2); color: var(--t2);
+  font-size: 12px; font-weight: 700; border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06); color: var(--t1);
   transition: color var(--fast) var(--ease),
-              border-color var(--fast) var(--ease); cursor: pointer; white-space: nowrap; font-family: inherit;
+              border-color var(--fast) var(--ease),
+              background var(--fast) var(--ease); cursor: pointer; white-space: nowrap; font-family: inherit;
 }
-.btn-acao-main:hover { color: var(--t1); border-color: var(--b2); }
+.btn-acao-main:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.22); }
 
 .acoes-dropdown {
   display: none; position: absolute; right: 0; top: calc(100% + 5px);
@@ -1416,42 +1417,48 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 /* Icon buttons */
 .btn-icon {
   width: 28px; height: 28px; padding: 0; border-radius: var(--r-xs);
-  border: 1px solid var(--b1); background: var(--s2); color: var(--t2);
+  border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.05); color: var(--t1);
   font-size: 12.5px; display: inline-flex; align-items: center; justify-content: center;
   cursor: pointer; flex-shrink: 0; font-family: inherit;
   transition: color var(--fast) var(--ease),
               border-color var(--fast) var(--ease),
               background var(--fast) var(--ease);
 }
-.btn-perfil   { color: var(--petro-l); }
-.btn-wa-lead  { color: #25d366; }
-.btn-editar   { color: #d4982a; }
-.btn-excluir  { color: #e06450; }
-.btn-editar:hover   { border-color: var(--gold-22); background: var(--gold-10); }
-.btn-excluir:hover  { border-color: rgba(192,57,43,.35); background: rgba(192,57,43,.08); }
-.btn-perfil:hover   { border-color: var(--petro-18); background: var(--petro-10); }
-.btn-wa-lead:hover  { border-color: rgba(37,211,102,.35); background: rgba(37,211,102,.08); }
-.btn-realizada:hover{ color: var(--green); border-color: var(--green-18); background: var(--green-10); }
-.btn-noshow:hover   { color: #e06450;  border-color: rgba(192,57,43,.35); background: rgba(192,57,43,.08); }
+.btn-perfil  { color: var(--petro-l); background: var(--petro-10); border-color: rgba(77,181,200,.3); }
+.btn-wa-lead { color: #25d366; background: rgba(37,211,102,.08); border-color: rgba(37,211,102,.3); }
+.btn-editar  { color: #d4982a; background: var(--gold-10); border-color: rgba(206,146,33,.35); }
+.btn-excluir { color: #e06450; background: rgba(192,57,43,.08); border-color: rgba(192,57,43,.3); }
+.btn-realizada { color: var(--green); background: var(--green-10); border-color: rgba(76,175,142,.3); }
+.btn-noshow    { color: #e06450; background: rgba(192,57,43,.08); border-color: rgba(192,57,43,.3); }
+.btn-editar:hover   { border-color: var(--gold-22); background: rgba(206,146,33,.18); }
+.btn-excluir:hover  { border-color: rgba(192,57,43,.5); background: rgba(192,57,43,.15); }
+.btn-perfil:hover   { border-color: var(--petro-18); background: var(--petro-18); }
+.btn-wa-lead:hover  { border-color: rgba(37,211,102,.5); background: rgba(37,211,102,.15); }
+.btn-realizada:hover{ border-color: var(--green-18); background: var(--green-18); }
+.btn-noshow:hover   { border-color: rgba(192,57,43,.5); background: rgba(192,57,43,.15); }
 
 /* ── Inline primary action buttons ─────────── */
 .btn-acao-inline {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 5px 10px; border-radius: var(--r-xs);
   font-size: 11.5px; font-weight: 700; letter-spacing: .15px;
-  border: 1px solid var(--b1); background: var(--s2); color: var(--t2);
+  border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.07); color: var(--t1);
   cursor: pointer; white-space: nowrap; font-family: inherit;
   transition: color var(--fast) var(--ease),
               border-color var(--fast) var(--ease),
               background var(--fast) var(--ease);
 }
-.btn-acao-inline:hover                { color: var(--t1); border-color: var(--b2); background: var(--s3); }
-.btn-acao-inline.btn-qualificar       { border-color: var(--petro-18); color: var(--petro-l); background: var(--petro-10); }
-.btn-acao-inline.btn-qualificar:hover { background: var(--petro-18); }
-.btn-acao-inline.btn-agendar          { border-color: var(--gold-22); color: #d4982a; background: var(--gold-10); }
-.btn-acao-inline.btn-agendar:hover    { background: rgba(206,146,33,.22); }
-.btn-acao-inline.btn-remarcar:hover   { color: #3bb8d0; border-color: var(--petro-18); background: var(--petro-10); }
-.btn-acao-inline.btn-reativar:hover   { color: var(--green); border-color: var(--green-18); background: var(--green-10); }
+.btn-acao-inline:hover                { color: var(--t1); border-color: rgba(255,255,255,.22); background: rgba(255,255,255,.12); }
+.btn-acao-inline.btn-qualificar       { border-color: rgba(77,181,200,.45); color: var(--petro-l); background: rgba(77,181,200,.15); }
+.btn-acao-inline.btn-qualificar:hover { background: var(--petro-18); border-color: rgba(77,181,200,.6); }
+.btn-acao-inline.btn-agendar          { border-color: rgba(206,146,33,.5); color: #d4982a; background: rgba(206,146,33,.15); }
+.btn-acao-inline.btn-agendar:hover    { background: rgba(206,146,33,.25); border-color: rgba(206,146,33,.7); }
+.btn-acao-inline.btn-remarcar         { color: #3bb8d0; border-color: rgba(77,181,200,.4); background: var(--petro-10); }
+.btn-acao-inline.btn-remarcar:hover   { background: var(--petro-18); border-color: rgba(77,181,200,.6); }
+.btn-acao-inline.btn-ver              { color: var(--t2); border-color: var(--b1); background: rgba(255,255,255,.06); }
+.btn-acao-inline.btn-ver:hover        { color: var(--t1); background: rgba(255,255,255,.1); }
+.btn-acao-inline.btn-reativar         { color: var(--green); border-color: rgba(76,175,142,.4); background: var(--green-10); }
+.btn-acao-inline.btn-reativar:hover   { background: var(--green-18); border-color: rgba(76,175,142,.6); }
 
 /* ============================================================
    SAVE BUTTONS
