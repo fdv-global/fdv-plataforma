@@ -365,7 +365,7 @@ h1, h2, h3, h4,
   border: 1px solid rgba(206, 146, 33, 0.55) !important;
   box-shadow: 0 0 12px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
   border-radius: var(--r-lg) !important;
-  overflow: hidden !important;
+  overflow-x: auto !important;
 }
 .filters-bar {
   background: rgba(10, 16, 18, 0.74) !important;

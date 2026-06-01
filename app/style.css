@@ -548,7 +548,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 .table-wrap {
   background: var(--s1); border: 1px solid var(--b0);
   border-radius: var(--r-lg); overflow-x: auto; position: relative;
-  width: 100%; padding-right: 20px; box-sizing: border-box;
+  width: 100%; box-sizing: border-box;
 }
 
 .loading-layer {
