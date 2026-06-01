@@ -545,6 +545,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 .table-wrap {
   background: var(--s1); border: 1px solid var(--b0);
   border-radius: var(--r-lg); overflow-x: auto; position: relative;
+  width: fit-content; max-width: 100%; padding-right: 20px;
 }
 
 .loading-layer {
@@ -560,7 +561,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   border-radius: 50%; animation: spin .7s linear infinite;
 }
 
-.leads-table { width: 100%; border-collapse: collapse; min-width: 820px; }
+.leads-table { width: auto; border-collapse: collapse; min-width: 820px; }
 
 .leads-table thead tr { background: var(--s2); }
 .leads-table th {
