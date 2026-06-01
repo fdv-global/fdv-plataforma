@@ -560,7 +560,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   border-radius: 50%; animation: spin .7s linear infinite;
 }
 
-.leads-table { width: 100%; border-collapse: collapse; min-width: 1020px; }
+.leads-table { width: 100%; border-collapse: collapse; min-width: 820px; }
 
 .leads-table thead tr { background: var(--s2); }
 .leads-table th {

@@ -194,11 +194,15 @@
         </div>
         <div class="filter-group">
           <label class="filter-label" for="filter-renda">Renda</label>
-          <input type="text" class="filter-input filter-input--sm" id="filter-renda" placeholder="Ex: 5.000">
+          <select class="filter-select" id="filter-renda">
+            <option value="">Todas</option>
+          </select>
         </div>
         <div class="filter-group">
           <label class="filter-label" for="filter-profissao">Profissão</label>
-          <input type="text" class="filter-input filter-input--sm" id="filter-profissao" placeholder="Ex: Médico">
+          <select class="filter-select" id="filter-profissao">
+            <option value="">Todas</option>
+          </select>
         </div>
         <div class="filter-group">
           <label class="filter-label" for="filter-etiqueta">Etiqueta</label>
@@ -232,7 +236,9 @@
         </div>
         <div class="filter-group">
           <label class="filter-label" for="filter-agendadopor">Agendado por</label>
-          <input type="text" class="filter-input filter-input--sm" id="filter-agendadopor" placeholder="Nome...">
+          <select class="filter-select" id="filter-agendadopor">
+            <option value="">Todos</option>
+          </select>
         </div>
         <div class="filter-group filter-group--search">
           <label class="filter-label" for="filter-busca">Buscar</label>
@@ -283,7 +289,6 @@
             <th>Renda</th>
             <th>Etiqueta</th>
             <th>Status</th>
-            <th>Agendamento</th>
             <th>Ações</th>
           </tr>
         </thead>

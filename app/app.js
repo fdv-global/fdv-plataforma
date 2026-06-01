@@ -2115,6 +2115,7 @@ function renderFinanceiro() {
 function renderAll() {
   allLeads.sort((a, b) => (b.datachegada || '').localeCompare(a.datachegada || ''));
   populateAllMonths();
+  populateFilterDropdowns();
   updateStats();
   if      (activeTab === 'inicio')       renderInicio();
   else if (activeTab === 'comercial')    renderComercial();
@@ -2236,6 +2237,35 @@ function renderInicio() {
 }
 
 // ─── LEADS LIST ──────────────────────────────────────────────────────
+function populateFilterDropdowns() {
+  const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const repopulate = (id, values, allLabel) => {
+    const el = $(id);
+    if (!el) return;
+    const cur = el.value;
+    el.innerHTML = `<option value="">${allLabel}</option>` +
+      values.map(v => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(v)}</option>`).join('');
+  };
+
+  repopulate('filter-renda',       uniq(allLeads.map(l => l.renda)),       'Todas');
+  repopulate('filter-profissao',   uniq(allLeads.map(l => l.profissao)),   'Todas');
+  repopulate('filter-agendadopor', uniq(allLeads.map(l => l.agendadopor)), 'Todos');
+  repopulate('filter-etiqueta',    uniq(allLeads.flatMap(l => l.etiquetas || [])), 'Todas');
+
+  const KANBAN_LABELS = {
+    agendado:'Agendado', call_realizada:'Call Realizada', negociacao:'Negociação',
+    decisao:'Decisão', venda_ganha:'Venda Ganha', venda_perdida:'Venda Perdida',
+    qualificado:'Qualificado', descartado:'Descartado',
+  };
+  const elK = $('filter-kanban');
+  if (elK) {
+    const cur = elK.value;
+    const vals = uniq(allLeads.map(l => l.kanban_column).filter(Boolean));
+    elK.innerHTML = `<option value="">Todos</option>` +
+      vals.map(v => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(KANBAN_LABELS[v] || v)}</option>`).join('');
+  }
+}
+
 function applyFilters() {
   // Novos sub sempre mostra apenas leads 'aguardando'
   const status      = activeSub === 'novos' ? 'aguardando' : ($('filter-status')?.value || '');
@@ -2243,13 +2273,13 @@ function applyFilters() {
   const mes         = $('filter-mes').value;
   const busca       = $('filter-busca').value.toLowerCase().trim();
   const closer      = $('filter-closer')?.value || '';
-  const renda       = $('filter-renda')?.value.toLowerCase().trim() || '';
-  const profissao   = $('filter-profissao')?.value.toLowerCase().trim() || '';
+  const renda       = $('filter-renda')?.value || '';
+  const profissao   = $('filter-profissao')?.value || '';
   const etiqueta    = $('filter-etiqueta')?.value || '';
   const kanban      = $('filter-kanban')?.value || '';
   const chegadaDe   = $('filter-chegada-de')?.value || '';
   const chegadaAte  = $('filter-chegada-ate')?.value || '';
-  const agendadopor = $('filter-agendadopor')?.value.toLowerCase().trim() || '';
+  const agendadopor = $('filter-agendadopor')?.value || '';
 
   filteredLeads = allLeads.filter(l => {
     if (status      && l.status !== status) return false;
@@ -2261,13 +2291,13 @@ function applyFilters() {
       if (!n.includes(busca) && !c.includes(busca)) return false;
     }
     if (closer      && l.closer !== closer) return false;
-    if (renda       && !(l.renda      || '').toLowerCase().includes(renda)) return false;
-    if (profissao   && !(l.profissao  || '').toLowerCase().includes(profissao)) return false;
+    if (renda       && l.renda !== renda) return false;
+    if (profissao   && l.profissao !== profissao) return false;
     if (etiqueta    && !(l.etiquetas  || []).includes(etiqueta)) return false;
     if (kanban      && l.kanban_column !== kanban) return false;
     if (chegadaDe   && (l.datachegada || '') < chegadaDe) return false;
     if (chegadaAte  && (l.datachegada || '') > chegadaAte) return false;
-    if (agendadopor && !(l.agendadopor || '').toLowerCase().includes(agendadopor)) return false;
+    if (agendadopor && l.agendadopor !== agendadopor) return false;
     return true;
   });
 
@@ -3528,12 +3558,6 @@ function renderTable() {
   empty.style.display = 'none';
 
   tbody.innerHTML = filteredLeads.map(l => {
-    const agendInfo = (l.status === 'agendado' && l.dataagendamento)
-      ? `<span class="cell-agenda-info">${fmtDateHora(l.dataagendamento,l.horaagendamento)}<br>
-          <span style="color:var(--text-dim);font-size:11px">${esc(CLOSERS[l.closer]?.name||l.closer||'—')}</span>
-          ${l.agendadopor?`<br><span style="color:var(--text-dim);font-size:11px">via ${esc(l.agendadopor)}</span>`:''}
-        </span>`
-      : '—';
     const etiq = (l.etiquetas||[]).length
       ? (l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')
       : '—';
@@ -3546,7 +3570,6 @@ function renderTable() {
       <td class="cell-renda" title="${esc(l.renda||'')}">${esc(abrevRenda(l.renda))}</td>
       <td>${etiq}</td>
       <td>${badgeStatus(l.status)}</td>
-      <td class="cell-data">${agendInfo}</td>
       <td class="cell-acoes">${btnAcao(l)}</td>
     </tr>`;
   }).join('');
@@ -6892,11 +6915,11 @@ function bindEvents() {
   );
 
   // Leads filters
-  ['filter-status','filter-origem','filter-mes','filter-closer','filter-etiqueta','filter-kanban','filter-chegada-de','filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', applyFilters); });
-  ['filter-busca','filter-renda','filter-profissao','filter-agendadopor'].forEach(id => { const el=$(id); if(el) el.addEventListener('input', applyFilters); });
+  ['filter-status','filter-origem','filter-mes','filter-closer','filter-renda','filter-profissao','filter-etiqueta','filter-kanban','filter-chegada-de','filter-chegada-ate','filter-agendadopor'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', applyFilters); });
+  ['filter-busca'].forEach(id => { const el=$(id); if(el) el.addEventListener('input', applyFilters); });
   $('btn-limpar').addEventListener('click', () => {
-    ['filter-status','filter-origem','filter-mes','filter-closer','filter-etiqueta','filter-kanban'].forEach(id => { const el=$(id); if(el) el.value=''; });
-    ['filter-busca','filter-renda','filter-profissao','filter-agendadopor','filter-chegada-de','filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.value=''; });
+    ['filter-status','filter-origem','filter-mes','filter-closer','filter-renda','filter-profissao','filter-etiqueta','filter-kanban','filter-agendadopor'].forEach(id => { const el=$(id); if(el) el.value=''; });
+    ['filter-busca','filter-chegada-de','filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.value=''; });
     applyFilters();
   });
 
