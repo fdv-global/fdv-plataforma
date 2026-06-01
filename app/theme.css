@@ -868,11 +868,8 @@ h1, h2, h3, h4,
   border-bottom: none !important;
 }
 
-/* ── Ações — botão ⋯ circular ────────────────────────────────── */
-/* cell-acoes: visível em repouso (era .35 × .50 = 17.5%) */
-.leads-table tbody tr .cell-acoes {
-  opacity: .72 !important;
-}
+/* ── Ações — sem dimming, botões sempre visíveis ─────────────── */
+.leads-table tbody tr .cell-acoes,
 .leads-table tbody tr:hover .cell-acoes {
   opacity: 1 !important;
 }
