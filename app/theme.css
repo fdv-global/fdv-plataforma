@@ -579,12 +579,12 @@ h1, h2, h3, h4,
 }
 ---- fim V3 --------------------------------------------------- */
 
-/* Conteúdo — apenas taskbar fixa no topo */
-.app-main { padding-top: 110px !important; padding-bottom: 40px !important; }
+/* Conteúdo — taskbar fixa (top:16 + min-height:64 + margem) */
+.app-main { padding-top: 130px !important; padding-bottom: 40px !important; }
 
 /* [F] Mobile */
 @media (max-width: 768px) {
-  .app-main { padding-top: 90px !important; padding-bottom: 20px !important; }
+  .app-main { padding-top: 110px !important; padding-bottom: 20px !important; }
 }
 
 /* ── 26. Usuários — avatares e ações ───────────────────────── */
@@ -855,7 +855,7 @@ h1, h2, h3, h4,
   border-bottom: 1px solid rgba(255, 255, 255, 0.055) !important;
 }
 .leads-table td {
-  padding: 15px 20px !important;
+  padding: 10px 16px !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.028) !important;
 }
 .leads-table tbody tr:nth-child(even) td {
