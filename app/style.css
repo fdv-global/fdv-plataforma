@@ -372,8 +372,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 /* ============================================================
    LAYOUT
    ============================================================ */
-.app-main { max-width: 2000px; margin: 0 auto; padding: 40px 0 88px; }
-.tab-panel { padding: 0 24px; box-sizing: border-box; }
+.app-main { max-width: 2000px; margin: 0 auto; padding: 40px 20px 88px; }
 
 .page-top {
   display: flex; align-items: flex-start; justify-content: space-between;
