@@ -412,11 +412,10 @@ h1, h2, h3, h4,
   transform: translateY(-1px) !important;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
 }
-/* Separador visual entre métricas e filtros */
+/* Espaçamento interno entre métricas e filtros — sem linha divisória */
 .filters-bar .stats-grid {
-  margin-bottom: 20px !important;
-  padding-bottom: 20px !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+  margin-bottom: 18px !important;
+  padding-bottom: 0 !important;
 }
 /* Inputs dentro do painel — sem container próprio, fundem no painel */
 .filters-bar .filter-select,
