@@ -1494,6 +1494,14 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 .btn-acao-inline.btn-ver,
 .btn-acao-inline.btn-reativar { color: #CE9221; border-color: rgba(206,146,33,.45); background: #192526; }
 
+.btn-acao-inline.btn-nao-qualificar {
+  color: #e06450; border-color: rgba(192,57,43,.30); background: rgba(192,57,43,.06);
+}
+.btn-acao-inline.btn-nao-qualificar:hover {
+  background: rgba(192,57,43,.16); border-color: rgba(192,57,43,.55);
+  box-shadow: 0 0 8px rgba(192,57,43,.18);
+}
+
 /* ============================================================
    SAVE BUTTONS
    ============================================================ */

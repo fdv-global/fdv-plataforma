@@ -175,6 +175,7 @@ let contratoAlunaId     = null;
 let descarteLeadId   = null;
 let descarteSelected = null;
 let descarteContext  = 'agendamentos'; // 'agendamentos' | 'kanban'
+let bulkDescarteIds  = null; // array quando descarte em massa, null em modo individual
 let cal = { step: 1, closer: null, leadSnap: null };
 let agendaCalYear  = 0;
 let agendaCalMonth = 0;
@@ -2681,10 +2682,12 @@ function closeDescarteModal() {
   $('descarte-backdrop').style.display = 'none';
   descarteLeadId   = null;
   descarteSelected = null;
+  bulkDescarteIds  = null;
 }
 
 async function confirmarDescarte() {
-  if (!descarteLeadId || !descarteSelected) return;
+  if (!descarteSelected) return;
+  if (!bulkDescarteIds && !descarteLeadId) return;
   if (descarteSelected === 'outro') {
     const text = ($('descarte-outro-text')?.value || '').trim();
     if (!text) { toast('Descreva o motivo do descarte.', 'err'); return; }
@@ -2694,32 +2697,47 @@ async function confirmarDescarte() {
 
   const motivo    = MOTIVOS_DESCARTE.find(m => m.id === descarteSelected);
   const outroText = descarteSelected === 'outro' ? ($('descarte-outro-text')?.value || '').trim() : '';
+  const payload   = {
+    status:                'descartado',
+    motivo_descarte:       descarteSelected,
+    motivo_descarte_label: motivo?.label || descarteSelected,
+    ...(outroText && { motivo_descarte_obs: outroText }),
+    atualizadoem:          new Date().toISOString(),
+  };
 
   try {
-    if (descarteContext === 'kanban') {
+    if (bulkDescarteIds) {
+      // Descarte em massa
+      const ids = bulkDescarteIds;
+      if (isLive) {
+        const { error } = await supabase.from('leads').update(payload).in('id', ids);
+        if (error) throw error;
+      } else {
+        ids.forEach(id => { const i = allLeads.findIndex(l=>l.id===id); if(i!==-1) allLeads[i]={...allLeads[i],...payload}; });
+      }
+      toast(`${ids.length} lead(s) descartado(s).`, 'ok');
+      selectedIds.clear();
+      closeDescarteModal();
+      updateBulkBar();
+      renderAll();
+    } else if (descarteContext === 'kanban') {
       await ensureObsSaved(descarteLeadId);
       const hist = buildHistoryEntry(descarteLeadId, 'descartado', 'Descartado');
       await saveLead(descarteLeadId, {
         kanban_column:         'descartado',
         kanban_column_since:   new Date().toISOString(),
-        motivo_descarte:       descarteSelected,
-        motivo_descarte_label: motivo?.label || descarteSelected,
-        ...(outroText && { motivo_descarte_obs: outroText }),
+        ...payload,
+        status:                undefined,
         ...(hist && { historico_kanban: hist }),
-        atualizadoem:          new Date().toISOString(),
       });
+      toast('Lead descartado.', 'ok');
+      closeDescarteModal();
+      if (!isLive) renderKanban();
     } else {
-      await saveLead(descarteLeadId, {
-        status:                'descartado',
-        motivo_descarte:       descarteSelected,
-        motivo_descarte_label: motivo?.label || descarteSelected,
-        ...(outroText && { motivo_descarte_obs: outroText }),
-        atualizadoem:          new Date().toISOString(),
-      });
+      await saveLead(descarteLeadId, payload);
+      toast('Lead descartado.', 'ok');
+      closeDescarteModal();
     }
-    toast('Lead descartado.', 'ok');
-    closeDescarteModal();
-    if (descarteContext === 'kanban' && !isLive) renderKanban();
   } catch(e) {
     console.error(e);
     toast(e.message || 'Erro ao descartar.', 'err');
@@ -3678,24 +3696,28 @@ function btnAcao(l) {
   const icoDoc   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
 
   let primary = '';
-  if      (st === 'aguardando')                  primary = `<button class="btn-acao-inline btn-qualificar" data-id="${id}" data-action="qualificar-lead" title="Qualificar este lead">✓ Qualificar</button>`;
-  else if (st === 'qualificado')                 primary = `<button class="btn-acao-inline btn-agendar"    data-id="${id}" data-action="agendar"         title="Agendar call">📅 Agendar</button>`;
-  else if (st === 'agendado' || st === 'noshow') primary = `<button class="btn-acao-inline btn-remarcar"   data-id="${id}" data-action="agendar"         title="Remarcar call">🔄 Remarcar</button>`;
-  else if (st === 'realizada')                   primary = `<button class="btn-acao-inline btn-ver"        data-id="${id}" data-action="ver"             title="Ver resultado da call">📋 Resultado</button>`;
-  else if (st === 'descartado')                  primary = `<button class="btn-acao-inline btn-reativar"   data-id="${id}" data-action="reativar"        title="Reativar lead">↩ Reativar</button>`;
+  if      (st === 'aguardando')                  primary = `<button class="btn-acao-inline btn-qualificar"     data-id="${id}" data-action="qualificar-lead" title="Qualificar este lead">✓ Qualificar</button><button class="btn-acao-inline btn-nao-qualificar" data-id="${id}" data-action="descartar" title="Não qualificar / descartar">✕ Não Qualificar</button>`;
+  else if (st === 'qualificado')                 primary = `<button class="btn-acao-inline btn-agendar"        data-id="${id}" data-action="agendar"         title="Agendar call">📅 Agendar</button>`;
+  else if (st === 'agendado' || st === 'noshow') primary = `<button class="btn-acao-inline btn-remarcar"       data-id="${id}" data-action="agendar"         title="Remarcar call">🔄 Remarcar</button>`;
+  else if (st === 'realizada')                   primary = `<button class="btn-acao-inline btn-ver"            data-id="${id}" data-action="ver"             title="Ver resultado da call">📋 Resultado</button>`;
+  else if (st === 'descartado')                  primary = `<button class="btn-acao-inline btn-reativar"       data-id="${id}" data-action="reativar"        title="Reativar lead">↩ Reativar</button>`;
 
   const postcall = st === 'agendado'
     ? `<button class="btn-icon btn-realizada" data-id="${id}" data-postcall="realizada" title="Marcar como Call Realizada">✅</button>
        <button class="btn-icon btn-noshow"    data-id="${id}" data-postcall="noshow"    title="Marcar como No Show">❌</button>`
     : '';
 
+  const briefingBtn = st !== 'aguardando'
+    ? `<button class="btn-icon btn-briefing" data-id="${id}" data-action="briefing" title="Briefing">${icoDoc}</button>`
+    : '';
+
   return `<div class="acoes-cell">
     ${primary}${postcall}
-    <button class="btn-icon btn-perfil"   data-id="${id}" data-action="qualificar" title="Ver Perfil">${icoEye}</button>
-    <button class="btn-icon btn-briefing" data-id="${id}" data-action="briefing"   title="Briefing">${icoDoc}</button>
-    <button class="btn-icon btn-wa-lead"  data-id="${id}" title="Abrir no WhatsApp">${icoChat}</button>
-    <button class="btn-icon btn-editar"   data-id="${id}" data-action="editar"     title="Editar lead">${icoPen}</button>
-    <button class="btn-icon btn-excluir"  data-id="${id}" data-action="excluir"    title="Excluir lead">${icoTrash}</button>
+    <button class="btn-icon btn-perfil"  data-id="${id}" data-action="qualificar" title="Ver Perfil">${icoEye}</button>
+    ${briefingBtn}
+    <button class="btn-icon btn-wa-lead" data-id="${id}" title="Abrir no WhatsApp">${icoChat}</button>
+    <button class="btn-icon btn-editar"  data-id="${id}" data-action="editar"     title="Editar lead">${icoPen}</button>
+    <button class="btn-icon btn-excluir" data-id="${id}" data-action="excluir"    title="Excluir lead">${icoTrash}</button>
   </div>`;
 }
 function fmtDate(d) {
@@ -3865,6 +3887,55 @@ async function bulkChangeStatus() {
     toast(`Status atualizado em ${n} lead(s).`, 'ok');
     selectedIds.clear(); $('bulk-status-sel').value = ''; updateBulkBar();
   } catch(e) { console.error(e); toast('Erro ao atualizar status.', 'err'); }
+}
+
+async function bulkQualificar() {
+  const ids = [...selectedIds]; if (!ids.length) return;
+  try {
+    const now = new Date().toISOString();
+    if (isLive) {
+      const { error } = await supabase.from('leads').update({ status: 'qualificado', atualizadoem: now }).in('id', ids);
+      if (error) throw error;
+    } else {
+      ids.forEach(id => { const i = allLeads.findIndex(l=>l.id===id); if(i!==-1) allLeads[i]={...allLeads[i], status:'qualificado', atualizadoem:now}; });
+    }
+    toast(`${ids.length} lead(s) qualificado(s).`, 'ok');
+    selectedIds.clear(); updateBulkBar(); renderAll();
+  } catch(e) { console.error(e); toast('Erro ao qualificar.', 'err'); }
+}
+
+function openBulkDescarteModal() {
+  const ids = [...selectedIds]; if (!ids.length) return;
+  bulkDescarteIds  = ids;
+  descarteLeadId   = null;
+  descarteSelected = null;
+  $('descarte-lead-nome').textContent = `${ids.length} lead(s) selecionado(s)`;
+  $('descarte-confirmar').disabled = true;
+
+  const body = $('descarte-body');
+  body.innerHTML = `
+    <p class="mp-instr">Selecione o motivo do descarte:</p>
+    <div class="mp-grid">
+      ${MOTIVOS_DESCARTE.map(m => `
+        <button class="mp-item" data-id="${m.id}">
+          <span>${esc(m.label)}</span>
+        </button>`).join('')}
+    </div>
+    <div id="descarte-outro-wrap" style="display:none;margin-top:14px">
+      <textarea id="descarte-outro-text" class="form-ctrl" placeholder="Descreva o motivo…" rows="3" style="width:100%;resize:vertical"></textarea>
+    </div>`;
+
+  body.querySelectorAll('.mp-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      body.querySelectorAll('.mp-item').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      descarteSelected = btn.dataset.id;
+      $('descarte-outro-wrap').style.display = descarteSelected === 'outro' ? 'block' : 'none';
+      $('descarte-confirmar').disabled = false;
+    });
+  });
+
+  $('descarte-backdrop').style.display = 'flex';
 }
 
 // ─── AGENDAR MODAL ───────────────────────────────────────────────────
@@ -7050,8 +7121,8 @@ function bindEvents() {
     else                  filteredLeads.forEach(l=>selectedIds.delete(l.id));
     updateBulkBar(); renderTable();
   });
-  $('btn-bulk-delete').addEventListener('click', bulkDelete);
-  $('btn-bulk-status').addEventListener('click', bulkChangeStatus);
+  $('btn-bulk-qualificar').addEventListener('click', bulkQualificar);
+  $('btn-bulk-descartar').addEventListener('click', openBulkDescarteModal);
   $('btn-bulk-clear').addEventListener('click', () => { selectedIds.clear(); updateBulkBar(); renderTable(); });
 
   // Perfil
