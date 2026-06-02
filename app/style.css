@@ -1615,8 +1615,29 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 @media (max-width: 1300px) { .rel-summary { grid-template-columns: repeat(3,1fr); } }
 @media (max-width: 768px)  { .rel-summary { grid-template-columns: repeat(2,1fr); } }
 
-.rel-section       { margin-bottom: 30px; }
-.rel-section-title { font-size: 14px; font-weight: 700; color: var(--t1); margin-bottom: 13px; padding-bottom: 9px; border-bottom: 1px solid var(--b0); }
+.rel-section       { margin-top: 32px; margin-bottom: 0; }
+.rel-section:first-of-type { margin-top: 0; }
+.rel-section-title { font-size: 14px; font-weight: 700; color: var(--t1); margin-bottom: 16px; padding-bottom: 9px; border-bottom: 1px solid var(--b0); }
+
+/* Gráfico comparativo Chart.js */
+.rel-chart-container { height: 280px; padding: 20px; }
+.rel-chart-container canvas { width: 100% !important; height: 100% !important; }
+
+/* Ranking wrapper — glass único para todos os itens */
+.rel-rank-wrap { padding: 0; overflow: hidden; }
+.rel-rank-row {
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 20px;
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.rel-rank-row:last-child { border-bottom: none; }
+.rel-rank-bar-wrap { background: rgba(255,255,255,0.10); border-radius: 4px; height: 6px; overflow: hidden; margin-top: 6px; }
+.rel-rank-bar      { height: 100%; background: var(--gold); border-radius: 4px; transition: width .5s var(--ease-out); min-width: 2px; }
+
+/* Stat cards de Relatórios — garantir tamanho mínimo */
+.rel-summary .stat-card { padding: 24px 22px 20px; }
+.rel-summary .stat-num  { font-size: 36px; }
 
 .rel-table-wrap {
   background: var(--s1); border: 1px solid var(--b0);

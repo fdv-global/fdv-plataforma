@@ -220,6 +220,7 @@ let mpSelected = null;
 // Kanban search
 let kanbanSearchText = '';
 let _expandedCardId  = null; // ID do card do kanban atualmente expandido
+let _relChart        = null; // Instância Chart.js do comparativo mensal
 
 // Notification state
 let notifUnsub = null;
@@ -3653,6 +3654,9 @@ function renderRelatorios() {
   const mesEntries = Object.entries(mesMap).sort((a,b)=>a[0].localeCompare(b[0]));
   const maxMesLeads = Math.max(...mesEntries.map(([,d])=>d.total), 1);
 
+  // Destruir instância anterior do Chart.js antes de re-render
+  if (_relChart) { _relChart.destroy(); _relChart = null; }
+
   $('relatorios-content').innerHTML = `
     <div class="stats-grid rel-summary">
       ${relStatCard('Total de Leads', base.length, '◈')}
@@ -3666,26 +3670,14 @@ function renderRelatorios() {
     ${mesEntries.length >= 2 ? `
     <div class="rel-section">
       <h3 class="rel-section-title">Comparativo Mês a Mês</h3>
-      <div class="rel-chart">
-        ${mesEntries.map(([m,d]) => `
-          <div class="rel-chart-row">
-            <span class="rel-chart-lbl">${fmtMes(m)}</span>
-            <div class="rel-chart-bars">
-              <div class="rel-bar rel-bar--leads"  style="width:${pct(d.total,maxMesLeads)}%" title="${d.total} leads"></div>
-              <div class="rel-bar rel-bar--vendas"  style="width:${pct(d.vendas,maxMesLeads)}%" title="${d.vendas} vendas"></div>
-            </div>
-            <span class="rel-chart-val">${d.total} leads · ${d.vendas} vendas${d.valor?' · R$\xa0'+fmtValor(d.valor):''}</span>
-          </div>`).join('')}
-        <div class="rel-chart-legend">
-          <span class="rel-legend-item"><i class="rel-legend-dot rel-legend-dot--leads"></i>Leads</span>
-          <span class="rel-legend-item"><i class="rel-legend-dot rel-legend-dot--vendas"></i>Vendas</span>
-        </div>
+      <div class="rel-block rel-chart-container">
+        <canvas id="rel-chart-comparativo"></canvas>
       </div>
     </div>` : ''}
 
     <div class="rel-section">
       <h3 class="rel-section-title">Ranking de Origem — Conversão</h3>
-      <div class="rel-origin-rank">
+      <div class="rel-block rel-rank-wrap">
         ${origemRanking.map((r,i) => `
           <div class="rel-rank-row">
             <span class="rel-rank-pos">${i+1}</span>
@@ -3726,6 +3718,65 @@ function renderRelatorios() {
     ${!base.length ? '<div class="agenda-empty"><i data-lucide="bar-chart-2" class="empty-lucide"></i><h3>Sem dados</h3><p>Adicione leads ou ajuste os filtros.</p></div>' : ''}
   `;
   lucide.createIcons();
+
+  // Chart.js — gráfico de barras verticais agrupadas
+  if (typeof Chart !== 'undefined' && mesEntries.length >= 2) {
+    const ctx = document.getElementById('rel-chart-comparativo')?.getContext('2d');
+    if (ctx) {
+      _relChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: mesEntries.map(([m]) => fmtMes(m)),
+          datasets: [
+            {
+              label: 'Leads',
+              data: mesEntries.map(([,d]) => d.total),
+              backgroundColor: 'rgba(77,181,200,0.60)',
+              borderColor:     'rgba(77,181,200,0.90)',
+              borderWidth: 1, borderRadius: 4, borderSkipped: false,
+            },
+            {
+              label: 'Vendas',
+              data: mesEntries.map(([,d]) => d.vendas),
+              backgroundColor: 'rgba(206,146,33,0.75)',
+              borderColor:     'rgba(206,146,33,1)',
+              borderWidth: 1, borderRadius: 4, borderSkipped: false,
+            }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: {
+                color: 'rgba(232,228,220,0.85)',
+                font: { family: "'Red Hat Text',sans-serif", size: 12 },
+                boxWidth: 12, boxHeight: 6,
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(15,12,8,0.92)',
+              titleColor: '#e8e4dc', bodyColor: '#c8c4bc',
+              borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
+            }
+          },
+          scales: {
+            x: {
+              grid:   { color: 'rgba(255,255,255,0.04)' },
+              ticks:  { color: 'rgba(200,196,188,0.75)', font: { size: 11 } },
+              border: { color: 'rgba(255,255,255,0.06)' },
+            },
+            y: {
+              grid:        { color: 'rgba(255,255,255,0.04)' },
+              ticks:       { color: 'rgba(200,196,188,0.75)', font: { size: 11 } },
+              border:      { color: 'rgba(255,255,255,0.06)' },
+              beginAtZero: true,
+            }
+          }
+        }
+      });
+    }
+  }
 }
 
 function relTable(title, headers, rows) {
