@@ -400,6 +400,21 @@ h1, h2, h3, h4,
   border: 1px solid rgba(255, 255, 255, 0.06) !important;
   border-radius: 16px !important;
 }
+/* Inputs dentro da barra de filtros — sem container próprio, fundem no painel */
+.filters-bar .filter-select,
+.filters-bar .filter-input {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+.filters-bar .filter-select:focus,
+.filters-bar .filter-input:focus {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(206, 146, 33, 0.45) !important;
+  box-shadow: 0 0 0 3px rgba(206, 146, 33, 0.10) !important;
+}
 /* Highlight de linha — interatividade na principal tela */
 .leads-table tbody tr:hover td {
   background: rgba(206, 146, 33, 0.04) !important;
@@ -546,7 +561,10 @@ h1, h2, h3, h4,
 .page-title-block h1 {
   font-weight: 700 !important;
   letter-spacing: -0.025em !important;
-  text-shadow: 0 0 30px rgba(206, 146, 33, 0.3) !important;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.8), 0 0 30px rgba(206, 146, 33, 0.3) !important;
+}
+.page-title-block p {
+  text-shadow: 0 2px 8px rgba(0,0,0,0.75) !important;
 }
 
 /* ── 20. Versículo — três variações SaaS premium ───────────────
