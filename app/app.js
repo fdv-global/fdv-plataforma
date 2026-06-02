@@ -2358,13 +2358,11 @@ function renderAgendaSub() {
       <div class="agenda-cards">
         ${groups[key].map(l => `
           <div class="agenda-card">
-            <div class="agenda-card-time">${esc(l.horaagendamento||'—')}</div>
+            <div class="agenda-card-time">${esc(fmtHora(l.horaagendamento))}</div>
             <div class="agenda-card-info">
               <button class="agenda-card-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
               <span class="agenda-card-sub">${[
-                l.datachegada ? 'Chegou '+fmtDate(l.datachegada) : null,
-                fmtDate(l.dataagendamento),
-                l.celular, l.origem, l.renda,
+                l.renda, l.origem, l.celular,
                 l.agendadopor ? 'via '+l.agendadopor : null
               ].filter(Boolean).map(esc).join(' · ')}</span>
               ${(l.etiquetas||[]).length ? `<div class="card-etiquetas">${(l.etiquetas||[]).map(t=>etiquetaChip(t,true)).join('')}</div>` : ''}
@@ -2547,10 +2545,10 @@ function renderAgendaHoje() {
       <div class="agenda-cards">
         ${groups[key].map(l => `
           <div class="agenda-card">
-            <div class="agenda-card-time">${esc(l.horaagendamento||'—')}</div>
+            <div class="agenda-card-time">${esc(fmtHora(l.horaagendamento))}</div>
             <div class="agenda-card-info">
               <button class="agenda-card-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
-              <span class="agenda-card-sub">${[l.datachegada?'Chegou '+fmtDate(l.datachegada):null, l.celular, l.origem, l.renda].filter(Boolean).map(esc).join(' · ')}</span>
+              <span class="agenda-card-sub">${[l.renda, l.origem, l.celular].filter(Boolean).map(esc).join(' · ')}</span>
               ${(l.etiquetas||[]).length ? `<div class="card-etiquetas">${(l.etiquetas||[]).map(t=>etiquetaChip(t,true)).join('')}</div>` : ''}
             </div>
             <div class="agenda-card-btns">
@@ -3700,7 +3698,7 @@ function btnAcao(l) {
   const icoDoc   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
 
   let primary = '';
-  if      (st === 'aguardando')                  primary = `<button class="btn-acao-inline btn-qualificar"     data-id="${id}" data-action="qualificar-lead" title="Qualificar este lead">Qualificado</button><button class="btn-acao-inline btn-nao-qualificar" data-id="${id}" data-action="descartar" title="Não qualificar / descartar">Não Qualificado</button>`;
+  if      (st === 'aguardando')                  primary = `<button class="btn-acao-inline btn-qualificar"     data-id="${id}" data-action="qualificar-lead" title="Qualificar este lead">✓ Qualificado</button><button class="btn-acao-inline btn-nao-qualificar" data-id="${id}" data-action="descartar" title="Não qualificar / descartar">✕ Não Qualificado</button>`;
   else if (st === 'qualificado')                 primary = `<button class="btn-acao-inline btn-agendar"        data-id="${id}" data-action="agendar"         title="Agendar call">📅 Agendar</button>`;
   else if (st === 'agendado' || st === 'noshow') primary = `<button class="btn-acao-inline btn-remarcar"       data-id="${id}" data-action="agendar"         title="Remarcar call">🔄 Remarcar</button>`;
   else if (st === 'realizada')                   primary = `<button class="btn-acao-inline btn-ver"            data-id="${id}" data-action="ver"             title="Ver resultado da call">📋 Resultado</button>`;
@@ -3729,7 +3727,8 @@ function fmtDate(d) {
   const [y,m,dd] = String(d).split('-');
   return `${dd}/${m}/${y}`;
 }
-function fmtDateHora(date, hora) { return date ? (hora ? `${fmtDate(date)} · ${hora}` : fmtDate(date)) : '—'; }
+function fmtHora(h) { return h ? String(h).slice(0, 5) : '—'; }
+function fmtDateHora(date, hora) { return date ? (hora ? `${fmtDate(date)} · ${fmtHora(hora)}` : fmtDate(date)) : '—'; }
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }

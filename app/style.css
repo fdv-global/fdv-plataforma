@@ -1503,11 +1503,11 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 .btn-acao-inline.btn-reativar { color: #CE9221; border-color: rgba(206,146,33,.45); background: #192526; }
 
 .btn-acao-inline.btn-nao-qualificar {
-  color: var(--t3); border-color: var(--b1); background: transparent;
+  color: #C8802A; border-color: rgba(200,128,42,.55); background: transparent;
 }
 .btn-acao-inline.btn-nao-qualificar:hover {
-  color: var(--t2); border-color: var(--b2); background: var(--b0);
-  box-shadow: none;
+  color: #D9922E; border-color: rgba(200,128,42,.85);
+  background: rgba(200,128,42,.08); box-shadow: none;
 }
 
 /* ============================================================
