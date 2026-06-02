@@ -1444,16 +1444,16 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 .btn-perfil  { color: #CE9221; border-color: rgba(206,146,33,.45); }
 .btn-wa-lead { color: #25d366; border-color: rgba(37,211,102,.40); }
 .btn-editar  { color: #CE9221; border-color: rgba(206,146,33,.45); }
-.btn-excluir { color: #e06450; border-color: rgba(224,100,80,.45); }
+.btn-excluir { color: #d06070; border-color: rgba(176,80,104,.45); }
 .btn-realizada { color: #4caf8e; border-color: rgba(76,175,142,.45); }
-.btn-noshow    { color: #e06450; border-color: rgba(224,100,80,.45); }
+.btn-noshow    { color: #d06070; border-color: rgba(176,80,104,.45); }
 .btn-perfil:hover, .btn-editar:hover {
   background: #1e2c28; border-color: rgba(206,146,33,.80);
   box-shadow: 0 0 10px rgba(206,146,33,.22);
 }
 .btn-excluir:hover, .btn-noshow:hover {
-  background: #221e1c; border-color: rgba(224,100,80,.80);
-  box-shadow: 0 0 10px rgba(224,100,80,.22);
+  background: rgba(107,39,55,.14); border-color: rgba(176,80,104,.80);
+  box-shadow: 0 0 10px rgba(176,80,104,.20);
 }
 .btn-wa-lead:hover {
   background: #1a2820; border-color: rgba(37,211,102,.75);

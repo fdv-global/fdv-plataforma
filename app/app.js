@@ -2370,7 +2370,7 @@ function renderAgendaSub() {
             <div class="agenda-card-btns">
               <button class="btn-ghost btn-sm btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}" title="${l.briefing?'Ver/Editar Briefing':'Adicionar Briefing'}">${l.briefing?'📋 Briefing':'+ Briefing'}</button>
               <button class="btn-ghost btn-sm btn-editar-agend" data-id="${l.id}" title="Editar agendamento">✏️</button>
-              <button class="btn-ghost btn-sm btn-excluir-agend" data-id="${l.id}" title="Excluir agendamento" style="color:var(--marsala)">🗑️</button>
+              <button class="btn-ghost btn-sm btn-excluir-agend btn-destructive" data-id="${l.id}" title="Excluir agendamento" >🗑️</button>
             </div>
           </div>`).join('')}
       </div>
@@ -2490,7 +2490,7 @@ function renderQualificados() {
       <td class="cell-acoes">
         <button class="btn-primary btn-sm" data-agendar="${l.id}">📅 Agendar</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">💬</button>
-        <button class="btn-ghost btn-sm" data-descartar="${l.id}" style="color:var(--marsala)">🚫 Descartar</button>
+        <button class="btn-ghost btn-sm btn-destructive" data-descartar="${l.id}" >🚫 Descartar</button>
       </td>
     </tr>`).join('');
     tbody.querySelectorAll('[data-perfil]').forEach(b =>
@@ -2575,7 +2575,7 @@ function renderAgendaHoje() {
             <div class="agenda-card-btns">
               <button class="btn-ghost btn-sm btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}" title="${l.briefing?'Ver/Editar Briefing':'Adicionar Briefing'}">${l.briefing?'📋 Briefing':'+ Briefing'}</button>
               <button class="btn-ghost btn-sm btn-editar-agend" data-id="${l.id}" title="Editar agendamento">✏️</button>
-              <button class="btn-ghost btn-sm btn-excluir-agend" data-id="${l.id}" title="Excluir agendamento" style="color:var(--marsala)">🗑️</button>
+              <button class="btn-ghost btn-sm btn-excluir-agend btn-destructive" data-id="${l.id}" title="Excluir agendamento" >🗑️</button>
             </div>
           </div>`).join('')}
       </div>
@@ -6144,7 +6144,7 @@ async function renderQuickRepliesPanel() {
           <td class="qr-td-text">${esc(r.texto)}</td>
           <td class="qr-td-acts">
             <button class="btn-ghost btn-sm qr-edit" data-id="${esc(r.id)}">Editar</button>
-            <button class="btn-ghost btn-sm qr-del" data-id="${esc(r.id)}" style="color:var(--marsala)">Excluir</button>
+            <button class="btn-ghost btn-sm qr-del btn-destructive" data-id="${esc(r.id)}" >Excluir</button>
           </td>
         </tr>`).join('')}
       </tbody>
@@ -6210,7 +6210,7 @@ async function renderLabelsPanel() {
       <span class="label-dot" style="background:${esc(l.cor)}"></span>
       <span class="label-admin-nome">${esc(l.nome)}</span>
       <button class="btn-icon label-e" data-id="${esc(l.id)}" title="Editar">✏</button>
-      <button class="btn-icon label-d" data-id="${esc(l.id)}" title="Excluir" style="color:var(--marsala)">✕</button>
+      <button class="btn-icon btn-excluir label-d" data-id="${esc(l.id)}" title="Excluir" >✕</button>
     </div>`).join('');
   grid.querySelectorAll('.label-e').forEach(btn => btn.addEventListener('click', () => openLabelForm(btn.dataset.id)));
   grid.querySelectorAll('.label-d').forEach(btn => btn.addEventListener('click', () => deleteLabel(btn.dataset.id)));
@@ -6736,7 +6736,7 @@ function renderInstanceCard(inst) {
     </div>
     <div class="wa-inst-actions">
       ${actionBtn}
-      <button class="btn-ghost btn-sm wa-btn-delete" data-id="${esc(inst.id)}" style="color:var(--marsala)">Excluir</button>
+      <button class="btn-ghost btn-sm wa-btn-delete btn-destructive" data-id="${esc(inst.id)}" >Excluir</button>
     </div>
   </div>`;
 }
@@ -6786,7 +6786,7 @@ function renderInstanciasModal() {
       <span class="wa-status ${st.cls}">${st.label}</span>
       <div class="im-row-actions">
         ${actionBtn}
-        <button class="btn-ghost btn-sm im-btn-delete" data-id="${esc(inst.id)}" style="color:var(--marsala)">Excluir</button>
+        <button class="btn-ghost btn-sm im-btn-delete btn-destructive" data-id="${esc(inst.id)}" >Excluir</button>
       </div>
     </div>`;
   }).join('');

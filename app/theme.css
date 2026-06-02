@@ -10,9 +10,9 @@
 html {
   min-height: 100vh;
   background:
-    linear-gradient(rgba(15, 21, 23, 0.45), rgba(15, 21, 23, 0.45)),
+    linear-gradient(rgba(15, 12, 8, 0.65), rgba(15, 12, 8, 0.65)),
     url('fdv-wallpaper.png') center / cover fixed;
-  background-color: #0c1214;
+  background-color: #0c0c08;
 }
 body {
   background: transparent !important;
@@ -197,6 +197,32 @@ h1, h2, h3, h4,
   filter: brightness(0.96) !important;
 }
 
+/* ── Destrutivo — ação irreversível (Descartar, Excluir) ────── */
+.btn-destructive,
+.btn-ghost.btn-destructive,
+.btn-confirm.btn-destructive {
+  background: transparent !important;
+  color: #d06070 !important;
+  border: 1px solid rgba(176, 80, 104, 0.50) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.btn-destructive:hover:not(:disabled),
+.btn-ghost.btn-destructive:hover:not(:disabled),
+.btn-confirm.btn-destructive:hover:not(:disabled) {
+  background: rgba(107, 39, 55, 0.14) !important;
+  border-color: rgba(176, 80, 104, 0.75) !important;
+  color: #e07888 !important;
+  transform: none !important;
+  filter: none !important;
+}
+.btn-destructive:disabled,
+.btn-confirm.btn-destructive:disabled {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+}
+
 /* ── 9. Login — Windows 11 style ───────────────────────────── */
 /* Wallpaper liberado (overlay 0.22) + painel no rodapé */
 #login-screen {
@@ -261,11 +287,11 @@ h1, h2, h3, h4,
 /* ── 10. Stat cards — glassmorphism contrastado ────────────── */
 /* Opacidade 32%, blur 24px, border-radius 20px */
 .stat-card {
-  background: rgba(12, 18, 20, 0.82) !important;
-  backdrop-filter: blur(24px) saturate(1.8) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(1.8) !important;
-  border: 1px solid rgba(206, 146, 33, 0.55) !important;
-  box-shadow: 0 0 12px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
+  background: rgba(15, 12, 8, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.28) !important;
   border-radius: 20px !important;
   animation: fdvFadeUp 220ms ease both;
   transition: transform 180ms cubic-bezier(.34,1.42,.64,1),
@@ -317,9 +343,9 @@ h1, h2, h3, h4,
 
 /* ── 12. Kanban — scale 1.04 + fdvFadeUp escalonado [D] ────── */
 .kanban-col {
-  background: rgba(18, 26, 28, 0.58) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
+  background: rgba(15, 12, 8, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
   border: 1px solid rgba(255, 255, 255, 0.06) !important;
   animation: fdvFadeUp 200ms ease both;
 }
@@ -337,11 +363,11 @@ h1, h2, h3, h4,
   border-bottom-color: rgba(255, 255, 255, 0.05) !important;
 }
 .kanban-card {
-  background: rgba(12, 18, 20, 0.85) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(206, 146, 33, 0.55) !important;
-  box-shadow: 0 0 12px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
+  background: rgba(15, 12, 8, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.28) !important;
   transition: border-color 200ms ease,
               box-shadow   200ms ease,
               transform    200ms cubic-bezier(.34,1.42,.64,1) !important;
@@ -359,19 +385,19 @@ h1, h2, h3, h4,
   letter-spacing: 0.08em !important;
 }
 .table-wrap {
-  background: rgba(20, 29, 31, 0.62) !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
-  border: 1px solid rgba(206, 146, 33, 0.55) !important;
-  box-shadow: 0 0 12px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
+  background: rgba(15, 12, 8, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.28) !important;
   border-radius: var(--r-lg) !important;
   overflow-x: auto !important;
 }
 .filters-bar {
-  background: rgba(10, 16, 18, 0.74) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.065) !important;
+  background: rgba(15, 12, 8, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
   border-radius: 16px !important;
 }
 /* Highlight de linha — interatividade na principal tela */
@@ -385,11 +411,11 @@ h1, h2, h3, h4,
 
 /* ── 14. WhatsApp — scale hover ────────────────────────────── */
 .wa-instance-card {
-  background: rgba(12, 18, 20, 0.85) !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
-  border: 1px solid rgba(206, 146, 33, 0.55) !important;
-  box-shadow: 0 0 12px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
+  background: rgba(15, 12, 8, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.28) !important;
   transition: border-color 200ms ease,
               box-shadow   200ms ease,
               transform    200ms cubic-bezier(.34,1.42,.64,1) !important;
@@ -400,23 +426,23 @@ h1, h2, h3, h4,
   transform: scale(1.04) !important;
 }
 .chats-layout {
-  background: rgba(16, 24, 26, 0.60) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  border: 1px solid rgba(206, 146, 33, 0.55) !important;
-  box-shadow: 0 0 12px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
+  background: rgba(15, 12, 8, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.28) !important;
 }
-.chats-sidebar      { background: rgba(18, 27, 29, 0.50) !important; }
-.chats-panel        { background: rgba(14, 21, 23, 0.55) !important; }
-.chats-panel-header { background: rgba(18, 27, 29, 0.62) !important; }
+.chats-sidebar      { background: rgba(15, 12, 8, 0.55) !important; }
+.chats-panel        { background: rgba(15, 12, 8, 0.45) !important; }
+.chats-panel-header { background: rgba(15, 12, 8, 0.65) !important; }
 
 /* ── 15. Relatórios ────────────────────────────────────────── */
 .rel-block {
-  background: rgba(22, 31, 33, 0.62) !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
-  border: 1px solid rgba(206, 146, 33, 0.55) !important;
-  box-shadow: 0 0 12px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
+  background: rgba(15, 12, 8, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.28) !important;
 }
 
 /* ── 16. Formulários — inputs semi-transparentes ───────────── */
@@ -449,13 +475,20 @@ h1, h2, h3, h4,
 .agenda-layout {
   background: transparent !important;
 }
+.agenda-group {
+  background: rgba(15, 12, 8, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.28) !important;
+}
 .briefing-card,
 .briefing-item {
-  background: rgba(12, 18, 20, 0.85) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(206, 146, 33, 0.55) !important;
-  box-shadow: 0 0 12px rgba(206,146,33,0.15), inset 0 0 0 1px rgba(206,146,33,0.08) !important;
+  background: rgba(15, 12, 8, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.28) !important;
   animation: fdvFadeUp 200ms ease both;
   transition: transform 200ms cubic-bezier(.34,1.42,.64,1),
               box-shadow  200ms ease,
@@ -856,10 +889,10 @@ h1, h2, h3, h4,
 }
 .leads-table td {
   padding: 10px 16px !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.028) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
 .leads-table tbody tr:nth-child(even) td {
-  background: rgba(255, 255, 255, 0.014) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
 }
 .leads-table tbody tr:hover td {
   background: rgba(206, 146, 33, 0.042) !important;
