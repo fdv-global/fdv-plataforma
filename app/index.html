@@ -185,14 +185,6 @@
           </select>
         </div>
         <div class="filter-group">
-          <label class="filter-label" for="filter-closer">Closer</label>
-          <select class="filter-select" id="filter-closer">
-            <option value="">Todos</option>
-            <option value="fernanda">Fernanda</option>
-            <option value="thomaz">Thomaz</option>
-          </select>
-        </div>
-        <div class="filter-group">
           <label class="filter-label" for="filter-renda">Renda</label>
           <select class="filter-select" id="filter-renda">
             <option value="">Todas</option>
@@ -215,30 +207,12 @@
           </select>
         </div>
         <div class="filter-group">
-          <label class="filter-label" for="filter-kanban">Kanban</label>
-          <select class="filter-select" id="filter-kanban">
-            <option value="">Todos</option>
-            <option value="agendado">Agendado</option>
-            <option value="call_realizada">Call Realizada</option>
-            <option value="negociacao">Negociação</option>
-            <option value="decisao">Decisão</option>
-            <option value="venda_ganha">Venda Ganha</option>
-            <option value="venda_perdida">Venda Perdida</option>
-          </select>
-        </div>
-        <div class="filter-group">
           <label class="filter-label" for="filter-chegada-de">Chegada de</label>
           <input type="date" class="filter-input filter-input--date" id="filter-chegada-de">
         </div>
         <div class="filter-group">
           <label class="filter-label" for="filter-chegada-ate">até</label>
           <input type="date" class="filter-input filter-input--date" id="filter-chegada-ate">
-        </div>
-        <div class="filter-group">
-          <label class="filter-label" for="filter-agendadopor">Agendado por</label>
-          <select class="filter-select" id="filter-agendadopor">
-            <option value="">Todos</option>
-          </select>
         </div>
         <div class="filter-group filter-group--search">
           <label class="filter-label" for="filter-busca">Buscar</label>
@@ -305,6 +279,61 @@
 
   <!-- ─── SUB: AGENDADOS ─── -->
   <div id="sub-agendados" class="sub-panel" style="display:none">
+
+    <!-- Filtros compartilhados: Hoje + Todos (ocultado no Briefing) -->
+    <div class="filters-bar" id="agend-filters-bar" style="margin-bottom:16px">
+      <div class="filters-row">
+        <div class="filter-group">
+          <label class="filter-label" for="agend-filter-origem">Origem</label>
+          <select class="filter-select" id="agend-filter-origem">
+            <option value="">Todas</option>
+            <option value="Instagram">Instagram</option>
+            <option value="Facebook">Facebook</option>
+            <option value="Indicação">Indicação</option>
+            <option value="Google">Google</option>
+            <option value="WhatsApp">WhatsApp</option>
+            <option value="Outros">Outros</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="agend-filter-closer">Closer</label>
+          <select class="filter-select" id="agend-filter-closer">
+            <option value="">Todos</option>
+            <option value="fernanda">Fernanda</option>
+            <option value="thomaz">Thomaz</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="agend-filter-agendadopor">Agendado por</label>
+          <select class="filter-select" id="agend-filter-agendadopor">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="agend-filter-renda">Renda</label>
+          <select class="filter-select" id="agend-filter-renda">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="agend-filter-chegada-de">Chegada de</label>
+          <input type="date" class="filter-input filter-input--date" id="agend-filter-chegada-de">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="agend-filter-chegada-ate">até</label>
+          <input type="date" class="filter-input filter-input--date" id="agend-filter-chegada-ate">
+        </div>
+        <div class="filter-group filter-group--search">
+          <label class="filter-label" for="agend-filter-busca">Buscar</label>
+          <div class="search-wrap">
+            <input type="text" class="filter-input" id="agend-filter-busca" placeholder="Nome ou celular…" autocomplete="off">
+            <span class="search-ico">⌕</span>
+          </div>
+        </div>
+        <button class="btn-clear" id="agend-btn-limpar">Limpar</button>
+      </div>
+    </div>
+
     <div class="sub-nav sub-nav--secondary">
       <button class="sub-link active" data-agendados-sub="hoje">Agenda de Hoje</button>
       <button class="sub-link" data-agendados-sub="todos">Todos os Agendamentos</button>

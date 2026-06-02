@@ -508,7 +508,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   border-radius: var(--r-lg); padding: 18px 22px; margin-bottom: 20px;
 }
 .filters-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
-.filter-group { display: flex; flex-direction: column; gap: 5px; min-width: 148px; max-width: 148px; }
+.filter-group { display: flex; flex-direction: column; gap: 5px; min-width: 165px; max-width: 200px; }
 .filter-group--search { flex: 1; min-width: 200px; }
 
 .filter-label {

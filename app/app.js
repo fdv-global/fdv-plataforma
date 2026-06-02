@@ -2248,10 +2248,13 @@ function populateFilterDropdowns() {
       values.map(v => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(v)}</option>`).join('');
   };
 
-  repopulate('filter-renda',       uniq(allLeads.map(l => l.renda)),       'Todas');
-  repopulate('filter-profissao',   uniq(allLeads.map(l => l.profissao)),   'Todas');
-  repopulate('filter-agendadopor', uniq(allLeads.map(l => l.agendadopor)), 'Todos');
-  repopulate('filter-etiqueta',    uniq(allLeads.flatMap(l => l.etiquetas || [])), 'Todas');
+  repopulate('filter-renda',            uniq(allLeads.map(l => l.renda)),       'Todas');
+  repopulate('filter-profissao',        uniq(allLeads.map(l => l.profissao)),   'Todas');
+  repopulate('filter-agendadopor',      uniq(allLeads.map(l => l.agendadopor)), 'Todos');
+  repopulate('filter-etiqueta',         uniq(allLeads.flatMap(l => l.etiquetas || [])), 'Todas');
+  // Filtros da aba Agendados
+  repopulate('agend-filter-renda',      uniq(allLeads.map(l => l.renda)),       'Todas');
+  repopulate('agend-filter-agendadopor',uniq(allLeads.map(l => l.agendadopor)), 'Todos');
 
   const KANBAN_LABELS = {
     agendado:'Agendado', call_realizada:'Call Realizada', negociacao:'Negociação',
@@ -2310,10 +2313,16 @@ function applyFilters() {
 
 // ─── AGENDA SUB ──────────────────────────────────────────────────────
 function renderAgendaSub() {
-  const dataFilt   = $('agenda-filter-data')?.value;
-  const mesFilt    = $('agenda-filter-mes').value;
-  const closerFilt = $('agenda-filter-closer').value;
-  const content    = $('agenda-content');
+  const dataFilt       = $('agenda-filter-data')?.value;
+  const mesFilt        = $('agenda-filter-mes')?.value || '';
+  const closerFilt     = $('agend-filter-closer')?.value || '';
+  const origemFilt     = $('agend-filter-origem')?.value || '';
+  const agendadoporFilt= $('agend-filter-agendadopor')?.value || '';
+  const rendaFilt      = $('agend-filter-renda')?.value || '';
+  const chegadaDe      = $('agend-filter-chegada-de')?.value || '';
+  const chegadaAte     = $('agend-filter-chegada-ate')?.value || '';
+  const busca          = ($('agend-filter-busca')?.value || '').toLowerCase().trim();
+  const content        = $('agenda-content');
 
   // Mini cal — inicializa no mês atual se for a primeira vez
   if (agendaCalYear === 0) { const n = new Date(); agendaCalYear = n.getFullYear(); agendaCalMonth = n.getMonth(); }
@@ -2322,7 +2331,13 @@ function renderAgendaSub() {
   let leads = allLeads.filter(l => l.status === 'agendado');
   if (dataFilt)          leads = leads.filter(l => l.dataagendamento === dataFilt);
   else if (mesFilt)      leads = leads.filter(l => (l.dataagendamento || '').startsWith(mesFilt));
-  if (closerFilt) leads = leads.filter(l => (l.closer || '') === closerFilt);
+  if (closerFilt)      leads = leads.filter(l => (l.closer || '') === closerFilt);
+  if (origemFilt)      leads = leads.filter(l => l.origem === origemFilt);
+  if (agendadoporFilt) leads = leads.filter(l => l.agendadopor === agendadoporFilt);
+  if (rendaFilt)       leads = leads.filter(l => l.renda === rendaFilt);
+  if (chegadaDe)       leads = leads.filter(l => (l.datachegada||'') >= chegadaDe);
+  if (chegadaAte)      leads = leads.filter(l => (l.datachegada||'') <= chegadaAte);
+  if (busca)           leads = leads.filter(l => (l.nome||'').toLowerCase().includes(busca) || (l.celular||'').includes(busca));
 
   if (!leads.length) {
     content.innerHTML = `<div class="agenda-empty">
@@ -2458,11 +2473,43 @@ function renderQualificados() {
     lucide.createIcons({ nodes: [el] });
     return;
   }
+  const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  const origemOpts = ['Instagram','Facebook','Indicação','Google','WhatsApp','Outros',...uniq(allQual.map(l=>l.origem))];
+  const rendaOpts  = uniq(allQual.map(l=>l.renda));
+
   el.innerHTML = `
-    <div class="sub-search-bar">
-      <div class="search-wrap" style="max-width:320px">
-        <input type="text" class="filter-input" id="qual-busca" placeholder="Buscar por nome ou celular…" autocomplete="off">
-        <span class="search-ico">⌕</span>
+    <div class="filters-bar" style="margin-bottom:14px">
+      <div class="filters-row">
+        <div class="filter-group">
+          <label class="filter-label">Origem</label>
+          <select class="filter-select" id="qual-filter-origem">
+            <option value="">Todas</option>
+            ${[...new Set(origemOpts)].map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Renda</label>
+          <select class="filter-select" id="qual-filter-renda">
+            <option value="">Todas</option>
+            ${rendaOpts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Chegada de</label>
+          <input type="date" class="filter-input filter-input--date" id="qual-filter-chegada-de">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">até</label>
+          <input type="date" class="filter-input filter-input--date" id="qual-filter-chegada-ate">
+        </div>
+        <div class="filter-group filter-group--search">
+          <label class="filter-label">Buscar</label>
+          <div class="search-wrap">
+            <input type="text" class="filter-input" id="qual-busca" placeholder="Nome ou celular…" autocomplete="off">
+            <span class="search-ico">⌕</span>
+          </div>
+        </div>
+        <button class="btn-clear" id="qual-limpar">Limpar</button>
       </div>
     </div>
     <div class="table-wrap"><table class="leads-table">
@@ -2473,8 +2520,19 @@ function renderQualificados() {
     </table></div>`;
 
   function renderQualTbody() {
-    const q = ($('qual-busca').value || '').toLowerCase().trim();
-    const leads = allQual.filter(l => !q || (l.nome||'').toLowerCase().includes(q) || (l.celular||'').includes(q));
+    const origem   = $('qual-filter-origem')?.value || '';
+    const renda    = $('qual-filter-renda')?.value || '';
+    const de       = $('qual-filter-chegada-de')?.value || '';
+    const ate      = $('qual-filter-chegada-ate')?.value || '';
+    const q        = ($('qual-busca').value || '').toLowerCase().trim();
+    const leads = allQual.filter(l => {
+      if (origem && l.origem !== origem) return false;
+      if (renda  && l.renda  !== renda)  return false;
+      if (de     && (l.datachegada||'') < de)  return false;
+      if (ate    && (l.datachegada||'') > ate) return false;
+      if (q && !(l.nome||'').toLowerCase().includes(q) && !(l.celular||'').includes(q)) return false;
+      return true;
+    });
     const tbody = $('qual-tbody');
     if (!leads.length) {
       tbody.innerHTML = `<tr><td colspan="7" style="padding:32px;text-align:center;color:var(--t3)">Nenhum resultado.</td></tr>`;
@@ -2507,7 +2565,12 @@ function renderQualificados() {
     );
   }
 
+  ['qual-filter-origem','qual-filter-renda','qual-filter-chegada-de','qual-filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', renderQualTbody); });
   $('qual-busca').addEventListener('input', renderQualTbody);
+  $('qual-limpar')?.addEventListener('click', () => {
+    ['qual-filter-origem','qual-filter-renda','qual-filter-chegada-de','qual-filter-chegada-ate','qual-busca'].forEach(id=>{const el=$(id);if(el)el.value='';});
+    renderQualTbody();
+  });
   renderQualTbody();
 }
 
@@ -2520,6 +2583,9 @@ function switchAgendadosSub(sub) {
   document.querySelectorAll('#sub-agendados [data-agendados-sub]').forEach(l =>
     l.classList.toggle('active', l.dataset.agendadosSub === sub)
   );
+  // Barra de filtros compartilhada: visível em Hoje e Todos, oculta no Briefing
+  const agendBar = $('agend-filters-bar');
+  if (agendBar) agendBar.style.display = sub === 'briefing' ? 'none' : '';
   renderAgendadosSub();
 }
 
@@ -2531,11 +2597,26 @@ function renderAgendadosSub() {
 
 // ─── AGENDA DE HOJE ──────────────────────────────────────────────────
 function renderAgendaHoje() {
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const content  = $('agenda-hoje-content');
+  const todayStr       = new Date().toISOString().slice(0, 10);
+  const content        = $('agenda-hoje-content');
   if (!content) return;
 
+  const closerFilt     = $('agend-filter-closer')?.value || '';
+  const origemFilt     = $('agend-filter-origem')?.value || '';
+  const agendadoporFilt= $('agend-filter-agendadopor')?.value || '';
+  const rendaFilt      = $('agend-filter-renda')?.value || '';
+  const chegadaDe      = $('agend-filter-chegada-de')?.value || '';
+  const chegadaAte     = $('agend-filter-chegada-ate')?.value || '';
+  const busca          = ($('agend-filter-busca')?.value || '').toLowerCase().trim();
+
   let leads = allLeads.filter(l => l.status === 'agendado' && l.dataagendamento === todayStr);
+  if (closerFilt)      leads = leads.filter(l => (l.closer||'') === closerFilt);
+  if (origemFilt)      leads = leads.filter(l => l.origem === origemFilt);
+  if (agendadoporFilt) leads = leads.filter(l => l.agendadopor === agendadoporFilt);
+  if (rendaFilt)       leads = leads.filter(l => l.renda === rendaFilt);
+  if (chegadaDe)       leads = leads.filter(l => (l.datachegada||'') >= chegadaDe);
+  if (chegadaAte)      leads = leads.filter(l => (l.datachegada||'') <= chegadaAte);
+  if (busca)           leads = leads.filter(l => (l.nome||'').toLowerCase().includes(busca) || (l.celular||'').includes(busca));
   leads.sort((a,b) => (a.horaagendamento||'').localeCompare(b.horaagendamento||''));
 
   if (!leads.length) {
@@ -2635,11 +2716,50 @@ function renderDescartados() {
     lucide.createIcons({ nodes: [el] });
     return;
   }
+  const uniq2 = arr => [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  const origemOptsD = ['Instagram','Facebook','Indicação','Google','WhatsApp','Outros',...uniq2(allDesc.map(l=>l.origem))];
+  const rendaOptsD  = uniq2(allDesc.map(l=>l.renda));
+
   el.innerHTML = `
-    <div class="sub-search-bar">
-      <div class="search-wrap" style="max-width:320px">
-        <input type="text" class="filter-input" id="desc-busca" placeholder="Buscar por nome ou celular…" autocomplete="off">
-        <span class="search-ico">⌕</span>
+    <div class="filters-bar" style="margin-bottom:14px">
+      <div class="filters-row">
+        <div class="filter-group">
+          <label class="filter-label">Origem</label>
+          <select class="filter-select" id="desc-filter-origem">
+            <option value="">Todas</option>
+            ${[...new Set(origemOptsD)].map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Renda</label>
+          <select class="filter-select" id="desc-filter-renda">
+            <option value="">Todas</option>
+            ${rendaOptsD.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Motivo</label>
+          <select class="filter-select" id="desc-filter-motivo">
+            <option value="">Todos</option>
+            ${MOTIVOS_DESCARTE.map(m=>`<option value="${esc(m.id)}">${esc(m.label)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Chegada de</label>
+          <input type="date" class="filter-input filter-input--date" id="desc-filter-chegada-de">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">até</label>
+          <input type="date" class="filter-input filter-input--date" id="desc-filter-chegada-ate">
+        </div>
+        <div class="filter-group filter-group--search">
+          <label class="filter-label">Buscar</label>
+          <div class="search-wrap">
+            <input type="text" class="filter-input" id="desc-busca" placeholder="Nome ou celular…" autocomplete="off">
+            <span class="search-ico">⌕</span>
+          </div>
+        </div>
+        <button class="btn-clear" id="desc-limpar">Limpar</button>
       </div>
     </div>
     <div class="table-wrap"><table class="leads-table">
@@ -2650,8 +2770,21 @@ function renderDescartados() {
     </table></div>`;
 
   function renderDescTbody() {
-    const q = ($('desc-busca').value || '').toLowerCase().trim();
-    const leads = allDesc.filter(l => !q || (l.nome||'').toLowerCase().includes(q) || (l.celular||'').includes(q));
+    const origem = $('desc-filter-origem')?.value || '';
+    const renda  = $('desc-filter-renda')?.value  || '';
+    const motivo = $('desc-filter-motivo')?.value  || '';
+    const de     = $('desc-filter-chegada-de')?.value || '';
+    const ate    = $('desc-filter-chegada-ate')?.value || '';
+    const q      = ($('desc-busca').value || '').toLowerCase().trim();
+    const leads = allDesc.filter(l => {
+      if (origem && l.origem !== origem) return false;
+      if (renda  && l.renda  !== renda)  return false;
+      if (motivo && l.motivo_descarte !== motivo) return false;
+      if (de     && (l.datachegada||'') < de)  return false;
+      if (ate    && (l.datachegada||'') > ate) return false;
+      if (q && !(l.nome||'').toLowerCase().includes(q) && !(l.celular||'').includes(q)) return false;
+      return true;
+    });
     const tbody = $('desc-tbody');
     if (!leads.length) {
       tbody.innerHTML = `<tr><td colspan="6" style="padding:32px;text-align:center;color:var(--t3)">Nenhum resultado.</td></tr>`;
@@ -2679,7 +2812,12 @@ function renderDescartados() {
     );
   }
 
+  ['desc-filter-origem','desc-filter-renda','desc-filter-motivo','desc-filter-chegada-de','desc-filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', renderDescTbody); });
   $('desc-busca').addEventListener('input', renderDescTbody);
+  $('desc-limpar')?.addEventListener('click', () => {
+    ['desc-filter-origem','desc-filter-renda','desc-filter-motivo','desc-filter-chegada-de','desc-filter-chegada-ate','desc-busca'].forEach(id=>{const el=$(id);if(el)el.value='';});
+    renderDescTbody();
+  });
   renderDescTbody();
 }
 
@@ -7086,17 +7224,26 @@ function bindEvents() {
     btn.addEventListener('click', () => switchFinanceiroSub(btn.dataset.financeiroSub))
   );
 
-  // Leads filters
-  ['filter-status','filter-origem','filter-mes','filter-closer','filter-renda','filter-profissao','filter-etiqueta','filter-kanban','filter-chegada-de','filter-chegada-ate','filter-agendadopor'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', applyFilters); });
+  // Leads filters (Novos)
+  ['filter-status','filter-origem','filter-mes','filter-renda','filter-profissao','filter-etiqueta','filter-chegada-de','filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', applyFilters); });
   ['filter-busca'].forEach(id => { const el=$(id); if(el) el.addEventListener('input', applyFilters); });
   $('btn-limpar').addEventListener('click', () => {
-    ['filter-status','filter-origem','filter-mes','filter-closer','filter-renda','filter-profissao','filter-etiqueta','filter-kanban','filter-agendadopor'].forEach(id => { const el=$(id); if(el) el.value=''; });
+    ['filter-status','filter-origem','filter-mes','filter-renda','filter-profissao','filter-etiqueta'].forEach(id => { const el=$(id); if(el) el.value=''; });
     ['filter-busca','filter-chegada-de','filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.value=''; });
     applyFilters();
   });
 
-  // Agenda filters
-  ['agenda-filter-mes','agenda-filter-closer'].forEach(id => $(id).addEventListener('change', renderAgendaSub));
+  // Filtros do sub Agendados (Hoje + Todos)
+  ['agend-filter-origem','agend-filter-closer','agend-filter-agendadopor','agend-filter-renda','agend-filter-chegada-de','agend-filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', renderAgendadosSub); });
+  $('agend-filter-busca')?.addEventListener('input', renderAgendadosSub);
+  $('agend-btn-limpar')?.addEventListener('click', () => {
+    ['agend-filter-origem','agend-filter-closer','agend-filter-agendadopor','agend-filter-renda','agend-filter-chegada-de','agend-filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.value=''; });
+    const b = $('agend-filter-busca'); if(b) b.value = '';
+    renderAgendadosSub();
+  });
+
+  // Agenda filters (Todos — legacy selects no sub-panel)
+  ['agenda-filter-mes','agenda-filter-closer'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', renderAgendaSub); });
   $('agenda-filter-data')?.addEventListener('change', renderAgendaSub);
   $('btn-gerar-agenda').addEventListener('click', gerarAgendaDoDia);
 
