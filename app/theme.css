@@ -400,7 +400,25 @@ h1, h2, h3, h4,
   border: 1px solid rgba(255, 255, 255, 0.06) !important;
   border-radius: 16px !important;
 }
-/* Inputs dentro da barra de filtros — sem container próprio, fundem no painel */
+/* Stats dentro do painel unificado — sem glass próprio */
+.filters-bar .stat-card {
+  background: rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+.filters-bar .stat-card:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+}
+/* Separador visual entre métricas e filtros */
+.filters-bar .stats-grid {
+  margin-bottom: 20px !important;
+  padding-bottom: 20px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+/* Inputs dentro do painel — sem container próprio, fundem no painel */
 .filters-bar .filter-select,
 .filters-bar .filter-input {
   background: rgba(255, 255, 255, 0.05) !important;
