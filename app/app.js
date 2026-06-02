@@ -2423,17 +2423,22 @@ function renderBriefingSub() {
           <button class="briefing-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
           <span class="briefing-meta">${fmtDateHora(l.dataagendamento,l.horaagendamento)} · ${esc(closerName)}</span>
         </div>
-        <button class="btn-ghost btn-sm btn-briefing-open has-briefing" data-id="${l.id}">✏️ Editar</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn-ghost btn-sm btn-ver-briefing" data-id="${l.id}">Ver Briefing</button>
+          <button class="btn-ghost btn-sm btn-briefing-open has-briefing" data-id="${l.id}">✏️ Editar</button>
+        </div>
       </div>
-      <div class="briefing-text">${esc(l.briefing).replace(/\n/g,'<br>')}</div>
     </div>`;
   }).join('')}</div>`;
 
   content.querySelectorAll('[data-perfil]').forEach(b =>
     b.addEventListener('click', () => { const l = allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
   );
+  content.querySelectorAll('.btn-ver-briefing').forEach(b =>
+    b.addEventListener('click', () => { const l = allLeads.find(x=>x.id===b.dataset.id); if(l) openBriefing(l, true); })
+  );
   content.querySelectorAll('.btn-briefing-open').forEach(b =>
-    b.addEventListener('click', () => { const l = allLeads.find(x=>x.id===b.dataset.id); if(l) openBriefing(l); })
+    b.addEventListener('click', () => { const l = allLeads.find(x=>x.id===b.dataset.id); if(l) openBriefing(l, false); })
   );
 }
 
@@ -3784,14 +3789,20 @@ async function deleteLead(id) {
 // ─── BRIEFING ────────────────────────────────────────────────────────
 let briefingLeadId = null;
 
-function openBriefing(lead) {
+function openBriefing(lead, readOnly = false) {
   briefingLeadId = lead.id;
   $('briefing-lead-name').textContent = lead.nome || '—';
-  $('briefing-textarea').value = lead.briefing || '';
-  if (!lead.briefing) $('briefing-textarea').placeholder = 'Nenhum briefing adicionado ainda. Cole ou escreva aqui…';
+  const ta = $('briefing-textarea');
+  ta.value = lead.briefing || '';
+  ta.readOnly = readOnly;
+  ta.placeholder = readOnly ? '' : 'Nenhum briefing adicionado ainda. Cole ou escreva aqui…';
+  const btnSalvar = $('btn-salvar-briefing');
+  const btnCancelar = $('briefing-cancelar');
+  btnSalvar.style.display = readOnly ? 'none' : '';
+  btnCancelar.textContent = readOnly ? 'Fechar' : 'Cancelar';
   $('briefing-backdrop').classList.add('open');
   document.body.style.overflow = 'hidden';
-  setTimeout(() => $('briefing-textarea').focus(), 50);
+  if (!readOnly) setTimeout(() => ta.focus(), 50);
 }
 
 function closeBriefing() {
