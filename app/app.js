@@ -2546,6 +2546,7 @@ function renderQualificados() {
         <button class="btn-primary btn-sm" data-agendar="${l.id}">📅 Agendar</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">💬</button>
         <button class="btn-ghost btn-sm btn-destructive" data-descartar="${l.id}" >🚫 Descartar</button>
+        <button class="btn-ghost btn-sm btn-destructive" data-excluir="${l.id}">Excluir</button>
       </td>
     </tr>`).join('');
     tbody.querySelectorAll('[data-perfil]').forEach(b =>
@@ -2559,6 +2560,9 @@ function renderQualificados() {
     );
     tbody.querySelectorAll('[data-descartar]').forEach(b =>
       b.addEventListener('click', () => openDescarteModal(b.dataset.descartar))
+    );
+    tbody.querySelectorAll('[data-excluir]').forEach(b =>
+      b.addEventListener('click', () => deleteLead(b.dataset.excluir))
     );
   }
 
@@ -2796,6 +2800,7 @@ function renderDescartados() {
       <td class="cell-acoes">
         <button class="btn-ghost btn-sm" data-reativar="${l.id}">↩ Reativar</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">💬</button>
+        <button class="btn-ghost btn-sm btn-destructive" data-excluir="${l.id}">Excluir</button>
       </td>
     </tr>`).join('');
     tbody.querySelectorAll('[data-perfil]').forEach(b =>
@@ -2806,6 +2811,9 @@ function renderDescartados() {
     );
     tbody.querySelectorAll('.btn-wa-lead').forEach(b =>
       b.addEventListener('click', () => openWaChatFromLead(b.dataset.id))
+    );
+    tbody.querySelectorAll('[data-excluir]').forEach(b =>
+      b.addEventListener('click', () => deleteLead(b.dataset.excluir))
     );
   }
 
