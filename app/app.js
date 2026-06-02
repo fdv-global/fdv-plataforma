@@ -924,7 +924,7 @@ function renderComercial() {
       <div class="module-landing-header">
         <div class="module-landing-header-icon"
              style="background:var(--gold-10);border:1px solid var(--gold-22)">
-          <i data-lucide="crown" style="color:var(--gold)"></i>
+          <i data-lucide="trees" style="color:var(--gold)"></i>
         </div>
         <div>
           <h1>Comercial</h1>
