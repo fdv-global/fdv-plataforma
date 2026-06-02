@@ -3575,15 +3575,14 @@ function renderTable() {
     const etiq = (l.etiquetas||[]).length
       ? (l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')
       : '—';
-    return `<tr data-id="${l.id}" class="${selectedIds.has(l.id)?'row-selected':''}">
+    return `<tr data-id="${l.id}" class="${selectedIds.has(l.id)?'row-selected':''}" style="cursor:pointer">
       <td class="cell-chk"><input type="checkbox" class="row-chk" data-id="${l.id}" ${selectedIds.has(l.id)?'checked':''}></td>
       <td class="cell-data-chegou">${fmtDate(l.datachegada)}</td>
-      <td class="cell-nome"><button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
+      <td class="cell-nome">${esc(l.nome||'—')}</td>
       <td class="cell-fone">${esc(l.celular||'—')}</td>
       <td>${badgeOrigem(l.origem)}</td>
       <td class="cell-renda" title="${esc(l.renda||'')}">${esc(abrevRenda(l.renda))}</td>
       <td>${etiq}</td>
-      <td>${badgeStatus(l.status)}</td>
       <td class="cell-acoes">${btnAcao(l)}</td>
     </tr>`;
   }).join('');
@@ -3603,9 +3602,14 @@ function renderTable() {
       $('chk-all').indeterminate = !all && filteredLeads.some(l => selectedIds.has(l.id));
     })
   );
-  tbody.querySelectorAll('[data-perfil]').forEach(b =>
-    b.addEventListener('click', e => { e.stopPropagation(); const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
-  );
+  // Clique na linha abre perfil (exceto em botões, inputs e ações)
+  tbody.querySelectorAll('tr[data-id]').forEach(tr => {
+    tr.addEventListener('click', e => {
+      if (e.target.closest('button, input, a, .acoes-cell')) return;
+      const l = allLeads.find(x => x.id === tr.dataset.id);
+      if (l) openPerfil(l);
+    });
+  });
   tbody.querySelectorAll('[data-action]').forEach(b =>
     b.addEventListener('click', e => { e.stopPropagation(); handleAction(b.dataset.id, b.dataset.action); })
   );
@@ -3696,7 +3700,7 @@ function btnAcao(l) {
   const icoDoc   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
 
   let primary = '';
-  if      (st === 'aguardando')                  primary = `<button class="btn-acao-inline btn-qualificar"     data-id="${id}" data-action="qualificar-lead" title="Qualificar este lead">✓ Qualificar</button><button class="btn-acao-inline btn-nao-qualificar" data-id="${id}" data-action="descartar" title="Não qualificar / descartar">✕ Não Qualificar</button>`;
+  if      (st === 'aguardando')                  primary = `<button class="btn-acao-inline btn-qualificar"     data-id="${id}" data-action="qualificar-lead" title="Qualificar este lead">Qualificado</button><button class="btn-acao-inline btn-nao-qualificar" data-id="${id}" data-action="descartar" title="Não qualificar / descartar">Não Qualificado</button>`;
   else if (st === 'qualificado')                 primary = `<button class="btn-acao-inline btn-agendar"        data-id="${id}" data-action="agendar"         title="Agendar call">📅 Agendar</button>`;
   else if (st === 'agendado' || st === 'noshow') primary = `<button class="btn-acao-inline btn-remarcar"       data-id="${id}" data-action="agendar"         title="Remarcar call">🔄 Remarcar</button>`;
   else if (st === 'realizada')                   primary = `<button class="btn-acao-inline btn-ver"            data-id="${id}" data-action="ver"             title="Ver resultado da call">📋 Resultado</button>`;
@@ -3713,7 +3717,6 @@ function btnAcao(l) {
 
   return `<div class="acoes-cell">
     ${primary}${postcall}
-    <button class="btn-icon btn-perfil"  data-id="${id}" data-action="qualificar" title="Ver Perfil">${icoEye}</button>
     ${briefingBtn}
     <button class="btn-icon btn-wa-lead" data-id="${id}" title="Abrir no WhatsApp">${icoChat}</button>
     <button class="btn-icon btn-editar"  data-id="${id}" data-action="editar"     title="Editar lead">${icoPen}</button>
