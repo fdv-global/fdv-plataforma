@@ -955,6 +955,18 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 .briefing-lbl   { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .9px; color: var(--t3); }
 .briefing-val   { font-size: 13px; font-weight: 500; color: var(--t1); word-break: break-word; }
 
+.briefing-text {
+  padding: 16px 22px;
+  font-size: 13.5px; font-weight: 400; color: var(--t1);
+  line-height: 1.7; white-space: pre-wrap; word-break: break-word;
+}
+
+/* Botão de briefing com indicador visual quando já preenchido */
+.btn-briefing-open.has-briefing {
+  color: var(--petro-l);
+  border-color: rgba(77,181,200,.35);
+}
+
 /* ============================================================
    KANBAN — Attio board
    ============================================================ */

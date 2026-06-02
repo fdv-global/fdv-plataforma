@@ -2369,7 +2369,7 @@ function renderAgendaSub() {
               ${(l.etiquetas||[]).length ? `<div class="card-etiquetas">${(l.etiquetas||[]).map(t=>etiquetaChip(t,true)).join('')}</div>` : ''}
             </div>
             <div class="agenda-card-btns">
-              <button class="btn-ghost btn-sm btn-briefing" data-id="${l.id}">Copiar Briefing</button>
+              <button class="btn-ghost btn-sm btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}" title="${l.briefing?'Ver/Editar Briefing':'Adicionar Briefing'}">${l.briefing?'📋 Briefing':'+ Briefing'}</button>
               <button class="btn-ghost btn-sm btn-editar-agend" data-id="${l.id}" title="Editar agendamento">✏️</button>
               <button class="btn-ghost btn-sm btn-excluir-agend" data-id="${l.id}" title="Excluir agendamento" style="color:var(--marsala)">🗑️</button>
             </div>
@@ -2381,8 +2381,8 @@ function renderAgendaSub() {
   content.querySelectorAll('[data-perfil]').forEach(b =>
     b.addEventListener('click', () => { const l = allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
   );
-  content.querySelectorAll('.btn-briefing').forEach(b =>
-    b.addEventListener('click', () => { const l = allLeads.find(x=>x.id===b.dataset.id); if(l) gerarBriefingLead(l); })
+  content.querySelectorAll('.btn-briefing-open').forEach(b =>
+    b.addEventListener('click', () => { const l = allLeads.find(x=>x.id===b.dataset.id); if(l) openBriefing(l); })
   );
   content.querySelectorAll('.btn-editar-agend').forEach(b =>
     b.addEventListener('click', () => { const l = allLeads.find(x=>x.id===b.dataset.id); if(l) openEditarAgendamento(l); })
@@ -2399,50 +2399,41 @@ function renderBriefingSub() {
   const closerFilt = $('briefing-filter-closer').value;
   const content    = $('briefing-content');
 
-  let leads = allLeads.filter(l => l.dataagendamento);
-  if (dataFilt)          leads = leads.filter(l => l.dataagendamento === dataFilt);
-  else if (mesFilt)      leads = leads.filter(l => (l.dataagendamento||'').startsWith(mesFilt));
-  if (closerFilt) leads = leads.filter(l => (l.closer||'') === closerFilt);
+  // Apenas leads com briefing preenchido
+  let leads = allLeads.filter(l => l.dataagendamento && l.briefing);
+  if (dataFilt)     leads = leads.filter(l => l.dataagendamento === dataFilt);
+  else if (mesFilt) leads = leads.filter(l => (l.dataagendamento||'').startsWith(mesFilt));
+  if (closerFilt)   leads = leads.filter(l => (l.closer||'') === closerFilt);
   leads.sort((a,b) => ((a.dataagendamento||'')+(a.horaagendamento||'')).localeCompare((b.dataagendamento||'')+(b.horaagendamento||'')));
 
   if (!leads.length) {
     content.innerHTML = `<div class="agenda-empty">
       <i data-lucide="clipboard-list" class="empty-lucide"></i>
-      <h3>Nenhum briefing disponível</h3><p>Sem leads agendados para os filtros selecionados.</p></div>`;
+      <h3>Nenhum briefing preenchido</h3>
+      <p>Briefings adicionados via aba Agendados aparecerão aqui.</p></div>`;
     lucide.createIcons();
     return;
   }
 
   content.innerHTML = `<div class="briefing-list">${leads.map(l => {
     const closerName = l.closer ? (CLOSERS[l.closer]?.name||l.closer) : '—';
-    const fields = [
-      ['Nome', l.nome], ['Celular', l.celular], ['E-mail', l.email],
-      ['Instagram', l.instagram], ['Profissão', l.profissao], ['Renda', l.renda],
-      ['Origem', l.origem], ['Call', l.dataagendamento ? `${fmtDate(l.dataagendamento)} às ${l.horaagendamento||'—'}` : null],
-      ['Closer', closerName], ['Agendado por', l.agendadopor],
-      ['Etiquetas', (l.etiquetas||[]).join(', ')],
-      ['Observações', l.observacoes],
-    ].filter(([,v]) => v);
-
     return `<div class="briefing-card">
       <div class="briefing-card-head">
         <div>
           <button class="briefing-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
           <span class="briefing-meta">${fmtDateHora(l.dataagendamento,l.horaagendamento)} · ${esc(closerName)}</span>
         </div>
-        <button class="btn-ghost btn-sm btn-briefing" data-id="${l.id}">📋 Copiar</button>
+        <button class="btn-ghost btn-sm btn-briefing-open has-briefing" data-id="${l.id}">✏️ Editar</button>
       </div>
-      <div class="briefing-fields">
-        ${fields.map(([l,v])=>`<div class="briefing-field"><span class="briefing-lbl">${esc(l)}</span><span class="briefing-val">${esc(v||'—')}</span></div>`).join('')}
-      </div>
+      <div class="briefing-text">${esc(l.briefing).replace(/\n/g,'<br>')}</div>
     </div>`;
   }).join('')}</div>`;
 
   content.querySelectorAll('[data-perfil]').forEach(b =>
     b.addEventListener('click', () => { const l = allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
   );
-  content.querySelectorAll('.btn-briefing').forEach(b =>
-    b.addEventListener('click', () => { const l = allLeads.find(x=>x.id===b.dataset.id); if(l) gerarBriefingLead(l); })
+  content.querySelectorAll('.btn-briefing-open').forEach(b =>
+    b.addEventListener('click', () => { const l = allLeads.find(x=>x.id===b.dataset.id); if(l) openBriefing(l); })
   );
 }
 
@@ -2557,7 +2548,7 @@ function renderAgendaHoje() {
               ${(l.etiquetas||[]).length ? `<div class="card-etiquetas">${(l.etiquetas||[]).map(t=>etiquetaChip(t,true)).join('')}</div>` : ''}
             </div>
             <div class="agenda-card-btns">
-              <button class="btn-ghost btn-sm btn-briefing" data-id="${l.id}">Copiar Briefing</button>
+              <button class="btn-ghost btn-sm btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}" title="${l.briefing?'Ver/Editar Briefing':'Adicionar Briefing'}">${l.briefing?'📋 Briefing':'+ Briefing'}</button>
               <button class="btn-ghost btn-sm btn-editar-agend" data-id="${l.id}" title="Editar agendamento">✏️</button>
               <button class="btn-ghost btn-sm btn-excluir-agend" data-id="${l.id}" title="Excluir agendamento" style="color:var(--marsala)">🗑️</button>
             </div>
@@ -2569,8 +2560,8 @@ function renderAgendaHoje() {
   content.querySelectorAll('[data-perfil]').forEach(b =>
     b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
   );
-  content.querySelectorAll('.btn-briefing').forEach(b =>
-    b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.id); if(l) gerarBriefingLead(l); })
+  content.querySelectorAll('.btn-briefing-open').forEach(b =>
+    b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.id); if(l) openBriefing(l); })
   );
   content.querySelectorAll('.btn-editar-agend').forEach(b =>
     b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.id); if(l) openEditarAgendamento(l); })
@@ -3823,6 +3814,8 @@ async function salvarBriefing() {
     if (lead) lead.briefing = texto || null;
     toast('Briefing salvo.', 'ok');
     closeBriefing();
+    // Atualiza a aba Briefing se estiver ativa
+    if (activeAgendadosSub === 'briefing') renderBriefingSub();
   } catch(e) {
     console.error(e);
     toast('Erro ao salvar briefing.', 'err');
