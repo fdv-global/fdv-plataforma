@@ -885,15 +885,16 @@
       </div>
       <div class="form-group">
         <label for="nl-origem">Origem</label>
-        <select id="nl-origem" class="form-ctrl">
-          <option value="">Selecione a origem…</option>
-          <option value="Instagram">Instagram</option>
-          <option value="Facebook">Facebook</option>
-          <option value="Indicação">Indicação</option>
-          <option value="Google">Google</option>
-          <option value="WhatsApp">WhatsApp</option>
-          <option value="Outros">Outros</option>
-        </select>
+        <input type="text" id="nl-origem" class="form-ctrl" list="nl-origem-list"
+               placeholder="Ex: Instagram, Indicação…" autocomplete="off">
+        <datalist id="nl-origem-list">
+          <option value="Instagram">
+          <option value="Facebook">
+          <option value="Indicação">
+          <option value="Google">
+          <option value="WhatsApp">
+          <option value="Outros">
+        </datalist>
       </div>
       <div class="form-group">
         <label for="nl-obs">Observações</label>
@@ -1408,6 +1409,28 @@
     <div class="modal-footer">
       <button class="btn-ghost" id="cm-cancelar">Cancelar</button>
       <button class="btn-confirm" id="cm-salvar">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL BRIEFING ===== -->
+<div class="modal-backdrop" id="briefing-backdrop">
+  <div class="modal modal--wide" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">Briefing</h2>
+        <p class="modal-subtitle" id="briefing-lead-name">—</p>
+      </div>
+      <button class="modal-close" id="briefing-close" aria-label="Fechar"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <textarea class="form-ctrl" id="briefing-textarea" rows="14"
+                placeholder="Cole ou escreva o briefing do lead aqui…"
+                style="min-height:280px;resize:vertical"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="briefing-cancelar">Cancelar</button>
+      <button class="btn-primary" id="btn-salvar-briefing">Salvar Briefing</button>
     </div>
   </div>
 </div>

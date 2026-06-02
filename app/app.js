@@ -3679,6 +3679,7 @@ function btnAcao(l) {
   const icoChat  = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
   const icoPen   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>`;
   const icoTrash = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`;
+  const icoDoc   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
 
   let primary = '';
   if      (st === 'aguardando')                  primary = `<button class="btn-acao-inline btn-qualificar" data-id="${id}" data-action="qualificar-lead" title="Qualificar este lead">✓ Qualificar</button>`;
@@ -3694,10 +3695,11 @@ function btnAcao(l) {
 
   return `<div class="acoes-cell">
     ${primary}${postcall}
-    <button class="btn-icon btn-perfil"  data-id="${id}" data-action="qualificar" title="Ver Perfil">${icoEye}</button>
-    <button class="btn-icon btn-wa-lead" data-id="${id}" title="Abrir no WhatsApp">${icoChat}</button>
-    <button class="btn-icon btn-editar"  data-id="${id}" data-action="editar"     title="Editar lead">${icoPen}</button>
-    <button class="btn-icon btn-excluir" data-id="${id}" data-action="excluir"    title="Excluir lead">${icoTrash}</button>
+    <button class="btn-icon btn-perfil"   data-id="${id}" data-action="qualificar" title="Ver Perfil">${icoEye}</button>
+    <button class="btn-icon btn-briefing" data-id="${id}" data-action="briefing"   title="Briefing">${icoDoc}</button>
+    <button class="btn-icon btn-wa-lead"  data-id="${id}" title="Abrir no WhatsApp">${icoChat}</button>
+    <button class="btn-icon btn-editar"   data-id="${id}" data-action="editar"     title="Editar lead">${icoPen}</button>
+    <button class="btn-icon btn-excluir"  data-id="${id}" data-action="excluir"    title="Excluir lead">${icoTrash}</button>
   </div>`;
 }
 function fmtDate(d) {
@@ -3775,6 +3777,7 @@ function handleAction(id, action) {
   else if (action === 'ver')              verDetalhes(lead);
   else if (action === 'editar')           openNovoLead(lead);
   else if (action === 'excluir')          deleteLead(id);
+  else if (action === 'briefing')         openBriefing(lead);
 }
 
 async function deleteLead(id) {
@@ -3785,6 +3788,47 @@ async function deleteLead(id) {
     selectedIds.delete(id); updateBulkBar();
     toast('Lead excluído.', 'ok');
   } catch(e) { console.error(e); toast('Erro ao excluir.', 'err'); }
+}
+
+// ─── BRIEFING ────────────────────────────────────────────────────────
+let briefingLeadId = null;
+
+function openBriefing(lead) {
+  briefingLeadId = lead.id;
+  $('briefing-lead-name').textContent = lead.nome || '—';
+  $('briefing-textarea').value = lead.briefing || '';
+  if (!lead.briefing) $('briefing-textarea').placeholder = 'Nenhum briefing adicionado ainda. Cole ou escreva aqui…';
+  $('briefing-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => $('briefing-textarea').focus(), 50);
+}
+
+function closeBriefing() {
+  $('briefing-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+  briefingLeadId = null;
+}
+
+async function salvarBriefing() {
+  if (!briefingLeadId) return;
+  const texto = $('briefing-textarea').value.trim();
+  const btn = $('btn-salvar-briefing');
+  btn.disabled = true;
+  try {
+    if (isLive) {
+      const { error } = await supabase.from('leads').update({ briefing: texto || null, atualizadoem: new Date().toISOString() }).eq('id', briefingLeadId);
+      if (error) throw error;
+    }
+    const lead = allLeads.find(l => l.id === briefingLeadId);
+    if (lead) lead.briefing = texto || null;
+    toast('Briefing salvo.', 'ok');
+    closeBriefing();
+  } catch(e) {
+    console.error(e);
+    toast('Erro ao salvar briefing.', 'err');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ─── BULK ─────────────────────────────────────────────────────────────
@@ -4620,6 +4664,14 @@ function openNovoLead(lead = null) {
   $('nl-renda').value     = lead?.renda                     || '';
   $('nl-origem').value    = lead?.origem                    || '';
   $('nl-obs').value       = lead?.observacoes               || '';
+  // Atualiza o datalist de origem com valores já existentes no banco
+  const dl = document.getElementById('nl-origem-list');
+  if (dl) {
+    const defaults = ['Instagram','Facebook','Indicação','Google','WhatsApp','Outros'];
+    const extra = allLeads.map(l => l.origem).filter(Boolean);
+    const all = [...new Set([...defaults, ...extra])];
+    dl.innerHTML = all.map(v => `<option value="${esc(v)}">`).join('');
+  }
   $('novo-lead-backdrop').classList.add('open');
   document.body.style.overflow = 'hidden';
   setTimeout(() => $('nl-nome').focus(), 50);
@@ -7013,6 +7065,12 @@ function bindEvents() {
   $('novo-lead-cancelar').addEventListener('click', closeNovoLead);
   $('btn-salvar-lead').addEventListener('click', confirmarNovoLead);
   $('novo-lead-backdrop').addEventListener('click', e => { if(e.target===$('novo-lead-backdrop')) closeNovoLead(); });
+
+  // Briefing modal
+  $('briefing-close').addEventListener('click', closeBriefing);
+  $('briefing-cancelar').addEventListener('click', closeBriefing);
+  $('btn-salvar-briefing').addEventListener('click', salvarBriefing);
+  $('briefing-backdrop').addEventListener('click', e => { if(e.target===$('briefing-backdrop')) closeBriefing(); });
 
   // Dropdown: fechar ao clicar fora
   document.addEventListener('click', e => { if(!e.target.closest('.acoes-wrap')) closeAllDropdowns(); });

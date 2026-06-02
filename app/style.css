@@ -1450,6 +1450,11 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
   background: #1a2820; border-color: rgba(76,175,142,.75);
   box-shadow: 0 0 10px rgba(76,175,142,.20);
 }
+.btn-briefing { color: var(--petro-l); border-color: rgba(77,181,200,.45); }
+.btn-briefing:hover {
+  background: #1a2428; border-color: rgba(77,181,200,.75);
+  box-shadow: 0 0 10px rgba(77,181,200,.20);
+}
 
 /* ── Inline primary action buttons — solid, no glassmorphism ─── */
 .btn-acao-inline {
