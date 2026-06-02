@@ -1222,6 +1222,26 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 .btn-kanban-noshow:hover { background: rgba(192,57,43,.18); }
 
 /* Venda Ganha + Descartar action buttons on kanban card */
+/* ── Expand / collapse ── */
+.kc-compact { cursor: pointer; }
+.kc-details {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 200ms ease, opacity 200ms ease;
+}
+.kanban-card.kc-expanded .kc-details {
+  max-height: 600px;
+  opacity: 1;
+}
+.kc-chevron {
+  font-size: 13px; color: var(--t3); flex-shrink: 0;
+  display: inline-block;
+  transition: transform 200ms ease;
+  line-height: 1;
+}
+.kanban-card.kc-expanded .kc-chevron { transform: rotate(90deg); }
+
 .kc-actions {
   display: flex; gap: 6px; margin-top: 8px;
 }

@@ -219,6 +219,7 @@ let mpSelected = null;
 
 // Kanban search
 let kanbanSearchText = '';
+let _expandedCardId  = null; // ID do card do kanban atualmente expandido
 
 // Notification state
 let notifUnsub = null;
@@ -3153,6 +3154,13 @@ function renderKanban() {
   }).join('');
   lucide.createIcons();
 
+  // Re-apply expanded state after re-render
+  if (_expandedCardId) {
+    const ec = board.querySelector(`.kanban-card[data-id="${_expandedCardId}"]`);
+    if (ec) ec.classList.add('kc-expanded');
+    else _expandedCardId = null;
+  }
+
   // Re-apply active search dimming after re-render
   if (kanbanSearchText) {
     board.querySelectorAll('.kanban-card').forEach(card => {
@@ -3269,41 +3277,51 @@ function kanbanCard(l, cols) {
     </div>` : '';
 
   return `<div class="kanban-card ${daysClass}" draggable="true" data-id="${l.id}" data-nome="${esc((l.nome||'').toLowerCase())}">
-    <div class="kc-head">
-      <button class="kc-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
-      <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
-        ${unreadCount ? `<span class="kc-unread-badge">${unreadCount}</span>` : ''}
-        ${days !== null ? `<span class="kc-days-badge ${daysClass}">${days}d</span>` : ''}
-        ${badgeStatus(l.status)}
+
+    <!-- ── COMPACTO — sempre visível ── -->
+    <div class="kc-compact">
+      <div class="kc-head">
+        <button class="kc-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
+        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+          ${unreadCount ? `<span class="kc-unread-badge">${unreadCount}</span>` : ''}
+          ${days !== null ? `<span class="kc-days-badge ${daysClass}">${days}d</span>` : ''}
+          ${badgeStatus(l.status)}
+          <span class="kc-chevron">›</span>
+        </div>
+      </div>
+      ${l.dataagendamento ? `<div class="kc-datetime"><i data-lucide="calendar" class="kc-cal-icon"></i>${fmtDateHora(l.dataagendamento,l.horaagendamento)}</div>` : ''}
+      <div class="kc-meta">
+        ${closerName ? `<span class="kc-closer">${esc(closerName)}</span>` : ''}
+        ${l.agendadopor ? `<span class="kc-resp">via ${esc(l.agendadopor)}</span>` : ''}
+        ${badgeOrigem(l.origem)}
       </div>
     </div>
-    ${etiquetas.length ? `<div class="kc-etiquetas">${etiquetas.map(t=>etiquetaChip(t,true)).join('')}</div>` : ''}
-    ${l.dataagendamento ? `<div class="kc-datetime"><i data-lucide="calendar" class="kc-cal-icon"></i>${fmtDateHora(l.dataagendamento,l.horaagendamento)}</div>` : ''}
-    <div class="kc-meta">
-      ${closerName ? `<span class="kc-closer">${esc(closerName)}</span>` : ''}
-      ${l.agendadopor ? `<span class="kc-resp">via ${esc(l.agendadopor)}</span>` : ''}
-      ${badgeOrigem(l.origem)}
+
+    <!-- ── DETALHES — revelado ao expandir ── -->
+    <div class="kc-details">
+      ${etiquetas.length ? `<div class="kc-etiquetas">${etiquetas.map(t=>etiquetaChip(t,true)).join('')}</div>` : ''}
+      <div class="kc-foot">
+        ${isAgendado ? `<button class="btn-kanban-noshow" data-id="${l.id}">No Show</button>` : ''}
+        <button class="btn-kanban-resultado" data-id="${l.id}">${isAgendado?'Resultado →':'Ver →'}</button>
+        ${waHref ? `<a class="kc-wa-btn" href="${waHref}" target="_blank" rel="noopener" title="WhatsApp"><i data-lucide="message-circle" class="kc-wa-icon"></i></a>` : ''}
+        ${hist.length ? `<button class="kc-hist-toggle" title="Histórico"><i data-lucide="history"></i></button>` : ''}
+      </div>
+      <div class="kc-actions">
+        <button class="btn-kc-venda" data-id="${l.id}" title="Registrar venda ganha"><i data-lucide="trophy"></i> Venda Ganha</button>
+        <button class="btn-kc-descartar" data-id="${l.id}" title="Descartar lead"><i data-lucide="archive-x"></i> Descartar</button>
+      </div>
+      ${histHtml}
+      <div class="kc-move-wrap">
+        <select class="kc-move-select" data-id="${l.id}">
+          <option value="">Mover para…</option>
+          ${moveOpts}
+        </select>
+      </div>
+      <div class="kc-obs-wrap">
+        <textarea class="kc-obs-input" data-id="${l.id}" placeholder="Obs. pós-call…">${esc(l.obs_call||'')}</textarea>
+      </div>
     </div>
-    <div class="kc-foot">
-      ${isAgendado ? `<button class="btn-kanban-noshow" data-id="${l.id}">No Show</button>` : ''}
-      <button class="btn-kanban-resultado" data-id="${l.id}">${isAgendado?'Resultado →':'Ver →'}</button>
-      ${waHref ? `<a class="kc-wa-btn" href="${waHref}" target="_blank" rel="noopener" title="WhatsApp"><i data-lucide="message-circle" class="kc-wa-icon"></i></a>` : ''}
-      ${hist.length ? `<button class="kc-hist-toggle" title="Histórico"><i data-lucide="history"></i></button>` : ''}
-    </div>
-    <div class="kc-actions">
-      <button class="btn-kc-venda" data-id="${l.id}" title="Registrar venda ganha"><i data-lucide="trophy"></i> Venda Ganha</button>
-      <button class="btn-kc-descartar" data-id="${l.id}" title="Descartar lead"><i data-lucide="archive-x"></i> Descartar</button>
-    </div>
-    ${histHtml}
-    <div class="kc-move-wrap">
-      <select class="kc-move-select" data-id="${l.id}">
-        <option value="">Mover para…</option>
-        ${moveOpts}
-      </select>
-    </div>
-    <div class="kc-obs-wrap">
-      <textarea class="kc-obs-input" data-id="${l.id}" placeholder="Obs. pós-call…">${esc(l.obs_call||'')}</textarea>
-    </div>
+
   </div>`;
 }
 
@@ -7123,6 +7141,26 @@ function bindEvents() {
   // Kanban drag-and-drop — delegated on the persistent board element so listeners
   // survive renderKanban() innerHTML replacements (fixes modal not firing mid-session)
   const kboard = $('kanban-board');
+
+  // Card expand / collapse — delegado no board (sobrevive a re-renders)
+  kboard.addEventListener('click', e => {
+    // Não propaga quando o alvo é um elemento interativo
+    if (e.target.closest('button, a, select, textarea, input, [contenteditable]')) return;
+    const card = e.target.closest('.kanban-card');
+    if (!card) return;
+    const id = card.dataset.id;
+    if (_expandedCardId === id) {
+      card.classList.remove('kc-expanded');
+      _expandedCardId = null;
+    } else {
+      if (_expandedCardId) {
+        const prev = kboard.querySelector(`.kanban-card[data-id="${_expandedCardId}"]`);
+        if (prev) prev.classList.remove('kc-expanded');
+      }
+      card.classList.add('kc-expanded');
+      _expandedCardId = id;
+    }
+  });
   kboard.addEventListener('dragstart', e => {
     // Column drag — initiated from the drag handle span (which has draggable=true)
     const handle = e.target.closest('.kc-drag-handle[draggable]');
