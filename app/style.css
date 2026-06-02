@@ -1337,6 +1337,33 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 .detalhes-lbl  { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .9px; color: var(--t3); }
 .detalhes-val  { font-size: 13.5px; font-weight: 500; color: var(--t1); word-break: break-word; }
 
+/* ── Edição inline dos campos de dados pessoais ── */
+.detalhes-editable {
+  cursor: text;
+  border-radius: var(--r-xs);
+  padding: 2px 5px; margin: -2px -5px;
+  transition: background var(--fast) var(--ease);
+}
+.detalhes-editable:hover { background: rgba(255,255,255,0.05); }
+.detalhes-editing        { display: block; width: 100%; }
+.detalhes-inline-input {
+  background: transparent; border: none; outline: none;
+  border-bottom: 1.5px solid rgba(206,146,33,0.65);
+  box-shadow: 0 1px 0 rgba(206,146,33,0.20);
+  width: 100%;
+  color: var(--t1); font-size: 13.5px; font-weight: 500; font-family: inherit;
+  padding: 1px 2px;
+  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+.detalhes-inline-input:focus {
+  border-bottom-color: rgba(206,146,33,0.90);
+  box-shadow: 0 1px 0 rgba(206,146,33,0.40);
+}
+.detalhes-saved {
+  color: var(--green) !important;
+  transition: color 0.3s ease !important;
+}
+
 /* ── Nome clicável ───────────────────────────── */
 .nome-link {
   background: none; border: none; padding: 0;

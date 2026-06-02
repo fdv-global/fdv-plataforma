@@ -4522,14 +4522,20 @@ function openPerfil(lead) {
   renderEtiquetas(lead);
 
   $('perfil-dados').innerHTML = [
-    { l:'Nome',      v: lead.nome      || '—' },
-    { l:'Celular',   v: lead.celular   || lead.telefone || '—' },
-    { l:'E-mail',    v: lead.email     || '—' },
-    { l:'Instagram', v: lead.instagram || null, ig: true },
-    { l:'Profissão', v: lead.profissao || '—' },
-    { l:'Renda',     v: lead.renda     || '—' },
-    { l:'Idade',     v: lead.idade     || '—' },
-  ].map(({l,v,ig}) => `<div class="detalhes-item"><span class="detalhes-lbl">${esc(l)}</span><span class="detalhes-val">${ig?instagramLink(v):esc(v||'—')}</span></div>`).join('');
+    { l:'Nome',      field:'nome',      raw: lead.nome      || '', ig: false },
+    { l:'Celular',   field:'celular',   raw: lead.celular   || lead.telefone || '', ig: false },
+    { l:'E-mail',    field:'email',     raw: lead.email     || '', ig: false },
+    { l:'Instagram', field:'instagram', raw: lead.instagram || '', ig: true  },
+    { l:'Profissão', field:'profissao', raw: lead.profissao || '', ig: false },
+    { l:'Renda',     field:'renda',     raw: lead.renda     || '', ig: false },
+    { l:'Idade',     field:'idade',     raw: lead.idade     || '', ig: false },
+  ].map(({l,field,raw,ig}) => `
+    <div class="detalhes-item">
+      <span class="detalhes-lbl">${esc(l)}</span>
+      <span class="detalhes-val detalhes-editable" data-field="${field}" data-raw="${esc(raw)}" title="Clique para editar">
+        ${ig ? instagramLink(raw || null) : esc(raw || '—')}
+      </span>
+    </div>`).join('');
 
   // Agendamento section
   const agendaWrap = $('perfil-agendamento-wrap');
@@ -4607,6 +4613,72 @@ function renderPerfilHistorico(lead, kanbanRows) {
   $('perfil-historico').innerHTML = all.length
     ? all.map(h=>`<div class="hist-item"><span class="hist-ico">${h.ico}</span><div class="hist-body"><div class="hist-label">${esc(h.label)}</div>${h.sub?`<div class="hist-sub">${esc(h.sub)}</div>`:''}</div></div>`).join('')
     : '<p class="hist-empty">Nenhuma ação registrada.</p>';
+}
+
+function startInlineEdit(el) {
+  const field = el.dataset.field;
+  const raw   = el.dataset.raw || '';
+  if (!field || !perfilLeadId) return;
+
+  const displayHtml = el.innerHTML;
+  let committed = false;
+
+  // Input element
+  const input = document.createElement('input');
+  input.type      = 'text';
+  input.value     = raw;
+  input.className = 'detalhes-inline-input';
+
+  // Renda: datalist com valores já existentes no banco
+  if (field === 'renda') {
+    const dlId = 'detalhes-renda-dl';
+    let dl = document.getElementById(dlId);
+    if (!dl) { dl = document.createElement('datalist'); dl.id = dlId; document.body.appendChild(dl); }
+    dl.innerHTML = [...new Set(allLeads.map(l => l.renda).filter(Boolean))]
+      .map(v => `<option value="${esc(v)}">`).join('');
+    input.setAttribute('list', dlId);
+  }
+
+  el.innerHTML = '';
+  el.appendChild(input);
+  el.classList.add('detalhes-editing');
+  input.focus();
+  input.select();
+
+  const cancel = () => {
+    committed = true;
+    el.innerHTML = displayHtml;
+    el.classList.remove('detalhes-editing');
+  };
+
+  const save = async () => {
+    if (committed) return;
+    committed = true;
+    input.removeEventListener('blur', save);
+    el.classList.remove('detalhes-editing');
+
+    const newVal = input.value.trim();
+    if (newVal === raw) { el.innerHTML = displayHtml; return; }
+
+    try {
+      await saveLead(perfilLeadId, { [field]: newVal || null, atualizadoem: new Date().toISOString() });
+      el.dataset.raw = newVal;
+      el.innerHTML   = field === 'instagram' ? instagramLink(newVal || null) : esc(newVal || '—');
+      el.classList.add('detalhes-saved');
+      setTimeout(() => el.classList.remove('detalhes-saved'), 1000);
+      if (field === 'nome' && newVal) $('perfil-title').textContent = newVal;
+    } catch(e) {
+      console.error(e);
+      toast('Erro ao salvar.', 'err');
+      el.innerHTML = displayHtml;
+    }
+  };
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter')  { e.preventDefault(); save(); }
+    if (e.key === 'Escape') { cancel(); }
+  });
+  input.addEventListener('blur', save);
 }
 
 function closePerfil() {
@@ -7405,6 +7477,13 @@ function bindEvents() {
   $('perfil-fechar').addEventListener('click', closePerfil);
   $('btn-salvar-obs').addEventListener('click', salvarObsPerfil);
   $('perfil-backdrop').addEventListener('click', e => { if(e.target===$('perfil-backdrop')) closePerfil(); });
+
+  // Edição inline dos campos de dados pessoais no modal de perfil
+  $('perfil-dados').addEventListener('click', e => {
+    const el = e.target.closest('.detalhes-editable');
+    if (!el || el.classList.contains('detalhes-editing')) return;
+    startInlineEdit(el);
+  });
 
   // Etiquetas
   $('btn-add-etiqueta').addEventListener('click', addEtiquetaCustom);
