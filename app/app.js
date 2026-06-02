@@ -2411,6 +2411,7 @@ function renderBriefingSub() {
   const dataFilt   = $('briefing-filter-data')?.value;
   const mesFilt    = $('briefing-filter-mes').value;
   const closerFilt = $('briefing-filter-closer').value;
+  const busca      = ($('briefing-filter-busca')?.value || '').toLowerCase().trim();
   const content    = $('briefing-content');
 
   // Apenas leads com briefing preenchido
@@ -2418,6 +2419,7 @@ function renderBriefingSub() {
   if (dataFilt)     leads = leads.filter(l => l.dataagendamento === dataFilt);
   else if (mesFilt) leads = leads.filter(l => (l.dataagendamento||'').startsWith(mesFilt));
   if (closerFilt)   leads = leads.filter(l => (l.closer||'') === closerFilt);
+  if (busca)        leads = leads.filter(l => (l.nome||'').toLowerCase().includes(busca));
   leads.sort((a,b) => ((a.dataagendamento||'')+(a.horaagendamento||'')).localeCompare((b.dataagendamento||'')+(b.horaagendamento||'')));
 
   if (!leads.length) {
@@ -7250,6 +7252,7 @@ function bindEvents() {
   // Briefing filters
   ['briefing-filter-mes','briefing-filter-closer'].forEach(id => $(id).addEventListener('change', renderBriefingSub));
   $('briefing-filter-data')?.addEventListener('change', renderBriefingSub);
+  $('briefing-filter-busca')?.addEventListener('input', renderBriefingSub);
 
   // Closer view tabs
   document.querySelectorAll('.cvt-btn').forEach(btn =>
