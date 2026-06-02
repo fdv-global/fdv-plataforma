@@ -2446,10 +2446,10 @@ function updateSubBadges() {}
 
 // ─── QUALIFICADOS SUB ────────────────────────────────────────────────
 function renderQualificados() {
-  const leads = allLeads.filter(l => l.status === 'qualificado');
+  const allQual = allLeads.filter(l => l.status === 'qualificado');
   const el = $('qualificados-content');
   if (!el) return;
-  if (!leads.length) {
+  if (!allQual.length) {
     el.innerHTML = `<div class="agenda-empty">
       <i data-lucide="user-check" class="empty-lucide"></i>
       <h3>Nenhum lead qualificado</h3>
@@ -2458,11 +2458,29 @@ function renderQualificados() {
     lucide.createIcons({ nodes: [el] });
     return;
   }
-  el.innerHTML = `<div class="table-wrap"><table class="leads-table">
-    <thead><tr>
-      <th>Chegou em</th><th>Nome</th><th>Celular</th><th>Origem</th><th>Renda</th><th>Etiqueta</th><th>Ações</th>
-    </tr></thead>
-    <tbody>${leads.map(l => `<tr>
+  el.innerHTML = `
+    <div class="sub-search-bar">
+      <div class="search-wrap" style="max-width:320px">
+        <input type="text" class="filter-input" id="qual-busca" placeholder="Buscar por nome ou celular…" autocomplete="off">
+        <span class="search-ico">⌕</span>
+      </div>
+    </div>
+    <div class="table-wrap"><table class="leads-table">
+      <thead><tr>
+        <th>Chegou em</th><th>Nome</th><th>Celular</th><th>Origem</th><th>Renda</th><th>Etiqueta</th><th>Ações</th>
+      </tr></thead>
+      <tbody id="qual-tbody"></tbody>
+    </table></div>`;
+
+  function renderQualTbody() {
+    const q = ($('qual-busca').value || '').toLowerCase().trim();
+    const leads = allQual.filter(l => !q || (l.nome||'').toLowerCase().includes(q) || (l.celular||'').includes(q));
+    const tbody = $('qual-tbody');
+    if (!leads.length) {
+      tbody.innerHTML = `<tr><td colspan="7" style="padding:32px;text-align:center;color:var(--t3)">Nenhum resultado.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = leads.map(l => `<tr>
       <td>${fmtDate(l.datachegada)}</td>
       <td><button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
       <td>${esc(l.celular||'—')}</td>
@@ -2474,20 +2492,23 @@ function renderQualificados() {
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">💬</button>
         <button class="btn-ghost btn-sm" data-descartar="${l.id}" style="color:var(--marsala)">🚫 Descartar</button>
       </td>
-    </tr>`).join('')}</tbody>
-  </table></div>`;
-  el.querySelectorAll('[data-perfil]').forEach(b =>
-    b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
-  );
-  el.querySelectorAll('[data-agendar]').forEach(b =>
-    b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.agendar); if(l) openAgendar(l); })
-  );
-  el.querySelectorAll('.btn-wa-lead').forEach(b =>
-    b.addEventListener('click', () => openWaChatFromLead(b.dataset.id))
-  );
-  el.querySelectorAll('[data-descartar]').forEach(b =>
-    b.addEventListener('click', () => openDescarteModal(b.dataset.descartar))
-  );
+    </tr>`).join('');
+    tbody.querySelectorAll('[data-perfil]').forEach(b =>
+      b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
+    );
+    tbody.querySelectorAll('[data-agendar]').forEach(b =>
+      b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.agendar); if(l) openAgendar(l); })
+    );
+    tbody.querySelectorAll('.btn-wa-lead').forEach(b =>
+      b.addEventListener('click', () => openWaChatFromLead(b.dataset.id))
+    );
+    tbody.querySelectorAll('[data-descartar]').forEach(b =>
+      b.addEventListener('click', () => openDescarteModal(b.dataset.descartar))
+    );
+  }
+
+  $('qual-busca').addEventListener('input', renderQualTbody);
+  renderQualTbody();
 }
 
 // ─── AGENDADOS SUB (wrapper nested) ──────────────────────────────────
@@ -2602,10 +2623,10 @@ function gerarAgendaHoje() {
 
 // ─── DESCARTADOS SUB ─────────────────────────────────────────────────
 function renderDescartados() {
-  const leads = allLeads.filter(l => l.status === 'descartado');
-  const el    = $('descartados-content');
+  const allDesc = allLeads.filter(l => l.status === 'descartado');
+  const el      = $('descartados-content');
   if (!el) return;
-  if (!leads.length) {
+  if (!allDesc.length) {
     el.innerHTML = `<div class="agenda-empty">
       <i data-lucide="user-x" class="empty-lucide"></i>
       <h3>Nenhum lead descartado</h3>
@@ -2614,11 +2635,29 @@ function renderDescartados() {
     lucide.createIcons({ nodes: [el] });
     return;
   }
-  el.innerHTML = `<div class="table-wrap"><table class="leads-table">
-    <thead><tr>
-      <th>Chegou em</th><th>Nome</th><th>Celular</th><th>Origem</th><th>Motivo</th><th>Ações</th>
-    </tr></thead>
-    <tbody>${leads.map(l => `<tr>
+  el.innerHTML = `
+    <div class="sub-search-bar">
+      <div class="search-wrap" style="max-width:320px">
+        <input type="text" class="filter-input" id="desc-busca" placeholder="Buscar por nome ou celular…" autocomplete="off">
+        <span class="search-ico">⌕</span>
+      </div>
+    </div>
+    <div class="table-wrap"><table class="leads-table">
+      <thead><tr>
+        <th>Chegou em</th><th>Nome</th><th>Celular</th><th>Origem</th><th>Motivo</th><th>Ações</th>
+      </tr></thead>
+      <tbody id="desc-tbody"></tbody>
+    </table></div>`;
+
+  function renderDescTbody() {
+    const q = ($('desc-busca').value || '').toLowerCase().trim();
+    const leads = allDesc.filter(l => !q || (l.nome||'').toLowerCase().includes(q) || (l.celular||'').includes(q));
+    const tbody = $('desc-tbody');
+    if (!leads.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="padding:32px;text-align:center;color:var(--t3)">Nenhum resultado.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = leads.map(l => `<tr>
       <td>${fmtDate(l.datachegada)}</td>
       <td><button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
       <td>${esc(l.celular||'—')}</td>
@@ -2628,17 +2667,20 @@ function renderDescartados() {
         <button class="btn-ghost btn-sm" data-reativar="${l.id}">↩ Reativar</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">💬</button>
       </td>
-    </tr>`).join('')}</tbody>
-  </table></div>`;
-  el.querySelectorAll('[data-perfil]').forEach(b =>
-    b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
-  );
-  el.querySelectorAll('[data-reativar]').forEach(b =>
-    b.addEventListener('click', () => reativarLead(b.dataset.reativar))
-  );
-  el.querySelectorAll('.btn-wa-lead').forEach(b =>
-    b.addEventListener('click', () => openWaChatFromLead(b.dataset.id))
-  );
+    </tr>`).join('');
+    tbody.querySelectorAll('[data-perfil]').forEach(b =>
+      b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
+    );
+    tbody.querySelectorAll('[data-reativar]').forEach(b =>
+      b.addEventListener('click', () => reativarLead(b.dataset.reativar))
+    );
+    tbody.querySelectorAll('.btn-wa-lead').forEach(b =>
+      b.addEventListener('click', () => openWaChatFromLead(b.dataset.id))
+    );
+  }
+
+  $('desc-busca').addEventListener('input', renderDescTbody);
+  renderDescTbody();
 }
 
 // ─── DESCARTE MODAL ──────────────────────────────────────────────────

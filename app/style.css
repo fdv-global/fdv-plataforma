@@ -832,7 +832,8 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 }
 
 .sub-panel     { animation: slideUp var(--base) var(--ease) both; }
-.sub-panel-top { display: flex; justify-content: flex-end; margin-bottom: 22px; }
+.sub-panel-top  { display: flex; justify-content: flex-end; margin-bottom: 22px; }
+.sub-search-bar { margin-bottom: 14px; }
 
 /* ============================================================
    AGENDA TOP
