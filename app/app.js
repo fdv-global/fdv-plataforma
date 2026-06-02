@@ -3283,7 +3283,6 @@ function kanbanCard(l, cols) {
       <div class="kc-head">
         <button class="kc-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
         <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
-          ${unreadCount ? `<span class="kc-unread-badge">${unreadCount}</span>` : ''}
           ${days !== null ? `<span class="kc-days-badge ${daysClass}">${days}d</span>` : ''}
           ${badgeStatus(l.status)}
           <span class="kc-chevron">›</span>
