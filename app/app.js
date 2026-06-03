@@ -2278,22 +2278,25 @@ function renderInicio() {
 
   // Funil: apenas leads com datachegada neste mês (cohort mensal)
   const mesLeads = allLeads.filter(l => (l.datachegada||'').startsWith(thisMonth));
+  // Funil usa períodos corretos por etapa:
+  // Leads/Qualificados → datachegada this month (quem entrou)
+  // Agendados/Calls/NoShow → dataagendamento this month (quando a call estava marcada)
+  // Vendas → kanban_column_since this month (quando fechou)
   const fLeads  = mesLeads.length;
   const fQualif = mesLeads.filter(l => !['aguardando','descartado','cancelado'].includes(l.status)).length;
-  const fAgend  = mesLeads.filter(l => l.dataagendamento && !(['realizada','noshow'].includes(l.status) || (l.kanban_column && l.kanban_column !== 'agendado'))).length;
-  const fCalls  = mesLeads.filter(l => ['realizada','noshow'].includes(l.status) || (l.kanban_column && l.kanban_column !== 'agendado')).length;
-  const fNoShow = mesLeads.filter(l => l.status === 'noshow').length;
-  const fVendas = mesLeads.filter(l => l.kanban_column === 'venda_ganha').length;
-  const fRealiz = Math.max(fCalls - fNoShow, 0); // calls que aconteceram de verdade
+  const agendMes = allLeads.filter(l => (l.dataagendamento||'').startsWith(thisMonth));
+  const fAgend  = agendMes.length;
+  const fCalls  = agendMes.filter(l => ['realizada','noshow'].includes(l.status) || (l.kanban_column && l.kanban_column !== 'agendado')).length;
+  const fNoShow = agendMes.filter(l => l.status === 'noshow').length;
+  const fVendas = allLeads.filter(isVendaMes).length;
+  const fRealiz = Math.max(fCalls - fNoShow, 0);
   const pctQ  = fLeads  ? Math.round(fQualif/fLeads *100) : 0;
-  const pctA  = fQualif ? Math.round(fAgend /fQualif*100) : 0;
   const pctC  = fAgend  ? Math.round(fCalls /fAgend *100) : 0;
-  const pctNS = fCalls  ? Math.round(fNoShow/fCalls *100) : 0;
   const pctV  = fRealiz ? Math.round(fVendas/fRealiz*100) : 0;
 
-  const arrowSvg = rate => `
+  const arrowSvg = (rate) => `
     <div class="funil-connector">
-      <div class="funil-rate">${rate}%</div>
+      <div class="funil-rate">${rate != null ? rate+'%' : ''}</div>
       <svg class="funil-arrow-line" viewBox="0 0 36 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
         <line x1="0" y1="7" x2="28" y2="7"/>
         <polyline points="22,2 30,7 22,12"/>
@@ -2340,21 +2343,13 @@ function renderInicio() {
       <div class="funil-stage"><div class="funil-label">Leads</div><div class="funil-num">${fLeads}</div></div>
       ${arrowSvg(pctQ)}
       <div class="funil-stage"><div class="funil-label">Qualificados</div><div class="funil-num">${fQualif}</div></div>
-      ${arrowSvg(pctA)}
+      ${arrowSvg(null)}
       <div class="funil-stage"><div class="funil-label">Agendados</div><div class="funil-num">${fAgend}</div></div>
       ${arrowSvg(pctC)}
-      <div class="funil-calls-wrap">
-        <div class="funil-stage"><div class="funil-label">Calls</div><div class="funil-num">${fCalls}</div></div>
-        <div class="funil-noshow-branch">
-          <div class="funil-branch-down">
-            <svg width="12" height="20" viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-              <line x1="6" y1="0" x2="6" y2="14"/>
-              <polyline points="2,10 6,16 10,10"/>
-            </svg>
-            <span class="funil-branch-rate">${pctNS}% NS</span>
-          </div>
-          <div class="funil-stage funil-stage--ns"><div class="funil-label">No Show</div><div class="funil-num">${fNoShow}</div></div>
-        </div>
+      <div class="funil-stage">
+        <div class="funil-label">Calls</div>
+        <div class="funil-num">${fCalls}</div>
+        ${fNoShow > 0 ? `<div class="funil-ns-inline">↓ ${fNoShow} no-show</div>` : ''}
       </div>
       ${arrowSvg(pctV)}
       <div class="funil-stage"><div class="funil-label">Vendas</div><div class="funil-num" style="color:var(--gold)">${fVendas}</div></div>
@@ -3753,7 +3748,7 @@ function renderDescartadosView() {
   const MOTIVO_LABEL = Object.fromEntries(MOTIVOS_DESCARTE.map(m => [m.id, m.label]));
 
   // Todos os descartados (para preencher os dropdowns)
-  const allDesc = allLeads.filter(l => getLeadKanbanCol(l) === 'descartado');
+  const allDesc = allLeads.filter(l => l.kanban_column === 'descartado' || l.kanban_column === 'venda_perdida' || l.status === 'descartado');
 
   // Meses disponíveis
   const meses = [...new Set(

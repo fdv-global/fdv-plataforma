@@ -3366,9 +3366,10 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   letter-spacing: 1px;
   color: var(--t3);
   margin-bottom: 8px;
+  padding-right: 32px; /* espaço para o ícone absoluto no canto */
 }
 .imc-value {
-  font-size: 34px;          /* reduzido de 40px para caber valores como "R$ 10.500" */
+  font-size: 34px;
   font-weight: 800;
   color: #fff;
   line-height: 1;
@@ -3377,7 +3378,8 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   font-family: 'Red Hat Display', system-ui, sans-serif;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis; /* trunca se ainda não couber */
+  text-overflow: ellipsis;
+  padding-right: 32px; /* espaço para o ícone absoluto no canto */
 }
 .imc-sub {
   font-size: 12px;
@@ -3396,11 +3398,20 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   border-radius: 20px;
   padding: 28px 24px;
   display: flex;
-  align-items: flex-start; /* flex-start permite bifurcação vertical de No Show */
+  align-items: center;
   justify-content: space-between;
   gap: 4px;
   margin-bottom: 40px;
 }
+/* No Show inline abaixo do número de Calls */
+.funil-ns-inline {
+  font-size: 10px;
+  color: #d06070;
+  font-weight: 700;
+  margin-top: 3px;
+  white-space: nowrap;
+}
+
 /* Card Faturamento — hierarquia visual sobre os outros três */
 .imc--hero {
   flex: 1.5 !important;  /* 50% mais largo que os outros */
