@@ -66,6 +66,12 @@
       <img class="user-avatar" id="user-avatar" src="" alt="" style="display:none">
       <span class="user-name" id="user-name"></span>
     </div>
+    <!-- Alerta de duplicatas -->
+    <button class="dup-alert-btn" id="dup-alert-btn" title="Mesclar todas as duplicatas" style="display:none">
+      <i data-lucide="copy" style="width:15px;height:15px"></i>
+      <span class="dup-alert-count">0</span>
+    </button>
+
     <!-- Busca Global -->
     <div class="search-wrapper" id="search-wrapper">
       <button class="notif-btn" id="search-btn" aria-label="Buscar lead">
@@ -1511,10 +1517,7 @@
     <div class="modal-body" id="dup-compare-body"></div>
     <div class="modal-footer" style="justify-content:space-between">
       <button class="btn-ghost" id="dup-nao-duplicata">Não são duplicatas</button>
-      <div style="display:flex;gap:8px">
-        <button class="btn-ghost btn-destructive" id="dup-manter-outro">Manter o outro</button>
-        <button class="btn-confirm" id="dup-manter-este">Manter este</button>
-      </div>
+      <button class="btn-confirm" id="dup-merge">Mesclar registros</button>
     </div>
   </div>
 </div>

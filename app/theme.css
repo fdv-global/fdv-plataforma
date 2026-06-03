@@ -1799,3 +1799,123 @@ tr.dup-row:hover { background: rgba(212,160,23,0.13) !important; }
   100% { background: transparent; }
 }
 tr.row-highlight { animation: fdvRowFlash 2.1s ease forwards !important; }
+
+/* ═══════════════════════════════════════════════════════════
+   BOTÃO ALERTA DE DUPLICATAS (navbar)
+   ══════════════════════════════════════════════════════════ */
+.dup-alert-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(212,160,23,0.40);
+  background: rgba(212,160,23,0.12);
+  color: #d4a017;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 150ms, border-color 150ms;
+  white-space: nowrap;
+}
+.dup-alert-btn:hover {
+  background: rgba(212,160,23,0.22);
+  border-color: rgba(212,160,23,0.65);
+}
+.dup-alert-count {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODAL MERGE — tabela de seleção campo a campo
+   ══════════════════════════════════════════════════════════ */
+.dcc-merge-table {
+  width: 100%;
+}
+.dcc-merge-header {
+  display: grid;
+  grid-template-columns: 90px 1fr 1fr;
+  gap: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.dcc-merge-header .dcc-col-head {
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  color: var(--t3, #8fa0a2);
+  background: rgba(255,255,255,0.025);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dcc-lead-name {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--t2, #c4cece);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.dcc-merge-hint {
+  font-size: 11px;
+  color: var(--t4, #5a6e72);
+  padding: 6px 14px;
+  background: rgba(255,255,255,0.015);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.dcc-merge-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 1fr;
+  gap: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.dcc-merge-row:last-child { border-bottom: none; }
+.dcc-cell-lbl {
+  padding: 9px 14px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--t4, #5a6e72);
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.015);
+  border-right: 1px solid rgba(255,255,255,0.04);
+}
+.dcc-merge-opt {
+  padding: 9px 14px;
+  font-size: 13px;
+  color: var(--t1, #e8f0f0);
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms, opacity 120ms;
+  border-left: 2px solid transparent;
+  word-break: break-word;
+}
+.dcc-merge-opt:nth-child(3) {
+  border-left-color: rgba(255,255,255,0.04);
+}
+.dcc-merge-opt:hover { background: rgba(255,255,255,0.04); }
+.dcc-merge-sel {
+  background: rgba(206,146,33,0.12) !important;
+  border-left-color: rgba(206,146,33,0.55) !important;
+  color: #CE9221 !important;
+}
+.dcc-merge-dim {
+  opacity: 0.38;
+}
+.dcc-merge-info {
+  padding: 9px 14px;
+  font-size: 13px;
+  color: var(--t2, #c4cece);
+}
+.dcc-info-diff .dcc-merge-info {
+  color: var(--t1, #e8f0f0);
+}
+.dcc-info-diff {
+  background: rgba(255,255,255,0.02);
+}
+
+/* Highlight em agenda cards além de table rows */
+.agenda-card.row-highlight { animation: fdvRowFlash 2.1s ease forwards !important; border-radius: var(--r-md, 12px); }

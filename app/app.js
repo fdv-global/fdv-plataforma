@@ -45,6 +45,18 @@ const ICO_PIN_SM       = _S(`<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.1
 const ICO_PENCIL       = _S(`<path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>`);
 const ICO_COPY         = _S(`<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>`, 13);
 
+const MERGE_FIELDS = [
+  { k:'nome',        lbl:'Nome' },
+  { k:'celular',     lbl:'Celular' },
+  { k:'email',       lbl:'Email' },
+  { k:'instagram',   lbl:'Instagram' },
+  { k:'profissao',   lbl:'Profissão' },
+  { k:'renda',       lbl:'Renda' },
+  { k:'origem',      lbl:'Origem' },
+  { k:'observacoes', lbl:'Observações' },
+];
+const STATUS_RANK = { aguardando:0, qualificado:1, agendado:2, noshow:2, realizada:3, cancelado:0, descartado:0 };
+
 // ─── CLOSERS ─────────────────────────────────────────────────────────
 const CLOSERS = {
   fernanda: { name: 'Fernanda', waName: 'Fernanda Ayub',      icon: '⭐', color: '#CE9221', bg: 'rgba(206,146,33,.12)', calLink: 'https://calendar.app.google/hWWi6tVKAhoXg5cUA' },
@@ -156,6 +168,7 @@ function saveKanbanCols(cols) { localStorage.setItem(KANBAN_LS_KEY, JSON.stringi
 let allLeads       = [];
 let filteredLeads  = [];
 let dupMap         = new Map(); // leadId → [dup leadId, ...]
+let _mergeSelections = {};     // fieldKey → 'a' | 'b'
 let currentId      = null;
 let modalMode      = 'agendar';
 let supabase       = null;
@@ -7330,8 +7343,32 @@ function buildDupMap() {
     const dups = findDupCandidates(l);
     if (dups.length) dupMap.set(l.id, dups.map(d=>d.id));
   }
+  updateDupAlertBtn();
 }
 function isDup(id) { return dupMap.has(id); }
+function updateDupAlertBtn() {
+  const btn = $('dup-alert-btn');
+  if (!btn) return;
+  const pairs = countDupPairs();
+  if (pairs > 0) {
+    btn.style.display = '';
+    const badge = btn.querySelector('.dup-alert-count');
+    if (badge) badge.textContent = pairs;
+  } else {
+    btn.style.display = 'none';
+  }
+}
+function countDupPairs() {
+  const seen = new Set();
+  let count = 0;
+  for (const [aId, bIds] of dupMap) {
+    for (const bId of bIds) {
+      const key = [aId, bId].sort().join('|');
+      if (!seen.has(key)) { seen.add(key); count++; }
+    }
+  }
+  return count;
+}
 
 let _dupA = null, _dupB = null;
 
@@ -7340,6 +7377,12 @@ function openDupCompare(leadId) {
   const dups = (dupMap.get(leadId)||[]).map(id=>allLeads.find(l=>l.id===id)).filter(Boolean);
   if (!dups.length) return;
   _dupA = lead; _dupB = dups[0];
+  // Inicializa seleções de merge: campo mais completo (mais longo) vence
+  _mergeSelections = {};
+  for (const f of MERGE_FIELDS) {
+    const va = String(_dupA[f.k]||''), vb = String(_dupB[f.k]||'');
+    _mergeSelections[f.k] = va.length >= vb.length ? 'a' : 'b';
+  }
   renderDupCompareBody();
   $('dup-compare-subtitle').textContent = `${_dupA.nome||'—'} vs ${_dupB.nome||'—'}`;
   $('dup-compare-backdrop').classList.add('open');
@@ -7351,43 +7394,78 @@ function closeDupCompare() {
   _dupA = _dupB = null;
 }
 function renderDupCompareBody() {
-  const FIELDS = [
-    { k:'nome',        lbl:'Nome' },
-    { k:'celular',     lbl:'Celular' },
-    { k:'email',       lbl:'Email' },
+  const INFO_FIELDS = [
     { k:'status',      lbl:'Status',    fmt: s=>badgeStatus(s) },
-    { k:'origem',      lbl:'Origem',    fmt: o=>badgeOrigem(o) },
-    { k:'renda',       lbl:'Renda' },
     { k:'datachegada', lbl:'Chegou em', fmt: fmtDate },
-    { k:'observacoes', lbl:'Observações' },
   ];
   const a = _dupA, b = _dupB;
-  const col = (lead, title) => `<div class="dcc-col">
-    <div class="dcc-col-head">${title}</div>
-    ${FIELDS.map(f => {
-      const va = f.fmt ? f.fmt(a[f.k]||'') : esc(a[f.k]||'—');
-      const vb = f.fmt ? f.fmt(b[f.k]||'') : esc(b[f.k]||'—');
-      const val = lead===a ? va : vb;
-      const diff = String(a[f.k]||'') !== String(b[f.k]||'');
-      return `<div class="dcc-field${diff?' dcc-diff':''}">
-        <span class="dcc-lbl">${f.lbl}</span>
-        <span class="dcc-val">${val||'—'}</span>
-      </div>`;
-    }).join('')}
-  </div>`;
-  $('dup-compare-body').innerHTML = `<div class="dcc-grid">${col(a,'Este lead')}${col(b,'Lead duplicado')}</div>`;
+
+  const mergeRows = MERGE_FIELDS.map(f => {
+    const va = esc(a[f.k]||'—'), vb = esc(b[f.k]||'—');
+    const selA = _mergeSelections[f.k] === 'a';
+    const selB = _mergeSelections[f.k] === 'b';
+    return `<div class="dcc-merge-row">
+      <div class="dcc-cell-lbl">${f.lbl}</div>
+      <div class="dcc-merge-opt${selA?' dcc-merge-sel':' dcc-merge-dim'}" data-field="${f.k}" data-side="a">${va}</div>
+      <div class="dcc-merge-opt${selB?' dcc-merge-sel':' dcc-merge-dim'}" data-field="${f.k}" data-side="b">${vb}</div>
+    </div>`;
+  }).join('');
+
+  const infoRows = INFO_FIELDS.map(f => {
+    const va = f.fmt ? f.fmt(a[f.k]||'') : esc(a[f.k]||'—');
+    const vb = f.fmt ? f.fmt(b[f.k]||'') : esc(b[f.k]||'—');
+    const diff = String(a[f.k]||'') !== String(b[f.k]||'');
+    return `<div class="dcc-merge-row${diff?' dcc-info-diff':''}">
+      <div class="dcc-cell-lbl">${f.lbl}</div>
+      <div class="dcc-merge-info">${va||'—'}</div>
+      <div class="dcc-merge-info">${vb||'—'}</div>
+    </div>`;
+  }).join('');
+
+  const body = $('dup-compare-body');
+  body.innerHTML = `
+    <div class="dcc-merge-table">
+      <div class="dcc-merge-header">
+        <div></div>
+        <div class="dcc-col-head">Lead A <span class="dcc-lead-name">${esc(a.nome||'—')}</span></div>
+        <div class="dcc-col-head">Lead B <span class="dcc-lead-name">${esc(b.nome||'—')}</span></div>
+      </div>
+      <div class="dcc-merge-hint">Clique no valor que deseja manter em cada campo.</div>
+      ${mergeRows}
+      ${infoRows}
+    </div>`;
+
+  body.querySelectorAll('.dcc-merge-opt').forEach(el => {
+    el.addEventListener('click', () => {
+      _mergeSelections[el.dataset.field] = el.dataset.side;
+      renderDupCompareBody();
+    });
+  });
 }
-async function dupManterEste() {
+async function dupMerge() {
   if (!_dupA || !_dupB) return;
-  const toDelete = _dupB;
+  const mergedData = {};
+  for (const f of MERGE_FIELDS) {
+    const side = _mergeSelections[f.k] || 'a';
+    const val = side === 'a' ? _dupA[f.k] : _dupB[f.k];
+    if (val !== undefined) mergedData[f.k] = val;
+  }
+  // Mescla etiquetas (união)
+  const etiqMerged = [...new Set([
+    ...(Array.isArray(_dupA.etiquetas)?_dupA.etiquetas:[]),
+    ...(Array.isArray(_dupB.etiquetas)?_dupB.etiquetas:[]),
+  ])];
+  if (etiqMerged.length) mergedData.etiquetas = etiqMerged;
+  // Mantém o status mais avançado
+  mergedData.status = (STATUS_RANK[_dupA.status]||0) >= (STATUS_RANK[_dupB.status]||0)
+    ? _dupA.status : _dupB.status;
+  const keepId = _dupA.id, deleteId = _dupB.id;
   closeDupCompare();
-  await _deleteLeadForce(toDelete.id);
-}
-async function dupManterOutro() {
-  if (!_dupA || !_dupB) return;
-  const toDelete = _dupA;
-  closeDupCompare();
-  await _deleteLeadForce(toDelete.id);
+  try {
+    await saveLead(keepId, mergedData);
+    await _deleteLeadForce(deleteId);
+    toast('Leads mesclados com sucesso.', 'ok');
+  } catch(e) { console.error(e); toast('Erro ao mesclar.', 'err'); }
 }
 function dupNaoSaoDuplicatas() {
   if (!_dupA || !_dupB) return;
@@ -7395,8 +7473,62 @@ function dupNaoSaoDuplicatas() {
   const bList = (dupMap.get(_dupB.id)||[]).filter(id=>id!==_dupA.id);
   aList.length ? dupMap.set(_dupA.id, aList) : dupMap.delete(_dupA.id);
   bList.length ? dupMap.set(_dupB.id, bList) : dupMap.delete(_dupB.id);
+  updateDupAlertBtn();
   renderAll();
   closeDupCompare();
+}
+function autoMergeLeads(a, b) {
+  const merged = {};
+  for (const f of MERGE_FIELDS) {
+    const va = String(a[f.k]||''), vb = String(b[f.k]||'');
+    merged[f.k] = va.length >= vb.length ? a[f.k] : b[f.k];
+  }
+  const etiqMerged = [...new Set([
+    ...(Array.isArray(a.etiquetas)?a.etiquetas:[]),
+    ...(Array.isArray(b.etiquetas)?b.etiquetas:[]),
+  ])];
+  if (etiqMerged.length) merged.etiquetas = etiqMerged;
+  merged.status = (STATUS_RANK[a.status]||0) >= (STATUS_RANK[b.status]||0) ? a.status : b.status;
+  return merged;
+}
+async function mergeAllDuplicates() {
+  const pairs = [];
+  const seen = new Set();
+  for (const [aId, bIds] of dupMap) {
+    for (const bId of bIds) {
+      const key = [aId, bId].sort().join('|');
+      if (!seen.has(key)) { seen.add(key); pairs.push([aId, bId]); }
+    }
+  }
+  if (!pairs.length) { toast('Nenhuma duplicata encontrada.', 'err'); return; }
+  const ok = confirm(
+    `Isso vai mesclar automaticamente ${pairs.length} par(es) de duplicata(s).\n` +
+    `O campo mais completo de cada par será mantido.\n\n` +
+    `Esta ação é IRREVERSÍVEL. Deseja continuar?`
+  );
+  if (!ok) return;
+  let merged = 0, removed = 0, errors = 0;
+  for (const [aId, bId] of pairs) {
+    const a = allLeads.find(l=>l.id===aId);
+    const b = allLeads.find(l=>l.id===bId);
+    if (!a || !b) continue;
+    try {
+      const mergedData = autoMergeLeads(a, b);
+      if (isLive) {
+        const { error: errUpd } = await supabase.from('leads').update(mergedData).eq('id', aId);
+        if (errUpd) throw errUpd;
+        const { error: errDel } = await supabase.from('leads').delete().eq('id', bId);
+        if (errDel) throw errDel;
+      }
+      allLeads = allLeads.filter(l=>l.id!==bId);
+      const idx = allLeads.findIndex(l=>l.id===aId);
+      if (idx !== -1) allLeads[idx] = { ...allLeads[idx], ...mergedData };
+      selectedIds.delete(bId);
+      merged++; removed++;
+    } catch(e) { console.error(e); errors++; }
+  }
+  renderAll();
+  toast(`${merged} duplicata(s) mesclada(s), ${removed} registro(s) removido(s)${errors?' · '+errors+' erro(s)':''}`, merged>0?'ok':'err');
 }
 async function _deleteLeadForce(id) {
   try {
@@ -7470,22 +7602,30 @@ function runSearch(q) {
 }
 
 const _STATUS_TO_SUB = {
-  aguardando: ['comercial','novos'], qualificado:['comercial','qualificados'],
-  agendado:   ['comercial','agendados'], noshow:['comercial','agendados'],
-  realizada:  ['comercial','agendados'], descartado:['comercial','descartados'],
-  cancelado:  ['comercial','descartados'],
+  aguardando: 'novos', qualificado: 'qualificados',
+  agendado:   'agendados', noshow:  'agendados',
+  realizada:  'agendados', descartado: 'descartados',
+  cancelado:  'descartados',
 };
 function navigateToLead(lead) {
-  const [tab, sub] = _STATUS_TO_SUB[lead.status] || ['comercial','novos'];
-  switchTab(tab);
-  setTimeout(() => { switchSub(sub); setTimeout(() => highlightLead(lead.id), 150); }, 80);
+  const sub = _STATUS_TO_SUB[lead.status] || 'novos';
+  switchTab('agendamentos');
+  switchSub(sub);
+  setTimeout(() => highlightLead(lead.id), 120);
 }
 function highlightLead(id) {
-  const row = document.querySelector(`tr[data-id="${id}"]`); if (!row) return;
-  row.scrollIntoView({ behavior:'smooth', block:'center' });
-  row.classList.remove('row-highlight'); void row.offsetWidth;
-  row.classList.add('row-highlight');
-  setTimeout(() => row.classList.remove('row-highlight'), 2200);
+  // Tabela (Novos/Qualificados/Descartados)
+  let el = document.querySelector(`tr[data-id="${id}"]`);
+  // Card de agenda (Agendados)
+  if (!el) {
+    const btn = document.querySelector(`[data-perfil="${id}"]`);
+    el = btn?.closest('.agenda-card') || null;
+  }
+  if (!el) return;
+  el.scrollIntoView({ behavior:'smooth', block:'center' });
+  el.classList.remove('row-highlight'); void el.offsetWidth;
+  el.classList.add('row-highlight');
+  setTimeout(() => el.classList.remove('row-highlight'), 2300);
 }
 
 // ─── EVENTS ──────────────────────────────────────────────────────────
@@ -7983,12 +8123,12 @@ function bindEvents() {
   });
   $('search-input').addEventListener('blur', () => setTimeout(closeSearchDD, 200));
 
-  // ── Duplicata compare
+  // ── Duplicata compare + merge
   $('dup-compare-close').addEventListener('click', closeDupCompare);
   $('dup-compare-backdrop').addEventListener('click', e => { if (e.target===$('dup-compare-backdrop')) closeDupCompare(); });
-  $('dup-manter-este').addEventListener('click', dupManterEste);
-  $('dup-manter-outro').addEventListener('click', dupManterOutro);
+  $('dup-merge').addEventListener('click', dupMerge);
   $('dup-nao-duplicata').addEventListener('click', dupNaoSaoDuplicatas);
+  $('dup-alert-btn')?.addEventListener('click', mergeAllDuplicates);
 
   // ── Duplicata warning
   $('dup-warn-close').addEventListener('click', () => closeDupWarn('cancel'));
