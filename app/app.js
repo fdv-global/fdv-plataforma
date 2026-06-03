@@ -7814,13 +7814,22 @@ function initChatSidebarResize() {
 }
 
 // ─── BUSCA GLOBAL ────────────────────────────────────────────────────
+// O input é um overlay position:fixed fora do header, posicionado via JS.
+// Isso evita qualquer interferência com o stacking context do app-header.
 let _searchTimer = null;
 function openSearch() {
-  $('search-expand').classList.add('open');
-  setTimeout(() => $('search-input')?.focus(), 260);
+  const btn     = $('search-btn');
+  const overlay = $('search-overlay');
+  if (!btn || !overlay) return;
+  const r = btn.getBoundingClientRect();
+  overlay.style.top   = Math.round(r.bottom + 8) + 'px';
+  overlay.style.right = Math.round(window.innerWidth - r.right) + 'px';
+  overlay.style.display = '';
+  setTimeout(() => $('search-input')?.focus(), 60);
 }
 function closeSearch() {
-  $('search-expand').classList.remove('open');
+  const overlay = $('search-overlay');
+  if (overlay) overlay.style.display = 'none';
   const inp = $('search-input'); if (inp) inp.value = '';
   closeSearchDD();
 }
@@ -8439,7 +8448,8 @@ function bindEvents() {
   // ── Busca global
   $('search-btn').addEventListener('click', e => {
     e.stopPropagation();
-    $('search-expand').classList.contains('open') ? closeSearch() : openSearch();
+    const ov = $('search-overlay');
+    (ov && ov.style.display !== 'none') ? closeSearch() : openSearch();
   });
   $('search-input').addEventListener('input', e => {
     clearTimeout(_searchTimer);
@@ -8463,9 +8473,9 @@ function bindEvents() {
   $('dup-warn-salvar').addEventListener('click', () => closeDupWarn('save'));
   $('dup-warn-ver').addEventListener('click', () => { const s=_dupWarnSuspect; closeDupWarn('cancel'); if(s) openPerfil(s); });
 
-  // ── Delegação global: clicar fora da busca fecha dropdown + ícone duplicata
+  // ── Delegação global: clicar fora da busca fecha overlay + ícone duplicata
   document.addEventListener('click', e => {
-    if (!e.target.closest('#search-wrapper')) closeSearchDD();
+    if (!e.target.closest('#search-overlay') && !e.target.closest('#search-btn')) closeSearch();
     const dupBtn = e.target.closest('.btn-dup-ico');
     if (dupBtn) { e.stopPropagation(); openDupCompare(dupBtn.dataset.dupId); }
   });

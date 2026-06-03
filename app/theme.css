@@ -1612,17 +1612,19 @@ h1, h2, h3, h4,
   align-items: center;
 }
 
-.search-expand {
-  position: absolute;
-  right: 0;                       /* ancora no lado direito do button */
-  top: 50%;
-  transform: translateY(-50%);
-  overflow: hidden;
-  width: 0;
-  transition: width 250ms ease;
-  z-index: 150;                   /* flutua sobre outros itens da navbar */
+/* .search-expand removido — o input agora é um overlay position:fixed
+   fora do stacking context do header (ver #search-overlay no HTML).     */
+
+/* Overlay de busca — fora do header, garante que não afeta o layout     */
+.search-overlay {
+  position: fixed;           /* sai do stacking context do app-header    */
+  z-index: 9000;             /* acima de tudo                            */
+  width: 320px;
+  /* top e right calculados pelo JS via getBoundingClientRect()          */
 }
-.search-expand.open { width: 280px; }
+@keyframes srchIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+.search-overlay[style*="display:"] { animation: none; }
+.search-overlay:not([style*="none"]) { animation: srchIn 180ms ease; }
 
 .search-input {
   display: block;
@@ -1645,7 +1647,7 @@ h1, h2, h3, h4,
 .search-dropdown {
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;
+  left: 0; right: 0;   /* estica até a largura do .search-overlay (320px) */
   min-width: 320px;
   max-height: 360px;
   overflow-y: auto;

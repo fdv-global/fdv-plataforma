@@ -66,17 +66,11 @@
       <img class="user-avatar" id="user-avatar" src="" alt="" style="display:none">
       <span class="user-name" id="user-name"></span>
     </div>
-    <!-- Busca Global -->
+    <!-- Busca Global — só o botão; o input é um overlay fixed fora do header -->
     <div class="search-wrapper" id="search-wrapper">
       <button class="notif-btn" id="search-btn" aria-label="Buscar lead">
         <i data-lucide="search" style="width:18px;height:18px;stroke-width:1.75"></i>
       </button>
-      <div class="search-expand" id="search-expand">
-        <input type="text" class="search-input" id="search-input"
-               placeholder="Buscar lead por nome, celular ou e-mail..."
-               autocomplete="off" spellcheck="false">
-      </div>
-      <div class="search-dropdown" id="search-dropdown"></div>
     </div>
 
     <!-- Duplicatas — ícone circular estilo notif, visível apenas quando há pares -->
@@ -1547,6 +1541,14 @@
       <button class="btn-ghost" id="drill-close-btn">Fechar</button>
     </div>
   </div>
+</div>
+
+<!-- ===== SEARCH OVERLAY — fora do header para evitar stacking context ===== -->
+<div class="search-overlay" id="search-overlay" style="display:none" role="search">
+  <input type="text" class="search-input" id="search-input"
+         placeholder="Buscar lead por nome, celular ou e-mail..."
+         autocomplete="off" spellcheck="false">
+  <div class="search-dropdown" id="search-dropdown"></div>
 </div>
 
 <!-- ===== TOASTS ===== -->
