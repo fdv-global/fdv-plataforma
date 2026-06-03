@@ -1,6 +1,6 @@
 # RDM — Sistema FDV: Tasks Pendentes
 
-> Última atualização: 2026-04-24 — WhatsApp end-to-end: Supabase + Evolution API Thomaz + webhook Edge Function + envio corrigido
+> Última atualização: 2026-05-08 — Módulo Alunas completo + Relatórios + permissões granulares + credenciais por email
 
 ---
 
@@ -181,28 +181,69 @@
 
 ---
 
+## ✅ CONCLUÍDO (Módulo Alunas + Permissões + Credenciais · 2026-05-08)
+
+### Módulo Alunas (pós-venda)
+- [x] **Kanban → Alunas** — "Venda Ganha" cria registro em `alunas` com status `Nova compra`; `aluna_id` gravado no lead via migration 010
+- [x] **Sub-módulo Alunas** — landing page com 4 cards de acesso (Alunas, Sessões, Contratos, Relatórios); metric cards clicáveis com painel de lista; filtros de busca, status e produto; acordeão por aluna (avatar, badges, contadores, próxima sessão)
+- [x] **Sub-módulo Sessões** — acordeão por aluna com timeline de pontos coloridos (Realizada/Marcada/Aguardando/Cancelada/Falta); lista de sessões com status, data, hora e observações; botão "+ Sessão" por aluna; filtros por aluna e status
+- [x] **Sub-módulo Contratos** — tabela de contratos com aluna, produto, datas, assinado, no grupo; CRUD completo
+- [x] **Sub-módulo Relatórios** — 12 cards de métrica clicáveis (abre lista da categoria); 3 gráficos de barras CSS (sessões/mês, alunas/produto, cancelamento/produto); 3 filtros (produto, mês/ano últimos 12m, responsável Fernanda/Thomaz)
+- [x] **Migrations Alunas** — `012_create_alunas.sql`: tabelas `alunas`, `sessoes`, `contratos` + bucket `alunas-fotos`; `013_alunas_import_support.sql`: suporte a importação
+- [x] **Foto de aluna** — upload via Supabase Storage (bucket `alunas-fotos`), preview circular no modal, URL salva em `foto_url`
+- [x] **Nav** — aba "Alunas" no menu; dropdowns Comercial e Financeiro removidos; navegação direta às sub-abas
+- [x] **Badges sólidos** — todas as badges `.bp-*` (produto e status) com fundo opaco + texto branco; sem transparência
+
+### Permissões granulares
+- [x] **`permissions jsonb` em `usuarios`** — migration 014; coluna retroativa preenchida por role; `DEFAULT` cobre novos usuários
+- [x] **`ROLE_PERMISSIONS` templates** — admin / ceo / cs_financeiro / comercial; CEO tem acesso a Usuários
+- [x] **Sidebar filtering** — `applyPermissionsToUI()` esconde abas sem permissão no menu
+- [x] **Route blocking** — `switchTab()` redireciona para Início se tentar acessar aba sem permissão
+- [x] **Filtragem de instâncias WA** — `getPermittedInstances()` filtra por `hasPerm('whatsapp_*')`; admins veem tudo
+- [x] **Checkboxes no formulário** — grades de permissão em "Novo Usuário" e "Editar Usuário" com `renderPermCheckboxes` / `readPermCheckboxes`
+- [x] **Roles expandidos** — migration 015 recria constraint `usuarios_role_check` com: admin, ceo, cs_financeiro, comercial, closer, operacoes
+
+### Credenciais por email
+- [x] **Edge Function `send-credentials`** — Deno/denomailer; env vars: SMTP_HOST/PORT/USER/PASS/FROM/TLS; email HTML com tema dark do sistema
+- [x] **`senha_temp` em `usuarios`** — migration 016; campo limpo automaticamente no primeiro login (`resolveRole`)
+- [x] **Email ao criar usuário** — `gerarSenhaTemp()` + salva em DB + chama Edge Function ao salvar novo usuário
+- [x] **Botão "Reenviar"** — gera nova senha temporária sempre (independente de `senha_temp` existente), salva no DB e reenvia email
+- [x] **Botão copiar para WhatsApp** — ícone SVG inline (copy), copia mensagem formatada com link/email/senha para clipboard; fix: removido `btn-ghost` conflitante, `stroke` explícito, `padding:0` em `.btn-icon`
+
+---
+
 ## 🔲 PENDENTE
+
+### Infra — aplicar ao Supabase (não feito ainda)
+- [ ] **Migration 014** — `ALTER TABLE usuarios ADD COLUMN permissions jsonb ...` — rodar no SQL Editor do Supabase
+- [ ] **Migration 015** — atualizar check constraint `usuarios_role_check` com novos roles — rodar no SQL Editor
+- [ ] **Migration 016** — `ALTER TABLE usuarios ADD COLUMN senha_temp text` — rodar no SQL Editor
+- [ ] **Deploy Edge Function `send-credentials`** — `supabase functions deploy send-credentials`
+- [ ] **Secrets SMTP** — configurar no Supabase Dashboard: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `SMTP_TLS`
 
 ### Usuários — o que ainda falta
 - [ ] **Editar usuário** — modal de edição para alterar nome, role e foto de um usuário existente (hoje só o role é alterável via select inline na tabela)
-- [ ] **Excluir do Firebase Authentication** — hoje só remove o doc Firestore (bloqueia login via `resolveRole`). Remoção real do Auth requer Admin SDK via Cloud Function
-- [ ] **Firebase Storage CORS** — configurar regras de CORS no bucket `faculdade-da-vida.firebasestorage.app` para permitir upload de foto pela origem do GitHub Pages
-- [ ] **Foto na tela de login** — mostrar avatar do usuário logado na tela de boas-vindas da aba Início (já existe `user-avatar` na taskbar; falta preencher no Início)
+- [ ] **Excluir do Firebase Authentication** — hoje só remove o doc Supabase (bloqueia login via `resolveRole`). Remoção real do Auth requer Admin SDK ou Supabase Admin API via Edge Function
+- [ ] **Foto na tela de login** — mostrar avatar do usuário logado na tela de boas-vindas da aba Início
+
+### Alunas — o que ainda falta
+- [ ] **Responsável por aluna** — campo `responsavel` (Fernanda/Thomaz) na tabela `alunas`; hoje o Relatórios usa `allLeads[lead_id].closer` como proxy (pode estar vazio se leads não carregados)
+- [ ] **Sessões — contagem automática** — `sessoes_realizadas` desincroniza se sessão for editada/deletada; considerar calcular na query em vez de contador incremental
+- [ ] **Inadimplência integrada** — Financeiro e Alunas mostram inadimplentes em silos separados; integrar para que status `Inadimplente` em Alunas alimenta o módulo Financeiro
 
 ### WhatsApp — pendente
-- [ ] **Limpeza de leads duplicados** — números corrompidos (ex: `98762773000329`) criaram leads com celular errado; corrigir manualmente no Supabase ou criar script de normalização em lote
-- [ ] **Reconexão automática** — quando instância desconecta (CONNECTION_UPDATE close), notificar admin ou tentar reconectar automaticamente
-- [ ] **Mensagens de saída na Edge Function** — `fromMe: true` salva no histórico mas não reflete envios feitos fora do CRM (ex: pelo celular diretamente)
+- [ ] **Limpeza de leads duplicados** — números corrompidos (ex: `98762773000329`) criaram leads com celular errado; corrigir manualmente no Supabase
+- [ ] **Reconexão automática** — quando instância desconecta (CONNECTION_UPDATE close), notificar admin ou tentar reconectar
 - [ ] **Leitura de mensagens** — zerar `unread_count` ao abrir o chat do lead no CRM (hoje manual)
 
 ### Features prioritárias
-- [ ] **Integração Google Sheets** — importar leads dos formulários ISCAS/Respondi para o Firestore automaticamente
+- [ ] **Integração Google Sheets** — importar leads dos formulários ISCAS/Respondi para o Supabase automaticamente
 - [ ] **Notificações de agenda** — lembrete antes da call (WhatsApp via Evolution API)
 - [ ] **Busca global** — busca por nome, celular, e-mail direto no header (qualquer tela)
 
 ### Features secundárias
-- [ ] **Pós-venda** — frente futura para gestão de alunos
-- [ ] **Export CSV/Excel** — exportar lista de leads com filtros ativos
+- [ ] **Export CSV/Excel** — exportar lista de leads e/ou alunas com filtros ativos
+- [ ] **Módulo Financeiro** — pagamentos, inadimplência, fluxo de caixa (landing page existe, sub-módulos em desenvolvimento)
 
 ---
 
@@ -243,16 +284,31 @@
 - `phone_number: string`
 - `last_activity: ISO string`
 
+### Alunas (`alunas`)
+- `id: uuid`, `nome`, `email`, `celular`, `produto` (ALUNAS_PRODUTOS), `status` (ALUNAS_STATUS)
+- `data_inscricao / data_termino: date`, `sessoes_total / sessoes_realizadas: int`
+- `esta_no_grupo: boolean`, `foto_url: text`, `nome_grupo: text`
+- `lead_id: uuid` → FK para `leads` (preenchido pelo Kanban "Venda Ganha")
+- `ALUNAS_PRODUTOS`: Individual, Comunidade +3, Comunidade +1, Reprogramação Mensal, Águia Club, PRM
+- `ALUNAS_STATUS`: Nova compra, Dentro do Prazo, Migrou, Finalizado, Cancelado, Cliente Off, Reembolso, Inadimplente
+
+### Sessões (`sessoes`)
+- `id: uuid`, `aluna_id: uuid` (FK→alunas, CASCADE), `numero_sessao: int`
+- `data: date`, `hora: time`, `status: text` (Aguardando/Marcada/Realizada/Cancelada/Falta), `observacoes: text`
+
+### Contratos (`contratos`)
+- `id: uuid`, `aluna_id: uuid` (FK→alunas, CASCADE), `produto: text`
+- `data_inicio / data_vencimento: date`, `assinado: boolean`, `esta_no_grupo: boolean`, `observacoes: text`
+
 ### Usuários (`usuarios`)
-- `uid: string` — mesmo UID do Firebase Authentication
-- `email: string`
-- `nome: string`
-- `role: 'admin' | 'closer' | 'operacoes'`
-- `ativo: boolean` — false bloqueia login (resolveRole chama signOut)
-- `criadoEm: Date`
-- `photoURL?: string` — URL do Firebase Storage (`usuarios/{uid}/foto`)
-- Criação: instância Firebase temporária (`initializeApp` + `fdv-tmp-{ts}`) para não deslogar o admin atual
-- Exclusão: apenas Firestore (Auth não é deletado pelo cliente — sem Admin SDK)
+- `id: uuid`, `firebase_uid: text` (unique), `email: text`, `nome: text`
+- `role: 'admin' | 'ceo' | 'cs_financeiro' | 'comercial' | 'closer' | 'operacoes'`
+- `ativo: boolean` — false bloqueia login (`resolveRole` chama `signOut`)
+- `permissions: jsonb` — objeto `{ inicio, comercial, alunas, financeiro, whatsapp_tati, whatsapp_fernanda, whatsapp_thomaz, usuarios }` (todos boolean)
+- `senha_temp: text` — senha temporária gerada no cadastro/reenvio; limpa automaticamente no primeiro login
+- `photoURL?: text` — URL do Supabase Storage
+- Roles templates em `ROLE_PERMISSIONS` no app.js; CEO tem acesso a Usuários
+- Edge Function `send-credentials` envia email HTML com link/email/senha ao criar/reenviar
 
 ### Infra
 - `EVOLUTION_API_URL = https://ayub-evolution.8z6sbs.easypanel.host` — servidor Thomaz (EasyPanel); `EVOLUTION_API_KEY = 943BFEBDE2188DF38D176E5FC8AFD`
@@ -264,3 +320,5 @@
 - Servidor local: `node app/server.js` na porta 3000, hot reload via SSE
 - Deploy: GitHub Actions (`.github/workflows/deploy.yml`) → GitHub Pages no push para `master`
 - **Phone normalization** — `normalizePhoneForEvolution(celular)` em app.js e `normalizePhoneForStorage(phone)` na Edge Function; ambas garantem `55XXXXXXXXXXX` (12–13 dígitos)
+- **Edge Function `send-credentials`** — `supabase/functions/send-credentials/index.ts` (Deno/denomailer); secrets: `SMTP_HOST/PORT/USER/PASS/FROM/TLS`; **ainda não deployada**
+- **Migrations pendentes de aplicar** — 014 (permissions), 015 (roles constraint), 016 (senha_temp); arquivos em `supabase/migrations/`

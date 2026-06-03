@@ -3101,7 +3101,7 @@ async function confirmarDescarte() {
         kanban_column:         'descartado',
         kanban_column_since:   new Date().toISOString(),
         ...payload,
-        status:                undefined,
+        status:                'descartado',
         ...(hist && { historico_kanban: hist }),
       });
       toast('Lead descartado.', 'ok');
@@ -8018,7 +8018,7 @@ async function _ensureRelChartsReady(base) {
   if (!offEl) {
     offEl = document.createElement('div');
     offEl.id = '_pdf-charts-offscreen';
-    offEl.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:620px;visibility:hidden;pointer-events:none;';
+    offEl.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:620px;opacity:0;pointer-events:none;';
     document.body.appendChild(offEl);
   }
   offEl.innerHTML = `
@@ -8045,7 +8045,7 @@ async function _ensureRelChartsReady(base) {
     if(l.kanban_column==='venda_ganha') mesMap[m].vendas++;
   });
   const mesEntries = Object.entries(mesMap).sort((a,b)=>a[0].localeCompare(b[0]));
-  if (mesEntries.length >= 2) {
+  if (mesEntries.length >= 1) {
     const ctx = document.getElementById('rel-chart-comparativo')?.getContext('2d');
     if (ctx) {
       _relChart = new Chart(ctx, { type:'bar', data:{
@@ -8066,7 +8066,7 @@ async function _ensureRelChartsReady(base) {
     diaMap[l.datachegada]++;
   });
   const diaEntries = Object.entries(diaMap).sort((a,b)=>a[0].localeCompare(b[0])).slice(-30);
-  if (diaEntries.length >= 2) {
+  if (diaEntries.length >= 1) {
     const ctx2 = document.getElementById('rel-chart-dia')?.getContext('2d');
     if (ctx2) {
       _relChartDia = new Chart(ctx2, { type:'bar', data:{
@@ -8082,6 +8082,7 @@ async function _ensureRelChartsReady(base) {
 }
 
 async function exportRelatoriosPDF() {
+  if (!_relBase.length) renderRelatorios();
   if (!_relBase.length) { toast('Sem dados para exportar.', 'err'); return; }
   const base      = _relBase;
 
