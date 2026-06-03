@@ -167,8 +167,11 @@ function saveKanbanCols(cols) { localStorage.setItem(KANBAN_LS_KEY, JSON.stringi
 // ─── STATE ───────────────────────────────────────────────────────────
 let allLeads       = [];
 let filteredLeads  = [];
-let dupMap         = new Map(); // leadId → [dup leadId, ...]
-let _mergeSelections = {};     // fieldKey → 'a' | 'b'
+let dupMap           = new Map(); // leadId → [dup leadId, ...]
+let _mergeSelections = {};        // fieldKey → 'a' | 'b'
+let _drillLeads      = [];        // leads do drill-down atual
+let _drillTitle      = '';
+let _drillStatusFilt = '';
 let currentId      = null;
 let modalMode      = 'agendar';
 let supabase       = null;
@@ -3682,8 +3685,8 @@ function renderRelatorios() {
     if (l.status==='noshow') mesMap[m].noShows++;
   });
 
-  const relStatCard = (label, val, ico, accent='') => `
-    <div class="stat-card ${accent}">
+  const relStatCard = (label, val, ico, accent='', drill='') => `
+    <div class="stat-card ${accent}${drill?' rel-drill-row':''}" ${drill} style="${drill?'cursor:pointer':''}">
       <div class="stat-top"><span class="stat-label">${esc(label)}</span><span class="stat-icon">${ico}</span></div>
       <strong class="stat-num">${val}</strong>
     </div>`;
@@ -3694,6 +3697,37 @@ function renderRelatorios() {
     .sort((a,b) => b.conv - a.conv || b.vendas - a.vendas);
   const maxLeads = Math.max(...Object.values(origemMap).map(d=>d.total), 1);
 
+  // ── UTM performance
+  const hasUTM = base.some(l => l.utm_campaign || l.utm_source || l.utm_content || l.utm_medium);
+  const utmAgg = field => {
+    const map = {};
+    base.forEach(l => {
+      const k = l[field] || 'Orgânico / Não identificado';
+      if (!map[k]) map[k] = { total:0, agendados:0, vendas:0 };
+      map[k].total++;
+      if (l.dataagendamento) map[k].agendados++;
+      if (l.kanban_column === 'venda_ganha') map[k].vendas++;
+    });
+    return Object.entries(map).sort((a,b) => b[1].total - a[1].total);
+  };
+  const utmSubTable = (subTitle, field, colLabel, entries) => {
+    if (!entries.length) return '';
+    return `<div>
+      <p class="utm-perf-sub-title">${esc(subTitle)}</p>
+      <div class="rel-table-wrap">
+        <table class="rel-table">
+          <thead><tr><th>${esc(colLabel)}</th><th>Leads</th><th>Agend.</th><th>Vendas</th><th>Conv.</th></tr></thead>
+          <tbody>${entries.map(([k,d]) => {
+            const conv = d.total ? pct(d.vendas, d.total) : 0;
+            return `<tr class="rel-drill-row" data-drill="${field}" data-drill-value="${esc(k)}" data-drill-title="${esc(subTitle+': '+k)}">
+              <td>${esc(k)}</td><td>${d.total}</td><td>${d.agendados}</td><td>${d.vendas}</td><td>${conv}%</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>
+    </div>`;
+  };
+
   // ── Comparativo mês a mês
   const mesEntries = Object.entries(mesMap).sort((a,b)=>a[0].localeCompare(b[0]));
   const maxMesLeads = Math.max(...mesEntries.map(([,d])=>d.total), 1);
@@ -3703,12 +3737,12 @@ function renderRelatorios() {
 
   $('relatorios-content').innerHTML = `
     <div class="stats-grid rel-summary">
-      ${relStatCard('Total de Leads', base.length, _S(`<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>`))}
-      ${relStatCard('Comparecimento', taxaComp+'%', _S(`<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>`), 'accent-petro')}
-      ${relStatCard('Conversão', taxaConv+'%', ICO_TROPHY, 'accent-green')}
-      ${relStatCard('Faturamento', 'R$\xa0'+fmtValor(faturamento), _S(`<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>`), 'accent-sand')}
+      ${relStatCard('Total de Leads', base.length, _S(`<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>`), '', 'data-drill="all" data-drill-title="Total de Leads"')}
+      ${relStatCard('Comparecimento', taxaComp+'%', _S(`<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>`), 'accent-petro', 'data-drill="status" data-drill-value="realizada" data-drill-title="Calls Realizadas"')}
+      ${relStatCard('Conversão', taxaConv+'%', ICO_TROPHY, 'accent-green', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
+      ${relStatCard('Faturamento', 'R$\xa0'+fmtValor(faturamento), _S(`<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>`), 'accent-sand', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
       ${relStatCard('Ticket Médio', ticketMedio ? 'R$\xa0'+fmtValor(ticketMedio) : '—', _S(`<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>`), 'accent-gold')}
-      ${relStatCard('Vendas', vendas.length, ICO_CHECK_CIRCLE, 'accent-gold')}
+      ${relStatCard('Vendas', vendas.length, ICO_CHECK_CIRCLE, 'accent-gold', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
     </div>
 
     ${mesEntries.length >= 2 ? `
@@ -3723,7 +3757,7 @@ function renderRelatorios() {
       <h3 class="rel-section-title">Ranking de Origem — Conversão</h3>
       <div class="rel-block rel-rank-wrap">
         ${origemRanking.map((r,i) => `
-          <div class="rel-rank-row">
+          <div class="rel-rank-row rel-drill-row" data-drill="origem" data-drill-value="${esc(r.o)}" data-drill-title="Origem: ${esc(r.o)}">
             <span class="rel-rank-pos">${i+1}</span>
             <div class="rel-rank-info">
               <div class="rel-rank-name">${esc(r.o)}</div>
@@ -3739,25 +3773,44 @@ function renderRelatorios() {
       </div>
     </div>
 
-    ${relTable('Leads por Mês', ['Mês','Leads','Realizadas','Vendas','No Shows','Faturamento','Ticket Médio'],
-      Object.entries(mesMap).sort((a,b)=>b[0].localeCompare(a[0])).map(([m,d])=> {
-        const tm = d.vendas ? Math.round(d.valor/d.vendas) : 0;
-        return [fmtMes(m), d.total, d.realizadas, d.vendas, d.noShows,
-          d.valor?'R$\xa0'+fmtValor(d.valor):'—',
-          tm?'R$\xa0'+fmtValor(tm):'—'];
-      })
-    )}
+    ${hasUTM ? `
+    <div class="rel-section">
+      <h3 class="rel-section-title">Performance por Campanha</h3>
+      <div class="utm-perf-grid">
+        ${utmSubTable('Por Origem','utm_source','Origem',utmAgg('utm_source'))}
+        ${utmSubTable('Por Campanha','utm_campaign','Campanha',utmAgg('utm_campaign'))}
+        ${utmSubTable('Por Anúncio','utm_content','Anúncio',utmAgg('utm_content'))}
+      </div>
+    </div>` : ''}
 
-    ${relTable('Taxa de Conversão por Closer', ['Closer','Agendados','Realizadas','Vendas','Faturamento','Conv.'],
-      Object.entries(closerMap).map(([c,d])=>
-        [CLOSERS[c]?.name||c, d.agendados, d.realizadas, d.vendas,
-         d.valor?'R$\xa0'+fmtValor(d.valor):'—',
-         d.realizadas?pct(d.vendas,d.realizadas)+'%':'—'])
-    )}
+    ${(() => {
+      const mesSorted = Object.entries(mesMap).sort((a,b)=>b[0].localeCompare(a[0]));
+      return relTable('Leads por Mês', ['Mês','Leads','Realizadas','Vendas','No Shows','Faturamento','Ticket Médio'],
+        mesSorted.map(([m,d]) => {
+          const tm = d.vendas ? Math.round(d.valor/d.vendas) : 0;
+          return [fmtMes(m), d.total, d.realizadas, d.vendas, d.noShows,
+            d.valor?'R$\xa0'+fmtValor(d.valor):'—', tm?'R$\xa0'+fmtValor(tm):'—'];
+        }),
+        i => ({ type:'mes', value: mesSorted[i][0], title:'Mês: '+fmtMes(mesSorted[i][0]) })
+      );
+    })()}
 
-    ${relTable('Responsável pelo Agendamento', ['Responsável','Agendados','Realizadas','Vendas'],
-      Object.entries(respMap).map(([r,d])=>[r, d.agendados, d.realizadas, d.vendas])
-    )}
+    ${(() => {
+      const closerEntries = Object.entries(closerMap);
+      return relTable('Taxa de Conversão por Closer', ['Closer','Agendados','Realizadas','Vendas','Faturamento','Conv.'],
+        closerEntries.map(([c,d]) => [CLOSERS[c]?.name||c, d.agendados, d.realizadas, d.vendas,
+          d.valor?'R$\xa0'+fmtValor(d.valor):'—', d.realizadas?pct(d.vendas,d.realizadas)+'%':'—']),
+        i => ({ type:'closer', value: closerEntries[i][0], title:'Closer: '+(CLOSERS[closerEntries[i][0]]?.name||closerEntries[i][0]) })
+      );
+    })()}
+
+    ${(() => {
+      const respEntries = Object.entries(respMap);
+      return relTable('Responsável pelo Agendamento', ['Responsável','Agendados','Realizadas','Vendas'],
+        respEntries.map(([r,d]) => [r, d.agendados, d.realizadas, d.vendas]),
+        i => ({ type:'resp', value: respEntries[i][0], title:'Agendado por: '+respEntries[i][0] })
+      );
+    })()}
 
     ${!base.length ? '<div class="agenda-empty"><i data-lucide="bar-chart-2" class="empty-lucide"></i><h3>Sem dados</h3><p>Adicione leads ou ajuste os filtros.</p></div>' : ''}
   `;
@@ -3823,14 +3876,18 @@ function renderRelatorios() {
   }
 }
 
-function relTable(title, headers, rows) {
+function relTable(title, headers, rows, getDrill = null) {
   if (!rows.length) return '';
   return `<div class="rel-section">
     <h3 class="rel-section-title">${esc(title)}</h3>
     <div class="rel-table-wrap">
       <table class="rel-table">
         <thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead>
-        <tbody>${rows.map(row=>`<tr>${row.map(cell=>`<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody>
+        <tbody>${rows.map((row, i) => {
+          const d = getDrill ? getDrill(i) : null;
+          const attrs = d ? ` class="rel-drill-row" data-drill="${d.type}" data-drill-value="${esc(String(d.value))}" data-drill-title="${esc(d.title)}"` : '';
+          return `<tr${attrs}>${row.map(cell=>`<td>${cell}</td>`).join('')}</tr>`;
+        }).join('')}</tbody>
       </table>
     </div>
   </div>`;
@@ -7307,6 +7364,140 @@ async function deleteInstance(id) {
   toast(`"${inst.displayName}" excluída.`, 'ok');
 }
 
+// ─── DRILL-DOWN DE RELATÓRIOS ────────────────────────────────────────
+function openDrillDown(title, leads) {
+  _drillTitle = title;
+  _drillLeads = leads;
+  _drillStatusFilt = '';
+  $('drill-title').textContent = title;
+  $('drill-subtitle').textContent = `${leads.length} lead${leads.length !== 1 ? 's' : ''}`;
+  renderDrillDownBody();
+  $('drill-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDrillDown() {
+  $('drill-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function renderDrillDownBody() {
+  const all = _drillLeads;
+  const shown = _drillStatusFilt
+    ? all.filter(l => _drillStatusFilt === 'venda' ? l.kanban_column === 'venda_ganha' : l.status === _drillStatusFilt)
+    : all;
+
+  const cnt = s => all.filter(l => s === 'venda' ? l.kanban_column === 'venda_ganha' : l.status === s).length;
+  const vendas  = cnt('venda');
+  const taxaLV  = all.length ? pct(vendas, all.length) : 0;
+  const hasUTM  = all.some(l => l.utm_campaign || l.utm_source || l.utm_content || l.utm_medium);
+
+  const pills = [
+    { val:'',          lbl:'Todos' },
+    { val:'aguardando',lbl:'Novos' },
+    { val:'qualificado',lbl:'Qualificados' },
+    { val:'agendado',  lbl:'Agendados' },
+    { val:'descartado',lbl:'Descartados' },
+    { val:'venda',     lbl:'Vendas' },
+  ];
+
+  const utmCols = hasUTM ? '<th>Campanha</th><th>Conjunto</th><th>Anúncio</th><th>Origem UTM</th>' : '';
+  const utmCellsFn = l => hasUTM
+    ? `<td>${esc(l.utm_campaign||'—')}</td><td>${esc(l.utm_medium||'—')}</td><td>${esc(l.utm_content||'—')}</td><td>${esc(l.utm_source||'—')}</td>`
+    : '';
+  const colspan = hasUTM ? 9 : 5;
+
+  $('drill-body').innerHTML = `
+    <div class="drill-stats">
+      <div class="drill-stat"><div class="drill-stat-val">${all.length}</div><div class="drill-stat-lbl">Total</div></div>
+      <div class="drill-stat"><div class="drill-stat-val">${cnt('aguardando')}</div><div class="drill-stat-lbl">Novos</div></div>
+      <div class="drill-stat"><div class="drill-stat-val">${cnt('qualificado')}</div><div class="drill-stat-lbl">Qualif.</div></div>
+      <div class="drill-stat"><div class="drill-stat-val">${cnt('agendado')}</div><div class="drill-stat-lbl">Agend.</div></div>
+      <div class="drill-stat"><div class="drill-stat-val">${cnt('descartado')}</div><div class="drill-stat-lbl">Desc.</div></div>
+      <div class="drill-stat ds-green"><div class="drill-stat-val">${vendas}</div><div class="drill-stat-lbl">Vendas</div></div>
+      <div class="drill-stat ds-gold"><div class="drill-stat-val">${taxaLV}%</div><div class="drill-stat-lbl">Conv.</div></div>
+    </div>
+    <div class="drill-filter-bar">
+      ${pills.map(p => `<button class="cqf-btn${p.val === _drillStatusFilt ? ' cqf-btn--active' : ''}" data-drf="${p.val}">${p.lbl}</button>`).join('')}
+    </div>
+    <div class="drill-table-wrap">
+      <table class="rel-table drill-table">
+        <thead><tr>
+          <th>Nome</th><th>Data entrada</th><th>Status</th><th>Renda</th><th>Closer</th>${utmCols}
+        </tr></thead>
+        <tbody>
+          ${!shown.length
+            ? `<tr><td colspan="${colspan}" style="text-align:center;color:var(--t3);padding:24px">Nenhum lead neste filtro.</td></tr>`
+            : shown.map(l => `<tr>
+                <td><button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
+                <td>${fmtDate(l.datachegada)}</td>
+                <td>${badgeStatus(l.status)}</td>
+                <td>${esc(l.renda||'—')}</td>
+                <td>${esc(CLOSERS[l.closer]?.name||l.closer||'—')}</td>
+                ${utmCellsFn(l)}
+              </tr>`).join('')
+          }
+        </tbody>
+      </table>
+    </div>`;
+
+  $('drill-body').querySelectorAll('[data-drf]').forEach(btn =>
+    btn.addEventListener('click', () => { _drillStatusFilt = btn.dataset.drf; renderDrillDownBody(); })
+  );
+  $('drill-body').querySelectorAll('[data-perfil]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const l = allLeads.find(x => x.id === btn.dataset.perfil);
+      if (l) { closeDrillDown(); openPerfil(l); }
+    })
+  );
+}
+function exportDrillCSV() {
+  const hasUTM = _drillLeads.some(l => l.utm_campaign || l.utm_source || l.utm_content);
+  const hdr = ['Nome','Celular','Email','Status','Renda','Closer','Data de entrada'];
+  if (hasUTM) hdr.push('utm_campaign','utm_medium','utm_content','utm_source');
+  const rows = _drillLeads.map(l => {
+    const r = [l.nome||'',l.celular||'',l.email||'',l.status||'',l.renda||'',
+                CLOSERS[l.closer]?.name||l.closer||'',l.datachegada||''];
+    if (hasUTM) r.push(l.utm_campaign||'',l.utm_medium||'',l.utm_content||'',l.utm_source||'');
+    return r;
+  });
+  const csv = [hdr,...rows].map(r => r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' })),
+    download: `fdv-${_drillTitle.replace(/[^a-z0-9]/gi,'_')}-${new Date().toISOString().slice(0,10)}.csv`,
+  });
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
+}
+function exportDrillPDF() {
+  const hasUTM = _drillLeads.some(l => l.utm_campaign || l.utm_source || l.utm_content);
+  const hdr = ['Nome','Status','Renda','Closer','Data entrada'];
+  if (hasUTM) hdr.push('Campanha','Conjunto','Anúncio','Origem UTM');
+  const date = new Date().toLocaleDateString('pt-BR');
+  const bodyRows = _drillLeads.map(l => {
+    const cells = [esc(l.nome||'—'),esc(l.status||'—'),esc(l.renda||'—'),
+                   esc(CLOSERS[l.closer]?.name||l.closer||'—'),esc(fmtDate(l.datachegada))];
+    if (hasUTM) cells.push(esc(l.utm_campaign||'—'),esc(l.utm_medium||'—'),esc(l.utm_content||'—'),esc(l.utm_source||'—'));
+    return `<tr>${cells.map(c=>`<td>${c}</td>`).join('')}</tr>`;
+  }).join('');
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<title>FDV — ${esc(_drillTitle)}</title>
+<style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111;margin:0;padding:30px 36px;font-size:12px}
+.hd{border-bottom:2px solid #CE9221;padding-bottom:10px;margin-bottom:18px}
+.hd h1{margin:0;font-size:17px}.hd p{margin:4px 0 0;color:#555;font-size:11px}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th{background:#f0f0f0;font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;padding:6px 9px;text-align:left;border:1px solid #ddd}
+td{padding:6px 9px;border:1px solid #ddd;font-size:11px}
+tr:nth-child(even) td{background:#fafafa}
+.ft{margin-top:16px;font-size:9.5px;color:#999}</style>
+</head><body>
+<div class="hd"><h1>FDV — Relatório de Leads</h1>
+<p>${esc(_drillTitle)} · Gerado em ${date} · ${_drillLeads.length} lead(s)</p></div>
+<table><thead><tr>${hdr.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+<tbody>${bodyRows}</tbody></table>
+<div class="ft">Faculdade da Vida · Sistema FDV · Exportado automaticamente</div>
+<script>window.onload=()=>window.print()</script>
+</body></html>`;
+  const w = window.open('','_blank'); w.document.write(html); w.document.close();
+}
+
 // ─── DUPLICATAS ──────────────────────────────────────────────────────
 const _DUP_EXCL_KEY = 'fdv_dup_exclusions';
 
@@ -8176,6 +8367,38 @@ function bindEvents() {
   $('cm-salvar').addEventListener('click', salvarContrato);
   $('cm-backdrop').addEventListener('click', e => { if (e.target === $('cm-backdrop')) closeContratoModal(); });
 
+  // ── Drill-down de relatórios
+  $('drill-close')    ?.addEventListener('click', closeDrillDown);
+  $('drill-close-btn')?.addEventListener('click', closeDrillDown);
+  $('drill-backdrop') ?.addEventListener('click', e => { if (e.target===$('drill-backdrop')) closeDrillDown(); });
+  $('drill-export-csv')?.addEventListener('click', exportDrillCSV);
+  $('drill-export-pdf')?.addEventListener('click', exportDrillPDF);
+
+  // Delegação: qualquer [data-drill] dentro de #relatorios-content
+  $('relatorios-content')?.addEventListener('click', e => {
+    const el = e.target.closest('[data-drill]');
+    if (!el) return;
+    const mesFilt    = $('rel-filter-mes')?.value    || '';
+    const origemFilt = $('rel-filter-origem')?.value || '';
+    let base = [...allLeads];
+    if (mesFilt)    base = base.filter(l => (l.datachegada||'').startsWith(mesFilt));
+    if (origemFilt) base = base.filter(l => l.origem === origemFilt);
+    const drill = el.dataset.drill, value = el.dataset.drillValue || '', title = el.dataset.drillTitle || value;
+    let leads;
+    if      (drill === 'all')          leads = base;
+    else if (drill === 'status')       leads = base.filter(l => l.status === value);
+    else if (drill === 'venda')        leads = base.filter(l => l.kanban_column === 'venda_ganha');
+    else if (drill === 'origem')       leads = base.filter(l => (l.origem||'Outros') === value);
+    else if (drill === 'mes')          leads = base.filter(l => (l.datachegada||'').startsWith(value));
+    else if (drill === 'closer')       leads = base.filter(l => (l.closer||'_sem') === value);
+    else if (drill === 'resp')         leads = base.filter(l => (l.agendadopor||'Desconhecido') === value);
+    else if (drill === 'utm_source')   leads = base.filter(l => (l.utm_source||'Orgânico / Não identificado') === value);
+    else if (drill === 'utm_campaign') leads = base.filter(l => (l.utm_campaign||'Orgânico / Não identificado') === value);
+    else if (drill === 'utm_content')  leads = base.filter(l => (l.utm_content||'Orgânico / Não identificado') === value);
+    else return;
+    openDrillDown(title, leads);
+  });
+
   // ── Resize painel lateral de chats
   initChatSidebarResize();
 
@@ -8220,7 +8443,7 @@ function bindEvents() {
       closeMotivosPerda(); closeVendaGanha(); closeAddAsLeadModal();
       closeNovaConversaModal(); closeDescarteModal();
       closeAlunaModal(); closeSessaoModal(); closeContratoModal();
-      closeSearch(); closeDupCompare(); closeDupWarn('cancel');
+      closeSearch(); closeDupCompare(); closeDupWarn('cancel'); closeDrillDown();
     }
   });
 }

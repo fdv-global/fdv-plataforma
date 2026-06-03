@@ -1526,6 +1526,27 @@
   </div>
 </div>
 
+<!-- ===== DRILL-DOWN MODAL ===== -->
+<div class="modal-backdrop" id="drill-backdrop">
+  <div class="modal drill-modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="drill-title">Drill-down</h2>
+        <p class="modal-subtitle" id="drill-subtitle"></p>
+      </div>
+      <button class="modal-close" id="drill-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-body drill-body" id="drill-body"></div>
+    <div class="modal-footer">
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost" id="drill-export-csv">Exportar planilha (CSV)</button>
+        <button class="btn-ghost" id="drill-export-pdf">Exportar PDF</button>
+      </div>
+      <button class="btn-ghost" id="drill-close-btn">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== TOASTS ===== -->
 <div class="toast-dock" id="toast-dock"></div>
 

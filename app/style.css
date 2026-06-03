@@ -1677,6 +1677,49 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 .rel-table tbody tr:last-child td { border-bottom: none; }
 .rel-table tbody tr:hover         { background: var(--s-hover); }
 
+/* ── Linhas clicáveis nos relatórios ─────────────────────── */
+.rel-drill-row { cursor: pointer; }
+.rel-drill-row:hover td { background: rgba(206,146,33,0.06) !important; }
+.rel-rank-row.rel-drill-row:hover { background: rgba(206,146,33,0.07) !important; }
+
+/* ── Performance por Campanha (UTM) ──────────────────────── */
+.utm-perf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.utm-perf-sub-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .7px; color: var(--t3); margin: 0 0 8px;
+}
+
+/* ── Drill-down modal ─────────────────────────────────────── */
+.drill-modal { max-width: 900px; width: 94vw; }
+.drill-body  { padding: 18px 24px 4px; }
+
+.drill-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.drill-stat {
+  background: var(--s2); border: 1px solid var(--b0);
+  border-radius: var(--r-sm); padding: 10px 8px; text-align: center;
+}
+.drill-stat.ds-green { border-color: rgba(76,175,142,.3);  background: rgba(76,175,142,.06); }
+.drill-stat.ds-gold  { border-color: rgba(206,146,33,.35); background: rgba(206,146,33,.07); }
+.drill-stat-val { font-size: 20px; font-weight: 800; color: var(--t1); line-height: 1; }
+.drill-stat.ds-green .drill-stat-val { color: #4caf8e; }
+.drill-stat.ds-gold  .drill-stat-val { color: var(--gold); }
+.drill-stat-lbl { font-size: 9.5px; color: var(--t3); text-transform: uppercase; letter-spacing: .4px; margin-top: 4px; }
+
+.drill-filter-bar { display: flex; gap: 5px; margin-bottom: 12px; flex-wrap: wrap; }
+.drill-filter-bar .cqf-btn { padding: 4px 12px; font-size: 12px; }
+
+.drill-table-wrap { max-height: 360px; overflow-y: auto; border-radius: var(--r-lg); }
+.drill-table { min-width: 560px; }
+
 /* ============================================================
    REALIZE DROPDOWN (legado)
    ============================================================ */
