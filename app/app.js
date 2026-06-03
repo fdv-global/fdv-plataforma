@@ -7463,6 +7463,11 @@ async function dupMerge() {
   closeDupCompare();
   try {
     await saveLead(keepId, mergedData);
+    // Atualiza allLeads imediatamente para que buildDupMap (chamado por
+    // _deleteLeadForce → renderAll) enxergue os dados mesclados corretos
+    // e não re-detecte o lead sobrevivente como duplicata.
+    const keepIdx = allLeads.findIndex(l => l.id === keepId);
+    if (keepIdx !== -1) allLeads[keepIdx] = { ...allLeads[keepIdx], ...mergedData };
     await _deleteLeadForce(deleteId);
     toast('Leads mesclados com sucesso.', 'ok');
   } catch(e) { console.error(e); toast('Erro ao mesclar.', 'err'); }
@@ -7596,8 +7601,14 @@ function runSearch(q) {
       item.addEventListener('mousedown', e => {
         e.preventDefault();
         const lead = allLeads.find(l=>l.id===item.dataset.leadId);
-        if (lead) navigateToLead(lead);
         closeSearch();
+        if (!lead) return;
+        // Resultado marcado como duplicata → abre modal de comparação/merge
+        if (isDup(lead.id)) {
+          openDupCompare(lead.id);
+        } else {
+          navigateToLead(lead);
+        }
       })
     );
   }
