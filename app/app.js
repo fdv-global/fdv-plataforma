@@ -3876,7 +3876,6 @@ function renderRelatorios() {
       ${relStatCard('Vendas', vendas.length, ICO_CHECK_CIRCLE, 'accent-gold', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
     </div>
 
-    ${mesEntries.length >= 2 ? `
     ${diaEntries.length >= 2 ? `
     <div class="rel-section">
       <h3 class="rel-section-title">Leads por Dia</h3>
