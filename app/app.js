@@ -4051,54 +4051,28 @@ function renderRelatorios() {
 
   // ── Helpers Chart.js compartilhados
   if (typeof Chart === 'undefined') return;
-  // Registrar plugin de rótulos de dados (carregado via CDN)
-  if (typeof ChartDataLabels !== 'undefined') Chart.register(ChartDataLabels);
 
   const CHART_OPTS = {
     responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
-    plugins: {
-      legend: { display: false },
-      datalabels: { display: false }, // opt-out global; ativado por gráfico
-      tooltip: {
-        backgroundColor:'rgba(15,12,8,0.92)', titleColor:'#e8e4dc', bodyColor:'#c8c4bc',
-        borderColor:'rgba(255,255,255,0.08)', borderWidth:1,
-      },
-    },
+    plugins: { legend: { display: false }, tooltip: {
+      backgroundColor:'rgba(15,12,8,0.92)', titleColor:'#e8e4dc', bodyColor:'#c8c4bc',
+      borderColor:'rgba(255,255,255,0.08)', borderWidth:1,
+    }},
   };
   const SCALE_Y_H = {
     grid:{ color:'rgba(255,255,255,0.04)' }, ticks:{ color:'rgba(200,196,188,0.75)', font:{size:11} },
     border:{ color:'rgba(255,255,255,0.06)' }, beginAtZero:true,
   };
   const SCALE_X_H = { grid:{ color:'rgba(255,255,255,0.04)' }, ticks:{ color:'rgba(200,196,188,0.75)', font:{size:11} }, border:{ color:'rgba(255,255,255,0.06)' } };
-
-  // mkHBar — gráfico de barras horizontais com rótulos "valor (pct%)"
-  const mkHBar = (canvasId, labels, data, color, total) => {
+  const mkHBar = (canvasId, labels, data, color) => {
     const ctx = document.getElementById(canvasId)?.getContext('2d');
     if (!ctx || !data.length) return null;
-    const totSum = total || data.reduce((a,b) => a+b, 0);
     return new Chart(ctx, { type:'bar', data:{
       labels, datasets:[{ data, backgroundColor:color, borderColor:color, borderWidth:0, borderRadius:3, indexAxis:'y' }]
-    }, options:{
-      ...CHART_OPTS,
-      indexAxis:'y',
-      layout: { padding: { right: 100 } }, // espaço para os rótulos à direita
-      scales:{ x:SCALE_Y_H, y:{ ...SCALE_X_H, ticks:{ ...SCALE_X_H.ticks, font:{size:11} } } },
-      plugins:{
-        ...CHART_OPTS.plugins,
-        datalabels:{
-          display: true,
-          anchor:'end', align:'end',
-          color:'#e8e4dc',
-          font:{ size:10, weight:'600' },
-          padding:{ left:6 },
-          clip: false,
-          formatter: v => v ? `${v} (${Math.round(v/totSum*100)}%)` : '',
-        },
-      },
-    }});
+    }, options:{ ...CHART_OPTS, indexAxis:'y', scales:{ x:SCALE_Y_H, y:{ ...SCALE_X_H, ticks:{ ...SCALE_X_H.ticks, font:{size:11} } } } }});
   };
 
-  // b) Leads por dia — total de cada barra acima
+  // b) Leads por dia
   if (diaEntries.length >= 2) {
     const ctx = document.getElementById('rel-chart-dia')?.getContext('2d');
     if (ctx) {
@@ -4109,46 +4083,25 @@ function renderRelatorios() {
           { label:'Respondi', data:diaEntries.map(([,v])=>v.respondi), backgroundColor:'rgba(206,146,33,0.85)', borderWidth:0, borderRadius:2 },
           { label:'Outros',   data:diaEntries.map(([,v])=>v.total-v.iscas-v.respondi), backgroundColor:'rgba(76,175,142,0.70)', borderWidth:0, borderRadius:2 },
         ]
-      }, options:{
-        ...CHART_OPTS,
-        layout: { padding: { top: 20 } },
-        plugins:{
-          ...CHART_OPTS.plugins,
-          legend:{ display:true, labels:{color:'rgba(232,228,220,0.85)',font:{size:11},boxWidth:12,boxHeight:6} },
-          datalabels:{
-            display: (ctx) => ctx.datasetIndex === ctx.chart.data.datasets.length - 1,
-            anchor:'end', align:'top',
-            color:'#e8e4dc',
-            font:{ size:10, weight:'600' },
-            clip: false,
-            formatter: (v, ctx) => {
-              const total = ctx.chart.data.datasets.reduce(
-                (s, ds) => s + (Number(ds.data[ctx.dataIndex]) || 0), 0
-              );
-              return total > 0 ? String(total) : '';
-            },
-          },
-        },
-        scales:{ x:{ ...SCALE_X_H, stacked:true }, y:{ ...SCALE_Y_H, stacked:true } },
-      }});
+      }, options:{ ...CHART_OPTS, plugins:{ ...CHART_OPTS.plugins, legend:{ display:true, labels:{color:'rgba(232,228,220,0.85)',font:{size:11},boxWidth:12,boxHeight:6} } },
+        scales:{ x:{ ...SCALE_X_H, stacked:true }, y:{ ...SCALE_Y_H, stacked:true } } }});
     }
   }
 
-  // c) Por status (total = base.length)
+  // c) Por status
   _relChartStatus = mkHBar('rel-chart-status', stEntries.map(([l])=>l), stEntries.map(([,n])=>n),
-    stEntries.map(([l]) => l==='Descartado'?'rgba(176,80,104,0.80)':l==='No Show'?'rgba(230,100,80,0.80)':l==='Realizada'?'rgba(76,175,142,0.85)':'rgba(206,146,33,0.80)'),
-    base.length
+    stEntries.map(([l]) => l==='Descartado'?'rgba(176,80,104,0.80)':l==='No Show'?'rgba(230,100,80,0.80)':l==='Realizada'?'rgba(76,175,142,0.85)':'rgba(206,146,33,0.80)')
   );
 
-  // d) Por origem top 12 (total = base.length)
+  // d) Por origem top 12
   const orTop = origemRanking.slice(0,12);
-  _relChartOrigem = mkHBar('rel-chart-origem', orTop.map(r=>r.o), orTop.map(r=>r.total), 'rgba(77,181,200,0.82)', base.length);
+  _relChartOrigem = mkHBar('rel-chart-origem', orTop.map(r=>r.o), orTop.map(r=>r.total), 'rgba(77,181,200,0.82)');
 
-  // e) Por profissão (total = base.length)
-  _relChartProf = mkHBar('rel-chart-prof', profEntries.map(([l])=>l), profEntries.map(([,n])=>n), 'rgba(206,146,33,0.80)', base.length);
+  // e) Por profissão
+  _relChartProf = mkHBar('rel-chart-prof', profEntries.map(([l])=>l), profEntries.map(([,n])=>n), 'rgba(206,146,33,0.80)');
 
-  // f) Por renda (total = base.length)
-  _relChartRenda = mkHBar('rel-chart-renda', rendaEntries.map(([l])=>l), rendaEntries.map(([,n])=>n), 'rgba(76,175,142,0.80)', base.length);
+  // f) Por renda
+  _relChartRenda = mkHBar('rel-chart-renda', rendaEntries.map(([l])=>l), rendaEntries.map(([,n])=>n), 'rgba(76,175,142,0.80)');
 }
 
 function relTable(title, headers, rows, getDrill = null) {
