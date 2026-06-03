@@ -43,6 +43,7 @@ const ICO_USER_PLUS    = _S(`<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
 const ICO_STAR_SM      = _S(`<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>`, 11, ';fill:currentColor');
 const ICO_PIN_SM       = _S(`<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>`, 11);
 const ICO_PENCIL       = _S(`<path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>`);
+const ICO_COPY         = _S(`<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>`, 13);
 
 // ─── CLOSERS ─────────────────────────────────────────────────────────
 const CLOSERS = {
@@ -154,6 +155,7 @@ function saveKanbanCols(cols) { localStorage.setItem(KANBAN_LS_KEY, JSON.stringi
 // ─── STATE ───────────────────────────────────────────────────────────
 let allLeads       = [];
 let filteredLeads  = [];
+let dupMap         = new Map(); // leadId → [dup leadId, ...]
 let currentId      = null;
 let modalMode      = 'agendar';
 let supabase       = null;
@@ -2137,6 +2139,7 @@ function renderFinanceiro() {
 // ─── RENDER ALL ──────────────────────────────────────────────────────
 function renderAll() {
   allLeads.sort((a, b) => (b.datachegada || '').localeCompare(a.datachegada || ''));
+  buildDupMap();
   populateAllMonths();
   populateFilterDropdowns();
   updateStats();
@@ -2555,9 +2558,9 @@ function renderQualificados() {
       tbody.innerHTML = `<tr><td colspan="7" style="padding:32px;text-align:center;color:var(--t3)">Nenhum resultado.</td></tr>`;
       return;
     }
-    tbody.innerHTML = leads.map(l => `<tr>
+    tbody.innerHTML = leads.map(l => `<tr data-id="${l.id}"${isDup(l.id)?' class="dup-row"':''}>
       <td>${fmtDate(l.datachegada)}</td>
-      <td><button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
+      <td style="display:flex;align-items:center;gap:5px;padding-top:10px;padding-bottom:10px">${isDup(l.id)?`<button class="btn-dup-ico" data-dup-id="${l.id}" title="Possível duplicata — clique para comparar">${ICO_COPY}</button>`:''}<button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
       <td>${esc(l.celular||'—')}</td>
       <td>${badgeOrigem(l.origem)}</td>
       <td class="cell-renda" title="${esc(l.renda||'')}">${esc(abrevRenda(l.renda))}</td>
@@ -2811,9 +2814,9 @@ function renderDescartados() {
       tbody.innerHTML = `<tr><td colspan="6" style="padding:32px;text-align:center;color:var(--t3)">Nenhum resultado.</td></tr>`;
       return;
     }
-    tbody.innerHTML = leads.map(l => `<tr>
+    tbody.innerHTML = leads.map(l => `<tr data-id="${l.id}"${isDup(l.id)?' class="dup-row"':''}>
       <td>${fmtDate(l.datachegada)}</td>
-      <td><button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
+      <td style="display:flex;align-items:center;gap:5px;padding-top:10px;padding-bottom:10px">${isDup(l.id)?`<button class="btn-dup-ico" data-dup-id="${l.id}" title="Possível duplicata — clique para comparar">${ICO_COPY}</button>`:''}<button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
       <td>${esc(l.celular||'—')}</td>
       <td>${badgeOrigem(l.origem)}</td>
       <td><span class="badge-status descartado">${esc(l.motivo_descarte_label||l.motivo_descarte||'—')}</span></td>
@@ -3844,10 +3847,10 @@ function renderTable() {
     const etiq = (l.etiquetas||[]).length
       ? (l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')
       : '—';
-    return `<tr data-id="${l.id}" class="${selectedIds.has(l.id)?'row-selected':''}" style="cursor:pointer">
+    return `<tr data-id="${l.id}" class="${[selectedIds.has(l.id)?'row-selected':'',isDup(l.id)?'dup-row':''].filter(Boolean).join(' ')}" style="cursor:pointer">
       <td class="cell-chk"><input type="checkbox" class="row-chk" data-id="${l.id}" ${selectedIds.has(l.id)?'checked':''}></td>
       <td class="cell-data-chegou">${fmtDate(l.datachegada)}</td>
-      <td class="cell-nome">${esc(l.nome||'—')}</td>
+      <td class="cell-nome">${isDup(l.id)?`<button class="btn-dup-ico" data-dup-id="${l.id}" title="Possível duplicata — clique para comparar">${ICO_COPY}</button> `:''} ${esc(l.nome||'—')}</td>
       <td class="cell-fone">${esc(l.celular||'—')}</td>
       <td>${badgeOrigem(l.origem)}</td>
       <td class="cell-renda" title="${esc(l.renda||'')}">${esc(abrevRenda(l.renda))}</td>
@@ -5122,6 +5125,15 @@ async function confirmarNovoLead() {
       await saveLead(novoLeadId, data);
       toast(`Lead atualizado — ${nome}`, 'ok');
     } else {
+      // Verificar duplicatas antes de criar
+      const suspects = findDupCandidates({ ...data, id: '__new__' });
+      if (suspects.length > 0) {
+        btn.disabled = false;
+        const result = await showDupWarning(suspects[0]);
+        if (result === 'view') { closeNovoLead(); openPerfil(suspects[0]); return; }
+        if (result !== 'save') return;
+        btn.disabled = true;
+      }
       data.status      = 'aguardando';
       data.datachegada = new Date().toISOString().slice(0,10);
       data.criadoem    = new Date().toISOString();
@@ -7285,6 +7297,197 @@ async function deleteInstance(id) {
   toast(`"${inst.displayName}" excluída.`, 'ok');
 }
 
+// ─── DUPLICATAS ──────────────────────────────────────────────────────
+function normName(s) {
+  return String(s||'').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/\s+/g,' ').trim();
+}
+function namesSimilar(a, b) {
+  const na = normName(a), nb = normName(b);
+  if (!na || !nb) return false;
+  if (na === nb) return true;
+  if (na.startsWith(nb+' ') || nb.startsWith(na+' ')) return true;
+  const wa = na.split(' ').filter(w=>w.length>2);
+  const wb = nb.split(' ').filter(w=>w.length>2);
+  if (!wa.length || !wb.length) return na.includes(nb) || nb.includes(na);
+  return wa.filter(w=>wb.includes(w)).length >= Math.min(2, Math.min(wa.length, wb.length));
+}
+function phoneNorm(p) { return String(p||'').replace(/\D/g,''); }
+function findDupCandidates(lead, pool) {
+  const ph = phoneNorm(lead.celular), em = (lead.email||'').toLowerCase().trim();
+  return (pool||allLeads).filter(c => {
+    if (c.id === lead.id) return false;
+    if (ph && ph.length >= 8 && phoneNorm(c.celular) === ph) return true;
+    if (em && (c.email||'').toLowerCase().trim() === em) return true;
+    if ((lead.nome||'').length > 2 && namesSimilar(c.nome, lead.nome)) return true;
+    return false;
+  });
+}
+function buildDupMap() {
+  dupMap.clear();
+  for (const l of allLeads) {
+    const dups = findDupCandidates(l);
+    if (dups.length) dupMap.set(l.id, dups.map(d=>d.id));
+  }
+}
+function isDup(id) { return dupMap.has(id); }
+
+let _dupA = null, _dupB = null;
+
+function openDupCompare(leadId) {
+  const lead = allLeads.find(l=>l.id===leadId); if (!lead) return;
+  const dups = (dupMap.get(leadId)||[]).map(id=>allLeads.find(l=>l.id===id)).filter(Boolean);
+  if (!dups.length) return;
+  _dupA = lead; _dupB = dups[0];
+  renderDupCompareBody();
+  $('dup-compare-subtitle').textContent = `${_dupA.nome||'—'} vs ${_dupB.nome||'—'}`;
+  $('dup-compare-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDupCompare() {
+  $('dup-compare-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+  _dupA = _dupB = null;
+}
+function renderDupCompareBody() {
+  const FIELDS = [
+    { k:'nome',        lbl:'Nome' },
+    { k:'celular',     lbl:'Celular' },
+    { k:'email',       lbl:'Email' },
+    { k:'status',      lbl:'Status',    fmt: s=>badgeStatus(s) },
+    { k:'origem',      lbl:'Origem',    fmt: o=>badgeOrigem(o) },
+    { k:'renda',       lbl:'Renda' },
+    { k:'datachegada', lbl:'Chegou em', fmt: fmtDate },
+    { k:'observacoes', lbl:'Observações' },
+  ];
+  const a = _dupA, b = _dupB;
+  const col = (lead, title) => `<div class="dcc-col">
+    <div class="dcc-col-head">${title}</div>
+    ${FIELDS.map(f => {
+      const va = f.fmt ? f.fmt(a[f.k]||'') : esc(a[f.k]||'—');
+      const vb = f.fmt ? f.fmt(b[f.k]||'') : esc(b[f.k]||'—');
+      const val = lead===a ? va : vb;
+      const diff = String(a[f.k]||'') !== String(b[f.k]||'');
+      return `<div class="dcc-field${diff?' dcc-diff':''}">
+        <span class="dcc-lbl">${f.lbl}</span>
+        <span class="dcc-val">${val||'—'}</span>
+      </div>`;
+    }).join('')}
+  </div>`;
+  $('dup-compare-body').innerHTML = `<div class="dcc-grid">${col(a,'Este lead')}${col(b,'Lead duplicado')}</div>`;
+}
+async function dupManterEste() {
+  if (!_dupA || !_dupB) return;
+  const toDelete = _dupB;
+  closeDupCompare();
+  await _deleteLeadForce(toDelete.id);
+}
+async function dupManterOutro() {
+  if (!_dupA || !_dupB) return;
+  const toDelete = _dupA;
+  closeDupCompare();
+  await _deleteLeadForce(toDelete.id);
+}
+function dupNaoSaoDuplicatas() {
+  if (!_dupA || !_dupB) return;
+  const aList = (dupMap.get(_dupA.id)||[]).filter(id=>id!==_dupB.id);
+  const bList = (dupMap.get(_dupB.id)||[]).filter(id=>id!==_dupA.id);
+  aList.length ? dupMap.set(_dupA.id, aList) : dupMap.delete(_dupA.id);
+  bList.length ? dupMap.set(_dupB.id, bList) : dupMap.delete(_dupB.id);
+  renderAll();
+  closeDupCompare();
+}
+async function _deleteLeadForce(id) {
+  try {
+    if (isLive) { const { error } = await supabase.from('leads').delete().eq('id', id); if (error) throw error; }
+    allLeads = allLeads.filter(l=>l.id!==id); selectedIds.delete(id); updateBulkBar();
+    renderAll(); toast('Lead excluído.', 'ok');
+  } catch(e) { console.error(e); toast('Erro ao excluir.', 'err'); }
+}
+
+let _dupWarnResolve = null, _dupWarnSuspect = null;
+function showDupWarning(suspect) {
+  return new Promise(resolve => {
+    _dupWarnResolve = resolve;
+    _dupWarnSuspect = suspect;
+    $('dup-warn-msg').textContent =
+      `Já existe um lead com dados similares: "${suspect.nome}"${suspect.celular?' · '+suspect.celular:''}.`;
+    $('dup-warn-backdrop').classList.add('open');
+  });
+}
+function closeDupWarn(result) {
+  $('dup-warn-backdrop').classList.remove('open');
+  if (_dupWarnResolve) { _dupWarnResolve(result); _dupWarnResolve = null; }
+  _dupWarnSuspect = null;
+}
+
+// ─── BUSCA GLOBAL ────────────────────────────────────────────────────
+let _searchTimer = null;
+function openSearch() {
+  $('search-expand').classList.add('open');
+  setTimeout(() => $('search-input')?.focus(), 260);
+}
+function closeSearch() {
+  $('search-expand').classList.remove('open');
+  const inp = $('search-input'); if (inp) inp.value = '';
+  closeSearchDD();
+}
+function closeSearchDD() { const dd=$('search-dropdown'); if(dd) dd.classList.remove('open'); }
+
+function runSearch(q) {
+  const dd = $('search-dropdown'); if (!dd) return;
+  const ql = q.toLowerCase().trim();
+  if (ql.length < 3) { closeSearchDD(); return; }
+  const phoneQ = ql.replace(/\D/g,'');
+  const results = allLeads.filter(l =>
+    (l.nome||'').toLowerCase().includes(ql) ||
+    (phoneQ && (l.celular||'').replace(/\D/g,'').includes(phoneQ)) ||
+    (l.email||'').toLowerCase().includes(ql)
+  ).slice(0, 8);
+  if (!results.length) {
+    dd.innerHTML = `<div class="search-empty">
+      ${_S(`<path d="m13.5 8.5-5 5"/><path d="m8.5 8.5 5 5"/><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>`,28,';color:var(--t3)')}
+      <span>Nenhum lead encontrado</span></div>`;
+  } else {
+    dd.innerHTML = results.map(l => {
+      const dupBadge = isDup(l.id) ? `<span class="search-dup-badge">duplicata</span>` : '';
+      return `<div class="search-result-item" data-lead-id="${esc(l.id)}">
+        <div class="search-result-nome">${esc(l.nome||'—')} ${dupBadge}</div>
+        <div class="search-result-meta">${esc(l.celular||'')} ${badgeStatus(l.status)}</div>
+      </div>`;
+    }).join('');
+    dd.querySelectorAll('.search-result-item').forEach(item =>
+      item.addEventListener('mousedown', e => {
+        e.preventDefault();
+        const lead = allLeads.find(l=>l.id===item.dataset.leadId);
+        if (lead) navigateToLead(lead);
+        closeSearch();
+      })
+    );
+  }
+  dd.classList.add('open');
+}
+
+const _STATUS_TO_SUB = {
+  aguardando: ['comercial','novos'], qualificado:['comercial','qualificados'],
+  agendado:   ['comercial','agendados'], noshow:['comercial','agendados'],
+  realizada:  ['comercial','agendados'], descartado:['comercial','descartados'],
+  cancelado:  ['comercial','descartados'],
+};
+function navigateToLead(lead) {
+  const [tab, sub] = _STATUS_TO_SUB[lead.status] || ['comercial','novos'];
+  switchTab(tab);
+  setTimeout(() => { switchSub(sub); setTimeout(() => highlightLead(lead.id), 150); }, 80);
+}
+function highlightLead(id) {
+  const row = document.querySelector(`tr[data-id="${id}"]`); if (!row) return;
+  row.scrollIntoView({ behavior:'smooth', block:'center' });
+  row.classList.remove('row-highlight'); void row.offsetWidth;
+  row.classList.add('row-highlight');
+  setTimeout(() => row.classList.remove('row-highlight'), 2200);
+}
+
 // ─── EVENTS ──────────────────────────────────────────────────────────
 function bindEvents() {
   // Kanban drag-and-drop — delegated on the persistent board element so listeners
@@ -7766,6 +7969,40 @@ function bindEvents() {
   $('cm-salvar').addEventListener('click', salvarContrato);
   $('cm-backdrop').addEventListener('click', e => { if (e.target === $('cm-backdrop')) closeContratoModal(); });
 
+  // ── Busca global
+  $('search-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    $('search-expand').classList.contains('open') ? closeSearch() : openSearch();
+  });
+  $('search-input').addEventListener('input', e => {
+    clearTimeout(_searchTimer);
+    _searchTimer = setTimeout(() => runSearch(e.target.value), 180);
+  });
+  $('search-input').addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeSearch(); e.stopPropagation(); }
+  });
+  $('search-input').addEventListener('blur', () => setTimeout(closeSearchDD, 200));
+
+  // ── Duplicata compare
+  $('dup-compare-close').addEventListener('click', closeDupCompare);
+  $('dup-compare-backdrop').addEventListener('click', e => { if (e.target===$('dup-compare-backdrop')) closeDupCompare(); });
+  $('dup-manter-este').addEventListener('click', dupManterEste);
+  $('dup-manter-outro').addEventListener('click', dupManterOutro);
+  $('dup-nao-duplicata').addEventListener('click', dupNaoSaoDuplicatas);
+
+  // ── Duplicata warning
+  $('dup-warn-close').addEventListener('click', () => closeDupWarn('cancel'));
+  $('dup-warn-backdrop').addEventListener('click', e => { if (e.target===$('dup-warn-backdrop')) closeDupWarn('cancel'); });
+  $('dup-warn-salvar').addEventListener('click', () => closeDupWarn('save'));
+  $('dup-warn-ver').addEventListener('click', () => { const s=_dupWarnSuspect; closeDupWarn('cancel'); if(s) openPerfil(s); });
+
+  // ── Delegação global: clicar fora da busca fecha dropdown + ícone duplicata
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#search-wrapper')) closeSearchDD();
+    const dupBtn = e.target.closest('.btn-dup-ico');
+    if (dupBtn) { e.stopPropagation(); openDupCompare(dupBtn.dataset.dupId); }
+  });
+
   // Keyboard
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
@@ -7773,6 +8010,7 @@ function bindEvents() {
       closeMotivosPerda(); closeVendaGanha(); closeAddAsLeadModal();
       closeNovaConversaModal(); closeDescarteModal();
       closeAlunaModal(); closeSessaoModal(); closeContratoModal();
+      closeSearch(); closeDupCompare(); closeDupWarn('cancel');
     }
   });
 }

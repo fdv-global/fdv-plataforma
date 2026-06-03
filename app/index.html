@@ -66,6 +66,19 @@
       <img class="user-avatar" id="user-avatar" src="" alt="" style="display:none">
       <span class="user-name" id="user-name"></span>
     </div>
+    <!-- Busca Global -->
+    <div class="search-wrapper" id="search-wrapper">
+      <button class="notif-btn" id="search-btn" aria-label="Buscar lead">
+        <i data-lucide="search" style="width:18px;height:18px;stroke-width:1.75"></i>
+      </button>
+      <div class="search-expand" id="search-expand">
+        <input type="text" class="search-input" id="search-input"
+               placeholder="Buscar lead por nome, celular ou e-mail..."
+               autocomplete="off" spellcheck="false">
+      </div>
+      <div class="search-dropdown" id="search-dropdown"></div>
+    </div>
+
     <div class="notif-wrapper" id="notif-wrapper">
       <button class="notif-btn" id="notif-btn" aria-label="Notificações">
         <i data-lucide="bell"></i>
@@ -1461,6 +1474,47 @@
     <div class="modal-footer">
       <button class="btn-ghost" id="briefing-cancelar">Cancelar</button>
       <button class="btn-primary" id="btn-salvar-briefing">Salvar Briefing</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DUP WARNING MODAL ===== -->
+<div class="modal-backdrop" id="dup-warn-backdrop">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:420px;border-top:3px solid #CE9221">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:12px">
+        <i data-lucide="alert-triangle" style="width:24px;height:24px;color:#CE9221;flex-shrink:0"></i>
+        <div>
+          <h2 class="modal-title">Possível Duplicata</h2>
+          <p class="modal-subtitle" id="dup-warn-msg">Este lead pode já existir no sistema.</p>
+        </div>
+      </div>
+      <button class="modal-close" id="dup-warn-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn-ghost" id="dup-warn-ver">Ver lead existente</button>
+      <button class="btn-confirm" id="dup-warn-salvar">Salvar mesmo assim</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DUP COMPARE MODAL ===== -->
+<div class="modal-backdrop" id="dup-compare-backdrop">
+  <div class="modal dcc-modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">Comparar Leads Duplicados</h2>
+        <p class="modal-subtitle" id="dup-compare-subtitle">Verifique se são a mesma pessoa</p>
+      </div>
+      <button class="modal-close" id="dup-compare-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-body" id="dup-compare-body"></div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn-ghost" id="dup-nao-duplicata">Não são duplicatas</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost btn-destructive" id="dup-manter-outro">Manter o outro</button>
+        <button class="btn-confirm" id="dup-manter-este">Manter este</button>
+      </div>
     </div>
   </div>
 </div>
