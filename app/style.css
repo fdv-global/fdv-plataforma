@@ -3369,17 +3369,19 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   padding-right: 32px; /* espaço para o ícone absoluto no canto */
 }
 .imc-value {
-  font-size: 34px;
+  font-size: 30px;           /* base menor para sempre caber no card */
   font-weight: 800;
   color: #fff;
-  line-height: 1;
-  letter-spacing: -1.5px;
+  line-height: 1.1;
+  letter-spacing: -1px;
   margin-bottom: 8px;
   font-family: 'Red Hat Display', system-ui, sans-serif;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding-right: 32px; /* espaço para o ícone absoluto no canto */
+  word-break: break-word;    /* deixa o valor quebrar linha se necessário */
+  padding-right: 32px;
+}
+.imc--hero .imc-value {
+  font-size: 36px;           /* hero card é mais largo, aguenta fonte maior */
+  letter-spacing: -1.5px;
 }
 .imc-sub {
   font-size: 12px;

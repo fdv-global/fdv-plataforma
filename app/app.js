@@ -2292,6 +2292,7 @@ function renderInicio() {
   const fRealiz = Math.max(fCalls - fNoShow, 0);
   const pctQ  = fLeads  ? Math.round(fQualif/fLeads *100) : 0;
   const pctC  = fAgend  ? Math.round(fCalls /fAgend *100) : 0;
+  const pctNS = fCalls  ? Math.round(fNoShow/fCalls *100) : 0;
   const pctV  = fRealiz ? Math.round(fVendas/fRealiz*100) : 0;
 
   const arrowSvg = (rate) => `
@@ -2347,9 +2348,9 @@ function renderInicio() {
       <div class="funil-stage"><div class="funil-label">Agendados</div><div class="funil-num">${fAgend}</div></div>
       ${arrowSvg(pctC)}
       <div class="funil-stage">
-        <div class="funil-label">Calls</div>
+        <div class="funil-label">C. Realizadas</div>
         <div class="funil-num">${fCalls}</div>
-        ${fNoShow > 0 ? `<div class="funil-ns-inline">↓ ${fNoShow} no-show</div>` : ''}
+        ${fNoShow > 0 ? `<div class="funil-ns-inline">↓ ${fNoShow} no-show (${pctNS}%)</div>` : ''}
       </div>
       ${arrowSvg(pctV)}
       <div class="funil-stage"><div class="funil-label">Vendas</div><div class="funil-num" style="color:var(--gold)">${fVendas}</div></div>
@@ -3765,11 +3766,13 @@ function renderDescartadosView() {
   if (flt.mes)     leads = leads.filter(l => (l.kanban_column_since||l.atualizadoem||'').startsWith(flt.mes));
   if (flt.motivo)  leads = leads.filter(l => l.motivo_descarte === flt.motivo);
 
+  const hasAnyDesc = allDesc.length > 0;
   el.innerHTML = `
     <div class="subview-header">
       <h2 class="subview-title"><i data-lucide="archive-x"></i> Descartados</h2>
-      <span class="subview-count">${leads.length} lead${leads.length!==1?'s':''}</span>
+      <span class="subview-count">${allDesc.length} total · ${leads.length} exibido${leads.length!==1?'s':''}</span>
     </div>
+    ${hasAnyDesc ? `
     <div class="desc-view-filters" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:0 2px">
       <select class="filter-select" id="dv-closer" style="width:auto;min-width:140px">
         <option value="">Todos os closers</option>
@@ -3784,8 +3787,14 @@ function renderDescartadosView() {
         ${motivosDisp.map(m=>`<option value="${m}" ${flt.motivo===m?'selected':''}>${esc(MOTIVO_LABEL[m]||m)}</option>`).join('')}
       </select>
       <button class="btn-ghost btn-sm" id="dv-limpar">Limpar</button>
-    </div>
-    ${leads.length === 0 ? '<p class="hist-empty" style="margin-top:32px">Nenhum lead descartado com esses filtros.</p>' : `
+    </div>` : ''}
+    ${!hasAnyDesc ? `
+      <div class="agenda-empty" style="margin-top:48px">
+        ${_S('<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',36,';color:var(--t4);opacity:0.4')}
+        <h3>Nenhum lead descartado</h3>
+        <p>Leads descartados no Closer aparecerão aqui.</p>
+      </div>` :
+    leads.length === 0 ? '<p class="hist-empty" style="margin-top:32px">Nenhum resultado com esses filtros.</p>' : `
     <div class="table-wrap">
       <table class="data-table">
         <thead><tr>
