@@ -4251,7 +4251,7 @@ function renderRelatorios() {
     </table>
   </div>
 
-  <!-- Bloco 4: Perfil do Público -->
+  <!-- Bloco 4: Perfil do Público — barras horizontais -->
   <div class="rel-section-head" style="display:flex;align-items:center;gap:12px">
     Perfil do Público
     <div class="rel-perfil-filter">
@@ -4259,24 +4259,7 @@ function renderRelatorios() {
       <button class="rel-pf-btn" data-pf="compradores">Apenas compradores</button>
     </div>
   </div>
-  <div class="rel-donuts-wrap">
-    <div class="rel-donut-block">
-      <div class="rel-donut-title">Por Profissão</div>
-      <div class="rel-donut-container" data-chart="prof">
-        <canvas id="rel-donut-prof" height="220"></canvas>
-        <div class="rel-donut-center" id="rel-donut-prof-center">${base.length}<br><span>leads</span></div>
-      </div>
-      <div class="rel-donut-legend" id="rel-donut-prof-leg"></div>
-    </div>
-    <div class="rel-donut-block">
-      <div class="rel-donut-title">Por Faixa de Renda</div>
-      <div class="rel-donut-container" data-chart="renda">
-        <canvas id="rel-donut-renda" height="220"></canvas>
-        <div class="rel-donut-center" id="rel-donut-renda-center">${base.length}<br><span>leads</span></div>
-      </div>
-      <div class="rel-donut-legend" id="rel-donut-renda-leg"></div>
-    </div>
-  </div>
+  <div class="rel-hbars-grid" id="rel-hbars-grid"></div>
 
   <!-- Bloco 5: Equipe (duas tabelas lado a lado) -->
   <div class="rel-section-head">Performance da Equipe</div>
@@ -4306,41 +4289,56 @@ function renderRelatorios() {
 
   lucide.createIcons();
 
-  // Init donuts with IntersectionObserver
-  const DONUT_COLORS = ['#CE9221','#4db5c8','#4caf8e','#d06070','#8fa0a2','#a07048','#6b8fa0'];
-  let _donutsInited = false;
-  function _buildDonuts(pfFilter) {
+  // Bloco 4: barras horizontais — sem Chart.js
+  function _mkHBars(field, color, label, pool) {
+    const m = {};
+    pool.forEach(l => { const v = (l[field]||'Não inf.').slice(0,30); m[v]=(m[v]||0)+1; });
+    const entries = Object.entries(m).sort((a,b)=>b[1]-a[1]);
+    const total   = entries.reduce((s,[,v])=>s+v,0);
+    const maxVal  = entries[0]?.[1]||1;
+    const show = entries.slice(0,10);
+    const rest = entries.slice(10);
+    const barRow = ([name,count]) => `
+      <div class="rel-hbar-row">
+        <div class="rel-hbar-name" title="${esc(name)}">${esc(name)}</div>
+        <div class="rel-hbar-track">
+          <div class="rel-hbar-fill" style="width:${Math.round(count/maxVal*100)}%;background:${color}"></div>
+        </div>
+        <span class="rel-hbar-count">${count}</span>
+        <span class="rel-hbar-pct">${total?Math.round(count/total*100):0}%</span>
+      </div>`;
+    return `<div class="rel-hbar-block">
+      <div class="rel-donut-title">${label}</div>
+      <div class="rel-hbar-list">${show.map(barRow).join('')}</div>
+      ${rest.length ? `
+        <div class="rel-hbar-more" id="hbar-more-${field}" style="display:none">${rest.map(barRow).join('')}</div>
+        <button class="btn-ghost btn-sm rel-hbar-toggle" data-field="${field}" data-count="${rest.length}" style="margin-top:8px;font-size:11px">Ver todos (${rest.length} mais)</button>` : ''}
+    </div>`;
+  }
+
+  function _renderHBars(pfFilter) {
     const pool = pfFilter==='compradores' ? vendas : base;
-    const mkMap=(f,n=7)=>{const m={};pool.forEach(l=>{const v=(l[f]||'Não inf.').slice(0,20);m[v]=(m[v]||0)+1;});return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,n);};
-    const pE=mkMap('profissao'), rE=mkMap('renda');
-
-    const initDonut=(canvasId,entries,centerEl,legEl)=>{
-      const ctx=document.getElementById(canvasId)?.getContext('2d');
-      if(!ctx) return null;
-      const total=entries.reduce((s,[,v])=>s+v,0);
-      if(centerEl) centerEl.innerHTML=total+'<br><span>leads</span>';
-      if(legEl) legEl.innerHTML=entries.map(([l,v],i)=>`<div class="rdl-item"><span class="rdl-dot" style="background:${DONUT_COLORS[i%DONUT_COLORS.length]}"></span><span class="rdl-lbl" title="${esc(l)}">${esc(l)}</span><span class="rdl-val">${v}</span></div>`).join('');
-      return new Chart(ctx,{type:'doughnut',data:{labels:entries.map(([l])=>l),datasets:[{data:entries.map(([,v])=>v),backgroundColor:DONUT_COLORS.slice(0,entries.length),borderWidth:2,borderColor:'#141a1c',hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(15,12,8,0.92)',titleColor:'#e8e4dc',bodyColor:'#c8c4bc'}}}});
-    };
-
-    [_relChartProf,_relChartRenda].forEach(c=>{try{c?.destroy();}catch(e){}});
-    _relChartProf = initDonut('rel-donut-prof', pE, document.getElementById('rel-donut-prof-center'), document.getElementById('rel-donut-prof-leg'));
-    _relChartRenda= initDonut('rel-donut-renda',rE, document.getElementById('rel-donut-renda-center'),document.getElementById('rel-donut-renda-leg'));
+    const grid = document.getElementById('rel-hbars-grid');
+    if (!grid) return;
+    grid.innerHTML = _mkHBars('profissao','var(--gold)','Por Profissão', pool)
+                   + _mkHBars('renda','var(--petro-l)','Por Faixa de Renda', pool);
+    grid.querySelectorAll('.rel-hbar-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const more = document.getElementById(`hbar-more-${btn.dataset.field}`);
+        if (!more) return;
+        const open = more.style.display !== 'none';
+        more.style.display = open ? 'none' : '';
+        btn.textContent = open ? `Ver todos (${btn.dataset.count} mais)` : 'Recolher';
+      });
+    });
   }
-
-  const donutWrap = document.querySelector('.rel-donuts-wrap');
-  if (donutWrap && typeof IntersectionObserver !== 'undefined') {
-    const io = new IntersectionObserver(entries=>{
-      if(entries[0].isIntersecting && !_donutsInited){ _donutsInited=true; _buildDonuts('todos'); io.unobserve(donutWrap); }
-    },{threshold:0.1});
-    io.observe(donutWrap);
-  }
+  _renderHBars('todos');
 
   // Profile filter pills
   document.querySelectorAll('.rel-pf-btn').forEach(b=>b.addEventListener('click',()=>{
     document.querySelectorAll('.rel-pf-btn').forEach(x=>x.classList.remove('active'));
     b.classList.add('active');
-    _buildDonuts(b.dataset.pf);
+    _renderHBars(b.dataset.pf);
   }));
 
   // UTM CTA

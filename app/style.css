@@ -3682,3 +3682,39 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .utm-mb-row { height: 3px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
 .utm-mb-row div { height: 100%; border-radius: 2px; transition: width .4s; }
 .roi-zero { opacity: 0.45; }
+
+/* ── Bloco 4: barras horizontais de perfil ─────────────────── */
+.rel-hbars-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media(max-width:640px) { .rel-hbars-grid { grid-template-columns: 1fr; } }
+
+.rel-hbar-block {
+  background: #141a1c; border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px; padding: 20px;
+}
+.rel-hbar-list, .rel-hbar-more { display: flex; flex-direction: column; gap: 2px; }
+.rel-hbar-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 0;
+}
+.rel-hbar-name {
+  font-size: 12.5px; color: var(--t1);
+  width: 150px; flex-shrink: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rel-hbar-track {
+  flex: 1; height: 8px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px; overflow: hidden;
+}
+.rel-hbar-fill {
+  height: 100%; border-radius: 4px;
+  transition: width .4s var(--ease-out);
+}
+.rel-hbar-count {
+  font-size: 12.5px; color: var(--t2);
+  min-width: 24px; text-align: right; font-weight: 600;
+}
+.rel-hbar-pct {
+  font-size: 11px; color: var(--t3);
+  min-width: 32px;
+}
