@@ -127,32 +127,32 @@
     <div class="filters-bar">
       <div class="stats-grid stats-grid--6">
         <div class="stat-card">
-          <div class="stat-top"><span class="stat-label">Total</span><span class="stat-icon">◈</span></div>
+          <div class="stat-top"><span class="stat-label">Total</span><span class="stat-icon"><i data-lucide="users" style="width:14px;height:14px"></i></span></div>
           <strong class="stat-num" id="stat-total">0</strong>
           <span class="stat-sub">leads cadastrados</span>
         </div>
         <div class="stat-card accent-gold">
-          <div class="stat-top"><span class="stat-label">Novos</span><span class="stat-icon">◷</span></div>
+          <div class="stat-top"><span class="stat-label">Novos</span><span class="stat-icon"><i data-lucide="clock" style="width:14px;height:14px"></i></span></div>
           <strong class="stat-num" id="stat-aguardando">0</strong>
           <span class="stat-sub">aguardando qualificação</span>
         </div>
         <div class="stat-card accent-petro">
-          <div class="stat-top"><span class="stat-label">Agendados</span><span class="stat-icon">◉</span></div>
+          <div class="stat-top"><span class="stat-label">Agendados</span><span class="stat-icon"><i data-lucide="calendar" style="width:14px;height:14px"></i></span></div>
           <strong class="stat-num" id="stat-agendado">0</strong>
           <span class="stat-sub">calls marcadas</span>
         </div>
         <div class="stat-card accent-marsala">
-          <div class="stat-top"><span class="stat-label">No Show</span><span class="stat-icon">✕</span></div>
+          <div class="stat-top"><span class="stat-label">No Show</span><span class="stat-icon"><i data-lucide="user-x" style="width:14px;height:14px"></i></span></div>
           <strong class="stat-num" id="stat-noshow">0</strong>
           <span class="stat-sub">não compareceram</span>
         </div>
         <div class="stat-card accent-green">
-          <div class="stat-top"><span class="stat-label">Realizadas</span><span class="stat-icon">✦</span></div>
+          <div class="stat-top"><span class="stat-label">Realizadas</span><span class="stat-icon"><i data-lucide="check-circle" style="width:14px;height:14px"></i></span></div>
           <strong class="stat-num" id="stat-realizada">0</strong>
           <span class="stat-sub">calls concluídas</span>
         </div>
         <div class="stat-card accent-sand">
-          <div class="stat-top"><span class="stat-label">Vendas</span><span class="stat-icon">◆</span></div>
+          <div class="stat-top"><span class="stat-label">Vendas</span><span class="stat-icon"><i data-lucide="trophy" style="width:14px;height:14px"></i></span></div>
           <strong class="stat-num" id="stat-vendas">0</strong>
           <span class="stat-sub">vendas fechadas</span>
         </div>
@@ -230,10 +230,10 @@
     <div class="bulk-bar" id="bulk-bar" style="display:none">
       <span class="bulk-count" id="bulk-count">0 selecionados</span>
       <div class="bulk-actions">
-        <button class="btn-acao-inline btn-qualificar" id="btn-bulk-qualificar">✓ Qualificar selecionados</button>
-        <button class="btn-acao-inline btn-nao-qualificar" id="btn-bulk-descartar">✕ Descartar selecionados</button>
+        <button class="btn-acao-inline btn-qualificar" id="btn-bulk-qualificar"><i data-lucide="check" style="width:13px;height:13px"></i> Qualificar selecionados</button>
+        <button class="btn-acao-inline btn-nao-qualificar" id="btn-bulk-descartar"><i data-lucide="x" style="width:13px;height:13px"></i> Descartar selecionados</button>
       </div>
-      <button class="btn-ghost btn-sm" id="btn-bulk-clear">✕ Limpar</button>
+      <button class="btn-ghost btn-sm" id="btn-bulk-clear"><i data-lucide="x" style="width:13px;height:13px"></i> Limpar</button>
     </div>
 
     <div class="table-wrap" id="table-wrap">
@@ -345,7 +345,7 @@
     <div id="sub-agendados-hoje" class="sub-panel--inner">
       <div class="agenda-top">
         <div class="agenda-filters"></div>
-        <button class="btn-primary" id="btn-gerar-agenda-hoje">📱 Copiar para WhatsApp</button>
+        <button class="btn-primary" id="btn-gerar-agenda-hoje"><i data-lucide="smartphone" style="width:14px;height:14px"></i> Copiar para WhatsApp</button>
       </div>
       <div id="agenda-hoje-content"></div>
     </div>
@@ -370,7 +370,7 @@
           </div>
           <input type="date" class="filter-input filter-input--date" id="agenda-filter-data" style="display:none">
         </div>
-        <button class="btn-primary" id="btn-gerar-agenda">📱 Copiar para WhatsApp</button>
+        <button class="btn-primary" id="btn-gerar-agenda"><i data-lucide="smartphone" style="width:14px;height:14px"></i> Copiar para WhatsApp</button>
       </div>
       <div class="agenda-layout">
         <div class="agenda-sidebar">
@@ -492,7 +492,7 @@
       <h1>WhatsApp</h1>
       <p>Central de chats · instâncias · respostas rápidas · etiquetas</p>
     </div>
-    <button class="btn-primary" id="btn-nova-instancia">📱 Instâncias WhatsApp</button>
+    <button class="btn-primary" id="btn-nova-instancia"><i data-lucide="smartphone" style="width:14px;height:14px"></i> Instâncias WhatsApp</button>
   </div>
 
   <div class="sub-nav">
@@ -539,7 +539,7 @@
         </div>
         <div class="chats-list" id="chats-list">
           <div class="chat-list-empty">
-            <div style="font-size:32px;margin-bottom:10px">💬</div>
+            <div style="margin-bottom:10px;color:var(--t3)"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></div>
             <p>Nenhuma conversa ainda.</p>
           </div>
         </div>
@@ -548,7 +548,7 @@
       <!-- Painel de chat ativo -->
       <div class="chats-panel" id="chats-panel">
         <div class="chats-panel-empty">
-          <div style="font-size:40px;margin-bottom:12px">💬</div>
+          <div style="margin-bottom:12px;color:var(--t3)"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></div>
           <h3>Selecione uma conversa</h3>
           <p>Clique em um contato à esquerda para abrir o chat.</p>
         </div>
@@ -673,7 +673,7 @@
         <h2 class="modal-title" id="modal-title">Agendar Call</h2>
         <p class="modal-subtitle" id="modal-subtitle">—</p>
       </div>
-      <button class="modal-close" id="modal-close" aria-label="Fechar">✕</button>
+      <button class="modal-close" id="modal-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
     </div>
     <div class="modal-body">
       <div class="lead-strip" id="lead-strip"></div>
@@ -736,15 +736,15 @@
           <div id="cal-connect-wrap" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
             <p style="font-size:11px;color:var(--text-muted);margin:0 0 8px;text-transform:uppercase;letter-spacing:.05em">Integração Google Calendar</p>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <button class="btn-ghost btn-sm" id="cal-connect-fernanda" data-cal-connect="fernanda">📅 Conectar Fernanda</button>
-              <button class="btn-ghost btn-sm" id="cal-connect-thomaz"   data-cal-connect="thomaz">📅 Conectar Thomaz</button>
+              <button class="btn-ghost btn-sm" id="cal-connect-fernanda" data-cal-connect="fernanda"><i data-lucide="calendar" style="width:14px;height:14px"></i> Conectar Fernanda</button>
+              <button class="btn-ghost btn-sm" id="cal-connect-thomaz"   data-cal-connect="thomaz"><i data-lucide="calendar" style="width:14px;height:14px"></i> Conectar Thomaz</button>
             </div>
           </div>
         </div>
 
         <div class="sched-panel" id="sched-step-2" style="display:none">
           <div class="sched-banner">
-            <span class="sched-banner-ico">📅</span>
+            <span class="sched-banner-ico"><i data-lucide="calendar" style="width:20px;height:20px"></i></span>
             <p id="sched-banner-p">Link aberto em nova aba. Confirme o horário com o lead e preencha os dados abaixo.</p>
           </div>
           <div class="form-group" id="sched-aluna-row" style="display:none;margin-bottom:18px">
@@ -787,7 +787,7 @@
         <h2 class="modal-title" id="perfil-title">—</h2>
         <p class="modal-subtitle" id="perfil-subtitle">—</p>
       </div>
-      <button class="modal-close" id="perfil-close" aria-label="Fechar">✕</button>
+      <button class="modal-close" id="perfil-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
     </div>
     <div class="modal-body">
       <div class="perfil-tab-nav">
@@ -880,7 +880,7 @@
         <h2 class="modal-title" id="novo-lead-title">Novo Lead</h2>
         <p class="modal-subtitle">Preencha os dados do lead</p>
       </div>
-      <button class="modal-close" id="novo-lead-close" aria-label="Fechar">✕</button>
+      <button class="modal-close" id="novo-lead-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
     </div>
     <div class="modal-body">
       <div class="form-row-2">
@@ -946,7 +946,7 @@
         <h2 class="modal-title" id="add-lead-title">Adicionar como lead</h2>
         <p class="modal-subtitle">Confirme ou edite os dados antes de criar</p>
       </div>
-      <button class="modal-close" id="add-lead-close" aria-label="Fechar">✕</button>
+      <button class="modal-close" id="add-lead-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="add-lead-contact-id">
@@ -974,7 +974,7 @@
         <h2 class="modal-title" id="nova-conversa-title">Nova conversa</h2>
         <p class="modal-subtitle">Digite o número para iniciar o chat</p>
       </div>
-      <button class="modal-close" id="nova-conversa-close" aria-label="Fechar">✕</button>
+      <button class="modal-close" id="nova-conversa-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
     </div>
     <div class="modal-body">
       <div class="form-group">
@@ -997,7 +997,7 @@
         <h2 class="modal-title" id="instancias-modal-title">Instâncias WhatsApp</h2>
         <p class="modal-subtitle">Gerencie os números conectados ao sistema</p>
       </div>
-      <button class="modal-close" id="instancias-modal-close" aria-label="Fechar">✕</button>
+      <button class="modal-close" id="instancias-modal-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
     </div>
     <div class="modal-body">
       <div id="instancias-modal-list" class="im-list"></div>
@@ -1017,7 +1017,7 @@
         <h2 class="modal-title" id="qr-title">Conectar número</h2>
         <p class="modal-subtitle" id="qr-subtitle">Preencha os dados da instância</p>
       </div>
-      <button class="modal-close" id="qr-close" aria-label="Fechar">✕</button>
+      <button class="modal-close" id="qr-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
     </div>
     <div class="modal-body">
 
@@ -1060,7 +1060,7 @@
       <!-- STEP 2: QR Code -->
       <div id="qr-step-qr" style="display:none">
         <div class="qr-instruction">
-          <span class="qr-instruction-ico">📱</span>
+          <span class="qr-instruction-ico"><i data-lucide="smartphone" style="width:22px;height:22px"></i></span>
           <div>
             <strong>Abra o WhatsApp no celular</strong>
             <p>Vá em <em>Dispositivos conectados → Conectar dispositivo</em> e escaneie o QR abaixo.</p>
@@ -1084,7 +1084,7 @@
         </div>
         <!-- conectado -->
         <div id="qr-state-connected" class="qr-state" style="display:none">
-          <div class="qr-result-ico qr-result-ico--ok">✓</div>
+          <div class="qr-result-ico qr-result-ico--ok"><i data-lucide="check" style="width:22px;height:22px"></i></div>
           <strong>Conectado com sucesso!</strong>
           <p id="qr-connected-phone" style="color:var(--t2);font-size:13px;margin-top:6px"></p>
         </div>
@@ -1097,7 +1097,7 @@
         </div>
         <!-- erro -->
         <div id="qr-state-error" class="qr-state" style="display:none">
-          <div class="qr-result-ico qr-result-ico--err">✕</div>
+          <div class="qr-result-ico qr-result-ico--err"><i data-lucide="x" style="width:22px;height:22px"></i></div>
           <strong>Erro ao conectar</strong>
           <p id="qr-error-msg" style="color:var(--t2);font-size:13px;margin-top:6px">Não foi possível conectar. Tente novamente.</p>
           <button class="btn-ghost btn-sm" id="btn-retry-qr" style="margin-top:14px">Tentar novamente</button>
@@ -1120,7 +1120,7 @@
         <h2 class="modal-title">Novo Usuário</h2>
         <p class="modal-subtitle">Preencha os dados de acesso</p>
       </div>
-      <button class="modal-close" id="novo-usuario-close" aria-label="Fechar">✕</button>
+      <button class="modal-close" id="novo-usuario-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
     </div>
     <div class="modal-body">
       <!-- Foto -->
@@ -1179,7 +1179,7 @@
         <h2 class="modal-title">Editar Usuário</h2>
         <p class="modal-subtitle">Atualize os dados do usuário</p>
       </div>
-      <button class="modal-close" id="editar-usuario-close" aria-label="Fechar">✕</button>
+      <button class="modal-close" id="editar-usuario-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="eu-uid">
@@ -1232,7 +1232,7 @@
         <h2 class="modal-title">Motivo da Perda</h2>
         <p class="modal-subtitle" id="mp-lead-nome">—</p>
       </div>
-      <button class="modal-close" id="mp-close" aria-label="Fechar">✕</button>
+      <button class="modal-close" id="mp-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
     </div>
     <div class="modal-body" id="mp-body"></div>
     <div class="modal-footer">
@@ -1249,11 +1249,11 @@
       <div style="display:flex;align-items:center;gap:12px">
         <i data-lucide="trophy" style="width:28px;height:28px;color:#2ecc71;flex-shrink:0"></i>
         <div>
-          <h2 class="modal-title" style="color:#2ecc71">Venda Ganha! 🎉</h2>
+          <h2 class="modal-title" style="color:#2ecc71">Venda Ganha! <i data-lucide="sparkles" style="width:20px;height:20px;vertical-align:middle;color:#2ecc71"></i></h2>
           <p class="modal-subtitle" id="vg-lead-nome">—</p>
         </div>
       </div>
-      <button class="modal-close" id="vg-close" aria-label="Fechar">✕</button>
+      <button class="modal-close" id="vg-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
     </div>
     <div class="modal-body">
       <div class="form-group" style="margin-bottom:14px">
@@ -1305,7 +1305,7 @@
         <h2 class="modal-title">Descartar Lead</h2>
         <p class="modal-subtitle" id="descarte-lead-nome">—</p>
       </div>
-      <button class="modal-close" id="descarte-close" aria-label="Fechar">✕</button>
+      <button class="modal-close" id="descarte-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
     </div>
     <div class="modal-body" id="descarte-body"></div>
     <div class="modal-footer">

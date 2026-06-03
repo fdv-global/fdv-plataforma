@@ -24,6 +24,26 @@ const SB_ANON    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 // e mudar createClient(SB_URL, SB_SERVICE_KEY) de volta para createClient(SB_URL, SB_ANON)
 const SB_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhZHhjYmhnaW5qdm9lbWFjZGx5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Njk2Nzk4MSwiZXhwIjoyMDkyNTQzOTgxfQ.Vp_JSA4ReP40a25L8GS7stNdROAy5YIIw-7HM98z_RY';
 
+const _S = (d,w=13,extra='') => `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;flex-shrink:0${extra}">${d}</svg>`;
+const ICO_TRASH        = _S(`<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>`, 14);
+const ICO_CALENDAR     = _S(`<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>`);
+const ICO_SMARTPHONE   = _S(`<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>`);
+const ICO_BAN          = _S(`<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>`);
+const ICO_CHECK_SM     = _S(`<path d="M20 6 9 17l-5-5"/>`, 13, ';stroke-width:2.5');
+const ICO_X_SM         = _S(`<path d="M18 6 6 18"/><path d="m6 6 12 12"/>`, 13, ';stroke-width:2.5');
+const ICO_REFRESH      = _S(`<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>`);
+const ICO_CLIPBOARD    = _S(`<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>`);
+const ICO_CHECK_CIRCLE = _S(`<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>`, 14);
+const ICO_X_CIRCLE     = _S(`<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>`, 14);
+const ICO_UNDO         = _S(`<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/>`);
+const ICO_MSG_CIRCLE   = _S(`<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>`);
+const ICO_TROPHY       = _S(`<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>`, 14);
+const ICO_ARROW_RIGHT  = _S(`<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>`);
+const ICO_USER_PLUS    = _S(`<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>`, 14);
+const ICO_STAR_SM      = _S(`<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>`, 11, ';fill:currentColor');
+const ICO_PIN_SM       = _S(`<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>`, 11);
+const ICO_PENCIL       = _S(`<path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>`);
+
 // ─── CLOSERS ─────────────────────────────────────────────────────────
 const CLOSERS = {
   fernanda: { name: 'Fernanda', waName: 'Fernanda Ayub',      icon: '⭐', color: '#CE9221', bg: 'rgba(206,146,33,.12)', calLink: 'https://calendar.app.google/hWWi6tVKAhoXg5cUA' },
@@ -229,14 +249,14 @@ let allNotifs  = [];
 // ─── MOTIVOS DE PERDA ────────────────────────────────────────────────
 const MOTIVOS_PERDA = [
   {
-    cat: '💰 Financeiro',
+    catLabel: 'Financeiro', catIcon: 'dollar-sign',
     items: [
       { id: 'sem_condicoes', icon: 'wallet',       label: 'Sem condições financeiras no momento' },
       { id: 'valor_alto',    icon: 'trending-down', label: 'Valor acima do orçamento' },
     ]
   },
   {
-    cat: '👤 Perfil',
+    catLabel: 'Perfil', catIcon: 'user',
     items: [
       { id: 'sem_perfil',  icon: 'user-x',       label: 'Não tem o perfil ideal para o programa' },
       { id: 'momento_vida',icon: 'clock',         label: 'Momento de vida não adequado' },
@@ -244,7 +264,7 @@ const MOTIVOS_PERDA = [
     ]
   },
   {
-    cat: '📵 Contato',
+    catLabel: 'Contato', catIcon: 'phone-off',
     items: [
       { id: 'sem_resposta',  icon: 'message-x', label: 'Não respondeu após follow up' },
       { id: 'desapareceu',   icon: 'ghost',     label: 'Desapareceu após a call' },
@@ -252,7 +272,7 @@ const MOTIVOS_PERDA = [
     ]
   },
   {
-    cat: '📝 Outro',
+    catLabel: 'Outro', catIcon: 'file-text',
     items: [
       { id: 'outro', icon: 'pencil', label: 'Outro (campo livre)' },
     ]
@@ -516,7 +536,7 @@ function renderUsuarios(lista) {
         <button class="btn-ghost btn-sm usuario-edit-btn" data-uid="${u.id}">Editar</button>
         <button class="btn-ghost btn-sm" data-reenviar="${u.id}" title="Gera nova senha e envia por email">Reenviar</button>
         <button class="btn-icon" data-copiar-wa="${u.id}" title="Copiar credenciais para WhatsApp"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8fa0a2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;flex-shrink:0"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></button>
-        <button class="btn-ghost btn-sm usuario-delete-btn" data-uid="${u.id}" data-nome="${esc(u.nome||u.email)}">Excluir</button>
+        <button class="btn-icon btn-destructive usuario-delete-btn" data-uid="${u.id}" data-nome="${esc(u.nome||u.email)}" title="Excluir usuário">${ICO_TRASH}</button>
       </td>
     </tr>`;
   }).join('');
@@ -838,7 +858,7 @@ function loadLeads() {
 
 function showDbError(msg) {
   $('table-wrap').innerHTML = `<div style="padding:48px 32px;text-align:center">
-    <div style="font-size:28px;margin-bottom:16px">⚠️</div>
+    <div style="margin-bottom:16px">${_S(`<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>`,28,';color:#d06070')}</div>
     <h3 style="font-size:16px;font-weight:700;margin-bottom:10px">Não foi possível carregar os leads</h3>
     <p style="font-size:13px;color:var(--text-muted)">${esc(msg||'Erro desconhecido')}</p>
   </div>`;
@@ -1079,7 +1099,7 @@ function renderSucesso() {
         <h1>Alunas <span style="color:var(--t3);font-weight:400;font-size:18px">/ ${s ? s.label : activeSucessoSub}</span></h1>
       </div></div>
       <div class="placeholder-module">
-        <div class="placeholder-icon">🚧</div>
+        <div class="placeholder-icon">${_S(`<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>`,48,';color:var(--t3)')}</div>
         <h3>${s ? s.label : activeSucessoSub}</h3>
         <p>Em desenvolvimento.</p>
       </div>`;
@@ -1461,7 +1481,7 @@ function renderSessoesTab(el) {
           </div>
           <div class="sess-item-right">
             ${badgeSessao(s.status)}
-            <button class="btn-ghost btn-sm" data-sess-agendar="${s.id}" title="Agendar">📅</button>
+            <button class="btn-ghost btn-sm" data-sess-agendar="${s.id}" title="Agendar">${ICO_CALENDAR}</button>
             <button class="btn-ghost btn-sm" data-sess-edit="${s.id}">Editar</button>
           </div>
         </div>`;
@@ -2107,7 +2127,7 @@ function renderFinanceiro() {
         </div>
       </div>
       <div class="placeholder-module">
-        <div class="placeholder-icon">🚧</div>
+        <div class="placeholder-icon">${_S(`<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>`,48,';color:var(--t3)')}</div>
         <h3>${s ? s.label : activeFinanceiroSub}</h3>
         <p>Este módulo está em desenvolvimento e estará disponível em breve.</p>
       </div>`;
@@ -2214,17 +2234,17 @@ function renderInicio() {
     </div>
     <div class="inicio-stats">
       <div class="stat-card accent-petro">
-        <div class="stat-top"><span class="stat-label">Calls Hoje</span><span class="stat-icon">📅</span></div>
+        <div class="stat-top"><span class="stat-label">Calls Hoje</span><span class="stat-icon">${ICO_CALENDAR}</span></div>
         <strong class="stat-num">${callsHoje}</strong>
         <span class="stat-sub">agendadas para hoje</span>
       </div>
       <div class="stat-card accent-gold">
-        <div class="stat-top"><span class="stat-label">Aguardando</span><span class="stat-icon">◷</span></div>
+        <div class="stat-top"><span class="stat-label">Aguardando</span><span class="stat-icon">${_S(`<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>`)}</span></div>
         <strong class="stat-num">${aguardando}</strong>
         <span class="stat-sub">leads para agendar</span>
       </div>
       <div class="stat-card accent-green">
-        <div class="stat-top"><span class="stat-label">Vendas do Mês</span><span class="stat-icon">◆</span></div>
+        <div class="stat-top"><span class="stat-label">Vendas do Mês</span><span class="stat-icon">${ICO_TROPHY}</span></div>
         <strong class="stat-num">${vendasMes}</strong>
         <span class="stat-sub">fechadas este mês</span>
       </div>
@@ -2378,9 +2398,9 @@ function renderAgendaSub() {
               ${(l.etiquetas||[]).length ? `<div class="card-etiquetas">${(l.etiquetas||[]).map(t=>etiquetaChip(t,true)).join('')}</div>` : ''}
             </div>
             <div class="agenda-card-btns">
-              <button class="btn-ghost btn-sm btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}" title="${l.briefing?'Ver/Editar Briefing':'Adicionar Briefing'}">${l.briefing?'📋 Briefing':'+ Briefing'}</button>
-              <button class="btn-ghost btn-sm btn-editar-agend" data-id="${l.id}" title="Editar agendamento">✏️</button>
-              <button class="btn-ghost btn-sm btn-excluir-agend btn-destructive" data-id="${l.id}" title="Excluir agendamento" >🗑️</button>
+              <button class="btn-ghost btn-sm btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}" title="${l.briefing?'Ver/Editar Briefing':'Adicionar Briefing'}">${l.briefing?`${ICO_CLIPBOARD} Briefing`:'+ Briefing'}</button>
+              <button class="btn-ghost btn-sm btn-editar-agend" data-id="${l.id}" title="Editar agendamento">${ICO_PENCIL}</button>
+              <button class="btn-icon btn-excluir-agend btn-destructive" data-id="${l.id}" title="Excluir agendamento">${ICO_TRASH}</button>
             </div>
           </div>`).join('')}
       </div>
@@ -2436,7 +2456,7 @@ function renderBriefingSub() {
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn-ghost btn-sm btn-ver-briefing" data-id="${l.id}">Ver Briefing</button>
-          <button class="btn-ghost btn-sm btn-briefing-open has-briefing" data-id="${l.id}">✏️ Editar</button>
+          <button class="btn-ghost btn-sm btn-briefing-open has-briefing" data-id="${l.id}">${ICO_PENCIL} Editar</button>
         </div>
       </div>
     </div>`;
@@ -2543,10 +2563,10 @@ function renderQualificados() {
       <td class="cell-renda" title="${esc(l.renda||'')}">${esc(abrevRenda(l.renda))}</td>
       <td>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</td>
       <td class="cell-acoes">
-        <button class="btn-primary btn-sm" data-agendar="${l.id}">📅 Agendar</button>
-        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">💬</button>
-        <button class="btn-ghost btn-sm btn-destructive" data-descartar="${l.id}" >🚫 Descartar</button>
-        <button class="btn-ghost btn-sm btn-destructive" data-excluir="${l.id}">Excluir</button>
+        <button class="btn-primary btn-sm" data-agendar="${l.id}">${ICO_CALENDAR} Agendar</button>
+        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
+        <button class="btn-ghost btn-sm btn-destructive" data-descartar="${l.id}">${ICO_BAN} Descartar</button>
+        <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir lead">${ICO_TRASH}</button>
       </td>
     </tr>`).join('');
     tbody.querySelectorAll('[data-perfil]').forEach(b =>
@@ -2655,9 +2675,9 @@ function renderAgendaHoje() {
               ${(l.etiquetas||[]).length ? `<div class="card-etiquetas">${(l.etiquetas||[]).map(t=>etiquetaChip(t,true)).join('')}</div>` : ''}
             </div>
             <div class="agenda-card-btns">
-              <button class="btn-ghost btn-sm btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}" title="${l.briefing?'Ver/Editar Briefing':'Adicionar Briefing'}">${l.briefing?'📋 Briefing':'+ Briefing'}</button>
-              <button class="btn-ghost btn-sm btn-editar-agend" data-id="${l.id}" title="Editar agendamento">✏️</button>
-              <button class="btn-ghost btn-sm btn-excluir-agend btn-destructive" data-id="${l.id}" title="Excluir agendamento" >🗑️</button>
+              <button class="btn-ghost btn-sm btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}" title="${l.briefing?'Ver/Editar Briefing':'Adicionar Briefing'}">${l.briefing?`${ICO_CLIPBOARD} Briefing`:'+ Briefing'}</button>
+              <button class="btn-ghost btn-sm btn-editar-agend" data-id="${l.id}" title="Editar agendamento">${ICO_PENCIL}</button>
+              <button class="btn-icon btn-excluir-agend btn-destructive" data-id="${l.id}" title="Excluir agendamento">${ICO_TRASH}</button>
             </div>
           </div>`).join('')}
       </div>
@@ -2798,9 +2818,9 @@ function renderDescartados() {
       <td>${badgeOrigem(l.origem)}</td>
       <td><span class="badge-status descartado">${esc(l.motivo_descarte_label||l.motivo_descarte||'—')}</span></td>
       <td class="cell-acoes">
-        <button class="btn-ghost btn-sm" data-reativar="${l.id}">↩ Reativar</button>
-        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">💬</button>
-        <button class="btn-ghost btn-sm btn-destructive" data-excluir="${l.id}">Excluir</button>
+        <button class="btn-ghost btn-sm" data-reativar="${l.id}">${ICO_UNDO} Reativar</button>
+        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
+        <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir lead">${ICO_TRASH}</button>
       </td>
     </tr>`).join('');
     tbody.querySelectorAll('[data-perfil]').forEach(b =>
@@ -3510,7 +3530,7 @@ function openMotivosPerda(leadId) {
   const body = $('mp-body');
   body.innerHTML = MOTIVOS_PERDA.map(cat => `
     <div class="mp-cat">
-      <div class="mp-cat-title">${esc(cat.cat)}</div>
+      <div class="mp-cat-title"><i data-lucide="${cat.catIcon}" style="width:13px;height:13px;display:inline-block;vertical-align:middle;margin-right:5px"></i>${esc(cat.catLabel)}</div>
       <div class="mp-items">
         ${cat.items.map(item => `
           <button class="mp-item" data-id="${item.id}">
@@ -3667,12 +3687,12 @@ function renderRelatorios() {
 
   $('relatorios-content').innerHTML = `
     <div class="stats-grid rel-summary">
-      ${relStatCard('Total de Leads', base.length, '◈')}
-      ${relStatCard('Comparecimento', taxaComp+'%', '◉', 'accent-petro')}
-      ${relStatCard('Conversão', taxaConv+'%', '◆', 'accent-green')}
-      ${relStatCard('Faturamento', 'R$\xa0'+fmtValor(faturamento), '◈', 'accent-sand')}
-      ${relStatCard('Ticket Médio', ticketMedio ? 'R$\xa0'+fmtValor(ticketMedio) : '—', '◈', 'accent-gold')}
-      ${relStatCard('Vendas', vendas.length, '✦', 'accent-gold')}
+      ${relStatCard('Total de Leads', base.length, _S(`<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>`))}
+      ${relStatCard('Comparecimento', taxaComp+'%', _S(`<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>`), 'accent-petro')}
+      ${relStatCard('Conversão', taxaConv+'%', ICO_TROPHY, 'accent-green')}
+      ${relStatCard('Faturamento', 'R$\xa0'+fmtValor(faturamento), _S(`<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>`), 'accent-sand')}
+      ${relStatCard('Ticket Médio', ticketMedio ? 'R$\xa0'+fmtValor(ticketMedio) : '—', _S(`<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>`), 'accent-gold')}
+      ${relStatCard('Vendas', vendas.length, ICO_CHECK_CIRCLE, 'accent-gold')}
     </div>
 
     ${mesEntries.length >= 2 ? `
@@ -3880,7 +3900,7 @@ function renderCards() {
   wrap.innerHTML = filteredLeads.map(l => {
     const etiquetas = (l.etiquetas||[]).map(t=>etiquetaChip(t,true)).join('');
     const agendInfo = (l.status==='agendado' && l.dataagendamento)
-      ? `<div class="card-agenda-info">📅 ${fmtDateHora(l.dataagendamento,l.horaagendamento)} · ${esc(CLOSERS[l.closer]?.name||l.closer||'—')}</div>` : '';
+      ? `<div class="card-agenda-info">${ICO_CALENDAR} ${fmtDateHora(l.dataagendamento,l.horaagendamento)} · ${esc(CLOSERS[l.closer]?.name||l.closer||'—')}</div>` : '';
     return `<div class="lead-card" data-id="${l.id}">
       <div class="card-head">
         <div>
@@ -3945,19 +3965,18 @@ function btnAcao(l) {
   const icoEye   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
   const icoChat  = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
   const icoPen   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>`;
-  const icoTrash = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`;
-  const icoDoc   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
+const icoDoc   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
 
   let primary = '';
-  if      (st === 'aguardando')                  primary = `<button class="btn-acao-inline btn-qualificar"     data-id="${id}" data-action="qualificar-lead" title="Qualificar este lead">✓ Qualificado</button><button class="btn-acao-inline btn-nao-qualificar" data-id="${id}" data-action="descartar" title="Não qualificar / descartar">✕ Não Qualificado</button>`;
-  else if (st === 'qualificado')                 primary = `<button class="btn-acao-inline btn-agendar"        data-id="${id}" data-action="agendar"         title="Agendar call">📅 Agendar</button>`;
-  else if (st === 'agendado' || st === 'noshow') primary = `<button class="btn-acao-inline btn-remarcar"       data-id="${id}" data-action="agendar"         title="Remarcar call">🔄 Remarcar</button>`;
-  else if (st === 'realizada')                   primary = `<button class="btn-acao-inline btn-ver"            data-id="${id}" data-action="ver"             title="Ver resultado da call">📋 Resultado</button>`;
-  else if (st === 'descartado')                  primary = `<button class="btn-acao-inline btn-reativar"       data-id="${id}" data-action="reativar"        title="Reativar lead">↩ Reativar</button>`;
+  if      (st === 'aguardando')                  primary = `<button class="btn-acao-inline btn-qualificar"     data-id="${id}" data-action="qualificar-lead" title="Qualificar este lead">${ICO_CHECK_SM} Qualificado</button><button class="btn-acao-inline btn-nao-qualificar" data-id="${id}" data-action="descartar" title="Não qualificar / descartar">${ICO_X_SM} Não Qualificado</button>`;
+  else if (st === 'qualificado')                 primary = `<button class="btn-acao-inline btn-agendar"        data-id="${id}" data-action="agendar"         title="Agendar call">${ICO_CALENDAR} Agendar</button>`;
+  else if (st === 'agendado' || st === 'noshow') primary = `<button class="btn-acao-inline btn-remarcar"       data-id="${id}" data-action="agendar"         title="Remarcar call">${ICO_REFRESH} Remarcar</button>`;
+  else if (st === 'realizada')                   primary = `<button class="btn-acao-inline btn-ver"            data-id="${id}" data-action="ver"             title="Ver resultado da call">${ICO_CLIPBOARD} Resultado</button>`;
+  else if (st === 'descartado')                  primary = `<button class="btn-acao-inline btn-reativar"       data-id="${id}" data-action="reativar"        title="Reativar lead">${ICO_UNDO} Reativar</button>`;
 
   const postcall = st === 'agendado'
-    ? `<button class="btn-icon btn-realizada" data-id="${id}" data-postcall="realizada" title="Marcar como Call Realizada">✅</button>
-       <button class="btn-icon btn-noshow"    data-id="${id}" data-postcall="noshow"    title="Marcar como No Show">❌</button>`
+    ? `<button class="btn-icon btn-realizada" data-id="${id}" data-postcall="realizada" title="Marcar como Call Realizada">${ICO_CHECK_CIRCLE}</button>
+       <button class="btn-icon btn-noshow"    data-id="${id}" data-postcall="noshow"    title="Marcar como No Show">${ICO_X_CIRCLE}</button>`
     : '';
 
   const briefingBtn = st !== 'aguardando'
@@ -3969,7 +3988,7 @@ function btnAcao(l) {
     ${briefingBtn}
     <button class="btn-icon btn-wa-lead" data-id="${id}" title="Abrir no WhatsApp">${icoChat}</button>
     <button class="btn-icon btn-editar"  data-id="${id}" data-action="editar"     title="Editar lead">${icoPen}</button>
-    <button class="btn-icon btn-excluir" data-id="${id}" data-action="excluir"    title="Excluir lead">${icoTrash}</button>
+    <button class="btn-icon btn-destructive btn-excluir" data-id="${id}" data-action="excluir" title="Excluir lead">${ICO_TRASH}</button>
   </div>`;
 }
 function fmtDate(d) {
@@ -4454,10 +4473,10 @@ async function updateCalConnectButtons() {
     const { data } = await supabase.from('calendar_tokens').select('closer_key').eq('closer_key', key).maybeSingle();
     btn.disabled = false;
     if (data) {
-      btn.textContent = `✓ ${CLOSERS[key].name}`;
+      btn.innerHTML = `${ICO_CHECK_SM} ${CLOSERS[key].name}`;
       btn.style.color = 'var(--green, #4caf50)';
     } else {
-      btn.textContent = `📅 Conectar ${CLOSERS[key].name}`;
+      btn.innerHTML = `${ICO_CALENDAR} Conectar ${CLOSERS[key].name}`;
       btn.style.color = '';
     }
   }
@@ -4606,7 +4625,7 @@ function renderPerfilHistorico(lead, kanbanRows) {
     fechamento:'Negociação', followup:'Decisão', venda_ganha:'Venda Ganha', descartado:'Descartado', venda_perdida:'Descartado',
   };
   const kanbanItems = kanbanRows.map(r => ({
-    ico: r.col === 'venda_ganha' ? '🏆' : r.col === 'descartado' ? '🗑️' : '↪',
+    ico: r.col === 'venda_ganha' ? ICO_TROPHY : r.col === 'descartado' ? ICO_TRASH : ICO_ARROW_RIGHT,
     label: `Kanban → ${r.col_label || KANBAN_COL_LBL[r.col] || r.col}`,
     sub: [
       r.movido_por || null,
@@ -4709,7 +4728,7 @@ async function salvarObsPerfil() {
 
 function buildHistorico(lead) {
   const items = [];
-  if (lead.datachegada) items.push({ ico:'◈', label:'Lead cadastrado', sub:fmtDate(lead.datachegada) });
+  if (lead.datachegada) items.push({ ico:ICO_USER_PLUS, label:'Lead cadastrado', sub:fmtDate(lead.datachegada) });
   if (lead.dataagendamento) {
     const closerName = lead.closer ? (CLOSERS[lead.closer]?.name||lead.closer) : null;
     const sub = [
@@ -4717,10 +4736,10 @@ function buildHistorico(lead) {
       closerName ? 'Closer: '+closerName : null,
       lead.agendadopor ? 'Por: '+lead.agendadopor : null,
     ].filter(Boolean).join(' · ');
-    items.push({ ico:'📅', label:'Call agendada', sub });
+    items.push({ ico:ICO_CALENDAR, label:'Call agendada', sub });
   }
-  if (lead.status === 'noshow')    items.push({ ico:'❌', label:'No Show registrado', sub:'' });
-  if (lead.status === 'cancelado') items.push({ ico:'🚫', label:'Cancelado', sub:'' });
+  if (lead.status === 'noshow')    items.push({ ico:ICO_X_CIRCLE, label:'No Show registrado', sub:'' });
+  if (lead.status === 'cancelado') items.push({ ico:ICO_BAN,      label:'Cancelado', sub:'' });
   if (lead.status === 'realizada' || lead.realizadaem) {
     const CLOSER_LBL = { call_realizada:'Call Realizada', followup:'Follow Up', fechamento:'Fechamento', venda_ganha:'Venda Ganha', venda_perdida:'Venda Perdida' };
     const dataCall = lead.realizadaem
@@ -4732,8 +4751,8 @@ function buildHistorico(lead) {
       lead.venda_ganha_dados?.valor    ? lead.venda_ganha_dados.valor    : null,
       lead.status_closer ? CLOSER_LBL[lead.status_closer]||lead.status_closer : null,
     ].filter(Boolean).join(' · ');
-    items.push({ ico:'✅', label:'Call realizada', sub });
-    if (lead.obs_call) items.push({ ico:'💬', label:'Obs. da call', sub:lead.obs_call });
+    items.push({ ico:ICO_CHECK_CIRCLE, label:'Call realizada', sub });
+    if (lead.obs_call) items.push({ ico:ICO_MSG_CIRCLE, label:'Obs. da call', sub:lead.obs_call });
   }
   return items;
 }
@@ -5502,9 +5521,9 @@ function renderChatMessages(messages, containerId, emptyId) {
       <div class="chat-msg-actions">
         <button class="chat-action-btn chat-reply-btn"   data-msg-id="${esc(msg.id||'')}" title="Responder">↩</button>
         <button class="chat-action-btn chat-copy-btn"    data-msg-id="${esc(msg.id||'')}" title="Copiar">⎘</button>
-        <button class="chat-action-btn chat-star-btn${msg.starred?' chat-star-btn--on':''}" data-msg-id="${esc(msg.id||'')}" title="Estrelar">★</button>
+        <button class="chat-action-btn chat-star-btn${msg.starred?' chat-star-btn--on':''}" data-msg-id="${esc(msg.id||'')}" title="Estrelar">${ICO_STAR_SM}</button>
         <button class="chat-action-btn chat-forward-btn" data-msg-id="${esc(msg.id||'')}" title="Encaminhar">⟶</button>
-        <button class="chat-action-btn chat-delete-btn"  data-msg-id="${esc(msg.id||'')}" title="Apagar">🗑</button>
+        <button class="chat-action-btn chat-delete-btn btn-destructive"  data-msg-id="${esc(msg.id||'')}" title="Apagar">${ICO_TRASH}</button>
       </div>
       <div class="chat-bubble">
         ${replyHtml}
@@ -5918,11 +5937,11 @@ function renderLeadChatItem(lead) {
   return `<div class="chats-list-item${isActive?' chats-list-item--active':''}${unread?' chats-list-item--unread':''}" data-lead-id="${esc(lead.id)}" role="button" tabindex="0">
     <div class="cli-avatar" data-phone="${esc(phone)}" data-instance="${esc(instance)}">${avatarInner}</div>
     <div class="cli-body">
-      <div class="cli-top"><span class="cli-name">${esc(lead.nome||'—')}${lead.chat_pinned ? '<span class="cli-pin-icon">📌</span>' : ''}${lead.chat_starred ? '<span class="cli-pin-icon">⭐</span>' : ''}</span><span class="cli-time">${esc(lastTime)}</span></div>
+      <div class="cli-top"><span class="cli-name">${esc(lead.nome||'—')}${lead.chat_pinned ? `<span class="cli-pin-icon">${ICO_PIN_SM}</span>` : ''}${lead.chat_starred ? `<span class="cli-pin-icon">${ICO_STAR_SM}</span>` : ''}</span><span class="cli-time">${esc(lastTime)}</span></div>
       <div class="cli-mid"><span class="cli-msg">${esc(lastMsg)}</span>${unread?`<span class="cli-unread-badge">${unread}</span>`:''}</div>
       ${lblHtml?`<div class="cli-labels">${lblHtml}</div>`:''}
     </div>
-    <button class="cli-delete-btn" data-action="delete-conv" data-type="lead" data-id="${esc(lead.id)}" title="Excluir conversa" aria-label="Excluir conversa">✕</button>
+    <button class="cli-delete-btn" data-action="delete-conv" data-type="lead" data-id="${esc(lead.id)}" title="Excluir conversa" aria-label="Excluir conversa">${ICO_TRASH}</button>
   </div>`;
 }
 
@@ -5944,11 +5963,11 @@ function renderContactChatItem(contact) {
   return `<div class="chats-list-item${isActive?' chats-list-item--active':''}${unread?' chats-list-item--unread':''}" data-contact-id="${esc(contact.id)}" role="button" tabindex="0">
     <div class="cli-avatar" data-phone="${esc(phone)}" data-instance="${esc(instance)}">${avatarInner}</div>
     <div class="cli-body">
-      <div class="cli-top"><span class="cli-name">${esc(pushName||phone)}${contact.chat_pinned ? '<span class="cli-pin-icon">📌</span>' : ''}${contact.chat_starred ? '<span class="cli-pin-icon">⭐</span>' : ''}</span><span class="cli-time">${esc(lastTime)}</span></div>
+      <div class="cli-top"><span class="cli-name">${esc(pushName||phone)}${contact.chat_pinned ? `<span class="cli-pin-icon">${ICO_PIN_SM}</span>` : ''}${contact.chat_starred ? `<span class="cli-pin-icon">${ICO_STAR_SM}</span>` : ''}</span><span class="cli-time">${esc(lastTime)}</span></div>
       <div class="cli-mid"><span class="cli-msg">${esc(lastMsg)}</span>${unread?`<span class="cli-unread-badge">${unread}</span>`:''}</div>
       <div class="cli-labels"><span class="cli-unknown-tag">Desconhecido</span></div>
     </div>
-    <button class="cli-delete-btn" data-action="delete-conv" data-type="contact" data-id="${esc(contact.id)}" title="Excluir conversa" aria-label="Excluir conversa">✕</button>
+    <button class="cli-delete-btn" data-action="delete-conv" data-type="contact" data-id="${esc(contact.id)}" title="Excluir conversa" aria-label="Excluir conversa">${ICO_TRASH}</button>
   </div>`;
 }
 
@@ -6425,7 +6444,7 @@ async function renderQuickRepliesPanel() {
           <td class="qr-td-text">${esc(r.texto)}</td>
           <td class="qr-td-acts">
             <button class="btn-ghost btn-sm qr-edit" data-id="${esc(r.id)}">Editar</button>
-            <button class="btn-ghost btn-sm qr-del btn-destructive" data-id="${esc(r.id)}" >Excluir</button>
+            <button class="btn-icon qr-del btn-destructive" data-id="${esc(r.id)}" title="Excluir">${ICO_TRASH}</button>
           </td>
         </tr>`).join('')}
       </tbody>
@@ -6491,7 +6510,7 @@ async function renderLabelsPanel() {
       <span class="label-dot" style="background:${esc(l.cor)}"></span>
       <span class="label-admin-nome">${esc(l.nome)}</span>
       <button class="btn-icon label-e" data-id="${esc(l.id)}" title="Editar">✏</button>
-      <button class="btn-icon btn-excluir label-d" data-id="${esc(l.id)}" title="Excluir" >✕</button>
+      <button class="btn-icon btn-destructive label-d" data-id="${esc(l.id)}" title="Excluir">${ICO_TRASH}</button>
     </div>`).join('');
   grid.querySelectorAll('.label-e').forEach(btn => btn.addEventListener('click', () => openLabelForm(btn.dataset.id)));
   grid.querySelectorAll('.label-d').forEach(btn => btn.addEventListener('click', () => deleteLabel(btn.dataset.id)));
@@ -6949,7 +6968,7 @@ function renderInstancias() {
   const permitted = getPermittedInstances();
   if (permitted.length === 0) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
-      <div class="empty-ico">📱</div>
+      <div class="empty-ico">${_S(`<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>`,36)}</div>
       <h3>Nenhuma instância configurada</h3>
       <p>Clique em "+ Conectar número" para adicionar seu primeiro número WhatsApp.</p>
     </div>`; return;
@@ -6989,7 +7008,7 @@ function renderInstanceCard(inst) {
   return `<div class="wa-instance-card">
     <div class="wa-inst-header">
       <div class="wa-inst-name-wrap">
-        <span class="wa-inst-icon">📱</span>
+        <span class="wa-inst-icon">${_S(`<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>`,22)}</span>
         <div>
           <div class="wa-inst-name">${esc(inst.displayName || inst.instanceName)}</div>
           <div class="wa-inst-id">${esc(inst.instanceName)}</div>
@@ -7017,7 +7036,7 @@ function renderInstanceCard(inst) {
     </div>
     <div class="wa-inst-actions">
       ${actionBtn}
-      <button class="btn-ghost btn-sm wa-btn-delete btn-destructive" data-id="${esc(inst.id)}" >Excluir</button>
+      <button class="btn-icon wa-btn-delete btn-destructive" data-id="${esc(inst.id)}" title="Excluir instância">${ICO_TRASH}</button>
     </div>
   </div>`;
 }
@@ -7057,7 +7076,7 @@ function renderInstanciasModal() {
       : `<button class="btn-ghost btn-sm im-btn-reconnect" data-id="${esc(inst.id)}">Reconectar</button>`;
     return `<div class="im-row">
       <div class="im-row-info">
-        <span class="im-row-icon">📱</span>
+        <span class="im-row-icon">${_S(`<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>`,20)}</span>
         <div class="im-row-details">
           <span class="im-row-name">${esc(inst.displayName || inst.instanceName)}</span>
           <span class="im-row-phone">${esc(inst.phoneNumber || inst.instanceName)}</span>
@@ -7067,7 +7086,7 @@ function renderInstanciasModal() {
       <span class="wa-status ${st.cls}">${st.label}</span>
       <div class="im-row-actions">
         ${actionBtn}
-        <button class="btn-ghost btn-sm im-btn-delete btn-destructive" data-id="${esc(inst.id)}" >Excluir</button>
+        <button class="btn-icon im-btn-delete btn-destructive" data-id="${esc(inst.id)}" title="Excluir instância">${ICO_TRASH}</button>
       </div>
     </div>`;
   }).join('');
