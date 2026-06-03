@@ -2249,13 +2249,18 @@ function renderInicio() {
   })();
   const nowTime = String(hour).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
 
-  const isVendaMes  = l => l.kanban_column === 'venda_ganha' && ((l.atualizadoem||l.datachegada||'').startsWith(thisMonth));
-  const isVendaPrev = l => l.kanban_column === 'venda_ganha' && ((l.atualizadoem||l.datachegada||'').startsWith(prevMonth));
+  // kanban_column_since é setado no momento exato em que o lead vai para venda_ganha.
+  // atualizadoem é atualizado a cada save (mensagens, obs, etc.), por isso é descartado.
+  const isVendaMes  = l => l.kanban_column === 'venda_ganha' &&
+    ((l.kanban_column_since||l.datachegada||'').startsWith(thisMonth));
+  const isVendaPrev = l => l.kanban_column === 'venda_ganha' &&
+    ((l.kanban_column_since||l.datachegada||'').startsWith(prevMonth));
   const fatAtual = allLeads.filter(isVendaMes).reduce((s,l) => s + parseValor(l.venda_ganha_dados?.valor), 0);
   const fatPrev  = allLeads.filter(isVendaPrev).reduce((s,l) => s + parseValor(l.venda_ganha_dados?.valor), 0);
   const diffFat  = fatAtual - fatPrev;
   const fmtFat   = n => n ? n.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0,maximumFractionDigits:0}) : 'R$ 0';
 
+  // Leads Hoje e Calls Hoje já filtram por data exata ✓
   const leadsHoje = allLeads.filter(l => (l.datachegada||'').startsWith(todayStr)).length;
 
   const callsHojeList = allLeads
@@ -2265,15 +2270,18 @@ function renderInicio() {
   const proximaCall = callsHojeList.find(l => (l.horaagendamento||'') >= nowTime);
   const proximaHora = proximaCall?.horaagendamento?.slice(0,5) || null;
 
+  // Conversão: leads entrados este mês que viraram venda este mês
   const leadesMes      = allLeads.filter(l => (l.datachegada||'').startsWith(thisMonth)).length;
   const vendasMesCount = allLeads.filter(isVendaMes).length;
   const convMes = leadesMes ? Math.round(vendasMesCount / leadesMes * 100) : 0;
 
-  const fLeads  = allLeads.length;
-  const fQualif = allLeads.filter(l => !['aguardando','descartado','cancelado'].includes(l.status)).length;
-  const fAgend  = allLeads.filter(l => l.dataagendamento).length;
-  const fCalls  = allLeads.filter(l => ['realizada','noshow'].includes(l.status) || l.kanban_column).length;
-  const fVendas = allLeads.filter(l => l.kanban_column === 'venda_ganha').length;
+  // Funil: apenas leads com datachegada neste mês (cohort mensal)
+  const mesLeads = allLeads.filter(l => (l.datachegada||'').startsWith(thisMonth));
+  const fLeads  = mesLeads.length;
+  const fQualif = mesLeads.filter(l => !['aguardando','descartado','cancelado'].includes(l.status)).length;
+  const fAgend  = mesLeads.filter(l => l.dataagendamento).length;
+  const fCalls  = mesLeads.filter(l => ['realizada','noshow'].includes(l.status) || l.kanban_column).length;
+  const fVendas = mesLeads.filter(l => l.kanban_column === 'venda_ganha').length;
   const pctQ = fLeads  ? Math.round(fQualif/fLeads *100) : 0;
   const pctA = fQualif ? Math.round(fAgend /fQualif*100) : 0;
   const pctC = fAgend  ? Math.round(fCalls /fAgend *100) : 0;
