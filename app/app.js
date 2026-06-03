@@ -2280,8 +2280,8 @@ function renderInicio() {
   const mesLeads = allLeads.filter(l => (l.datachegada||'').startsWith(thisMonth));
   const fLeads  = mesLeads.length;
   const fQualif = mesLeads.filter(l => !['aguardando','descartado','cancelado'].includes(l.status)).length;
-  const fAgend  = mesLeads.filter(l => l.dataagendamento).length;
-  const fCalls  = mesLeads.filter(l => ['realizada','noshow'].includes(l.status) || l.kanban_column).length;
+  const fAgend  = mesLeads.filter(l => l.dataagendamento && !(['realizada','noshow'].includes(l.status) || (l.kanban_column && l.kanban_column !== 'agendado'))).length;
+  const fCalls  = mesLeads.filter(l => ['realizada','noshow'].includes(l.status) || (l.kanban_column && l.kanban_column !== 'agendado')).length;
   const fNoShow = mesLeads.filter(l => l.status === 'noshow').length;
   const fVendas = mesLeads.filter(l => l.kanban_column === 'venda_ganha').length;
   const fRealiz = Math.max(fCalls - fNoShow, 0); // calls que aconteceram de verdade
@@ -2300,8 +2300,8 @@ function renderInicio() {
       </svg>
     </div>`;
 
-  const imc = (nav, delay, label, value, sub, subCls, iconSvg, valueColor) => `
-    <div class="imc inicio-nav-card fdv-fade-up" data-inicio-nav="${nav}" style="animation-delay:${delay}s">
+  const imc = (nav, delay, label, value, sub, subCls, iconSvg, valueColor, heroClass) => `
+    <div class="imc ${heroClass||''} inicio-nav-card fdv-fade-up" data-inicio-nav="${nav}" style="animation-delay:${delay}s">
       <div class="imc-icon">${iconSvg}</div>
       <div class="imc-label">${label}</div>
       <div class="imc-value"${valueColor?` style="color:${valueColor}"`:''} >${value}</div>
@@ -2326,7 +2326,7 @@ function renderInicio() {
       ${imc('vendas',0.16,'Faturamento do Mês',fmtFat(fatAtual),fatDiffLabel,
         diffFat>0?'imc-pos':diffFat<0?'imc-neg':'',
         ICO20('<polyline points="22 7 13 7 13 17"/><polyline points="2 17 13 7 17 11 22 6"/>'),
-        'var(--gold)')}
+        'var(--gold)', 'imc--hero')}
       ${imc('novos',0.22,'Leads Hoje',leadsHoje,'novos hoje','',
         ICO20('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>'))}
       ${imc('agendados',0.28,'Calls Hoje',callsHoje,
@@ -2343,9 +2343,19 @@ function renderInicio() {
       ${arrowSvg(pctA)}
       <div class="funil-stage"><div class="funil-label">Agendados</div><div class="funil-num">${fAgend}</div></div>
       ${arrowSvg(pctC)}
-      <div class="funil-stage"><div class="funil-label">Calls</div><div class="funil-num">${fCalls}</div></div>
-      ${arrowSvg(pctNS)}
-      <div class="funil-stage"><div class="funil-label">No Show</div><div class="funil-num" style="color:#d06070">${fNoShow}</div></div>
+      <div class="funil-calls-wrap">
+        <div class="funil-stage"><div class="funil-label">Calls</div><div class="funil-num">${fCalls}</div></div>
+        <div class="funil-noshow-branch">
+          <div class="funil-branch-down">
+            <svg width="12" height="20" viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <line x1="6" y1="0" x2="6" y2="14"/>
+              <polyline points="2,10 6,16 10,10"/>
+            </svg>
+            <span class="funil-branch-rate">${pctNS}% NS</span>
+          </div>
+          <div class="funil-stage funil-stage--ns"><div class="funil-label">No Show</div><div class="funil-num">${fNoShow}</div></div>
+        </div>
+      </div>
       ${arrowSvg(pctV)}
       <div class="funil-stage"><div class="funil-label">Vendas</div><div class="funil-num" style="color:var(--gold)">${fVendas}</div></div>
     </div>
@@ -3734,40 +3744,107 @@ async function renderVendasView() {
 
 function renderDescartadosView() {
   const el = $('closer-subview');
-  const leads = allLeads.filter(l => {
-    const col = getLeadKanbanCol(l);
-    return col === 'descartado';
-  });
+  if (!el) return;
+
+  // Filtros persistentes entre re-renders
+  if (!renderDescartadosView._f) renderDescartadosView._f = { closer:'', mes:'', motivo:'' };
+  const flt = renderDescartadosView._f;
 
   const MOTIVO_LABEL = Object.fromEntries(MOTIVOS_DESCARTE.map(m => [m.id, m.label]));
+
+  // Todos os descartados (para preencher os dropdowns)
+  const allDesc = allLeads.filter(l => getLeadKanbanCol(l) === 'descartado');
+
+  // Meses disponíveis
+  const meses = [...new Set(
+    allDesc.map(l => (l.kanban_column_since||l.atualizadoem||'').slice(0,7))
+           .filter(m => /^\d{4}-\d{2}$/.test(m))
+  )].sort().reverse();
+
+  // Motivos disponíveis
+  const motivosDisp = [...new Set(allDesc.map(l => l.motivo_descarte).filter(Boolean))];
+
+  // Aplicar filtros
+  let leads = allDesc;
+  if (flt.closer)  leads = leads.filter(l => (l.closer||'') === flt.closer);
+  if (flt.mes)     leads = leads.filter(l => (l.kanban_column_since||l.atualizadoem||'').startsWith(flt.mes));
+  if (flt.motivo)  leads = leads.filter(l => l.motivo_descarte === flt.motivo);
 
   el.innerHTML = `
     <div class="subview-header">
       <h2 class="subview-title"><i data-lucide="archive-x"></i> Descartados</h2>
-      <span class="subview-count">${leads.length} lead${leads.length !== 1 ? 's' : ''}</span>
+      <span class="subview-count">${leads.length} lead${leads.length!==1?'s':''}</span>
     </div>
-    ${leads.length === 0 ? '<p class="hist-empty" style="margin-top:32px">Nenhum lead descartado.</p>' : `
+    <div class="desc-view-filters" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:0 2px">
+      <select class="filter-select" id="dv-closer" style="width:auto;min-width:140px">
+        <option value="">Todos os closers</option>
+        ${Object.entries(CLOSERS).map(([k,c])=>`<option value="${k}" ${flt.closer===k?'selected':''}>${esc(c.name)}</option>`).join('')}
+      </select>
+      <select class="filter-select" id="dv-mes" style="width:auto;min-width:140px">
+        <option value="">Todos os meses</option>
+        ${meses.map(m=>`<option value="${m}" ${flt.mes===m?'selected':''}>${fmtMes(m)}</option>`).join('')}
+      </select>
+      <select class="filter-select" id="dv-motivo" style="width:auto;min-width:160px">
+        <option value="">Todos os motivos</option>
+        ${motivosDisp.map(m=>`<option value="${m}" ${flt.motivo===m?'selected':''}>${esc(MOTIVO_LABEL[m]||m)}</option>`).join('')}
+      </select>
+      <button class="btn-ghost btn-sm" id="dv-limpar">Limpar</button>
+    </div>
+    ${leads.length === 0 ? '<p class="hist-empty" style="margin-top:32px">Nenhum lead descartado com esses filtros.</p>' : `
     <div class="table-wrap">
       <table class="data-table">
         <thead><tr>
-          <th>Lead</th><th>Motivo</th><th>Observação</th><th>Closer</th><th>Descartado em</th>
+          <th>Lead</th><th>Motivo</th><th>Closer</th><th>Descartado em</th><th>Ações</th>
         </tr></thead>
         <tbody>
           ${leads.map(l => `<tr>
             <td><button class="link-btn" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
             <td>${esc(l.motivo_descarte_label || MOTIVO_LABEL[l.motivo_descarte] || l.motivo_descarte || '—')}</td>
-            <td>${esc(l.motivo_descarte_obs||'')}</td>
-            <td>${esc(l.closer ? (CLOSERS[l.closer]?.name||l.closer) : '—')}</td>
+            <td>${esc(l.closer?(CLOSERS[l.closer]?.name||l.closer):'—')}</td>
             <td>${fmtDate((l.kanban_column_since||l.atualizadoem||'').slice(0,10))}</td>
+            <td class="cell-acoes">
+              <button class="btn-ghost btn-sm btn-mover-kanban" data-id="${l.id}" title="Mover de volta para o Kanban">${ICO_UNDO} Kanban</button>
+              <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
+              <button class="btn-ghost btn-sm btn-ver-perfil" data-id="${l.id}" title="Ver perfil">${ICO_EYE||_S('<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',13)}</button>
+            </td>
           </tr>`).join('')}
         </tbody>
       </table>
-    </div>`}`;
+    </div>`}
+  `;
   lucide.createIcons({ nodes: [el] });
 
-  el.querySelectorAll('[data-perfil]').forEach(b => {
-    b.addEventListener('click', () => { const l = allLeads.find(x => x.id === b.dataset.perfil); if (l) openPerfil(l); });
-  });
+  // Filtros
+  el.querySelector('#dv-closer')?.addEventListener('change',  e => { flt.closer = e.target.value;  renderDescartadosView(); });
+  el.querySelector('#dv-mes')?.addEventListener('change',     e => { flt.mes    = e.target.value;  renderDescartadosView(); });
+  el.querySelector('#dv-motivo')?.addEventListener('change',  e => { flt.motivo = e.target.value;  renderDescartadosView(); });
+  el.querySelector('#dv-limpar')?.addEventListener('click',   () => { flt.closer=flt.mes=flt.motivo=''; renderDescartadosView(); });
+
+  // Ações
+  el.querySelectorAll('[data-perfil]').forEach(b =>
+    b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
+  );
+  el.querySelectorAll('.btn-wa-lead').forEach(b =>
+    b.addEventListener('click', () => openWaChatFromLead(b.dataset.id))
+  );
+  el.querySelectorAll('.btn-ver-perfil').forEach(b =>
+    b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.id); if(l) openPerfil(l); })
+  );
+  el.querySelectorAll('.btn-mover-kanban').forEach(b =>
+    b.addEventListener('click', async () => {
+      const lid = b.dataset.id;
+      const lead = allLeads.find(x=>x.id===lid);
+      if (!lead) return;
+      try {
+        await saveLead(lid, {
+          kanban_column:       'agendado',
+          kanban_column_since: new Date().toISOString(),
+          atualizadoem:        new Date().toISOString(),
+        });
+        toast(`${lead.nome} movido de volta para o Kanban.`, 'ok');
+      } catch(e) { console.error(e); toast('Erro ao mover lead.','err'); }
+    })
+  );
 }
 
 // ─── MOTIVO DE PERDA ─────────────────────────────────────────────────

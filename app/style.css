@@ -3316,19 +3316,19 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 
 /* ── Bloco 3: métricas do dia ─────────────────────────────── */
 .inicio-metrics {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)); /* minmax(0,...) evita que conteúdo expanda a coluna */
+  display: flex;     /* flex permite flex:1 e flex:1.5 para hierarquia */
   gap: 16px;
   margin-bottom: 40px;
+  align-items: stretch;
 }
-@media (max-width: 860px) { .inicio-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 480px) { .inicio-metrics { grid-template-columns: 1fr; } }
+@media (max-width: 860px) { .inicio-metrics { flex-wrap: wrap; } .imc { flex: 1 1 calc(50% - 8px); } }
+@media (max-width: 480px) { .inicio-metrics { flex-direction: column; } .imc { flex: 1 1 100%; } }
 
 .imc {
   position: relative;
-  width: 100%;          /* garante que o item preenche toda a célula do grid */
-  box-sizing: border-box;
+  flex: 1;              /* todos os cards dividem espaço igualmente */
   min-width: 0;
+  box-sizing: border-box;
   overflow: hidden;
   background: rgba(12,18,20,0.70);
   backdrop-filter: blur(18px) saturate(1.3);
@@ -3396,11 +3396,20 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   border-radius: 20px;
   padding: 28px 24px;
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* flex-start permite bifurcação vertical de No Show */
   justify-content: space-between;
   gap: 4px;
   margin-bottom: 40px;
 }
+/* Card Faturamento — hierarquia visual sobre os outros três */
+.imc--hero {
+  flex: 1.5 !important;  /* 50% mais largo que os outros */
+  border-color: rgba(206,146,33,0.35) !important;
+  padding: 28px !important;
+}
+.imc--hero .imc-value { font-size: 42px !important; letter-spacing: -2px !important; }
+
+/* Funil stage */
 .funil-stage {
   display: flex;
   flex-direction: column;
@@ -3409,6 +3418,39 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   flex: 1;
   min-width: 0;
 }
+/* Calls stage com bifurcação para No Show */
+.funil-calls-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+.funil-noshow-branch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 6px;
+  gap: 4px;
+}
+.funil-branch-down {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.funil-branch-down svg {
+  color: rgba(208,96,112,0.50);
+}
+.funil-branch-rate {
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(208,96,112,0.70);
+  white-space: nowrap;
+}
+.funil-stage--ns .funil-num { color: #d06070 !important; font-size: 28px !important; }
+.funil-stage--ns .funil-label { color: #d06070; opacity: 0.8; }
 .funil-label {
   font-size: 10px;
   font-weight: 700;
