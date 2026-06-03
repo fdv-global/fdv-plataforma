@@ -1917,5 +1917,6 @@ tr.row-highlight { animation: fdvRowFlash 2.1s ease forwards !important; }
   background: rgba(255,255,255,0.02);
 }
 
-/* Highlight em agenda cards além de table rows */
-.agenda-card.row-highlight { animation: fdvRowFlash 2.1s ease forwards !important; border-radius: var(--r-md, 12px); }
+/* Highlight em agenda cards e Kanban cards além de table rows */
+.agenda-card.row-highlight,
+.kanban-card.row-highlight { animation: fdvRowFlash 2.1s ease forwards !important; border-radius: var(--r-md, 12px); }

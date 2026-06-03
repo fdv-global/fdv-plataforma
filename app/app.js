@@ -7584,9 +7584,12 @@ function runSearch(q) {
   } else {
     dd.innerHTML = results.map(l => {
       const dupBadge = isDup(l.id) ? `<span class="search-dup-badge">duplicata</span>` : '';
+      const statusBadge = isInCloser(l)
+        ? `<span class="badge-status agendado">Closer</span>`
+        : badgeStatus(l.status);
       return `<div class="search-result-item" data-lead-id="${esc(l.id)}">
         <div class="search-result-nome">${esc(l.nome||'—')} ${dupBadge}</div>
-        <div class="search-result-meta">${esc(l.celular||'')} ${badgeStatus(l.status)}</div>
+        <div class="search-result-meta">${esc(l.celular||'')} ${statusBadge}</div>
       </div>`;
     }).join('');
     dd.querySelectorAll('.search-result-item').forEach(item =>
@@ -7601,6 +7604,12 @@ function runSearch(q) {
   dd.classList.add('open');
 }
 
+// Leads com kanban_column são exibidos no Closer (tab-closer).
+// Leads com status agendado/noshow/realizada sem kanban_column ainda estão no
+// sub-painel Agendados (tab-agendamentos), então só usamos o Closer quando
+// kanban_column está definido.
+function isInCloser(lead) { return !!lead.kanban_column; }
+
 const _STATUS_TO_SUB = {
   aguardando: 'novos', qualificado: 'qualificados',
   agendado:   'agendados', noshow:  'agendados',
@@ -7608,15 +7617,22 @@ const _STATUS_TO_SUB = {
   cancelado:  'descartados',
 };
 function navigateToLead(lead) {
+  if (isInCloser(lead)) {
+    switchTab('closer');
+    setTimeout(() => highlightLead(lead.id), 200);
+    return;
+  }
   const sub = _STATUS_TO_SUB[lead.status] || 'novos';
   switchTab('agendamentos');
   switchSub(sub);
   setTimeout(() => highlightLead(lead.id), 120);
 }
 function highlightLead(id) {
-  // Tabela (Novos/Qualificados/Descartados)
+  // 1. Tabela (Novos / Qualificados / Descartados)
   let el = document.querySelector(`tr[data-id="${id}"]`);
-  // Card de agenda (Agendados)
+  // 2. Card do Closer (Kanban)
+  if (!el) el = document.querySelector(`.kanban-card[data-id="${id}"]`);
+  // 3. Card de agenda (Agendados – hoje / todos)
   if (!el) {
     const btn = document.querySelector(`[data-perfil="${id}"]`);
     el = btn?.closest('.agenda-card') || null;
