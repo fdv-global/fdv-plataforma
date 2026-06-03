@@ -4295,6 +4295,38 @@ function renderRelatorios() {
   // Drill-down delegation (existing)
 }
 
+// ── Funções auxiliares dos relatórios (globais para uso compartilhado)
+function parseValor(v) {
+  if (!v) return 0;
+  return parseFloat(String(v).replace(/[^0-9,]/g,'').replace(',','.')) || 0;
+}
+function fmtValor(n) { return n.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+function pct(a,b)    { return b ? Math.round(a/b*100) : 0; }
+function fmtMes(m)   { if(!m) return '—'; const [y,mo]=m.split('-'); return `${MONTHS[+mo]} ${y}`; }
+
+function relStatCard(label, val, ico, accent='', drill='') {
+  return `<div class="stat-card ${accent}${drill?' rel-drill-row':''}" ${drill} style="${drill?'cursor:pointer':''}">
+    <div class="stat-top"><span class="stat-label">${esc(label)}</span><span class="stat-icon">${ico}</span></div>
+    <strong class="stat-num">${val}</strong>
+  </div>`;
+}
+
+function relTable(title, headers, rows, getDrill = null) {
+  if (!rows.length) return '';
+  const head = title ? `<h3 class="rel-section-title">${esc(title)}</h3>` : '';
+  return `<div class="rel-section">${head}
+    <div class="rel-table-wrap">
+      <table class="rel-table">
+        <thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead>
+        <tbody>${rows.map((row,i) => {
+          const d = getDrill ? getDrill(i) : null;
+          const attrs = d ? ` class="rel-drill-row" data-drill="${d.type}" data-drill-value="${esc(String(d.value))}" data-drill-title="${esc(d.title)}"` : '';
+          return `<tr${attrs}>${row.map(cell=>`<td>${cell}</td>`).join('')}</tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
 
 // ─── TABLE ───────────────────────────────────────────────────────────
 function renderTable() {
