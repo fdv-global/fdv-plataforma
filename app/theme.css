@@ -1622,13 +1622,13 @@ h1, h2, h3, h4,
   width: 320px;
   /* top e right calculados pelo JS via getBoundingClientRect()          */
 }
-@keyframes srchIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+@keyframes srchIn { from { opacity:0; } to { opacity:1; } }
 .search-overlay[style*="display:"] { animation: none; }
 .search-overlay:not([style*="none"]) { animation: srchIn 180ms ease; }
 
 .search-input {
   display: block;
-  width: 280px;
+  width: 100%;          /* preenche todo o .search-overlay (320px) */
   height: 34px;
   background: rgba(22,32,36,0.85);
   border: 1px solid rgba(206,146,33,0.25);

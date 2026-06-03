@@ -3532,14 +3532,37 @@ async function renderVendasView() {
   const fmtBRL  = v => { const n = parseValor(v); return n ? n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) : '—'; };
   const fmtForma = v => FORMA_LABELS[v] || esc(v||'—');
 
+  const faturamento  = rows.reduce((s, r) => s + parseValor(r.valor), 0);
+  const ticketMedio  = rows.length ? faturamento / rows.length : 0;
+  const fmtCurrency  = n => n ? n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) : '—';
+
   el.innerHTML = `
     <div class="subview-header">
       <h2 class="subview-title"><i data-lucide="trophy"></i> Vendas Ganhas</h2>
       <span class="subview-count">${rows.length} venda${rows.length !== 1 ? 's' : ''}</span>
     </div>
+
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+      <div class="stat-card accent-gold">
+        <div class="stat-top"><span class="stat-label">Total de Vendas</span><span class="stat-icon">${ICO_TROPHY}</span></div>
+        <strong class="stat-num">${rows.length}</strong>
+        <span class="stat-sub">contratos fechados</span>
+      </div>
+      <div class="stat-card accent-sand">
+        <div class="stat-top"><span class="stat-label">Faturamento</span><span class="stat-icon">${_S(`<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>`)}</span></div>
+        <strong class="stat-num" style="font-size:26px">${fmtCurrency(faturamento)}</strong>
+        <span class="stat-sub">em vendas no período</span>
+      </div>
+      <div class="stat-card accent-green">
+        <div class="stat-top"><span class="stat-label">Ticket Médio</span><span class="stat-icon">${ICO_CHECK_CIRCLE}</span></div>
+        <strong class="stat-num" style="font-size:26px">${fmtCurrency(ticketMedio)}</strong>
+        <span class="stat-sub">por venda</span>
+      </div>
+    </div>
+
     ${rows.length === 0 ? '<p class="hist-empty" style="margin-top:32px">Nenhuma venda registrada.</p>' : `
-    <div class="table-wrap">
-      <table class="data-table">
+    <div class="rel-table-wrap">
+      <table class="rel-table">
         <thead><tr>
           <th>Lead</th><th>Programa</th><th>Valor</th><th>Entrada</th><th>Forma Pgto</th><th>Closer</th><th>Data</th>
         </tr></thead>
@@ -3547,7 +3570,7 @@ async function renderVendasView() {
           ${rows.map(r => `<tr>
             <td><button class="link-btn" data-perfil-venda="${r.lead_id}">${esc(r.leads?.nome || r.lead_id || '—')}</button></td>
             <td>${esc(r.programa||'—')}</td>
-            <td>${fmtBRL(r.valor)}</td>
+            <td class="vendas-valor">${fmtBRL(r.valor)}</td>
             <td>${fmtBRL(r.valor_entrada)}</td>
             <td>${fmtForma(r.forma_pagamento)}</td>
             <td>${esc(r.closer ? (CLOSERS[r.closer]?.name||r.closer) : '—')}</td>

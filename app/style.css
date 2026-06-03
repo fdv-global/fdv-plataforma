@@ -972,11 +972,15 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
    KANBAN — Attio board
    ============================================================ */
 .kanban-page-top {
-  display: flex; align-items: center; gap: 18px; margin-bottom: 24px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 18px; margin-bottom: 24px;
 }
 .kanban-controls {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-left: auto;
+  display: flex; align-items: center; gap: 10px; margin-left: auto;
+  overflow-x: auto; scrollbar-width: none;
 }
+.kanban-controls::-webkit-scrollbar { display: none; }
+/* Separador visual entre tabs e filtros */
+.kc-sep { width: 1px; height: 20px; background: var(--b1); flex-shrink: 0; margin: 0 2px; }
 
 /* Closer view tabs (Kanban / Vendas / Descartados) — mesmo padrão que .sub-nav */
 .closer-view-tabs {
@@ -998,6 +1002,9 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
   box-shadow: 0 1px 4px rgba(0,0,0,.28);
 }
 .cvt-btn:hover:not(.active) { color: var(--t1); background: rgba(255,255,255,.05); }
+
+/* Tela Vendas — coluna Valor em dourado */
+.vendas-valor { color: var(--gold); font-weight: 700; }
 
 /* Closer sub-views (Vendas, Descartados) */
 .subview-header {
@@ -1114,7 +1121,7 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 .kanban-board::-webkit-scrollbar-thumb  { background: var(--b1); border-radius: 4px; }
 
 .kanban-col {
-  flex: 0 0 296px; min-width: 296px;
+  flex: 1; min-width: 220px; max-width: 360px;
   display: flex; flex-direction: column;
   background: var(--s1); border: 1px solid var(--b0);
   border-radius: var(--r-lg); overflow: hidden;
@@ -1638,8 +1645,12 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
    RELATÓRIOS
    ============================================================ */
 .rel-filters { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-left: auto; }
-/* Garantir que os selects nos filtros de relatórios usem o padrão dark */
-.rel-filters .filter-select { width: auto; min-width: 150px; background: var(--s2) !important; color: var(--t1) !important; }
+/* Garantir padrão dark e suprimir estilização nativa do OS */
+.rel-filters .filter-select {
+  width: auto; min-width: 150px;
+  background: var(--s2) !important; color: var(--t1) !important;
+  appearance: none !important; -webkit-appearance: none !important;
+}
 .rel-summary { grid-template-columns: repeat(6,1fr); margin-bottom: 32px; }
 @media (max-width: 1300px) { .rel-summary { grid-template-columns: repeat(3,1fr); } }
 @media (max-width: 768px)  { .rel-summary { grid-template-columns: repeat(2,1fr); } }
@@ -1656,6 +1667,7 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 .rel-rank-wrap {
   padding: 0; overflow: hidden;
   background: var(--s1); border: 1px solid var(--b0); border-radius: var(--r-lg);
+  isolation: isolate;   /* novo stacking context → preserva backdrop-filter do .rel-block */
 }
 .rel-rank-row {
   display: flex; align-items: center; gap: 16px;
