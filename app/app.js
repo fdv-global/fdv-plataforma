@@ -172,6 +172,8 @@ let _mergeSelections = {};        // fieldKey → 'a' | 'b'
 let _drillLeads      = [];        // leads do drill-down atual
 let _drillTitle      = '';
 let _drillStatusFilt = '';
+let _relBase         = [];        // leads filtrados do último renderRelatorios()
+let _utmTab          = 'utm_source'; // aba ativa em Performance por Campanha
 let currentId      = null;
 let modalMode      = 'agendar';
 let supabase       = null;
@@ -3627,6 +3629,7 @@ function renderRelatorios() {
   let base = [...allLeads];
   if (mesFilt)    base = base.filter(l => (l.datachegada||'').startsWith(mesFilt));
   if (origemFilt) base = base.filter(l => l.origem === origemFilt);
+  _relBase = base; // expõe para exportação
 
   const agendados  = base.filter(l => l.dataagendamento);
   const realizadas = base.filter(l => l.status === 'realizada');
@@ -3702,7 +3705,7 @@ function renderRelatorios() {
   const utmAgg = field => {
     const map = {};
     base.forEach(l => {
-      const k = l[field] || 'Orgânico / Não identificado';
+      const k = cleanUTM(l[field]) || 'Não identificado';
       if (!map[k]) map[k] = { total:0, agendados:0, vendas:0 };
       map[k].total++;
       if (l.dataagendamento) map[k].agendados++;
@@ -3710,17 +3713,17 @@ function renderRelatorios() {
     });
     return Object.entries(map).sort((a,b) => b[1].total - a[1].total);
   };
-  const utmSubTable = (subTitle, field, colLabel, entries) => {
+  const utmSubTable = (subTitle, field, colLabel, entries, visible=true) => {
     if (!entries.length) return '';
-    return `<div>
-      <p class="utm-perf-sub-title">${esc(subTitle)}</p>
-      <div class="rel-table-wrap">
+    return `<div data-utm-panel="${field}"${visible?'':' style="display:none"'}>
+      <div class="utm-perf-panel">
         <table class="rel-table">
           <thead><tr><th>${esc(colLabel)}</th><th>Leads</th><th>Agend.</th><th>Vendas</th><th>Conv.</th></tr></thead>
           <tbody>${entries.map(([k,d]) => {
             const conv = d.total ? pct(d.vendas, d.total) : 0;
             return `<tr class="rel-drill-row" data-drill="${field}" data-drill-value="${esc(k)}" data-drill-title="${esc(subTitle+': '+k)}">
-              <td>${esc(k)}</td><td>${d.total}</td><td>${d.agendados}</td><td>${d.vendas}</td><td>${conv}%</td>
+              <td class="utm-name-cell" title="${esc(k)}">${esc(k)}</td>
+              <td>${d.total}</td><td>${d.agendados}</td><td>${d.vendas}</td><td>${conv}%</td>
             </tr>`;
           }).join('')}</tbody>
         </table>
@@ -3776,11 +3779,14 @@ function renderRelatorios() {
     ${hasUTM ? `
     <div class="rel-section">
       <h3 class="rel-section-title">Performance por Campanha</h3>
-      <div class="utm-perf-grid">
-        ${utmSubTable('Por Origem','utm_source','Origem',utmAgg('utm_source'))}
-        ${utmSubTable('Por Campanha','utm_campaign','Campanha',utmAgg('utm_campaign'))}
-        ${utmSubTable('Por Anúncio','utm_content','Anúncio',utmAgg('utm_content'))}
+      <div class="sub-nav utm-tab-bar" style="margin-bottom:14px">
+        <button class="sub-link${_utmTab==='utm_source'?' active':''}" data-utm-tab="utm_source">Por Origem</button>
+        <button class="sub-link${_utmTab==='utm_campaign'?' active':''}" data-utm-tab="utm_campaign">Por Campanha</button>
+        <button class="sub-link${_utmTab==='utm_content'?' active':''}" data-utm-tab="utm_content">Por Anúncio</button>
       </div>
+      ${utmSubTable('Por Origem','utm_source','Origem',utmAgg('utm_source'),_utmTab==='utm_source')}
+      ${utmSubTable('Por Campanha','utm_campaign','Campanha',utmAgg('utm_campaign'),_utmTab==='utm_campaign')}
+      ${utmSubTable('Por Anúncio','utm_content','Anúncio',utmAgg('utm_content'),_utmTab==='utm_content')}
     </div>` : ''}
 
     ${(() => {
@@ -3828,14 +3834,14 @@ function renderRelatorios() {
             {
               label: 'Leads',
               data: mesEntries.map(([,d]) => d.total),
-              backgroundColor: 'rgba(77,181,200,0.60)',
-              borderColor:     'rgba(77,181,200,0.90)',
+              backgroundColor: 'rgba(77,181,200,0.82)',   // --petro-l
+              borderColor:     'rgba(77,181,200,1)',
               borderWidth: 1, borderRadius: 4, borderSkipped: false,
             },
             {
               label: 'Vendas',
               data: mesEntries.map(([,d]) => d.vendas),
-              backgroundColor: 'rgba(206,146,33,0.75)',
+              backgroundColor: 'rgba(206,146,33,0.88)',   // --gold
               borderColor:     'rgba(206,146,33,1)',
               borderWidth: 1, borderRadius: 4, borderSkipped: false,
             }
@@ -7498,6 +7504,22 @@ tr:nth-child(even) td{background:#fafafa}
   const w = window.open('','_blank'); w.document.write(html); w.document.close();
 }
 
+// Filtra placeholders de automação não resolvidos (ex: {{campaign.name}})
+function cleanUTM(v) { return (!v || /^\{\{.*\}\}$/.test(v.trim())) ? null : v; }
+
+function exportRelatoriosCSV() {
+  if (!_relBase.length) { toast('Sem dados para exportar.', 'err'); return; }
+  _drillLeads = _relBase;
+  _drillTitle = `relatorio-${new Date().toISOString().slice(0,10)}`;
+  exportDrillCSV();
+}
+function exportRelatoriosPDF() {
+  if (!_relBase.length) { toast('Sem dados para exportar.', 'err'); return; }
+  _drillLeads = _relBase;
+  _drillTitle = `Relatório FDV — ${new Date().toLocaleDateString('pt-BR')}`;
+  exportDrillPDF();
+}
+
 // ─── DUPLICATAS ──────────────────────────────────────────────────────
 const _DUP_EXCL_KEY = 'fdv_dup_exclusions';
 
@@ -8367,6 +8389,10 @@ function bindEvents() {
   $('cm-salvar').addEventListener('click', salvarContrato);
   $('cm-backdrop').addEventListener('click', e => { if (e.target === $('cm-backdrop')) closeContratoModal(); });
 
+  // ── Exportação de relatórios
+  $('rel-export-csv')?.addEventListener('click', exportRelatoriosCSV);
+  $('rel-export-pdf')?.addEventListener('click', exportRelatoriosPDF);
+
   // ── Drill-down de relatórios
   $('drill-close')    ?.addEventListener('click', closeDrillDown);
   $('drill-close-btn')?.addEventListener('click', closeDrillDown);
@@ -8376,6 +8402,14 @@ function bindEvents() {
 
   // Delegação: qualquer [data-drill] dentro de #relatorios-content
   $('relatorios-content')?.addEventListener('click', e => {
+    // UTM tabs — troca sem re-render
+    const utmTab = e.target.closest('[data-utm-tab]');
+    if (utmTab) {
+      _utmTab = utmTab.dataset.utmTab;
+      document.querySelectorAll('[data-utm-tab]').forEach(t => t.classList.toggle('active', t.dataset.utmTab === _utmTab));
+      document.querySelectorAll('[data-utm-panel]').forEach(p => { p.style.display = p.dataset.utmPanel === _utmTab ? '' : 'none'; });
+      return;
+    }
     const el = e.target.closest('[data-drill]');
     if (!el) return;
     const mesFilt    = $('rel-filter-mes')?.value    || '';
@@ -8392,9 +8426,9 @@ function bindEvents() {
     else if (drill === 'mes')          leads = base.filter(l => (l.datachegada||'').startsWith(value));
     else if (drill === 'closer')       leads = base.filter(l => (l.closer||'_sem') === value);
     else if (drill === 'resp')         leads = base.filter(l => (l.agendadopor||'Desconhecido') === value);
-    else if (drill === 'utm_source')   leads = base.filter(l => (l.utm_source||'Orgânico / Não identificado') === value);
-    else if (drill === 'utm_campaign') leads = base.filter(l => (l.utm_campaign||'Orgânico / Não identificado') === value);
-    else if (drill === 'utm_content')  leads = base.filter(l => (l.utm_content||'Orgânico / Não identificado') === value);
+    else if (drill === 'utm_source')   leads = base.filter(l => (cleanUTM(l.utm_source)||'Não identificado') === value);
+    else if (drill === 'utm_campaign') leads = base.filter(l => (cleanUTM(l.utm_campaign)||'Não identificado') === value);
+    else if (drill === 'utm_content')  leads = base.filter(l => (cleanUTM(l.utm_content)||'Não identificado') === value);
     else return;
     openDrillDown(title, leads);
   });

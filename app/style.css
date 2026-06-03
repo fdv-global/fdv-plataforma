@@ -1683,14 +1683,17 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 .rel-rank-row.rel-drill-row:hover { background: rgba(206,146,33,0.07) !important; }
 
 /* ── Performance por Campanha (UTM) ──────────────────────── */
-.utm-perf-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
+/* UTM — refactor: tabs + glass */
+.utm-tab-bar { margin-bottom: 14px; }
+.utm-perf-panel {
+  background: var(--s1); border: 1px solid var(--b0);
+  border-radius: var(--r-lg); overflow: hidden;
 }
-.utm-perf-sub-title {
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .7px; color: var(--t3); margin: 0 0 8px;
+.utm-perf-panel .rel-table-wrap { border: none; border-radius: 0; }
+/* Truncar nomes longos de campanha/anúncio */
+.utm-name-cell {
+  max-width: 260px; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
 }
 
 /* ── Drill-down modal ─────────────────────────────────────── */
@@ -2407,13 +2410,15 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
   background: var(--bubble-sent-bg);
   border: 1px solid var(--bubble-sent-brd);
   color: var(--t1);
-  border-bottom-right-radius: 4px;
+  border-radius: 18px;             /* reset explícito antes do override */
+  border-bottom-right-radius: 4px; /* canto da cauda */
 }
 .chat-msg--received .chat-bubble {
   background: var(--bubble-recv-bg);
   border: 1px solid var(--bubble-recv-brd);
   color: var(--t1);
-  border-bottom-left-radius: 4px;
+  border-radius: 18px;            /* reset explícito antes do override */
+  border-bottom-left-radius: 4px; /* canto da cauda */
 }
 
 .chat-msg-meta {

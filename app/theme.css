@@ -57,6 +57,7 @@ h1, h2, h3, h4,
   border: 1px solid rgba(206, 146, 33, 0.20) !important;
   border-radius: 20px !important;
   padding: 16px 40px !important;
+  overflow: visible !important;  /* impede que border-radius clipe filhos absolutos (search-expand) */
   box-shadow:
     0 4px 32px rgba(0, 0, 0, 0.50),
     0 8px 32px rgba(0, 0, 0, 0.40) !important;
