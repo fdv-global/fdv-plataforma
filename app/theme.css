@@ -1418,8 +1418,8 @@ h1, h2, h3, h4,
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
-  border: 1.5px solid rgba(255,255,255,0.1);
-  background: transparent;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.10);   /* contraste mínimo sobre o dark */
   color: var(--t2, #c4cece);
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s, color 0.15s;

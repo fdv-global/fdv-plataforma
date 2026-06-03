@@ -3334,7 +3334,7 @@ function kanbanCard(l, cols) {
         <button class="kc-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
         <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
           ${days !== null ? `<span class="kc-days-badge ${daysClass}">${days}d</span>` : ''}
-          ${badgeStatus(l.status)}
+          ${badgeKanbanCol(currentCol)}
           <span class="kc-chevron">›</span>
         </div>
       </div>
@@ -3401,6 +3401,11 @@ async function moveLeadToCol(leadId, colId) {
   if (colId === 'venda_perdida') { openMotivosPerda(leadId); return; }
   if (colId === 'venda_ganha')   { openVendaGanha(leadId);   return; }
   await ensureObsSaved(leadId);
+  // Update otimista: reflete a mudança de coluna imediatamente na UI
+  const lIdx = allLeads.findIndex(l => l.id === leadId);
+  const prevCol = lIdx >= 0 ? allLeads[lIdx].kanban_column : null;
+  if (lIdx >= 0) allLeads[lIdx] = { ...allLeads[lIdx], kanban_column: colId };
+  renderKanban();
   try {
     const allCols   = getKanbanCols();
     const colLabel  = allCols.find(c => c.id === colId)?.label || colId;
@@ -3412,9 +3417,11 @@ async function moveLeadToCol(leadId, colId) {
       atualizadoem:        new Date().toISOString(),
     });
     toast('Card movido.', 'ok');
-    if (!isLive) renderKanban();
   } catch(e) {
     console.error(e);
+    // Reverte o update otimista em caso de erro
+    if (lIdx >= 0) allLeads[lIdx] = { ...allLeads[lIdx], kanban_column: prevCol };
+    renderKanban();
     toast('Erro ao mover card.', 'err');
   }
 }
@@ -3431,27 +3438,29 @@ function addKanbanColumn() {
 // ─── CLOSER SUB-VIEWS ────────────────────────────────────────────────
 function switchCloserView(view) {
   closerView = view;
-  const board    = $('kanban-board');
-  const subview  = $('closer-subview');
-  const filters  = $('kanban-filters');
-  const addCol   = $('btn-add-column');
+  const board   = $('kanban-board');
+  const subview = $('closer-subview');
 
   document.querySelectorAll('.cvt-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
 
-  if (view === 'kanban') {
-    board.style.display   = '';
-    subview.style.display = 'none';
-    filters.style.display = 'flex';
-    if (addCol) addCol.style.display = '';
-    renderKanban();
-  } else {
-    board.style.display   = 'none';
-    subview.style.display = '';
-    filters.style.display = 'none';
-    if (addCol) addCol.style.display = 'none';
-    if (view === 'vendas')       renderVendasView();
-    else if (view === 'descartados') renderDescartadosView();
-  }
+  const isKanban = view === 'kanban';
+  board.style.display   = isKanban ? '' : 'none';
+  subview.style.display = isKanban ? 'none' : '';
+
+  // Filtros sempre visíveis; controles que não se aplicam ficam opacos e não clicáveis
+  const kanbanOnly = [
+    $('kanban-filter-mes'),
+    $('btn-add-column'),
+    ...document.querySelectorAll('#tab-closer .kqf-btn'),
+  ].filter(Boolean);
+  kanbanOnly.forEach(el => {
+    el.style.opacity       = isKanban ? '' : '0.4';
+    el.style.pointerEvents = isKanban ? '' : 'none';
+  });
+
+  if (isKanban)                    renderKanban();
+  else if (view === 'vendas')      renderVendasView();
+  else if (view === 'descartados') renderDescartadosView();
 }
 
 async function _backfillVendas(leads) {
@@ -3514,7 +3523,14 @@ async function renderVendasView() {
     );
   }
 
-  const fmtBRL = v => v ? 'R$ ' + String(v).replace(/[^\d,]/g,'') : '—';
+  const FORMA_LABELS = {
+    avista:           'À vista',
+    parcelado_cartao: 'Parcelado — Cartão',
+    parcelado_boleto: 'Parcelado — Boleto',
+    pix:              'PIX',
+  };
+  const fmtBRL  = v => { const n = parseValor(v); return n ? n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) : '—'; };
+  const fmtForma = v => FORMA_LABELS[v] || esc(v||'—');
 
   el.innerHTML = `
     <div class="subview-header">
@@ -3531,9 +3547,9 @@ async function renderVendasView() {
           ${rows.map(r => `<tr>
             <td><button class="link-btn" data-perfil-venda="${r.lead_id}">${esc(r.leads?.nome || r.lead_id || '—')}</button></td>
             <td>${esc(r.programa||'—')}</td>
-            <td>${esc(r.valor||'—')}</td>
-            <td>${esc(r.valor_entrada||'—')}</td>
-            <td>${esc(r.forma_pagamento||'—')}</td>
+            <td>${fmtBRL(r.valor)}</td>
+            <td>${fmtBRL(r.valor_entrada)}</td>
+            <td>${fmtForma(r.forma_pagamento)}</td>
             <td>${esc(r.closer ? (CLOSERS[r.closer]?.name||r.closer) : '—')}</td>
             <td>${fmtDate(r.criadoem?.slice(0,10)||'')}</td>
           </tr>`).join('')}
@@ -3882,8 +3898,8 @@ function renderRelatorios() {
             {
               label: 'Leads',
               data: mesEntries.map(([,d]) => d.total),
-              backgroundColor: 'rgba(77,181,200,0.82)',   // --petro-l
-              borderColor:     'rgba(77,181,200,1)',
+              backgroundColor: 'rgba(77,181,200,0.90)',   // var(--petro-l)
+              borderColor:     '#4db5c8',
               borderWidth: 1, borderRadius: 4, borderSkipped: false,
             },
             {
@@ -4084,6 +4100,21 @@ function abrevRenda(r) {
 function badgeStatus(s) {
   const labels = { aguardando:'Aguardando', qualificado:'Qualificado', agendado:'Agendado', realizada:'Call Realizada', noshow:'No Show', cancelado:'Cancelado', descartado:'Descartado' };
   return `<span class="badge-status ${s||''}">${labels[s]||s||'—'}</span>`;
+}
+// Badge que reflete a coluna Kanban atual (não o status do lead)
+const _KC_BADGE = {
+  agendado:       { lbl:'Agendado',       cls:'agendado'   },
+  call_realizada: { lbl:'Call Realizada', cls:'realizada'  },
+  negociacao:     { lbl:'Negociação',     cls:'qualificado'},
+  decisao:        { lbl:'Decisão',        cls:'agendado'   },
+  venda_ganha:    { lbl:'Venda Ganha',    cls:'realizada'  },
+  venda_perdida:  { lbl:'Descartado',     cls:'descartado' },
+  descartado:     { lbl:'Descartado',     cls:'descartado' },
+};
+function badgeKanbanCol(col) {
+  const b = _KC_BADGE[col];
+  if (b) return `<span class="badge-status ${b.cls}">${b.lbl}</span>`;
+  return `<span class="badge-status">${esc(col||'—')}</span>`;
 }
 function btnAcao(l) {
   const id = l.id;
@@ -7871,7 +7902,9 @@ function openSearch() {
   const overlay = $('search-overlay');
   if (!btn || !overlay) return;
   const r = btn.getBoundingClientRect();
-  overlay.style.top   = Math.round(r.bottom + 8) + 'px';
+  const inputH = 34;
+  // Centraliza verticalmente o input com o botão (no mesmo eixo da navbar)
+  overlay.style.top   = Math.round(r.top + (r.height - inputH) / 2) + 'px';
   overlay.style.right = Math.round(window.innerWidth - r.right) + 'px';
   overlay.style.display = '';
   setTimeout(() => $('search-input')?.focus(), 60);
@@ -8123,14 +8156,6 @@ function bindEvents() {
   // Kanban filters
   ['kanban-filter-mes','kanban-filter-closer'].forEach(id => $(id).addEventListener('change', renderKanban));
   $('btn-add-column').addEventListener('click', addKanbanColumn);
-
-  // Kanban search
-  $('kanban-search').addEventListener('input', e => {
-    kanbanSearchText = e.target.value.toLowerCase().trim();
-    document.querySelectorAll('#kanban-board .kanban-card').forEach(card => {
-      card.classList.toggle('kc-dimmed', !!(kanbanSearchText && !card.dataset.nome.includes(kanbanSearchText)));
-    });
-  });
 
   // Quick-filter pills
   document.querySelectorAll('.kqf-btn').forEach(btn => {
