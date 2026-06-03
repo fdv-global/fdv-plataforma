@@ -4064,44 +4064,116 @@ function renderRelatorios() {
     border:{ color:'rgba(255,255,255,0.06)' }, beginAtZero:true,
   };
   const SCALE_X_H = { grid:{ color:'rgba(255,255,255,0.04)' }, ticks:{ color:'rgba(200,196,188,0.75)', font:{size:11} }, border:{ color:'rgba(255,255,255,0.06)' } };
-  const mkHBar = (canvasId, labels, data, color) => {
+
+  // Plugin inline: rótulos "valor (pct%)" no fim de cada barra horizontal.
+  // Passa via plugins:[] no nível do chart — não usa Chart.register(), não afeta outros charts.
+  const mkHBarPlugin = totSum => ({
+    id: 'fdvHBarLabels',
+    afterDraw(chart) {
+      const { ctx, data } = chart;
+      const meta = chart.getDatasetMeta(0);
+      if (!meta?.data?.length) return;
+      ctx.save();
+      ctx.font = '600 10px Arial, sans-serif';
+      ctx.fillStyle = '#e8e4dc';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      meta.data.forEach((bar, i) => {
+        const v = Number(data.datasets[0].data[i]) || 0;
+        if (!v) return;
+        const pct = Math.round(v / totSum * 100);
+        const x = bar.x + 7;
+        const y = bar.y;
+        if (x > ctx.canvas.width - 8) return; // evita overflow
+        ctx.fillText(`${v} (${pct}%)`, x, y);
+      });
+      ctx.restore();
+    },
+  });
+
+  // Plugin inline: total acima de cada barra no gráfico empilhado de dias.
+  const diaTotalsPlugin = {
+    id: 'fdvDiaTotals',
+    afterDraw(chart) {
+      const { ctx, data, chartArea } = chart;
+      const nCols = data.datasets[0]?.data?.length || 0;
+      if (!nCols) return;
+      const lastMeta = chart.getDatasetMeta(data.datasets.length - 1);
+      ctx.save();
+      ctx.font = '600 10px Arial, sans-serif';
+      ctx.fillStyle = '#e8e4dc';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      for (let i = 0; i < nCols; i++) {
+        const total = data.datasets.reduce((s, ds) => s + (Number(ds.data[i]) || 0), 0);
+        if (!total) continue;
+        const bar = lastMeta.data[i];
+        if (!bar) continue;
+        const topY = bar.y;
+        if (topY < chartArea.top + 14) continue; // não desenha se muito próximo do topo
+        ctx.fillText(String(total), bar.x, topY - 3);
+      }
+      ctx.restore();
+    },
+  };
+
+  const mkHBar = (canvasId, labels, data, color, total) => {
     const ctx = document.getElementById(canvasId)?.getContext('2d');
     if (!ctx || !data.length) return null;
-    return new Chart(ctx, { type:'bar', data:{
-      labels, datasets:[{ data, backgroundColor:color, borderColor:color, borderWidth:0, borderRadius:3, indexAxis:'y' }]
-    }, options:{ ...CHART_OPTS, indexAxis:'y', scales:{ x:SCALE_Y_H, y:{ ...SCALE_X_H, ticks:{ ...SCALE_X_H.ticks, font:{size:11} } } } }});
+    const totSum = total || data.reduce((a,b) => a+b, 0);
+    return new Chart(ctx, {
+      type:'bar',
+      data:{ labels, datasets:[{ data, backgroundColor:color, borderColor:color, borderWidth:0, borderRadius:3, indexAxis:'y' }] },
+      options:{
+        ...CHART_OPTS,
+        indexAxis:'y',
+        layout: { padding: { right: 100 } },
+        scales:{ x:SCALE_Y_H, y:{ ...SCALE_X_H, ticks:{ ...SCALE_X_H.ticks, font:{size:11} } } },
+      },
+      plugins: [mkHBarPlugin(totSum)], // plugin por instância, sem registro global
+    });
   };
 
   // b) Leads por dia
   if (diaEntries.length >= 2) {
     const ctx = document.getElementById('rel-chart-dia')?.getContext('2d');
     if (ctx) {
-      _relChartDia = new Chart(ctx, { type:'bar', data:{
-        labels: diaEntries.map(([d])=>d.slice(5)),
-        datasets:[
-          { label:'ISCAS',    data:diaEntries.map(([,v])=>v.iscas),    backgroundColor:'rgba(77,181,200,0.85)', borderWidth:0, borderRadius:2 },
-          { label:'Respondi', data:diaEntries.map(([,v])=>v.respondi), backgroundColor:'rgba(206,146,33,0.85)', borderWidth:0, borderRadius:2 },
-          { label:'Outros',   data:diaEntries.map(([,v])=>v.total-v.iscas-v.respondi), backgroundColor:'rgba(76,175,142,0.70)', borderWidth:0, borderRadius:2 },
-        ]
-      }, options:{ ...CHART_OPTS, plugins:{ ...CHART_OPTS.plugins, legend:{ display:true, labels:{color:'rgba(232,228,220,0.85)',font:{size:11},boxWidth:12,boxHeight:6} } },
-        scales:{ x:{ ...SCALE_X_H, stacked:true }, y:{ ...SCALE_Y_H, stacked:true } } }});
+      _relChartDia = new Chart(ctx, {
+        type:'bar',
+        data:{
+          labels: diaEntries.map(([d])=>d.slice(5)),
+          datasets:[
+            { label:'ISCAS',    data:diaEntries.map(([,v])=>v.iscas),    backgroundColor:'rgba(77,181,200,0.85)', borderWidth:0, borderRadius:2 },
+            { label:'Respondi', data:diaEntries.map(([,v])=>v.respondi), backgroundColor:'rgba(206,146,33,0.85)', borderWidth:0, borderRadius:2 },
+            { label:'Outros',   data:diaEntries.map(([,v])=>v.total-v.iscas-v.respondi), backgroundColor:'rgba(76,175,142,0.70)', borderWidth:0, borderRadius:2 },
+          ],
+        },
+        options:{
+          ...CHART_OPTS,
+          layout: { padding: { top: 20 } },
+          plugins:{ ...CHART_OPTS.plugins, legend:{ display:true, labels:{color:'rgba(232,228,220,0.85)',font:{size:11},boxWidth:12,boxHeight:6} } },
+          scales:{ x:{ ...SCALE_X_H, stacked:true }, y:{ ...SCALE_Y_H, stacked:true } },
+        },
+        plugins: [diaTotalsPlugin],
+      });
     }
   }
 
   // c) Por status
   _relChartStatus = mkHBar('rel-chart-status', stEntries.map(([l])=>l), stEntries.map(([,n])=>n),
-    stEntries.map(([l]) => l==='Descartado'?'rgba(176,80,104,0.80)':l==='No Show'?'rgba(230,100,80,0.80)':l==='Realizada'?'rgba(76,175,142,0.85)':'rgba(206,146,33,0.80)')
+    stEntries.map(([l]) => l==='Descartado'?'rgba(176,80,104,0.80)':l==='No Show'?'rgba(230,100,80,0.80)':l==='Realizada'?'rgba(76,175,142,0.85)':'rgba(206,146,33,0.80)'),
+    base.length
   );
 
   // d) Por origem top 12
   const orTop = origemRanking.slice(0,12);
-  _relChartOrigem = mkHBar('rel-chart-origem', orTop.map(r=>r.o), orTop.map(r=>r.total), 'rgba(77,181,200,0.82)');
+  _relChartOrigem = mkHBar('rel-chart-origem', orTop.map(r=>r.o), orTop.map(r=>r.total), 'rgba(77,181,200,0.82)', base.length);
 
   // e) Por profissão
-  _relChartProf = mkHBar('rel-chart-prof', profEntries.map(([l])=>l), profEntries.map(([,n])=>n), 'rgba(206,146,33,0.80)');
+  _relChartProf = mkHBar('rel-chart-prof', profEntries.map(([l])=>l), profEntries.map(([,n])=>n), 'rgba(206,146,33,0.80)', base.length);
 
   // f) Por renda
-  _relChartRenda = mkHBar('rel-chart-renda', rendaEntries.map(([l])=>l), rendaEntries.map(([,n])=>n), 'rgba(76,175,142,0.80)');
+  _relChartRenda = mkHBar('rel-chart-renda', rendaEntries.map(([l])=>l), rendaEntries.map(([,n])=>n), 'rgba(76,175,142,0.80)', base.length);
 }
 
 function relTable(title, headers, rows, getDrill = null) {
