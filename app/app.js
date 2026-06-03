@@ -958,6 +958,7 @@ function renderActiveSub() {
   if      (activeSub === 'novos')        { populateMonths(); applyFilters(); }
   else if (activeSub === 'qualificados') renderQualificados();
   else if (activeSub === 'agendados')    renderAgendadosSub();
+  else if (activeSub === 'noshow')       renderNoShow();
   else if (activeSub === 'descartados')  renderDescartados();
 }
 
@@ -2281,11 +2282,14 @@ function renderInicio() {
   const fQualif = mesLeads.filter(l => !['aguardando','descartado','cancelado'].includes(l.status)).length;
   const fAgend  = mesLeads.filter(l => l.dataagendamento).length;
   const fCalls  = mesLeads.filter(l => ['realizada','noshow'].includes(l.status) || l.kanban_column).length;
+  const fNoShow = mesLeads.filter(l => l.status === 'noshow').length;
   const fVendas = mesLeads.filter(l => l.kanban_column === 'venda_ganha').length;
-  const pctQ = fLeads  ? Math.round(fQualif/fLeads *100) : 0;
-  const pctA = fQualif ? Math.round(fAgend /fQualif*100) : 0;
-  const pctC = fAgend  ? Math.round(fCalls /fAgend *100) : 0;
-  const pctV = fCalls  ? Math.round(fVendas/fCalls *100) : 0;
+  const fRealiz = Math.max(fCalls - fNoShow, 0); // calls que aconteceram de verdade
+  const pctQ  = fLeads  ? Math.round(fQualif/fLeads *100) : 0;
+  const pctA  = fQualif ? Math.round(fAgend /fQualif*100) : 0;
+  const pctC  = fAgend  ? Math.round(fCalls /fAgend *100) : 0;
+  const pctNS = fCalls  ? Math.round(fNoShow/fCalls *100) : 0;
+  const pctV  = fRealiz ? Math.round(fVendas/fRealiz*100) : 0;
 
   const arrowSvg = rate => `
     <div class="funil-connector">
@@ -2340,6 +2344,8 @@ function renderInicio() {
       <div class="funil-stage"><div class="funil-label">Agendados</div><div class="funil-num">${fAgend}</div></div>
       ${arrowSvg(pctC)}
       <div class="funil-stage"><div class="funil-label">Calls</div><div class="funil-num">${fCalls}</div></div>
+      ${arrowSvg(pctNS)}
+      <div class="funil-stage"><div class="funil-label">No Show</div><div class="funil-num" style="color:#d06070">${fNoShow}</div></div>
       ${arrowSvg(pctV)}
       <div class="funil-stage"><div class="funil-label">Vendas</div><div class="funil-num" style="color:var(--gold)">${fVendas}</div></div>
     </div>
@@ -2839,6 +2845,47 @@ function gerarAgendaHoje() {
     .catch(() => toast('Não foi possível copiar.', 'err'));
 }
 
+// ─── NO SHOW SUB ─────────────────────────────────────────────────────
+function renderNoShow() {
+  const el = $('noshow-content');
+  if (!el) return;
+  const leads = allLeads
+    .filter(l => l.status === 'noshow')
+    .sort((a,b) => (b.dataagendamento||'').localeCompare(a.dataagendamento||''));
+
+  el.innerHTML = `<div class="table-wrap"><table class="leads-table">
+    <thead><tr>
+      <th>Nome</th><th>Data da Call</th><th>Celular</th><th>Ações</th>
+    </tr></thead>
+    <tbody>
+      ${leads.length ? leads.map(l => `<tr>
+        <td><button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
+        <td>${fmtDate(l.dataagendamento)}${l.horaagendamento?' · '+l.horaagendamento.slice(0,5):''}</td>
+        <td>${esc(l.celular||'—')}</td>
+        <td class="cell-acoes">
+          <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
+          <button class="btn-ghost btn-sm btn-reagendar-ns" data-id="${l.id}">${ICO_REFRESH} Reagendar</button>
+          <button class="btn-ghost btn-sm btn-destructive" data-descartar="${l.id}">${ICO_BAN} Descartar</button>
+        </td>
+      </tr>`).join('') :
+      `<tr><td colspan="4" style="padding:36px;text-align:center;color:var(--t3)">Nenhum lead com No Show.</td></tr>`}
+    </tbody>
+  </table></div>`;
+
+  el.querySelectorAll('[data-perfil]').forEach(b =>
+    b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
+  );
+  el.querySelectorAll('.btn-wa-lead').forEach(b =>
+    b.addEventListener('click', () => openWaChatFromLead(b.dataset.id))
+  );
+  el.querySelectorAll('.btn-reagendar-ns').forEach(b =>
+    b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.id); if(l) openAgendar(l); })
+  );
+  el.querySelectorAll('[data-descartar]').forEach(b =>
+    b.addEventListener('click', () => openDescarteModal(b.dataset.descartar))
+  );
+}
+
 // ─── DESCARTADOS SUB ─────────────────────────────────────────────────
 function renderDescartados() {
   const allDesc = allLeads.filter(l => l.status === 'descartado');
@@ -3269,14 +3316,14 @@ function renderKanban() {
   document.querySelectorAll('.kqf-btn').forEach(b => b.classList.toggle('active', b.dataset.closer === closerFilt));
 
   let leads = allLeads.filter(l =>
-    l.kanban_column || ['agendado','noshow','cancelado','realizada'].includes(l.status)
+    l.kanban_column || ['agendado','cancelado','realizada'].includes(l.status)
   );
   if (mesFilt)    leads = leads.filter(l => (l.dataagendamento||l.datachegada||'').startsWith(mesFilt));
   if (closerFilt) leads = leads.filter(l => (l.closer||'') === closerFilt);
 
   // All leads that belong to the kanban (unfiltered) — used for delete safety check
   const allKanbanLeads = allLeads.filter(l =>
-    l.kanban_column || ['agendado','noshow','cancelado','realizada'].includes(l.status)
+    l.kanban_column || ['agendado','cancelado','realizada'].includes(l.status)
   );
 
   board.innerHTML = cols.map(col => {
@@ -3828,14 +3875,19 @@ function renderRelatorios() {
   const closerMap = {};
   realizadas.forEach(l => {
     const k = l.closer||'_sem';
-    if (!closerMap[k]) closerMap[k] = { agendados:0, realizadas:0, vendas:0, valor:0 };
+    if (!closerMap[k]) closerMap[k] = { agendados:0, realizadas:0, noShows:0, vendas:0, valor:0 };
     closerMap[k].realizadas++;
     if (l.kanban_column === 'venda_ganha') { closerMap[k].vendas++; closerMap[k].valor += parseValor(l.venda_ganha_dados?.valor); }
   });
   agendados.forEach(l => {
     const k = l.closer||'_sem';
-    if (!closerMap[k]) closerMap[k] = { agendados:0, realizadas:0, vendas:0, valor:0 };
+    if (!closerMap[k]) closerMap[k] = { agendados:0, realizadas:0, noShows:0, vendas:0, valor:0 };
     closerMap[k].agendados++;
+  });
+  noShows.forEach(l => {
+    const k = l.closer||'_sem';
+    if (!closerMap[k]) closerMap[k] = { agendados:0, realizadas:0, noShows:0, vendas:0, valor:0 };
+    closerMap[k].noShows++;
   });
 
   // Por origem
@@ -4061,8 +4113,8 @@ function renderRelatorios() {
 
     ${(() => {
       const closerEntries = Object.entries(closerMap);
-      return relTable('Taxa de Conversão por Closer', ['Closer','Agendados','Realizadas','Vendas','Faturamento','Conv.'],
-        closerEntries.map(([c,d]) => [CLOSERS[c]?.name||c, d.agendados, d.realizadas, d.vendas,
+      return relTable('Taxa de Conversão por Closer', ['Closer','Agendados','Realizadas','No Shows','Vendas','Faturamento','Conv.'],
+        closerEntries.map(([c,d]) => [CLOSERS[c]?.name||c, d.agendados, d.realizadas, d.noShows||0, d.vendas,
           d.valor?'R$\xa0'+fmtValor(d.valor):'—', d.realizadas?pct(d.vendas,d.realizadas)+'%':'—']),
         i => ({ type:'closer', value: closerEntries[i][0], title:'Closer: '+(CLOSERS[closerEntries[i][0]]?.name||closerEntries[i][0]) })
       );
@@ -5431,7 +5483,8 @@ async function handlePostCall(action) {
   if (action === 'realizada') { openResultado(lead); return; }
   const msgs = { noshow:`No Show — ${lead.nome}`, cancelado:`Cancelado — ${lead.nome}` };
   const updates = { status: action, atualizadoem: new Date().toISOString() };
-  if (action === 'noshow') updates.kanban_column = 'venda_perdida';
+  // No Show → remove do Closer Kanban (kanban_column=null) e vai para aba No Show em Agendamentos
+  if (action === 'noshow') updates.kanban_column = null;
   try { await saveLead(currentId, updates); toast(msgs[action]||'Status atualizado.', 'ok'); closeModal(); }
   catch(e) { console.error(e); toast('Erro ao salvar.', 'err'); }
 }
