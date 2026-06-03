@@ -2254,17 +2254,17 @@ function renderInicio() {
       <div class="inicio-verse-ref">${verseRef}</div>
     </div>
     <div class="inicio-stats">
-      <div class="stat-card accent-petro">
+      <div class="stat-card accent-petro inicio-nav-card" data-inicio-nav="agendados" style="cursor:pointer">
         <div class="stat-top"><span class="stat-label">Calls Hoje</span><span class="stat-icon">${ICO_CALENDAR}</span></div>
         <strong class="stat-num">${callsHoje}</strong>
         <span class="stat-sub">agendadas para hoje</span>
       </div>
-      <div class="stat-card accent-gold">
+      <div class="stat-card accent-gold inicio-nav-card" data-inicio-nav="novos" style="cursor:pointer">
         <div class="stat-top"><span class="stat-label">Aguardando</span><span class="stat-icon">${_S(`<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>`)}</span></div>
         <strong class="stat-num">${aguardando}</strong>
         <span class="stat-sub">leads para agendar</span>
       </div>
-      <div class="stat-card accent-green">
+      <div class="stat-card accent-green inicio-nav-card" data-inicio-nav="vendas" style="cursor:pointer">
         <div class="stat-top"><span class="stat-label">Vendas do Mês</span><span class="stat-icon">${ICO_TROPHY}</span></div>
         <strong class="stat-num">${vendasMes}</strong>
         <span class="stat-sub">fechadas este mês</span>
@@ -2608,7 +2608,7 @@ function renderQualificados() {
   }
 
   ['qual-filter-origem','qual-filter-renda','qual-filter-chegada-de','qual-filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', renderQualTbody); });
-  $('qual-busca').addEventListener('input', renderQualTbody);
+  $('qual-busca')?.addEventListener('input', renderQualTbody);
   $('qual-limpar')?.addEventListener('click', () => {
     ['qual-filter-origem','qual-filter-renda','qual-filter-chegada-de','qual-filter-chegada-ate','qual-busca'].forEach(id=>{const el=$(id);if(el)el.value='';});
     renderQualTbody();
@@ -2859,7 +2859,7 @@ function renderDescartados() {
   }
 
   ['desc-filter-origem','desc-filter-renda','desc-filter-motivo','desc-filter-chegada-de','desc-filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', renderDescTbody); });
-  $('desc-busca').addEventListener('input', renderDescTbody);
+  $('desc-busca')?.addEventListener('input', renderDescTbody);
   $('desc-limpar')?.addEventListener('click', () => {
     ['desc-filter-origem','desc-filter-renda','desc-filter-motivo','desc-filter-chegada-de','desc-filter-chegada-ate','desc-busca'].forEach(id=>{const el=$(id);if(el)el.value='';});
     renderDescTbody();
@@ -3529,12 +3529,13 @@ async function renderVendasView() {
     parcelado_boleto: 'Parcelado — Boleto',
     pix:              'PIX',
   };
-  const fmtBRL  = v => { const n = parseValor(v); return n ? n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) : '—'; };
-  const fmtForma = v => FORMA_LABELS[v] || esc(v||'—');
+  const fmtForma    = v => FORMA_LABELS[v] || esc(v||'—');
+  const fmtCurrency = n => n ? n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) : '—';
+  // fmtBRL: aceita string raw (ex: "R$ 3.000") e formata via parseValor
+  const fmtBRL      = v => fmtCurrency(parseValor(v));
 
-  const faturamento  = rows.reduce((s, r) => s + parseValor(r.valor), 0);
-  const ticketMedio  = rows.length ? faturamento / rows.length : 0;
-  const fmtCurrency  = n => n ? n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) : '—';
+  const faturamento = rows.reduce((s, r) => s + parseValor(r.valor), 0);
+  const ticketMedio = rows.length ? faturamento / rows.length : 0;
 
   el.innerHTML = `
     <div class="subview-header">
@@ -8494,6 +8495,16 @@ function bindEvents() {
   $('cm-cancelar').addEventListener('click', closeContratoModal);
   $('cm-salvar').addEventListener('click', salvarContrato);
   $('cm-backdrop').addEventListener('click', e => { if (e.target === $('cm-backdrop')) closeContratoModal(); });
+
+  // ── Stat cards clicáveis no Início (delegação na tab, sobrevive a re-renders)
+  $('tab-inicio')?.addEventListener('click', e => {
+    const card = e.target.closest('[data-inicio-nav]');
+    if (!card) return;
+    const nav = card.dataset.inicioNav;
+    if      (nav === 'agendados') { switchTab('agendamentos'); switchSub('agendados'); }
+    else if (nav === 'novos')     { switchTab('agendamentos'); switchSub('novos'); }
+    else if (nav === 'vendas')    { switchTab('closer'); setTimeout(() => switchCloserView('vendas'), 80); }
+  });
 
   // ── Exportação de relatórios
   $('rel-export-csv')?.addEventListener('click', exportRelatoriosCSV);
