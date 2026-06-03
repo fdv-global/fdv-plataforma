@@ -7606,11 +7606,10 @@ function runSearch(q) {
         const lead = allLeads.find(l=>l.id===item.dataset.leadId);
         closeSearch();
         if (!lead) return;
-        // Resultado marcado como duplicata → abre modal de comparação/merge
         if (isDup(lead.id)) {
           openDupCompare(lead.id);
         } else {
-          navigateToLead(lead);
+          openPerfil(lead);
         }
       })
     );
