@@ -261,6 +261,11 @@ let mpSelected = null;
 let kanbanSearchText = '';
 let _expandedCardId  = null; // ID do card do kanban atualmente expandido
 let _relChart        = null; // Instância Chart.js do comparativo mensal
+let _relChartDia     = null; // Leads por dia
+let _relChartStatus  = null; // Por status
+let _relChartOrigem  = null; // Por origem/campanha
+let _relChartProf    = null; // Por profissão
+let _relChartRenda   = null; // Por faixa de renda
 
 // Notification state
 let notifUnsub = null;
@@ -3823,8 +3828,43 @@ function renderRelatorios() {
   const mesEntries = Object.entries(mesMap).sort((a,b)=>a[0].localeCompare(b[0]));
   const maxMesLeads = Math.max(...mesEntries.map(([,d])=>d.total), 1);
 
-  // Destruir instância anterior do Chart.js antes de re-render
-  if (_relChart) { _relChart.destroy(); _relChart = null; }
+  // Destruir todas as instâncias Chart.js antes de re-render
+  [_relChart,_relChartDia,_relChartStatus,_relChartOrigem,_relChartProf,_relChartRenda]
+    .forEach(c => { try { c?.destroy(); } catch(e){} });
+  _relChart = _relChartDia = _relChartStatus = _relChartOrigem = _relChartProf = _relChartRenda = null;
+
+  // ── Leads por dia
+  const diaMap = {};
+  base.forEach(l => {
+    if (!l.datachegada) return;
+    if (!diaMap[l.datachegada]) diaMap[l.datachegada] = { total:0, iscas:0, respondi:0 };
+    diaMap[l.datachegada].total++;
+    if (l.origem === 'ISCAS') diaMap[l.datachegada].iscas++;
+    else if (l.origem === 'Respondi.app') diaMap[l.datachegada].respondi++;
+  });
+  const diaEntries = Object.entries(diaMap).sort((a,b)=>a[0].localeCompare(b[0])).slice(-60);
+
+  // ── Por status
+  const STATUS_LBL = { aguardando:'Aguardando', qualificado:'Qualificado', agendado:'Agendado',
+    realizada:'Realizada', noshow:'No Show', descartado:'Descartado', cancelado:'Cancelado' };
+  const stMap = {};
+  base.forEach(l => { const s = l.status||'aguardando'; stMap[s]=(stMap[s]||0)+1; });
+  const stEntries = Object.entries(STATUS_LBL)
+    .map(([k,lbl]) => [lbl, stMap[k]||0]).filter(([,n])=>n>0)
+    .sort((a,b)=>b[1]-a[1]);
+
+  // ── Por profissão
+  const profMap = {};
+  base.forEach(l => { const p=(l.profissao||'').trim()||'Não informado'; profMap[p]=(profMap[p]||0)+1; });
+  const profEntries = Object.entries(profMap).sort((a,b)=>b[1]-a[1]).slice(0,12);
+
+  // ── Por faixa de renda
+  const rendaMap = {};
+  base.forEach(l => { const r=(l.renda||'').trim()||'Não informado'; rendaMap[r]=(rendaMap[r]||0)+1; });
+  const rendaEntries = Object.entries(rendaMap).sort((a,b)=>b[1]-a[1]).slice(0,12);
+
+  // Helper: altura dinâmica para gráficos horizontais
+  const hBar = n => Math.min(Math.max(n*36+60, 140), 440);
 
   $('relatorios-content').innerHTML = `
     <div class="stats-grid rel-summary">
@@ -3835,6 +3875,47 @@ function renderRelatorios() {
       ${relStatCard('Ticket Médio', ticketMedio ? 'R$\xa0'+fmtValor(ticketMedio) : '—', _S(`<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>`), 'accent-gold')}
       ${relStatCard('Vendas', vendas.length, ICO_CHECK_CIRCLE, 'accent-gold', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
     </div>
+
+    ${mesEntries.length >= 2 ? `
+    ${diaEntries.length >= 2 ? `
+    <div class="rel-section">
+      <h3 class="rel-section-title">Leads por Dia</h3>
+      <div class="rel-block rel-chart-container" style="height:210px">
+        <canvas id="rel-chart-dia"></canvas>
+      </div>
+    </div>` : ''}
+
+    ${stEntries.length ? `
+    <div class="rel-section">
+      <h3 class="rel-section-title">Por Status</h3>
+      <div class="rel-block rel-chart-container" style="height:${hBar(stEntries.length)}px">
+        <canvas id="rel-chart-status"></canvas>
+      </div>
+    </div>` : ''}
+
+    ${origemRanking.length ? `
+    <div class="rel-section">
+      <h3 class="rel-section-title">Por Origem</h3>
+      <div class="rel-block rel-chart-container" style="height:${hBar(Math.min(origemRanking.length,12))}px">
+        <canvas id="rel-chart-origem"></canvas>
+      </div>
+    </div>` : ''}
+
+    ${profEntries.length ? `
+    <div class="rel-section">
+      <h3 class="rel-section-title">Por Profissão</h3>
+      <div class="rel-block rel-chart-container" style="height:${hBar(profEntries.length)}px">
+        <canvas id="rel-chart-prof"></canvas>
+      </div>
+    </div>` : ''}
+
+    ${rendaEntries.length ? `
+    <div class="rel-section">
+      <h3 class="rel-section-title">Por Faixa de Renda</h3>
+      <div class="rel-block rel-chart-container" style="height:${hBar(rendaEntries.length)}px">
+        <canvas id="rel-chart-renda"></canvas>
+      </div>
+    </div>` : ''}
 
     ${mesEntries.length >= 2 ? `
     <div class="rel-section">
@@ -3968,6 +4049,59 @@ function renderRelatorios() {
       });
     }
   }
+
+  // ── Helpers Chart.js compartilhados
+  if (typeof Chart === 'undefined') return;
+  const CHART_OPTS = {
+    responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+    plugins: { legend: { display: false }, tooltip: {
+      backgroundColor:'rgba(15,12,8,0.92)', titleColor:'#e8e4dc', bodyColor:'#c8c4bc',
+      borderColor:'rgba(255,255,255,0.08)', borderWidth:1,
+    }},
+  };
+  const SCALE_Y_H = { // escala horizontal (barras verticais): eixo Y com zero
+    grid:{ color:'rgba(255,255,255,0.04)' }, ticks:{ color:'rgba(200,196,188,0.75)', font:{size:11} },
+    border:{ color:'rgba(255,255,255,0.06)' }, beginAtZero:true,
+  };
+  const SCALE_X_H = { grid:{ color:'rgba(255,255,255,0.04)' }, ticks:{ color:'rgba(200,196,188,0.75)', font:{size:11} }, border:{ color:'rgba(255,255,255,0.06)' } };
+  const mkHBar = (canvasId, labels, data, color) => {
+    const ctx = document.getElementById(canvasId)?.getContext('2d');
+    if (!ctx || !data.length) return null;
+    return new Chart(ctx, { type:'bar', data:{
+      labels, datasets:[{ data, backgroundColor:color, borderColor:color, borderWidth:0, borderRadius:3, indexAxis:'y' }]
+    }, options:{ ...CHART_OPTS, indexAxis:'y', scales:{ x:SCALE_Y_H, y:{ ...SCALE_X_H, ticks:{ ...SCALE_X_H.ticks, font:{size:11} } } } }});
+  };
+
+  // b) Leads por dia
+  if (diaEntries.length >= 2) {
+    const ctx = document.getElementById('rel-chart-dia')?.getContext('2d');
+    if (ctx) {
+      _relChartDia = new Chart(ctx, { type:'bar', data:{
+        labels: diaEntries.map(([d])=>d.slice(5)),
+        datasets:[
+          { label:'ISCAS',      data:diaEntries.map(([,v])=>v.iscas),    backgroundColor:'rgba(77,181,200,0.85)', borderColor:'#4db5c8', borderWidth:0, borderRadius:2 },
+          { label:'Respondi',   data:diaEntries.map(([,v])=>v.respondi), backgroundColor:'rgba(206,146,33,0.85)', borderColor:'#CE9221', borderWidth:0, borderRadius:2 },
+          { label:'Outros',     data:diaEntries.map(([,v])=>v.total-v.iscas-v.respondi), backgroundColor:'rgba(76,175,142,0.70)', borderColor:'#4caf8e', borderWidth:0, borderRadius:2 },
+        ]
+      }, options:{ ...CHART_OPTS, plugins:{ ...CHART_OPTS.plugins, legend:{ display:true, labels:{color:'rgba(232,228,220,0.85)',font:{size:11},boxWidth:12,boxHeight:6} } },
+        scales:{ x:{ ...SCALE_X_H, stacked:true }, y:{ ...SCALE_Y_H, stacked:true } } }});
+    }
+  }
+
+  // c) Por status
+  _relChartStatus = mkHBar('rel-chart-status', stEntries.map(([l])=>l), stEntries.map(([,n])=>n),
+    stEntries.map(([l]) => l==='Descartado'?'rgba(176,80,104,0.80)':l==='No Show'?'rgba(230,100,80,0.80)':l==='Realizada'?'rgba(76,175,142,0.85)':'rgba(206,146,33,0.80)')
+  );
+
+  // d) Por origem (top 12)
+  const orTop = origemRanking.slice(0,12);
+  _relChartOrigem = mkHBar('rel-chart-origem', orTop.map(r=>r.o), orTop.map(r=>r.total), 'rgba(77,181,200,0.82)');
+
+  // e) Por profissão
+  _relChartProf = mkHBar('rel-chart-prof', profEntries.map(([l])=>l), profEntries.map(([,n])=>n), 'rgba(206,146,33,0.80)');
+
+  // f) Por renda
+  _relChartRenda = mkHBar('rel-chart-renda', rendaEntries.map(([l])=>l), rendaEntries.map(([,n])=>n), 'rgba(76,175,142,0.80)');
 }
 
 function relTable(title, headers, rows, getDrill = null) {
@@ -7619,9 +7753,145 @@ function exportRelatoriosCSV() {
 }
 function exportRelatoriosPDF() {
   if (!_relBase.length) { toast('Sem dados para exportar.', 'err'); return; }
-  _drillLeads = _relBase;
-  _drillTitle = `Relatório FDV — ${new Date().toLocaleDateString('pt-BR')}`;
-  exportDrillPDF();
+  const base      = _relBase;
+  const dateGen   = new Date().toLocaleDateString('pt-BR');
+  const periodoEl = $('rel-filter-mes');
+  const periodoVal= periodoEl?.value || '';
+  const periodo   = periodoVal ? fmtMes(periodoVal) : 'Todos os períodos';
+
+  // Capturar gráficos como imagens
+  const imgOf = id => { try { return document.getElementById(id)?.toDataURL?.('image/png')||''; } catch{return '';} };
+  const imgDia    = imgOf('rel-chart-dia');
+  const imgMes    = imgOf('rel-chart-comparativo');
+  const imgStatus = imgOf('rel-chart-status');
+  const imgOrigem = imgOf('rel-chart-origem');
+  const imgProf   = imgOf('rel-chart-prof');
+  const imgRenda  = imgOf('rel-chart-renda');
+
+  // Métricas
+  const vendas      = base.filter(l => l.kanban_column === 'venda_ganha');
+  const agendados   = base.filter(l => l.dataagendamento);
+  const realizadas  = base.filter(l => l.status === 'realizada');
+  const taxaComp    = agendados.length  ? pct(realizadas.length, agendados.length)  : 0;
+  const taxaConv    = realizadas.length ? pct(vendas.length,     realizadas.length) : 0;
+  const fat         = vendas.reduce((s,l)=>s+parseValor(l.venda_ganha_dados?.valor),0);
+  const ticket      = vendas.length ? fat/vendas.length : 0;
+  const fmtC        = n => n ? n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) : '—';
+  const fmtPct      = n => n+'%';
+
+  // Tabelas para PDF
+  const closerRows = Object.entries((() => {
+    const m = {}; realizadas.forEach(l => {
+      const k = l.closer||'_sem'; if(!m[k]) m[k]={ag:0,re:0,ve:0,val:0};
+      m[k].re++; if(l.kanban_column==='venda_ganha'){m[k].ve++;m[k].val+=parseValor(l.venda_ganha_dados?.valor);}
+    }); agendados.forEach(l => { const k=l.closer||'_sem'; if(!m[k]) m[k]={ag:0,re:0,ve:0,val:0}; m[k].ag++; });
+    return m;
+  })()).map(([c,d])=>[CLOSERS[c]?.name||c, d.ag, d.re, d.ve, fmtC(d.val), d.re?pct(d.ve,d.re)+'%':'—']);
+
+  const respRows = Object.entries((() => {
+    const m = {}; agendados.forEach(l => {
+      const r=l.agendadopor||'—'; if(!m[r]) m[r]={ag:0,re:0,ve:0};
+      m[r].ag++; if(l.status==='realizada') m[r].re++; if(l.kanban_column==='venda_ganha') m[r].ve++;
+    }); return m;
+  })()).map(([r,d])=>[r, d.ag, d.re, d.ve]);
+
+  const mkMetric = (lbl, val, color='#CE9221') =>
+    `<div class="m"><div class="mv" style="color:${color}">${val}</div><div class="ml">${lbl}</div></div>`;
+  const mkChart  = (img, alt) => img
+    ? `<img src="${img}" style="width:100%;max-height:220px;object-fit:contain;margin:10px 0;border-radius:8px">`
+    : `<p style="color:#555;font-size:12px">[${alt}]</p>`;
+  const mkTbl = (headers, rows) => `
+    <table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head>
+<meta charset="UTF-8"><title>Relatório Comercial FDV — ${periodo}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:#0f0c08;color:#e8e4dc;font-family:Arial,sans-serif;font-size:12px;line-height:1.5}
+  .page{width:210mm;min-height:280mm;padding:20mm 18mm;page-break-after:always;position:relative}
+  .page:last-child{page-break-after:auto}
+  h1{font-size:28px;font-weight:900;color:#CE9221;letter-spacing:-1px}
+  h2{font-size:16px;font-weight:700;color:#CE9221;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid rgba(206,146,33,0.3)}
+  h3{font-size:13px;font-weight:700;color:#c8c4bc;margin:14px 0 8px}
+  .logo{font-size:11px;color:#8a9ea0;font-weight:700;letter-spacing:2px;margin-bottom:8px}
+  .subtitle{font-size:13px;color:#8a9ea0;margin-top:6px}
+  .meta{font-size:11px;color:#5a6e72;margin-top:4px}
+  .cover-body{display:flex;flex-direction:column;justify-content:center;height:220mm}
+  .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+  .m{background:#1a2124;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px 16px}
+  .mv{font-size:26px;font-weight:800;line-height:1}
+  .ml{font-size:10px;color:#8a9ea0;text-transform:uppercase;letter-spacing:.6px;margin-top:4px}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:11px}
+  th{background:#1a2124;color:#8a9ea0;text-transform:uppercase;letter-spacing:.5px;font-size:9.5px;padding:7px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.08)}
+  td{padding:6px 10px;border-bottom:1px solid rgba(255,255,255,0.04);color:#c8c4bc}
+  tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
+  .footer{position:absolute;bottom:14mm;left:18mm;right:18mm;display:flex;justify-content:space-between;font-size:9.5px;color:#3a4e52;border-top:1px solid rgba(255,255,255,0.05);padding-top:6px}
+  .sep{height:1px;background:rgba(206,146,33,0.2);margin:14px 0}
+  @media print{html,body{background:#0f0c08}@page{margin:0;size:A4}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body>
+
+<div class="page">
+  <div class="logo">FDV — FACULDADE DA VIDA</div>
+  <div class="cover-body">
+    <h1>Relatório<br>Comercial</h1>
+    <p class="subtitle" style="margin-top:16px;font-size:15px">${periodo}</p>
+    <div class="sep"></div>
+    <p class="meta">Total de leads analisados: <strong style="color:#e8e4dc">${base.length}</strong></p>
+    <p class="meta">Gerado em: ${dateGen}</p>
+    <p class="meta" style="margin-top:24px;font-size:10px;color:#3a4e52">Documento confidencial — uso interno FDV</p>
+  </div>
+  <div class="footer"><span>FDV — Relatório Comercial</span><span>Confidencial</span><span>Pág 1</span></div>
+</div>
+
+<div class="page">
+  <div class="logo">FDV — FACULDADE DA VIDA</div>
+  <h2>Resumo Executivo — ${periodo}</h2>
+  <div class="metrics">
+    ${mkMetric('Total de Leads', base.length)}
+    ${mkMetric('Comparecimento', fmtPct(taxaComp), '#4db5c8')}
+    ${mkMetric('Conversão', fmtPct(taxaConv), '#4caf8e')}
+    ${mkMetric('Faturamento', fmtC(fat), '#CE9221')}
+    ${mkMetric('Ticket Médio', fmtC(ticket), '#CE9221')}
+    ${mkMetric('Vendas', vendas.length, '#4caf8e')}
+  </div>
+  <div class="sep"></div>
+  <h3>Leads por Dia</h3>${mkChart(imgDia,'gráfico leads/dia')}
+  <h3>Comparativo Mês a Mês</h3>${mkChart(imgMes,'gráfico comparativo mensal')}
+  <div class="footer"><span>FDV — Relatório Comercial</span><span>Confidencial</span><span>Pág 2</span></div>
+</div>
+
+<div class="page">
+  <div class="logo">FDV — FACULDADE DA VIDA</div>
+  <h2>Origem e Canais</h2>
+  <h3>Ranking de Origem</h3>${mkChart(imgOrigem,'gráfico de origem')}
+  <div class="sep"></div>
+  <h3>Por Status</h3>${mkChart(imgStatus,'gráfico de status')}
+  <div class="footer"><span>FDV — Relatório Comercial</span><span>Confidencial</span><span>Pág 3</span></div>
+</div>
+
+<div class="page">
+  <div class="logo">FDV — FACULDADE DA VIDA</div>
+  <h2>Perfil dos Leads</h2>
+  <h3>Por Profissão</h3>${mkChart(imgProf,'gráfico profissão')}
+  <h3>Por Faixa de Renda</h3>${mkChart(imgRenda,'gráfico renda')}
+  <div class="footer"><span>FDV — Relatório Comercial</span><span>Confidencial</span><span>Pág 4</span></div>
+</div>
+
+<div class="page">
+  <div class="logo">FDV — FACULDADE DA VIDA</div>
+  <h2>Performance da Equipe</h2>
+  <h3>Taxa de Conversão por Closer</h3>
+  ${mkTbl(['Closer','Agendados','Realizadas','Vendas','Faturamento','Conv.'], closerRows)}
+  <div class="sep"></div>
+  <h3>Responsável pelo Agendamento</h3>
+  ${mkTbl(['Responsável','Agendados','Realizadas','Vendas'], respRows)}
+  <div class="footer"><span>FDV — Relatório Comercial</span><span>Confidencial</span><span>Pág 5</span></div>
+</div>
+
+<script>window.onload=()=>window.print()</script>
+</body></html>`;
+  const w = window.open('','_blank'); w.document.write(html); w.document.close();
 }
 
 // ─── DUPLICATAS ──────────────────────────────────────────────────────

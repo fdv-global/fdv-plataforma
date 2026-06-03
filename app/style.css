@@ -1666,8 +1666,8 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 /* Ranking wrapper — glass único para todos os itens */
 .rel-rank-wrap {
   padding: 0; overflow: hidden;
-  background: var(--s1); border: 1px solid var(--b0); border-radius: var(--r-lg);
-  isolation: isolate;   /* novo stacking context → preserva backdrop-filter do .rel-block */
+  background: #141a1c; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--r-lg);
+  isolation: isolate;
 }
 .rel-rank-row {
   display: flex; align-items: center; gap: 16px;
@@ -1684,7 +1684,7 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 .rel-summary .stat-num  { font-size: 36px; }
 
 .rel-table-wrap {
-  background: var(--s1); border: 1px solid var(--b0);
+  background: #141a1c; border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--r-lg); overflow-x: auto;
 }
 .rel-table             { width: 100%; border-collapse: collapse; min-width: 500px; }

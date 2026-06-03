@@ -469,13 +469,11 @@ h1, h2, h3, h4,
 .chats-panel        { background: rgba(15, 12, 8, 0.45) !important; }
 .chats-panel-header { background: rgba(15, 12, 8, 0.65) !important; }
 
-/* ── 15. Relatórios ────────────────────────────────────────── */
+/* ── 15. Relatórios — containers de dados: fundo sólido escuro (opção B) */
 .rel-block {
-  background: rgba(15, 12, 8, 0.75) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.28) !important;
+  background: #141a1c !important;  /* sólido, sem glassmorphism */
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.40) !important;
 }
 
 /* ── 16. Formulários — inputs semi-transparentes ───────────── */
