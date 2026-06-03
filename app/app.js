@@ -8003,22 +8003,122 @@ function exportRelatoriosCSV() {
   _drillTitle = `relatorio-${new Date().toISOString().slice(0,10)}`;
   exportDrillCSV();
 }
-function exportRelatoriosPDF() {
+// Inicializa gráficos Chart.js em canvases off-screen para captura no PDF.
+// Necessário porque o redesign removeu os canvases do DOM principal —
+// os gráficos agora são SVG/CSS e não existem como <canvas>.
+async function _ensureRelChartsReady(base) {
+  if (typeof Chart === 'undefined') return;
+
+  // Limpar instâncias anteriores
+  [_relChart, _relChartDia].forEach(c => { try { c?.destroy(); } catch(e){} });
+  _relChart = _relChartDia = null;
+
+  // Criar container off-screen persistente
+  let offEl = document.getElementById('_pdf-charts-offscreen');
+  if (!offEl) {
+    offEl = document.createElement('div');
+    offEl.id = '_pdf-charts-offscreen';
+    offEl.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:620px;visibility:hidden;pointer-events:none;';
+    document.body.appendChild(offEl);
+  }
+  offEl.innerHTML = `
+    <canvas id="rel-chart-comparativo" width="600" height="280"></canvas>
+    <canvas id="rel-chart-dia"         width="600" height="200"></canvas>`;
+
+  const CHART_DEF = {
+    responsive: false,
+    animation: { duration: 0 }, // render imediato sem animação
+    plugins: { legend:{ labels:{ color:'#e8e4dc', font:{size:11} } }, tooltip:{ enabled:false } },
+    scales: {
+      x: { grid:{ color:'rgba(255,255,255,0.04)' }, ticks:{ color:'rgba(200,196,188,0.75)', font:{size:10} }, border:{ color:'rgba(255,255,255,0.06)' } },
+      y: { grid:{ color:'rgba(255,255,255,0.04)' }, ticks:{ color:'rgba(200,196,188,0.75)', font:{size:10} }, border:{ color:'rgba(255,255,255,0.06)' }, beginAtZero:true },
+    },
+  };
+
+  // Gráfico comparativo mensal
+  const mesMap = {};
+  base.forEach(l => {
+    if(!l.datachegada) return;
+    const m = l.datachegada.slice(0,7);
+    if(!mesMap[m]) mesMap[m]={total:0,vendas:0};
+    mesMap[m].total++;
+    if(l.kanban_column==='venda_ganha') mesMap[m].vendas++;
+  });
+  const mesEntries = Object.entries(mesMap).sort((a,b)=>a[0].localeCompare(b[0]));
+  if (mesEntries.length >= 2) {
+    const ctx = document.getElementById('rel-chart-comparativo')?.getContext('2d');
+    if (ctx) {
+      _relChart = new Chart(ctx, { type:'bar', data:{
+        labels: mesEntries.map(([m]) => fmtMes(m)),
+        datasets:[
+          { label:'Leads',  data:mesEntries.map(([,d])=>d.total),  backgroundColor:'rgba(77,181,200,0.90)', borderColor:'#4db5c8', borderWidth:1, borderRadius:3 },
+          { label:'Vendas', data:mesEntries.map(([,d])=>d.vendas), backgroundColor:'rgba(206,146,33,0.88)', borderColor:'#CE9221', borderWidth:1, borderRadius:3 },
+        ]
+      }, options: CHART_DEF });
+    }
+  }
+
+  // Gráfico por dia (stacked)
+  const diaMap = {};
+  base.forEach(l => {
+    if(!l.datachegada) return;
+    if(!diaMap[l.datachegada]) diaMap[l.datachegada]=0;
+    diaMap[l.datachegada]++;
+  });
+  const diaEntries = Object.entries(diaMap).sort((a,b)=>a[0].localeCompare(b[0])).slice(-30);
+  if (diaEntries.length >= 2) {
+    const ctx2 = document.getElementById('rel-chart-dia')?.getContext('2d');
+    if (ctx2) {
+      _relChartDia = new Chart(ctx2, { type:'bar', data:{
+        labels: diaEntries.map(([d])=>d.slice(5)),
+        datasets:[{ label:'Leads', data:diaEntries.map(([,v])=>v), backgroundColor:'rgba(77,181,200,0.85)', borderWidth:0, borderRadius:2 }]
+      }, options:{ ...CHART_DEF, plugins:{ legend:{ display:false } } }});
+    }
+  }
+
+  // Aguardar 2 frames + 400ms para garantir render completo
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  await new Promise(r => setTimeout(r, 400));
+}
+
+async function exportRelatoriosPDF() {
   if (!_relBase.length) { toast('Sem dados para exportar.', 'err'); return; }
   const base      = _relBase;
+
+  toast('Preparando gráficos para PDF…', 'ok');
+
+  // Forçar inicialização de todos os gráficos Chart.js antes de capturar
+  await _ensureRelChartsReady(base);
+
   const dateGen   = new Date().toLocaleDateString('pt-BR');
   const periodoEl = $('rel-filter-mes');
   const periodoVal= periodoEl?.value || '';
   const periodo   = periodoVal ? fmtMes(periodoVal) : 'Todos os períodos';
 
-  // Capturar gráficos como imagens
+  // Capturar canvases (agora garantidamente inicializados)
   const imgOf = id => { try { return document.getElementById(id)?.toDataURL?.('image/png')||''; } catch{return '';} };
-  const imgDia    = imgOf('rel-chart-dia');
-  const imgMes    = imgOf('rel-chart-comparativo');
-  const imgStatus = imgOf('rel-chart-status');
-  const imgOrigem = imgOf('rel-chart-origem');
-  const imgProf   = imgOf('rel-chart-prof');
-  const imgRenda  = imgOf('rel-chart-renda');
+  const imgDia = imgOf('rel-chart-dia');
+  const imgMes = imgOf('rel-chart-comparativo');
+
+  // Para gráficos que viraram CSS/HTML, gerar versão tabular no PDF
+  const origemMap = {};
+  base.forEach(l => {
+    const o=l.origem||'Outros'; if(!origemMap[o]) origemMap[o]={total:0,vendas:0};
+    origemMap[o].total++; if(l.kanban_column==='venda_ganha') origemMap[o].vendas++;
+  });
+  const origemRows = Object.entries(origemMap)
+    .map(([o,d])=>([o, d.total, d.vendas, d.total?pct(d.vendas,d.total)+'%':'—']))
+    .sort((a,b)=>b[1]-a[1]);
+
+  const profMap={}, rendaMap={};
+  base.forEach(l=>{
+    const p=(l.profissao||'Não inf.').slice(0,30); profMap[p]=(profMap[p]||0)+1;
+    const r=(l.renda||'Não inf.').slice(0,30);      rendaMap[r]=(rendaMap[r]||0)+1;
+  });
+  const profRows  = Object.entries(profMap).sort((a,b)=>b[1]-a[1]).slice(0,10)
+                          .map(([n,c])=>[n, c, base.length?pct(c,base.length)+'%':'—']);
+  const rendaRows = Object.entries(rendaMap).sort((a,b)=>b[1]-a[1]).slice(0,10)
+                          .map(([n,c])=>[n, c, base.length?pct(c,base.length)+'%':'—']);
 
   // Métricas
   const vendas      = base.filter(l => l.kanban_column === 'venda_ganha');
@@ -8049,9 +8149,9 @@ function exportRelatoriosPDF() {
 
   const mkMetric = (lbl, val, color='#CE9221') =>
     `<div class="m"><div class="mv" style="color:${color}">${val}</div><div class="ml">${lbl}</div></div>`;
-  const mkChart  = (img, alt) => img
+  const mkChart = (img, alt) => img
     ? `<img src="${img}" style="width:100%;max-height:220px;object-fit:contain;margin:10px 0;border-radius:8px">`
-    : `<p style="color:#555;font-size:12px">[${alt}]</p>`;
+    : `<p style="color:#5a6e72;font-size:11px;padding:12px 0;font-style:italic">[${alt} — sem dados no período]</p>`;
   const mkTbl = (headers, rows) => `
     <table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
     <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
@@ -8116,17 +8216,19 @@ function exportRelatoriosPDF() {
 <div class="page">
   <div class="logo">FDV — FACULDADE DA VIDA</div>
   <h2>Origem e Canais</h2>
-  <h3>Ranking de Origem</h3>${mkChart(imgOrigem,'gráfico de origem')}
-  <div class="sep"></div>
-  <h3>Por Status</h3>${mkChart(imgStatus,'gráfico de status')}
+  <h3>Ranking de Origem por Volume</h3>
+  ${mkTbl(['Canal','Leads','Vendas','Conversão'], origemRows)}
   <div class="footer"><span>FDV — Relatório Comercial</span><span>Confidencial</span><span>Pág 3</span></div>
 </div>
 
 <div class="page">
   <div class="logo">FDV — FACULDADE DA VIDA</div>
   <h2>Perfil dos Leads</h2>
-  <h3>Por Profissão</h3>${mkChart(imgProf,'gráfico profissão')}
-  <h3>Por Faixa de Renda</h3>${mkChart(imgRenda,'gráfico renda')}
+  <h3>Por Profissão (top 10)</h3>
+  ${mkTbl(['Profissão','Leads','% do total'], profRows)}
+  <div class="sep"></div>
+  <h3>Por Faixa de Renda (top 10)</h3>
+  ${mkTbl(['Renda','Leads','% do total'], rendaRows)}
   <div class="footer"><span>FDV — Relatório Comercial</span><span>Confidencial</span><span>Pág 4</span></div>
 </div>
 
