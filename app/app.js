@@ -7353,16 +7353,15 @@ function buildDupMap() {
 }
 function isDup(id) { return dupMap.has(id); }
 function updateDupAlertBtn() {
-  const btn = $('dup-alert-btn');
-  if (!btn) return;
+  const wrap  = $('dup-notif-wrapper');
+  const badge = $('dup-notif-badge');
+  if (!wrap) return;
   const pairs = countDupPairs();
-  if (pairs > 0) {
-    btn.style.display = '';
-    const badge = btn.querySelector('.dup-alert-count');
-    if (badge) badge.textContent = pairs;
-  } else {
-    btn.style.display = 'none';
-  }
+  wrap.style.display  = pairs > 0 ? '' : 'none';
+  if (badge) badge.textContent = pairs;
+}
+function openFirstDupPair() {
+  for (const [id] of dupMap) { openDupCompare(id); return; }
 }
 function countDupPairs() {
   const seen = new Set();
@@ -8157,7 +8156,7 @@ function bindEvents() {
   $('dup-compare-backdrop').addEventListener('click', e => { if (e.target===$('dup-compare-backdrop')) closeDupCompare(); });
   $('dup-merge').addEventListener('click', dupMerge);
   $('dup-nao-duplicata').addEventListener('click', dupNaoSaoDuplicatas);
-  $('dup-alert-btn')?.addEventListener('click', mergeAllDuplicates);
+  $('dup-notif-btn')?.addEventListener('click', openFirstDupPair);
 
   // ── Duplicata warning
   $('dup-warn-close').addEventListener('click', () => closeDupWarn('cancel'));

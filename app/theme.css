@@ -1612,11 +1612,14 @@ h1, h2, h3, h4,
 }
 
 .search-expand {
+  position: absolute;
+  right: 0;                       /* ancora no lado direito do button */
+  top: 50%;
+  transform: translateY(-50%);
   overflow: hidden;
   width: 0;
   transition: width 250ms ease;
-  display: flex;
-  align-items: center;
+  z-index: 150;                   /* flutua sobre outros itens da navbar */
 }
 .search-expand.open { width: 280px; }
 
