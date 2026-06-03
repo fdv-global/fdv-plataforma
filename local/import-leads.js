@@ -19,19 +19,14 @@ const SB_URL     = 'https://yadxcbhginjvoemacdly.supabase.co';
 const SB_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhZHhjYmhnaW5qdm9lbWFjZGx5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Njk2Nzk4MSwiZXhwIjoyMDkyNTQzOTgxfQ.Vp_JSA4ReP40a25L8GS7stNdROAy5YIIw-7HM98z_RY';
 const SINCE_DATE = '2026-05-16'; // YYYY-MM-DD — importar a partir desta data
 
-// ATENÇÃO: verifique as colunas UTM antes de importar.
-// Abra a planilha e confirme em quais colunas estão:
-//   Campanha (utm_campaign), Conjunto (utm_medium),
-//   Anúncio  (utm_content),  Site de origem (utm_source)
-// Os valores abaixo são a estimativa baseada na estrutura atual.
 const SHEETS = [
   {
     name:     'ISCAS',
     encoded:  encodeURIComponent('ISCAS'),
     cols:     { origem:1, data:2, nome:4, telefone:5, email:6, instagram:7, desafio:8, profissao:9, renda:10,
-                // UTMs — colunas K-N (11-14); ajuste se necessário
+                // UTMs confirmados: K=campaign L=medium M=content N=source
                 utm_campaign:11, utm_medium:12, utm_content:13, utm_source:14 },
-    flagCol:  17, // coluna Q (1-indexed)
+    flagCol:  17, // coluna Q
     startRow: 2038,
   },
   {
@@ -39,9 +34,9 @@ const SHEETS = [
     encoded:  encodeURIComponent('Respondi.app'),
     cols:     { origem:1, data:2, nome:4, telefone:5, email:6, instagram:7, idade:8, desafio:9, profissao:10,
                 jaParticipou:11, jaEAluna:12, tempoConhece:13, renda:14, motivacao:15, deOnde:16,
-                // UTMs — colunas Q-T (17-20); ajuste se necessário
+                // UTMs confirmados: Q=campaign R=medium S=content T=source
                 utm_campaign:17, utm_medium:18, utm_content:19, utm_source:20 },
-    flagCol:  22, // coluna V (1-indexed)
+    flagCol:  22, // coluna V
     startRow: 1153,
   },
 ];
