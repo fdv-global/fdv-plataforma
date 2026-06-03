@@ -7311,36 +7311,42 @@ async function deleteInstance(id) {
 }
 
 // ─── DUPLICATAS ──────────────────────────────────────────────────────
-function normName(s) {
-  return String(s||'').toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g,'')
-    .replace(/\s+/g,' ').trim();
+const _DUP_EXCL_KEY = 'fdv_dup_exclusions';
+
+// Pares que o usuário marcou explicitamente como "Não são duplicatas".
+// Persistido em localStorage; cada entrada é "idA|idB" (sorted).
+function _dupExclKey(a, b) { return [a, b].sort().join('|'); }
+function getDupExcl() {
+  try { return new Set(JSON.parse(localStorage.getItem(_DUP_EXCL_KEY) || '[]')); }
+  catch { return new Set(); }
 }
-function namesSimilar(a, b) {
-  const na = normName(a), nb = normName(b);
-  if (!na || !nb) return false;
-  if (na === nb) return true;
-  if (na.startsWith(nb+' ') || nb.startsWith(na+' ')) return true;
-  const wa = na.split(' ').filter(w=>w.length>2);
-  const wb = nb.split(' ').filter(w=>w.length>2);
-  if (!wa.length || !wb.length) return na.includes(nb) || nb.includes(na);
-  return wa.filter(w=>wb.includes(w)).length >= Math.min(2, Math.min(wa.length, wb.length));
+function addDupExcl(idA, idB) {
+  const s = getDupExcl();
+  s.add(_dupExclKey(idA, idB));
+  localStorage.setItem(_DUP_EXCL_KEY, JSON.stringify([...s]));
 }
+
 function phoneNorm(p) { return String(p||'').replace(/\D/g,''); }
-function findDupCandidates(lead, pool) {
-  const ph = phoneNorm(lead.celular), em = (lead.email||'').toLowerCase().trim();
+
+// Duplicata: apenas telefone OU email idênticos.
+// Nome parecido sozinho NÃO é critério.
+function findDupCandidates(lead, pool, excl) {
+  const ph  = phoneNorm(lead.celular);
+  const em  = (lead.email||'').toLowerCase().trim();
+  const ex  = excl || getDupExcl();
   return (pool||allLeads).filter(c => {
     if (c.id === lead.id) return false;
+    if (ex.has(_dupExclKey(lead.id, c.id))) return false;
     if (ph && ph.length >= 8 && phoneNorm(c.celular) === ph) return true;
     if (em && (c.email||'').toLowerCase().trim() === em) return true;
-    if ((lead.nome||'').length > 2 && namesSimilar(c.nome, lead.nome)) return true;
     return false;
   });
 }
 function buildDupMap() {
+  const excl = getDupExcl(); // lê uma vez, passa para todos os candidatos
   dupMap.clear();
   for (const l of allLeads) {
-    const dups = findDupCandidates(l);
+    const dups = findDupCandidates(l, allLeads, excl);
     if (dups.length) dupMap.set(l.id, dups.map(d=>d.id));
   }
   updateDupAlertBtn();
@@ -7474,13 +7480,10 @@ async function dupMerge() {
 }
 function dupNaoSaoDuplicatas() {
   if (!_dupA || !_dupB) return;
-  const aList = (dupMap.get(_dupA.id)||[]).filter(id=>id!==_dupB.id);
-  const bList = (dupMap.get(_dupB.id)||[]).filter(id=>id!==_dupA.id);
-  aList.length ? dupMap.set(_dupA.id, aList) : dupMap.delete(_dupA.id);
-  bList.length ? dupMap.set(_dupB.id, bList) : dupMap.delete(_dupB.id);
-  updateDupAlertBtn();
-  renderAll();
+  // Persiste a exclusão: buildDupMap (chamado por renderAll) vai ignorar este par
+  addDupExcl(_dupA.id, _dupB.id);
   closeDupCompare();
+  renderAll(); // rebuilds dupMap respeitando a nova exclusão
 }
 function autoMergeLeads(a, b) {
   const merged = {};
