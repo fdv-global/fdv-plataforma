@@ -5712,18 +5712,15 @@ function buildChatInputBarHTML(textareaId) {
       </div>
       <button class="crb-cancel btn-ghost btn-icon" id="btn-reply-cancel">✕</button>
     </div>
-    <div class="chat-format-bar">
-      <button class="chat-fmt-btn" data-fmt="bold"   title="Negrito (*texto*)"><b>B</b></button>
-      <button class="chat-fmt-btn" data-fmt="italic" title="Itálico (_texto_)"><i>I</i></button>
-      <button class="chat-fmt-btn" data-fmt="strike" title="Tachado (~texto~)"><s>S</s></button>
-      <button class="chat-fmt-btn" data-fmt="mono"   title="Monoespaçado (\`\`\`texto\`\`\`)"><code>M</code></button>
-    </div>
     <div class="chat-input-row">
       <input type="file" id="chat-file-input" class="chat-file-input"
              accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip">
       <button class="chat-tool-btn" id="btn-chat-attach" title="Enviar arquivo">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
       </button>
+      <button class="chat-fmt-btn" data-fmt="bold"   title="Negrito (*texto*)"><b>B</b></button>
+      <button class="chat-fmt-btn" data-fmt="italic" title="Itálico (_texto_)"><i>I</i></button>
+      <button class="chat-fmt-btn" data-fmt="strike" title="Tachado (~texto~)"><s>S</s></button>
       <button class="chat-tool-btn" id="btn-chat-emoji" title="Emojis">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
       </button>
@@ -8246,14 +8243,16 @@ function applyChatFont() {
 }
 
 function applyChatFontSize() {
-  const size = localStorage.getItem('fdv_chat_font_size') || '13';
-  const px = size + 'px';
-  // Aplica como variável CSS no root (usado pelo .chat-bubble)
-  document.documentElement.style.setProperty('--chat-font-size', px);
-  // Força direto nos contêineres de mensagens para garantir herança correta
-  document.querySelectorAll('.chat-messages').forEach(el =>
-    el.style.setProperty('--chat-font-size', px)
-  );
+  const size = parseInt(localStorage.getItem('fdv_chat_font_size') || '13', 10);
+  // Injeta (ou atualiza) um <style> dedicado que afeta APENAS o texto
+  // dentro dos balões, sem herança em avatares, padding ou outros elementos.
+  let el = document.getElementById('_fdv-chat-font-style');
+  if (!el) {
+    el = document.createElement('style');
+    el.id = '_fdv-chat-font-style';
+    document.head.appendChild(el);
+  }
+  el.textContent = `.chat-bubble { font-size: ${size}px !important; }`;
 }
 
 // ─── ESTRELAR MENSAGEM ───────────────────────────────────────────────
