@@ -2288,11 +2288,11 @@ function renderInicio() {
       </svg>
     </div>`;
 
-  const imc = (nav, delay, label, value, sub, subCls, iconSvg) => `
+  const imc = (nav, delay, label, value, sub, subCls, iconSvg, valueColor) => `
     <div class="imc inicio-nav-card fdv-fade-up" data-inicio-nav="${nav}" style="animation-delay:${delay}s">
       <div class="imc-icon">${iconSvg}</div>
       <div class="imc-label">${label}</div>
-      <div class="imc-value">${value}</div>
+      <div class="imc-value"${valueColor?` style="color:${valueColor}"`:''} >${value}</div>
       <div class="imc-sub ${subCls||''}">${sub}</div>
     </div>`;
 
@@ -2313,7 +2313,8 @@ function renderInicio() {
     <div class="inicio-metrics">
       ${imc('vendas',0.16,'Faturamento do Mês',fmtFat(fatAtual),fatDiffLabel,
         diffFat>0?'imc-pos':diffFat<0?'imc-neg':'',
-        ICO20('<polyline points="22 7 13 7 13 17"/><polyline points="2 17 13 7 17 11 22 6"/>'))}
+        ICO20('<polyline points="22 7 13 7 13 17"/><polyline points="2 17 13 7 17 11 22 6"/>'),
+        'var(--gold)')}
       ${imc('novos',0.22,'Leads Hoje',leadsHoje,'novos hoje','',
         ICO20('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>'))}
       ${imc('agendados',0.28,'Calls Hoje',callsHoje,
@@ -2324,15 +2325,15 @@ function renderInicio() {
         ICO20('<circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/><path d="m9 12 2 2 4-4"/>'))}
     </div>
     <div class="inicio-funil fdv-fade-up" style="animation-delay:0.38s">
-      <div class="funil-stage"><div class="funil-label">Leads</div><div class="funil-num">${fLeads}</div><div class="funil-pct">total</div></div>
+      <div class="funil-stage"><div class="funil-label">Leads</div><div class="funil-num">${fLeads}</div></div>
       ${arrowSvg(pctQ)}
-      <div class="funil-stage"><div class="funil-label">Qualificados</div><div class="funil-num">${fQualif}</div><div class="funil-pct">${pctQ}%</div></div>
+      <div class="funil-stage"><div class="funil-label">Qualificados</div><div class="funil-num">${fQualif}</div></div>
       ${arrowSvg(pctA)}
-      <div class="funil-stage"><div class="funil-label">Agendados</div><div class="funil-num">${fAgend}</div><div class="funil-pct">${pctA}%</div></div>
+      <div class="funil-stage"><div class="funil-label">Agendados</div><div class="funil-num">${fAgend}</div></div>
       ${arrowSvg(pctC)}
-      <div class="funil-stage"><div class="funil-label">Calls</div><div class="funil-num">${fCalls}</div><div class="funil-pct">${pctC}%</div></div>
+      <div class="funil-stage"><div class="funil-label">Calls</div><div class="funil-num">${fCalls}</div></div>
       ${arrowSvg(pctV)}
-      <div class="funil-stage"><div class="funil-label">Vendas</div><div class="funil-num" style="color:var(--gold)">${fVendas}</div><div class="funil-pct">${pctV}%</div></div>
+      <div class="funil-stage"><div class="funil-label">Vendas</div><div class="funil-num" style="color:var(--gold)">${fVendas}</div></div>
     </div>
     <div class="inicio-agenda fdv-fade-up" style="animation-delay:0.44s">
       <div class="ia-header">
