@@ -7558,6 +7558,48 @@ function closeDupWarn(result) {
   _dupWarnSuspect = null;
 }
 
+// ─── RESIZE PAINEL LATERAL DE CHATS ─────────────────────────────────
+function initChatSidebarResize() {
+  const handle = $('chats-resize-handle');
+  const layout = document.querySelector('.chats-layout');
+  if (!handle || !layout) return;
+
+  const LS_KEY = 'fdv_chat_sidebar_w';
+  const MIN_W = 260, MAX_W = 480;
+
+  let sidebarW = Math.min(MAX_W, Math.max(MIN_W,
+    parseInt(localStorage.getItem(LS_KEY) || '340', 10)
+  ));
+  layout.style.setProperty('--chat-sidebar-w', sidebarW + 'px');
+
+  let dragging = false, startX = 0, startW = 0;
+
+  handle.addEventListener('mousedown', e => {
+    e.preventDefault();
+    dragging = true;
+    startX = e.clientX;
+    startW = sidebarW;
+    handle.classList.add('dragging');
+    document.body.style.cursor    = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    sidebarW = Math.min(MAX_W, Math.max(MIN_W, startW + (e.clientX - startX)));
+    layout.style.setProperty('--chat-sidebar-w', sidebarW + 'px');
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    handle.classList.remove('dragging');
+    document.body.style.cursor    = '';
+    document.body.style.userSelect = '';
+    localStorage.setItem(LS_KEY, sidebarW);
+  });
+}
+
 // ─── BUSCA GLOBAL ────────────────────────────────────────────────────
 let _searchTimer = null;
 function openSearch() {
@@ -8133,6 +8175,9 @@ function bindEvents() {
   $('cm-cancelar').addEventListener('click', closeContratoModal);
   $('cm-salvar').addEventListener('click', salvarContrato);
   $('cm-backdrop').addEventListener('click', e => { if (e.target === $('cm-backdrop')) closeContratoModal(); });
+
+  // ── Resize painel lateral de chats
+  initChatSidebarResize();
 
   // ── Busca global
   $('search-btn').addEventListener('click', e => {
