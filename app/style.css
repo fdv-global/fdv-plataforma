@@ -3369,19 +3369,21 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   padding-right: 32px; /* espaço para o ícone absoluto no canto */
 }
 .imc-value {
-  font-size: 30px;           /* base menor para sempre caber no card */
+  font-size: 30px;
   font-weight: 800;
   color: #fff;
   line-height: 1.1;
   letter-spacing: -1px;
   margin-bottom: 8px;
   font-family: 'Red Hat Display', system-ui, sans-serif;
-  word-break: break-word;    /* deixa o valor quebrar linha se necessário */
   padding-right: 32px;
+  overflow: hidden;
 }
+/* Hero: nowrap numa linha só — card mais largo suporta "R$ 10.500" */
 .imc--hero .imc-value {
-  font-size: 36px;           /* hero card é mais largo, aguenta fonte maior */
+  font-size: 36px;
   letter-spacing: -1.5px;
+  white-space: nowrap;       /* uma linha */
 }
 .imc-sub {
   font-size: 12px;
@@ -3400,23 +3402,31 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   border-radius: 20px;
   padding: 28px 24px;
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* labels na mesma linha, números na mesma linha */
   justify-content: space-between;
   gap: 4px;
   margin-bottom: 40px;
 }
-/* No Show inline abaixo do número de Calls */
+/* Conector centraliza-se automaticamente em relação à etapa mais alta */
+.funil-connector { align-self: center; }
+/* Slot reservado: visível em C. Realizadas, invisível nas demais etapas */
+.funil-ns-slot {
+  min-height: 14px; /* mesma altura do texto no-show, reserva espaço nas outras etapas */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .funil-ns-inline {
   font-size: 10px;
   color: #d06070;
   font-weight: 700;
-  margin-top: 3px;
   white-space: nowrap;
 }
 
 /* Card Faturamento — hierarquia visual sobre os outros três */
 .imc--hero {
-  flex: 1.5 !important;  /* 50% mais largo que os outros */
+  flex: 1.5 !important;
+  min-width: 220px !important; /* garante espaço para "R$ 10.500" em 36px */
   border-color: rgba(206,146,33,0.35) !important;
   padding: 28px !important;
 }
