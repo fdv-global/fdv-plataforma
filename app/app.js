@@ -3454,6 +3454,23 @@ function switchCloserView(view) {
   }
 }
 
+async function _backfillVendas(leads) {
+  for (const l of leads) {
+    const d = l.venda_ganha_dados || {};
+    const { error } = await supabase.from('vendas').insert({
+      lead_id:        l.id,
+      closer:         l.closer         || null,
+      programa:       d.programa       || null,
+      valor:          d.valor          || null,
+      valor_entrada:  d.entrada        || null,
+      forma_pagamento:d.forma          || null,
+      observacoes:    d.obs            || null,
+      criadoem:       new Date().toISOString(),
+    });
+    if (error) console.warn('[FDV] backfill vendas:', l.id, error.message);
+  }
+}
+
 async function renderVendasView() {
   const el = $('closer-subview');
   el.innerHTML = '<div class="table-wrap"><p style="color:var(--t2);padding:24px">Carregando vendas…</p></div>';
@@ -3464,6 +3481,37 @@ async function renderVendasView() {
       const { data, error } = await supabase.from('vendas').select('*, leads(nome, celular)').order('criadoem', { ascending: false });
       if (!error) rows = data || [];
     } catch(_) {}
+  }
+
+  // Fallback: inclui leads com kanban_column='venda_ganha' que não têm
+  // linha na tabela vendas (INSERT falhou silenciosamente ou lead foi
+  // marcado antes da tabela existir). Dispara backfill automático.
+  const vendaLeadIds = new Set(rows.map(r => r.lead_id).filter(Boolean));
+  const missing = allLeads.filter(l =>
+    l.kanban_column === 'venda_ganha' && !vendaLeadIds.has(l.id)
+  );
+  for (const l of missing) {
+    const d = l.venda_ganha_dados || {};
+    rows.push({
+      lead_id:         l.id,
+      leads:           { nome: l.nome, celular: l.celular },
+      closer:          l.closer,
+      programa:        d.programa       || null,
+      valor:           d.valor          || null,
+      valor_entrada:   d.entrada        || null,
+      forma_pagamento: d.forma          || null,
+      observacoes:     d.obs            || null,
+      criadoem:        l.atualizadoem   || l.datachegada || null,
+    });
+  }
+  // Ordena por data decrescente após merge
+  rows.sort((a, b) => (b.criadoem || '').localeCompare(a.criadoem || ''));
+
+  // Backfill assíncrono sem bloquear o render
+  if (isLive && missing.length > 0) {
+    _backfillVendas(missing).then(() =>
+      console.info(`[FDV] Backfill vendas: ${missing.length} linha(s) inserida(s).`)
+    );
   }
 
   const fmtBRL = v => v ? 'R$ ' + String(v).replace(/[^\d,]/g,'') : '—';
@@ -5335,11 +5383,12 @@ async function confirmarVendaGanha() {
 
     // Insert into vendas table + create aluna record
     if (isLive) {
-      await supabase.from('vendas').insert({
+      const { error: vendaErr } = await supabase.from('vendas').insert({
         lead_id: vgLeadId, closer, programa, valor,
         valor_entrada: entrada, forma_pagamento: forma, observacoes: obs,
         criadoem: new Date().toISOString(),
       });
+      if (vendaErr) console.error('[FDV] vendas insert falhou:', vendaErr.message, vendaErr);
 
       // Create aluna from lead data
       const hoje = new Date().toISOString().slice(0, 10);
