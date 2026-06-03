@@ -1,2 +1,5 @@
 # Claude Code — configuração local do IDE
 .claude/
+
+# Chaves privadas — nunca commitar
+*.pem
