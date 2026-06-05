@@ -3634,24 +3634,26 @@ async function renderVendasView() {
   const el = $('closer-subview');
   el.innerHTML = '<div class="table-wrap"><p style="color:var(--t2);padding:24px">Carregando vendas…</p></div>';
 
-  let rows = [];
+  // Filtros persistentes
+  if (!renderVendasView._f) renderVendasView._f = { mes: '', closer: '' };
+  const flt = renderVendasView._f;
+
+  let allRows = [];
   if (isLive) {
     try {
       const { data, error } = await supabase.from('vendas').select('*, leads(nome, celular)').order('criadoem', { ascending: false });
-      if (!error) rows = data || [];
+      if (!error) allRows = data || [];
     } catch(_) {}
   }
 
-  // Fallback: inclui leads com kanban_column='venda_ganha' que não têm
-  // linha na tabela vendas (INSERT falhou silenciosamente ou lead foi
-  // marcado antes da tabela existir). Dispara backfill automático.
-  const vendaLeadIds = new Set(rows.map(r => r.lead_id).filter(Boolean));
+  // Fallback: leads com kanban_column='venda_ganha' sem linha na tabela vendas
+  const vendaLeadIds = new Set(allRows.map(r => r.lead_id).filter(Boolean));
   const missing = allLeads.filter(l =>
     l.kanban_column === 'venda_ganha' && !vendaLeadIds.has(l.id)
   );
   for (const l of missing) {
     const d = l.venda_ganha_dados || {};
-    rows.push({
+    allRows.push({
       lead_id:         l.id,
       leads:           { nome: l.nome, celular: l.celular },
       closer:          l.closer,
@@ -3661,18 +3663,30 @@ async function renderVendasView() {
       forma_pagamento: d.forma          || null,
       observacoes:     d.obs            || null,
       criadoem:        l.atualizadoem   || l.datachegada || null,
+      status:          'ativa',
     });
   }
-  // Ordena por data decrescente após merge
-  rows.sort((a, b) => (b.criadoem || '').localeCompare(a.criadoem || ''));
+  allRows.sort((a, b) => (b.criadoem || '').localeCompare(a.criadoem || ''));
 
-  // Backfill assíncrono sem bloquear o render
+  // Backfill assíncrono
   if (isLive && missing.length > 0) {
     _backfillVendas(missing).then(() =>
       console.info(`[FDV] Backfill vendas: ${missing.length} linha(s) inserida(s).`)
     );
   }
 
+  // Meses disponíveis para filtro
+  const meses = [...new Set(
+    allRows.map(r => (r.criadoem||'').slice(0,7)).filter(m => /^\d{4}-\d{2}$/.test(m))
+  )].sort().reverse();
+
+  // Aplicar filtros
+  let rows = allRows;
+  if (flt.mes)    rows = rows.filter(r => (r.criadoem||'').startsWith(flt.mes));
+  if (flt.closer) rows = rows.filter(r => (r.closer||'') === flt.closer);
+
+  // Stats apenas de vendas ativas
+  const activeRows  = allRows.filter(r => r.status !== 'cancelada');
   const FORMA_LABELS = {
     avista:           'À vista',
     parcelado_cartao: 'Parcelado — Cartão',
@@ -3681,63 +3695,297 @@ async function renderVendasView() {
   };
   const fmtForma    = v => FORMA_LABELS[v] || esc(v||'—');
   const fmtCurrency = n => n ? n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) : '—';
-  // fmtBRL: aceita string raw (ex: "R$ 3.000") e formata via parseValor
   const fmtBRL      = v => fmtCurrency(parseValor(v));
 
-  const faturamento = rows.reduce((s, r) => s + parseValor(r.valor), 0);
-  const ticketMedio = rows.length ? faturamento / rows.length : 0;
+  const faturamento = activeRows.reduce((s, r) => s + parseValor(r.valor), 0);
+  const ticketMedio = activeRows.length ? faturamento / activeRows.length : 0;
+
+  // Ícones definidos fora do map para não ficarem em template literal aninhado
+  const ICO_EDIT2   = _S('<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',13);
+  const ICO_UNDO2   = _S('<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',13);
+  const ICO_CANCEL2 = _S('<circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>',13);
+
+  // HTML das linhas pré-computado fora do template principal para evitar aninhamento excessivo
+  const rowsHtml = rows.map(r => {
+    const cancelled = r.status === 'cancelada';
+    const hasId     = !!r.id;
+    const idAttr    = r.id     || '';
+    const leadAttr  = r.lead_id || '';
+    const cancelBtn = !cancelled
+      ? '<button class="btn-ghost btn-sm btn-cancel-venda" data-id="' + idAttr + '" title="Cancelar venda"' + (!hasId ? ' disabled' : '') + ' style="padding:4px 6px;color:var(--text-muted)">' + ICO_CANCEL2 + '</button>'
+      : '';
+    return '<tr' + (cancelled ? ' style="opacity:0.6"' : '') + '>'
+      + '<td><button class="link-btn" data-perfil-venda="' + leadAttr + '">' + esc(r.leads && r.leads.nome ? r.leads.nome : r.lead_id || '—') + '</button></td>'
+      + '<td>' + esc(r.programa || '—') + '</td>'
+      + '<td class="vendas-valor"' + (cancelled ? ' style="text-decoration:line-through"' : '') + '>' + fmtBRL(r.valor) + '</td>'
+      + '<td>' + fmtBRL(r.valor_entrada) + '</td>'
+      + '<td>' + fmtForma(r.forma_pagamento) + '</td>'
+      + '<td>' + esc(r.closer ? (CLOSERS[r.closer] ? CLOSERS[r.closer].name : r.closer) : '—') + '</td>'
+      + '<td>' + fmtDate((r.criadoem || '').slice(0, 10)) + '</td>'
+      + '<td><span class="badge-status ' + (cancelled ? 'cancelado' : 'realizada') + '" style="font-size:10px">' + (cancelled ? 'Cancelada' : 'Ativa') + '</span></td>'
+      + '<td class="cell-acoes" style="white-space:nowrap">'
+        + '<button class="btn-ghost btn-sm btn-edit-venda" data-id="' + idAttr + '" data-lead="' + leadAttr + '" title="Editar"' + (!hasId ? ' disabled' : '') + ' style="padding:4px 6px">' + ICO_EDIT2 + '</button>'
+        + '<button class="btn-ghost btn-sm btn-del-venda" data-id="' + idAttr + '" data-lead="' + leadAttr + '" title="Excluir" style="padding:4px 6px;color:var(--marsala)">' + ICO_TRASH + '</button>'
+        + '<button class="btn-ghost btn-sm btn-vk-venda" data-id="' + idAttr + '" data-lead="' + leadAttr + '" title="Voltar para Kanban" style="padding:4px 6px">' + ICO_UNDO2 + '</button>'
+        + cancelBtn
+      + '</td>'
+      + '</tr>';
+  }).join('');
+
+  const mesOpts    = meses.map(m => '<option value="' + m + '"' + (flt.mes === m ? ' selected' : '') + '>' + fmtMes(m) + '</option>').join('');
+  const closerOpts = Object.entries(CLOSERS).map(function(e) { return '<option value="' + e[0] + '"' + (flt.closer === e[0] ? ' selected' : '') + '>' + esc(e[1].name) + '</option>'; }).join('');
+  const tableHtml  = rows.length === 0
+    ? '<p class="hist-empty" style="margin-top:32px">Nenhuma venda encontrada.</p>'
+    : '<div class="rel-table-wrap"><table class="rel-table"><thead><tr>'
+      + '<th>Lead</th><th>Programa</th><th>Valor</th><th>Entrada</th><th>Forma Pgto</th><th>Closer</th><th>Data</th><th>Status</th><th>Ações</th>'
+      + '</tr></thead><tbody>' + rowsHtml + '</tbody></table></div>';
 
   el.innerHTML = `
     <div class="subview-header">
       <h2 class="subview-title"><i data-lucide="trophy"></i> Vendas Ganhas</h2>
       <span class="subview-count">${rows.length} venda${rows.length !== 1 ? 's' : ''}</span>
     </div>
-
+    <div class="desc-view-filters" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:0 2px">
+      <select class="filter-select" id="vv-mes" style="width:auto;min-width:140px">
+        <option value="">Todos os meses</option>${mesOpts}
+      </select>
+      <select class="filter-select" id="vv-closer" style="width:auto;min-width:140px">
+        <option value="">Todos os closers</option>${closerOpts}
+      </select>
+      <button class="btn-ghost btn-sm" id="vv-limpar">Limpar</button>
+    </div>
     <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
       <div class="stat-card accent-gold">
         <div class="stat-top"><span class="stat-label">Total de Vendas</span><span class="stat-icon">${ICO_TROPHY}</span></div>
-        <strong class="stat-num">${rows.length}</strong>
+        <strong class="stat-num">${activeRows.length}</strong>
         <span class="stat-sub">contratos fechados</span>
       </div>
       <div class="stat-card accent-sand">
-        <div class="stat-top"><span class="stat-label">Faturamento</span><span class="stat-icon">${_S(`<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>`)}</span></div>
+        <div class="stat-top"><span class="stat-label">Faturamento</span><span class="stat-icon">${_S('<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>')}</span></div>
         <strong class="stat-num" style="font-size:26px">${fmtCurrency(faturamento)}</strong>
-        <span class="stat-sub">em vendas no período</span>
+        <span class="stat-sub">em vendas ativas</span>
       </div>
       <div class="stat-card accent-green">
         <div class="stat-top"><span class="stat-label">Ticket Médio</span><span class="stat-icon">${ICO_CHECK_CIRCLE}</span></div>
         <strong class="stat-num" style="font-size:26px">${fmtCurrency(ticketMedio)}</strong>
-        <span class="stat-sub">por venda</span>
+        <span class="stat-sub">por venda ativa</span>
       </div>
     </div>
+    ${tableHtml}`;
 
-    ${rows.length === 0 ? '<p class="hist-empty" style="margin-top:32px">Nenhuma venda registrada.</p>' : `
-    <div class="rel-table-wrap">
-      <table class="rel-table">
-        <thead><tr>
-          <th>Lead</th><th>Programa</th><th>Valor</th><th>Entrada</th><th>Forma Pgto</th><th>Closer</th><th>Data</th>
-        </tr></thead>
-        <tbody>
-          ${rows.map(r => `<tr>
-            <td><button class="link-btn" data-perfil-venda="${r.lead_id}">${esc(r.leads?.nome || r.lead_id || '—')}</button></td>
-            <td>${esc(r.programa||'—')}</td>
-            <td class="vendas-valor">${fmtBRL(r.valor)}</td>
-            <td>${fmtBRL(r.valor_entrada)}</td>
-            <td>${fmtForma(r.forma_pagamento)}</td>
-            <td>${esc(r.closer ? (CLOSERS[r.closer]?.name||r.closer) : '—')}</td>
-            <td>${fmtDate(r.criadoem?.slice(0,10)||'')}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>`}`;
   lucide.createIcons({ nodes: [el] });
 
+  // Filtros
+  el.querySelector('#vv-mes')?.addEventListener('change',    e => { flt.mes    = e.target.value; renderVendasView(); });
+  el.querySelector('#vv-closer')?.addEventListener('change', e => { flt.closer = e.target.value; renderVendasView(); });
+  el.querySelector('#vv-limpar')?.addEventListener('click',  () => { flt.mes = flt.closer = ''; renderVendasView(); });
+
+  // Perfil
   el.querySelectorAll('[data-perfil-venda]').forEach(b => {
     b.addEventListener('click', () => {
       const l = allLeads.find(x => x.id === b.dataset.perfilVenda);
       if (l) openPerfil(l);
     });
   });
+
+  // Editar
+  el.querySelectorAll('.btn-edit-venda').forEach(b => {
+    if (b.disabled) return;
+    b.addEventListener('click', () => {
+      const row = allRows.find(r => r.id === b.dataset.id);
+      if (row) openEditarVenda(row);
+    });
+  });
+
+  // Excluir
+  el.querySelectorAll('.btn-del-venda').forEach(b => {
+    b.addEventListener('click', () => excluirVenda(b.dataset.id, b.dataset.lead));
+  });
+
+  // Voltar para Kanban
+  el.querySelectorAll('.btn-vk-venda').forEach(b => {
+    b.addEventListener('click', () => openVoltaKanban(b.dataset.lead, b.dataset.id));
+  });
+
+  // Cancelar
+  el.querySelectorAll('.btn-cancel-venda').forEach(b => {
+    if (b.disabled) return;
+    b.addEventListener('click', () => cancelarVenda(b.dataset.id));
+  });
+}
+
+// ─── EDITAR VENDA ─────────────────────────────────────────────────────
+let evVendaId = null;
+
+function openEditarVenda(row) {
+  evVendaId = row.id;
+  $('ev-lead-nome').textContent = row.leads?.nome || '—';
+  $('ev-id').value              = row.id || '';
+  $('ev-lead-id').value         = row.lead_id || '';
+  $('ev-programa').value        = row.programa || '';
+  $('ev-valor').value           = row.valor || '';
+  $('ev-entrada').value         = row.valor_entrada || '';
+  $('ev-forma').value           = row.forma_pagamento || '';
+  $('ev-obs').value             = row.observacoes || '';
+  $('ev-backdrop').style.display = 'flex';
+  document.body.style.overflow  = 'hidden';
+  lucide.createIcons();
+  setTimeout(() => $('ev-programa').focus(), 50);
+}
+
+function closeEditarVenda() {
+  evVendaId = null;
+  $('ev-backdrop').style.display = 'none';
+  document.body.style.overflow  = '';
+}
+
+async function salvarEdicaoVenda() {
+  const btn = $('ev-salvar');
+  btn.disabled = true;
+  try {
+    const vendaId  = $('ev-id').value;
+    const leadId   = $('ev-lead-id').value;
+    const programa = $('ev-programa').value.trim();
+    const valor    = $('ev-valor').value.trim();
+    const entrada  = $('ev-entrada').value.trim();
+    const forma    = $('ev-forma').value;
+    const obs      = $('ev-obs').value.trim();
+
+    if (!vendaId) { toast('ID da venda não encontrado.', 'err'); btn.disabled = false; return; }
+
+    if (isLive) {
+      const { error } = await supabase.from('vendas').update({
+        programa, valor,
+        valor_entrada:   entrada,
+        forma_pagamento: forma,
+        observacoes:     obs,
+        atualizadoem:    new Date().toISOString(),
+      }).eq('id', vendaId);
+      if (error) throw error;
+    }
+
+    // Atualiza cache local
+    const lIdx = allLeads.findIndex(l => l.id === leadId);
+    if (lIdx >= 0) {
+      allLeads[lIdx].venda_ganha_dados = { valor, entrada, forma, programa, obs };
+    }
+
+    toast('Venda atualizada!', 'ok');
+    closeEditarVenda();
+    renderVendasView();
+  } catch(e) {
+    console.error(e);
+    toast('Erro ao atualizar venda.', 'err');
+    btn.disabled = false;
+  }
+}
+
+// ─── EXCLUIR VENDA ────────────────────────────────────────────────────
+async function excluirVenda(vendaId, leadId) {
+  if (!confirm('Tem certeza que deseja excluir esta venda? Esta ação não pode ser desfeita.')) return;
+  try {
+    if (isLive && vendaId) {
+      const { error } = await supabase.from('vendas').delete().eq('id', vendaId);
+      if (error) throw error;
+    }
+    // Move lead para call_realizada para não ser rebackfillado
+    if (leadId) {
+      await saveLead(leadId, {
+        kanban_column:       'call_realizada',
+        kanban_column_since: new Date().toISOString(),
+        atualizadoem:        new Date().toISOString(),
+      });
+    }
+    toast('Venda excluída.', 'ok');
+    renderVendasView();
+  } catch(e) {
+    console.error(e);
+    toast('Erro ao excluir venda.', 'err');
+  }
+}
+
+// ─── VOLTAR PARA KANBAN ───────────────────────────────────────────────
+let vkLeadId  = null;
+let vkVendaId = null;
+
+function openVoltaKanban(leadId, vendaId) {
+  vkLeadId  = leadId  || null;
+  vkVendaId = vendaId || null;
+  const lead = allLeads.find(l => l.id === leadId);
+  $('vk-lead-nome').textContent = lead?.nome || '—';
+
+  const sel = $('vk-col');
+  sel.innerHTML = '<option value="">Selecione a coluna…</option>';
+  const cols = getKanbanCols().filter(c =>
+    !['venda_ganha','venda_perdida','descartado'].includes(c.id)
+  );
+  cols.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id; opt.textContent = c.label;
+    sel.appendChild(opt);
+  });
+
+  $('vk-confirmar').disabled = true;
+  $('vk-backdrop').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  lucide.createIcons();
+}
+
+function closeVoltaKanban() {
+  vkLeadId = vkVendaId = null;
+  $('vk-backdrop').style.display = 'none';
+  document.body.style.overflow  = '';
+}
+
+async function confirmarVoltaKanban() {
+  const colId = $('vk-col').value;
+  if (!colId) return;
+  const btn = $('vk-confirmar');
+  btn.disabled = true;
+  try {
+    if (isLive && vkVendaId) {
+      const { error } = await supabase.from('vendas').delete().eq('id', vkVendaId);
+      if (error) console.warn('[FDV] vk delete vendas:', error.message);
+    }
+    if (vkLeadId) {
+      const cols     = getKanbanCols();
+      const colLabel = cols.find(c => c.id === colId)?.label || colId;
+      const hist     = buildHistoryEntry(vkLeadId, colId, colLabel);
+      await saveLead(vkLeadId, {
+        kanban_column:       colId,
+        kanban_column_since: new Date().toISOString(),
+        ...(hist && { historico_kanban: hist }),
+        atualizadoem: new Date().toISOString(),
+      });
+    }
+    toast('Lead movido de volta para o Kanban.', 'ok');
+    closeVoltaKanban();
+    renderVendasView();
+  } catch(e) {
+    console.error(e);
+    toast('Erro ao mover lead.', 'err');
+    btn.disabled = false;
+  }
+}
+
+// ─── CANCELAR VENDA ───────────────────────────────────────────────────
+async function cancelarVenda(vendaId) {
+  if (!vendaId) { toast('ID da venda não encontrado.', 'err'); return; }
+  if (!confirm('Tem certeza que deseja cancelar esta venda?')) return;
+  try {
+    if (isLive) {
+      const { error } = await supabase.from('vendas').update({
+        status:       'cancelada',
+        atualizadoem: new Date().toISOString(),
+      }).eq('id', vendaId);
+      if (error) throw error;
+    }
+    toast('Venda cancelada.', 'ok');
+    renderVendasView();
+  } catch(e) {
+    console.error(e);
+    toast('Erro ao cancelar venda.', 'err');
+  }
 }
 
 function renderDescartadosView() {
@@ -5789,10 +6037,18 @@ function openVendaGanha(leadId) {
   $('vg-forma').value    = '';
   $('vg-programa').value = '';
   $('vg-obs').value      = '';
+  $('vg-confirmar').disabled = true;
   $('venda-ganha-backdrop').style.display = 'flex';
   document.body.style.overflow = 'hidden';
   lucide.createIcons();
-  setTimeout(() => $('vg-valor').focus(), 50);
+  setTimeout(() => $('vg-programa').focus(), 50);
+}
+
+function vgCheckReady() {
+  const ok = !!$('vg-programa').value.trim()
+          && !!$('vg-valor').value.trim()
+          && !!$('vg-forma').value;
+  $('vg-confirmar').disabled = !ok;
 }
 
 function closeVendaGanha() {
@@ -5856,7 +6112,7 @@ async function confirmarVendaGanha() {
     toast('Venda registrada! 🏆', 'ok');
     notifyVendaGanha(vgLeadId);
     closeVendaGanha();
-    if (!isLive) renderKanban();
+    switchCloserView('vendas');
   } catch(e) {
     console.error(e);
     toast('Erro ao registrar venda.', 'err');
@@ -9061,11 +9317,27 @@ function bindEvents() {
   $('mp-confirmar').addEventListener('click', confirmarMotivosPerda);
   $('motivo-perda-backdrop').addEventListener('click', e => { if (e.target === $('motivo-perda-backdrop')) closeMotivosPerda(); });
 
-  // Venda ganha
+  // Venda ganha — validação e bindings
   $('vg-close').addEventListener('click', closeVendaGanha);
   $('vg-cancelar').addEventListener('click', closeVendaGanha);
   $('vg-confirmar').addEventListener('click', confirmarVendaGanha);
   $('venda-ganha-backdrop').addEventListener('click', e => { if (e.target === $('venda-ganha-backdrop')) closeVendaGanha(); });
+  $('vg-programa').addEventListener('input',  vgCheckReady);
+  $('vg-valor').addEventListener('input',     vgCheckReady);
+  $('vg-forma').addEventListener('change',    vgCheckReady);
+
+  // Editar venda
+  $('ev-close').addEventListener('click', closeEditarVenda);
+  $('ev-cancelar').addEventListener('click', closeEditarVenda);
+  $('ev-salvar').addEventListener('click', salvarEdicaoVenda);
+  $('ev-backdrop').addEventListener('click', e => { if (e.target === $('ev-backdrop')) closeEditarVenda(); });
+
+  // Voltar para kanban
+  $('vk-close').addEventListener('click', closeVoltaKanban);
+  $('vk-cancelar').addEventListener('click', closeVoltaKanban);
+  $('vk-confirmar').addEventListener('click', confirmarVoltaKanban);
+  $('vk-backdrop').addEventListener('click', e => { if (e.target === $('vk-backdrop')) closeVoltaKanban(); });
+  $('vk-col').addEventListener('change', e => { $('vk-confirmar').disabled = !e.target.value; });
 
   // Notificações
   $('notif-btn').addEventListener('click', e => {

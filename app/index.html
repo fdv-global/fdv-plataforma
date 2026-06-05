@@ -713,7 +713,6 @@
             <button class="toggle-opt" data-val="call_realizada">Call Realizada</button>
             <button class="toggle-opt" data-val="followup">Follow Up</button>
             <button class="toggle-opt" data-val="fechamento">Fechamento</button>
-            <button class="toggle-opt" data-val="venda_ganha">Venda Ganha</button>
             <button class="toggle-opt" data-val="venda_perdida">Venda Perdida</button>
           </div>
         </div>
@@ -1283,32 +1282,24 @@
     </div>
     <div class="modal-body">
       <div class="form-group" style="margin-bottom:14px">
-        <label for="vg-valor">Valor da venda (R$)</label>
+        <label for="vg-valor">Valor (R$) <span style="color:var(--marsala)">*</span></label>
         <input type="text" id="vg-valor" class="form-ctrl" placeholder="Ex: 3.500">
       </div>
       <div class="form-group" style="margin-bottom:14px">
-        <label for="vg-entrada">Valor da entrada (R$)</label>
+        <label for="vg-entrada">Entrada (R$)</label>
         <input type="text" id="vg-entrada" class="form-ctrl" placeholder="Deixe em branco se não houver">
       </div>
       <div class="form-group" style="margin-bottom:14px">
-        <label for="vg-forma">Forma de pagamento</label>
-        <select id="vg-forma" class="form-ctrl">
-          <option value="">Selecione…</option>
-          <option value="avista">À vista</option>
-          <option value="parcelado_cartao">Parcelado cartão</option>
-          <option value="parcelado_boleto">Parcelado boleto</option>
-          <option value="pix">PIX</option>
-        </select>
+        <label for="vg-programa">Programa <span style="color:var(--marsala)">*</span></label>
+        <input type="text" id="vg-programa" class="form-ctrl" placeholder="Ex: Comunidade 1 ano">
       </div>
       <div class="form-group" style="margin-bottom:14px">
-        <label for="vg-programa">Programa vendido</label>
-        <select id="vg-programa" class="form-ctrl">
+        <label for="vg-forma">Forma de pagamento <span style="color:var(--marsala)">*</span></label>
+        <select id="vg-forma" class="form-ctrl">
           <option value="">Selecione…</option>
-          <option value="Comunidade 6 meses">Comunidade 6 meses</option>
-          <option value="Comunidade 1 ano">Comunidade 1 ano</option>
-          <option value="PRM">PRM</option>
-          <option value="Mentoria Individual">Mentoria Individual</option>
-          <option value="Assinatura Faculdade da Vida">Assinatura Faculdade da Vida</option>
+          <option value="parcelado_cartao">Parcelado — Cartão</option>
+          <option value="parcelado_boleto">Parcelado — Boleto</option>
+          <option value="avista">À vista</option>
         </select>
       </div>
       <div class="form-group">
@@ -1318,7 +1309,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn-ghost" id="vg-cancelar">Cancelar</button>
-      <button class="btn-confirm" id="vg-confirmar" style="background:#2ecc71;color:#0d1a1c;border:none">Confirmar Venda</button>
+      <button class="btn-confirm" id="vg-confirmar" disabled style="background:#2ecc71;color:#0d1a1c;border:none">Salvar</button>
     </div>
   </div>
 </div>
@@ -1337,6 +1328,78 @@
     <div class="modal-footer">
       <button class="btn-ghost" id="descarte-cancelar">Cancelar</button>
       <button class="btn-confirm btn-destructive" id="descarte-confirmar" disabled>Confirmar Descarte</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EDITAR VENDA MODAL ===== -->
+<div class="modal-backdrop" id="ev-backdrop" style="display:none">
+  <div class="modal modal-wide" role="dialog" aria-modal="true" style="border-top:3px solid var(--gold)">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">Editar Venda</h2>
+        <p class="modal-subtitle" id="ev-lead-nome">—</p>
+      </div>
+      <button class="modal-close" id="ev-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ev-id">
+      <input type="hidden" id="ev-lead-id">
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="ev-programa">Programa</label>
+        <input type="text" id="ev-programa" class="form-ctrl" placeholder="Ex: Comunidade 1 ano">
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="ev-valor">Valor (R$)</label>
+        <input type="text" id="ev-valor" class="form-ctrl" placeholder="Ex: 3.500">
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="ev-entrada">Entrada (R$)</label>
+        <input type="text" id="ev-entrada" class="form-ctrl" placeholder="Deixe em branco se não houver">
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="ev-forma">Forma de pagamento</label>
+        <select id="ev-forma" class="form-ctrl">
+          <option value="">Selecione…</option>
+          <option value="parcelado_cartao">Parcelado — Cartão</option>
+          <option value="parcelado_boleto">Parcelado — Boleto</option>
+          <option value="avista">À vista</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="ev-obs">Observações</label>
+        <textarea id="ev-obs" class="form-ctrl" rows="3" placeholder="Detalhes adicionais…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="ev-cancelar">Cancelar</button>
+      <button class="btn-confirm" id="ev-salvar">Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== VOLTAR PARA KANBAN MODAL ===== -->
+<div class="modal-backdrop" id="vk-backdrop" style="display:none">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:420px;border-top:3px solid var(--petro-bright)">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">Voltar para Kanban</h2>
+        <p class="modal-subtitle" id="vk-lead-nome">—</p>
+      </div>
+      <button class="modal-close" id="vk-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="vk-col">Selecione a coluna de destino</label>
+        <select id="vk-col" class="form-ctrl">
+          <option value="">Selecione a coluna…</option>
+        </select>
+      </div>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:10px">O lead será movido para a coluna selecionada no Kanban e removido da tela de Vendas.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="vk-cancelar">Cancelar</button>
+      <button class="btn-confirm" id="vk-confirmar" disabled>Confirmar</button>
     </div>
   </div>
 </div>
