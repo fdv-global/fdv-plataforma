@@ -8650,27 +8650,35 @@ async function dupMerge() {
     const val = side === 'a' ? _dupA[f.k] : _dupB[f.k];
     if (val !== undefined) mergedData[f.k] = val;
   }
-  // Mescla etiquetas (união)
-  const etiqMerged = [...new Set([
-    ...(Array.isArray(_dupA.etiquetas)?_dupA.etiquetas:[]),
-    ...(Array.isArray(_dupB.etiquetas)?_dupB.etiquetas:[]),
+  mergedData.etiquetas = [...new Set([
+    ...(Array.isArray(_dupA.etiquetas) ? _dupA.etiquetas : []),
+    ...(Array.isArray(_dupB.etiquetas) ? _dupB.etiquetas : []),
   ])];
-  if (etiqMerged.length) mergedData.etiquetas = etiqMerged;
-  // Mantém o status mais avançado
   mergedData.status = (STATUS_RANK[_dupA.status]||0) >= (STATUS_RANK[_dupB.status]||0)
     ? _dupA.status : _dupB.status;
   const keepId = _dupA.id, deleteId = _dupB.id;
   closeDupCompare();
   try {
-    await saveLead(keepId, mergedData);
-    // Atualiza allLeads imediatamente para que buildDupMap (chamado por
-    // _deleteLeadForce → renderAll) enxergue os dados mesclados corretos
-    // e não re-detecte o lead sobrevivente como duplicata.
-    const keepIdx = allLeads.findIndex(l => l.id === keepId);
-    if (keepIdx !== -1) allLeads[keepIdx] = { ...allLeads[keepIdx], ...mergedData };
-    await _deleteLeadForce(deleteId);
+    await executeMerge(keepId, deleteId, mergedData);
+    renderAll();
     toast('Leads mesclados com sucesso.', 'ok');
   } catch(e) { console.error(e); toast('Erro ao mesclar.', 'err'); }
+}
+// Handler unificado: reassign histórico + mensagens → DELETE duplicata → UPDATE keeper.
+// Ordem importa: DELETE primeiro libera o celular do índice UNIQUE antes do UPDATE.
+async function executeMerge(keepId, deleteId, mergedData) {
+  if (isLive) {
+    await supabase.from('lead_historico').update({ lead_id: keepId }).eq('lead_id', deleteId);
+    await supabase.from('lead_messages').update({ lead_id: keepId }).eq('lead_id', deleteId);
+    const { error: errDel } = await supabase.from('leads').delete().eq('id', deleteId);
+    if (errDel) throw errDel;
+    const { error: errUpd } = await supabase.from('leads').update(mergedData).eq('id', keepId);
+    if (errUpd) throw errUpd;
+  }
+  allLeads = allLeads.filter(l => l.id !== deleteId);
+  selectedIds.delete(deleteId);
+  const idx = allLeads.findIndex(l => l.id === keepId);
+  if (idx !== -1) allLeads[idx] = { ...allLeads[idx], ...mergedData };
 }
 function dupNaoSaoDuplicatas() {
   if (!_dupA || !_dupB) return;
@@ -8682,14 +8690,19 @@ function dupNaoSaoDuplicatas() {
 function autoMergeLeads(a, b) {
   const merged = {};
   for (const f of MERGE_FIELDS) {
+    if (f.k === 'observacoes') continue; // tratado separadamente abaixo
     const va = String(a[f.k]||''), vb = String(b[f.k]||'');
     merged[f.k] = va.length >= vb.length ? a[f.k] : b[f.k];
   }
-  const etiqMerged = [...new Set([
-    ...(Array.isArray(a.etiquetas)?a.etiquetas:[]),
-    ...(Array.isArray(b.etiquetas)?b.etiquetas:[]),
+  // Observações: concatena quando ambas têm conteúdo distinto; caso contrário mantém a mais longa
+  const obsA = (a.observacoes||'').trim(), obsB = (b.observacoes||'').trim();
+  merged.observacoes = (obsA && obsB && obsA !== obsB)
+    ? `${obsA}\n\n---\n\n${obsB}`
+    : (obsA.length >= obsB.length ? (a.observacoes||null) : (b.observacoes||null));
+  merged.etiquetas = [...new Set([
+    ...(Array.isArray(a.etiquetas) ? a.etiquetas : []),
+    ...(Array.isArray(b.etiquetas) ? b.etiquetas : []),
   ])];
-  if (etiqMerged.length) merged.etiquetas = etiqMerged;
   merged.status = (STATUS_RANK[a.status]||0) >= (STATUS_RANK[b.status]||0) ? a.status : b.status;
   return merged;
 }
@@ -8715,17 +8728,7 @@ async function mergeAllDuplicates() {
     const b = allLeads.find(l=>l.id===bId);
     if (!a || !b) continue;
     try {
-      const mergedData = autoMergeLeads(a, b);
-      if (isLive) {
-        const { error: errUpd } = await supabase.from('leads').update(mergedData).eq('id', aId);
-        if (errUpd) throw errUpd;
-        const { error: errDel } = await supabase.from('leads').delete().eq('id', bId);
-        if (errDel) throw errDel;
-      }
-      allLeads = allLeads.filter(l=>l.id!==bId);
-      const idx = allLeads.findIndex(l=>l.id===aId);
-      if (idx !== -1) allLeads[idx] = { ...allLeads[idx], ...mergedData };
-      selectedIds.delete(bId);
+      await executeMerge(aId, bId, autoMergeLeads(a, b));
       merged++; removed++;
     } catch(e) { console.error(e); errors++; }
   }
@@ -9471,6 +9474,7 @@ function bindEvents() {
   $('dup-compare-close').addEventListener('click', closeDupCompare);
   $('dup-compare-backdrop').addEventListener('click', e => { if (e.target===$('dup-compare-backdrop')) closeDupCompare(); });
   $('dup-merge').addEventListener('click', dupMerge);
+  $('dup-merge-all')?.addEventListener('click', mergeAllDuplicates);
   $('dup-nao-duplicata').addEventListener('click', dupNaoSaoDuplicatas);
   $('dup-notif-btn')?.addEventListener('click', openFirstDupPair);
 
