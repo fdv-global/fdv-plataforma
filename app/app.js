@@ -8664,12 +8664,14 @@ async function dupMerge() {
     toast('Leads mesclados com sucesso.', 'ok');
   } catch(e) { console.error(e); toast('Erro ao mesclar.', 'err'); }
 }
-// Handler unificado: reassign histórico + mensagens → DELETE duplicata → UPDATE keeper.
-// Ordem importa: DELETE primeiro libera o celular do índice UNIQUE antes do UPDATE.
+// Handler unificado: reassign FKs → DELETE duplicata → UPDATE keeper.
+// Ordem importa: reassign antes do DELETE (evita on delete set null/cascade),
+// DELETE antes do UPDATE (libera celular do UNIQUE index).
 async function executeMerge(keepId, deleteId, mergedData) {
   if (isLive) {
     await supabase.from('lead_historico').update({ lead_id: keepId }).eq('lead_id', deleteId);
     await supabase.from('lead_messages').update({ lead_id: keepId }).eq('lead_id', deleteId);
+    await supabase.from('vendas').update({ lead_id: keepId }).eq('lead_id', deleteId);
     const { error: errDel } = await supabase.from('leads').delete().eq('id', deleteId);
     if (errDel) throw errDel;
     const { error: errUpd } = await supabase.from('leads').update(mergedData).eq('id', keepId);
