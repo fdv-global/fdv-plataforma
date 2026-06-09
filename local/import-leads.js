@@ -90,13 +90,16 @@ function parseDate(str) {
 
 // ─── SUPABASE ─────────────────────────────────────────────────────────────────
 async function sbReq(method, path, body) {
+  const isPost = method === 'POST';
   const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
     method,
     headers: {
       'apikey':        SB_KEY,
       'Authorization': `Bearer ${SB_KEY}`,
       'Content-Type':  'application/json',
-      'Prefer':        method === 'POST' ? 'return=minimal' : '',
+      // ignore-duplicates → INSERT ... ON CONFLICT DO NOTHING
+      // return=representation → body vazio se conflito, array com row se inserido
+      'Prefer': isPost ? 'resolution=ignore-duplicates,return=representation' : '',
     },
     body: body ? JSON.stringify(body) : undefined,
   });
@@ -104,7 +107,12 @@ async function sbReq(method, path, body) {
     const txt = await res.text();
     throw new Error(`Supabase ${method} ${path}: ${res.status} — ${txt}`);
   }
-  return method === 'GET' ? res.json() : null;
+  if (method === 'GET') return res.json();
+  if (isPost) {
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];   // [] = conflito ignorado, [row] = inserido
+  }
+  return null;
 }
 
 // ─── BUSCAR ABA ───────────────────────────────────────────────────────────────
@@ -127,14 +135,8 @@ async function main() {
   log(`  Filtrando leads a partir de ${SINCE_DATE}`, 'dim');
   sep();
 
-  // 1. Buscar celulares já cadastrados no Supabase para evitar duplicatas
-  log('\nCarregando celulares existentes no Supabase…', 'dim');
-  const existingLeads = await sbReq('GET', 'leads?select=celular&celular=not.is.null');
-  const existingPhones = new Set(existingLeads.map(l => normPhone(l.celular)).filter(Boolean));
-  log(`  ${existingPhones.size} celulares já cadastrados`, 'dim');
-
   let totalInseridos = 0;
-  let totalPulados   = 0;
+  let totalPulados   = 0;   // duplicatas rejeitadas pelo banco (ON CONFLICT DO NOTHING)
   let totalSemNome   = 0;
 
   for (const sheet of SHEETS) {
@@ -174,12 +176,6 @@ async function main() {
 
       const celular = get(row, sheet.cols.telefone);
 
-      // Evitar duplicata por celular
-      if (celular && existingPhones.has(normPhone(celular))) {
-        pulados++;
-        continue;
-      }
-
       // Montar extras para observacoes
       const extras = {};
       const extraFields = ['desafio','idade','jaParticipou','jaEAluna','tempoConhece','motivacao','deOnde'];
@@ -210,10 +206,14 @@ async function main() {
       };
 
       try {
-        await sbReq('POST', 'leads', lead);
-        if (celular) existingPhones.add(normPhone(celular));
-        inseridos++;
-        log(`  ✓ ${nome} (${dateParsed})`, 'ok');
+        const inserted = await sbReq('POST', 'leads', lead);
+        if (inserted.length > 0) {
+          inseridos++;
+          log(`  ✓ ${nome} (${dateParsed})`, 'ok');
+        } else {
+          pulados++;
+          log(`  ~ ${nome} — duplicata ignorada pelo banco`, 'dim');
+        }
       } catch (e) {
         log(`  ✗ ${nome}: ${e.message}`, 'err');
       }
