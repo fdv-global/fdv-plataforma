@@ -8836,10 +8836,20 @@ async function dupMerge() {
 // Ordem importa: reassign antes do DELETE (evita on delete set null/cascade),
 // DELETE antes do UPDATE (libera celular do UNIQUE index).
 async function executeMerge(keepId, deleteId, mergedData) {
+  // Se o keeper não tem agendamento mas o deletado tem, preservar dados do deletado
+  const SCHED_FIELDS = ['dataagendamento', 'horaagendamento', 'closer', 'agendadopor'];
+  const keeper  = allLeads.find(l => l.id === keepId);
+  const deleted = allLeads.find(l => l.id === deleteId);
+  if (keeper && deleted) {
+    for (const f of SCHED_FIELDS) {
+      if (!keeper[f] && deleted[f]) mergedData[f] = deleted[f];
+    }
+  }
   if (isLive) {
     await supabase.from('lead_historico').update({ lead_id: keepId }).eq('lead_id', deleteId);
     await supabase.from('lead_messages').update({ lead_id: keepId }).eq('lead_id', deleteId);
     await supabase.from('vendas').update({ lead_id: keepId }).eq('lead_id', deleteId);
+    await supabase.from('alunas').update({ lead_id: keepId }).eq('lead_id', deleteId);
     const { error: errDel } = await supabase.from('leads').delete().eq('id', deleteId);
     if (errDel) throw errDel;
     const { error: errUpd } = await supabase.from('leads').update(mergedData).eq('id', keepId);
