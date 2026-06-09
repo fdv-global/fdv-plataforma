@@ -214,12 +214,13 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 .brand-logo   { height: 32px; width: auto; object-fit: contain; display: block; }
 .brand-full   { font-size: 12.5px; font-weight: 500; color: var(--t3); letter-spacing: .25px; }
 
-.header-nav { display: flex; align-items: center; gap: 2px; flex: 1; }
+.header-nav { display: flex; align-items: center; gap: 2px; flex: 1; min-width: 0; overflow: hidden; }
 .nav-link {
   padding: 6px 14px; border-radius: var(--r-sm);
   font-size: 13.5px; font-weight: 500; color: var(--t2);
   background: none; border: none; cursor: pointer;
   display: inline-flex; align-items: center; gap: 6px;
+  white-space: nowrap; flex-shrink: 0;
   transition: color var(--fast) var(--ease),
               background var(--fast) var(--ease);
 }
@@ -348,6 +349,29 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   display: flex; align-items: center; gap: 8px;
   font-size: 12px; color: var(--t3); flex-shrink: 0;
 }
+
+/* Search overlay — fixed fora do header para evitar stacking context */
+.search-overlay {
+  position: fixed; z-index: 300;
+  display: flex; flex-direction: column;
+  width: 440px; max-width: calc(100vw - 32px);
+}
+.search-input {
+  width: 100%; box-sizing: border-box;
+  padding: 8px 16px; border-radius: var(--r-pill);
+  background: var(--s3); border: 1px solid var(--b1);
+  color: var(--t1); font-size: 14px; outline: none;
+  box-shadow: 0 4px 24px rgba(0,0,0,.4);
+  font-family: inherit;
+}
+.search-input:focus { border-color: var(--gold-28); }
+.search-dropdown {
+  display: none; margin-top: 4px;
+  background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r-sm);
+  overflow: hidden; max-height: 360px; overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,.4);
+}
+.search-dropdown.open { display: block; }
 .user-info   { display: flex; align-items: center; gap: 8px; }
 .user-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid var(--b2); }
 .user-name   { font-size: 13px; font-weight: 500; color: var(--t2); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -972,14 +996,17 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
    KANBAN — Attio board
    ============================================================ */
 .kanban-page-top {
-  display: flex; align-items: center; gap: 18px; margin-bottom: 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 18px; margin-bottom: 0; padding-bottom: 16px;
 }
-.kanban-controls {
-  display: flex; align-items: center; gap: 10px; margin-left: auto;
-  overflow-x: auto; scrollbar-width: none;
+/* Barra de filtros abaixo do header do Closer */
+.closer-filter-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 0 16px;
+  border-bottom: 1px solid var(--b0);
+  margin-bottom: 20px;
 }
-.kanban-controls::-webkit-scrollbar { display: none; }
-/* Separador visual entre tabs e filtros */
+/* Separador visual — mantido para compatibilidade, mas não usado no novo layout */
 .kc-sep { width: 1px; height: 20px; background: var(--b1); flex-shrink: 0; margin: 0 2px; }
 
 /* Closer view tabs (Kanban / Vendas / Descartados) — mesmo padrão que .sub-nav */
@@ -1121,7 +1148,7 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 .kanban-board::-webkit-scrollbar-thumb  { background: var(--b1); border-radius: 4px; }
 
 .kanban-col {
-  flex: 1; min-width: 220px; max-width: 360px;
+  flex: 1 1 0; min-width: 220px;
   display: flex; flex-direction: column;
   background: var(--s1); border: 1px solid var(--b0);
   border-radius: var(--r-lg); overflow: hidden;

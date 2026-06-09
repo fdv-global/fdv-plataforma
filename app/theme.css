@@ -1410,6 +1410,11 @@ h1, h2, h3, h4,
   gap: 4px;
   align-items: center;
 }
+/* Na filter bar do Closer, pills ficam centralizados */
+.closer-filter-bar .kanban-quick-filter {
+  flex: 1;
+  justify-content: center;
+}
 
 .kqf-btn {
   padding: 5px 13px;

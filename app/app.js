@@ -138,33 +138,70 @@ const DEMO = [
 ];
 
 // ─── KANBAN CONFIG ───────────────────────────────────────────────────
-const KANBAN_LS_KEY = 'fdv_kanban_columns';
+const KANBAN_LS_KEY = 'fdv_kanban_columns'; // mantido para migração de dados legados
 const DEFAULT_KANBAN_COLS = [
   { id: 'agendado',       label: 'Agendado' },
   { id: 'call_realizada', label: 'Call Realizada' },
   { id: 'negociacao',     label: 'Negociação' },
   { id: 'decisao',        label: 'Decisão' },
 ];
+let _kanbanCols = null; // null = ainda não carregado; getKanbanCols() retorna DEFAULT até load
 
-function getKanbanCols() {
-  try {
-    const s = localStorage.getItem(KANBAN_LS_KEY);
-    if (s) {
-      let cols = JSON.parse(s);
-      // Migrate old column IDs
-      cols = cols
-        .filter(c => c.id !== 'venda_ganha' && c.id !== 'venda_perdida')
-        .map(c => {
-          if (c.id === 'fechamento') return { id: 'negociacao', label: c.label === 'Fechamento' ? 'Negociação' : c.label };
-          if (c.id === 'followup')   return { id: 'decisao',    label: c.label === 'Follow Up'  ? 'Decisão'    : c.label };
-          return c;
-        });
-      if (cols.length) return cols;
+async function loadKanbanCols() {
+  if (isLive) {
+    try {
+      const { data, error } = await supabase
+        .from('kanban_columns')
+        .select('slug,nome,ordem')
+        .order('ordem', { ascending: true });
+      if (!error && data && data.length > 0) {
+        _kanbanCols = data.map(r => ({ id: r.slug, label: r.nome }));
+        return;
+      }
+      // Tabela vazia — migrar localStorage ou semear defaults
+      const lsCols = (() => {
+        try { const s = localStorage.getItem(KANBAN_LS_KEY); return s ? JSON.parse(s) : null; } catch { return null; }
+      })();
+      const toSeed = (lsCols && lsCols.length) ? lsCols : DEFAULT_KANBAN_COLS;
+      await supabase.from('kanban_columns').insert(
+        toSeed.map((c, i) => ({ slug: c.id, nome: c.label, ordem: i }))
+      );
+      localStorage.removeItem(KANBAN_LS_KEY);
+      _kanbanCols = toSeed.map(c => ({ id: c.id, label: c.label }));
+    } catch(e) {
+      console.error('[FDV] loadKanbanCols:', e);
+      _kanbanCols = structuredClone(DEFAULT_KANBAN_COLS);
     }
-  } catch(e) {}
-  return structuredClone(DEFAULT_KANBAN_COLS);
+  } else {
+    // Demo: localStorage com migração de IDs legados
+    try {
+      const s = localStorage.getItem(KANBAN_LS_KEY);
+      if (s) {
+        let cols = JSON.parse(s);
+        cols = cols
+          .filter(c => c.id !== 'venda_ganha' && c.id !== 'venda_perdida')
+          .map(c => {
+            if (c.id === 'fechamento') return { id: 'negociacao', label: c.label === 'Fechamento' ? 'Negociação' : c.label };
+            if (c.id === 'followup')   return { id: 'decisao',    label: c.label === 'Follow Up'  ? 'Decisão'    : c.label };
+            return c;
+          });
+        if (cols.length) { _kanbanCols = cols; return; }
+      }
+    } catch {}
+    _kanbanCols = structuredClone(DEFAULT_KANBAN_COLS);
+  }
 }
-function saveKanbanCols(cols) { localStorage.setItem(KANBAN_LS_KEY, JSON.stringify(cols)); }
+function getKanbanCols() { return _kanbanCols || DEFAULT_KANBAN_COLS; }
+function saveKanbanCols(cols) {
+  _kanbanCols = cols;
+  if (isLive) {
+    supabase.from('kanban_columns')
+      .upsert(cols.map((c, i) => ({ slug: c.id, nome: c.label, ordem: i })), { onConflict: 'slug' })
+      .then(({ error }) => { if (error) console.error('[FDV] saveKanbanCols:', error); });
+  } else {
+    localStorage.setItem(KANBAN_LS_KEY, JSON.stringify(cols));
+  }
+}
 
 // ─── STATE ───────────────────────────────────────────────────────────
 let allLeads       = [];
@@ -839,7 +876,8 @@ function mapWaInstance(row) {
 // ─── LOAD ────────────────────────────────────────────────────────────
 function loadLeads() {
   if (!isLive) {
-    setTimeout(() => {
+    setTimeout(async () => {
+      await loadKanbanCols();
       allLeads = structuredClone(DEMO);
       $('loading-layer').style.display = 'none';
       $('demo-banner').style.display = 'block';
@@ -850,6 +888,7 @@ function loadLeads() {
 
   const fetchLeads = async () => {
     try {
+      if (!_kanbanCols) await loadKanbanCols();
       const [{ data: leads, error }, { data: histRows }] = await Promise.all([
         supabase.from('leads').select('*'),
         supabase.from('lead_historico').select('*').order('movido_em', { ascending: true }),
@@ -3451,9 +3490,19 @@ function renderKanban() {
   // Editable column titles
   board.querySelectorAll('.kanban-col-title[contenteditable]').forEach(el => {
     el.addEventListener('blur', () => {
-      const cols = getKanbanCols();
-      const col  = cols.find(c => c.id === el.dataset.col);
-      if (col) { col.label = el.textContent.trim() || col.label; saveKanbanCols(cols); }
+      const cols  = getKanbanCols();
+      const col   = cols.find(c => c.id === el.dataset.col);
+      const label = el.textContent.trim();
+      if (col && label && label !== col.label) {
+        col.label = label;
+        _kanbanCols = cols;
+        if (isLive) {
+          supabase.from('kanban_columns').update({ nome: label }).eq('slug', col.id)
+            .then(({ error }) => { if (error) console.error('[FDV] renameCol:', error); });
+        } else {
+          localStorage.setItem(KANBAN_LS_KEY, JSON.stringify(cols));
+        }
+      }
     });
     el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } });
   });
@@ -3514,10 +3563,15 @@ function renderKanban() {
   board.querySelectorAll('.kc-del-col').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      const colId = btn.dataset.delCol;
-      const cols  = getKanbanCols();
-      const updated = cols.filter(c => c.id !== colId);
-      saveKanbanCols(updated);
+      const colId   = btn.dataset.delCol;
+      const updated = getKanbanCols().filter(c => c.id !== colId);
+      _kanbanCols   = updated;
+      if (isLive) {
+        supabase.from('kanban_columns').delete().eq('slug', colId)
+          .then(({ error }) => { if (error) console.error('[FDV] deleteCol:', error); });
+      } else {
+        localStorage.setItem(KANBAN_LS_KEY, JSON.stringify(updated));
+      }
       renderKanban();
     });
   });
@@ -3657,11 +3711,32 @@ async function moveLeadToCol(leadId, colId) {
 }
 
 function addKanbanColumn() {
-  const label = prompt('Nome da nova coluna:');
-  if (!label || !label.trim()) return;
+  $('add-col-name').value = '';
+  $('add-col-error').style.display = 'none';
+  $('add-col-backdrop').classList.add('open');
+  setTimeout(() => $('add-col-name')?.focus(), 60);
+}
+function closeAddColModal() { $('add-col-backdrop').classList.remove('open'); }
+async function confirmAddCol() {
+  const nameEl = $('add-col-name');
+  const errEl  = $('add-col-error');
+  const label  = (nameEl.value || '').trim();
+  if (!label) { errEl.textContent = 'Nome obrigatório.'; errEl.style.display = ''; nameEl.focus(); return; }
   const cols = getKanbanCols();
-  cols.push({ id: 'col_' + Date.now(), label: label.trim() });
-  saveKanbanCols(cols);
+  if (cols.some(c => c.label.toLowerCase() === label.toLowerCase())) {
+    errEl.textContent = 'Já existe uma coluna com esse nome.'; errEl.style.display = ''; nameEl.focus(); return;
+  }
+  const slug    = 'col_' + Date.now();
+  const newCols = [...cols, { id: slug, label }];
+  if (isLive) {
+    const { error } = await supabase.from('kanban_columns')
+      .insert({ slug, nome: label, ordem: cols.length });
+    if (error) { errEl.textContent = 'Erro ao salvar: ' + error.message; errEl.style.display = ''; return; }
+  } else {
+    localStorage.setItem(KANBAN_LS_KEY, JSON.stringify(newCols));
+  }
+  _kanbanCols = newCols;
+  closeAddColModal();
   renderKanban();
 }
 
@@ -9244,6 +9319,13 @@ function bindEvents() {
   // Kanban filters
   ['kanban-filter-mes','kanban-filter-closer'].forEach(id => $(id).addEventListener('change', renderKanban));
   $('btn-add-column').addEventListener('click', addKanbanColumn);
+
+  // Modal: Nova coluna
+  $('add-col-confirm').addEventListener('click', confirmAddCol);
+  $('add-col-cancel').addEventListener('click', closeAddColModal);
+  $('add-col-cancel-x').addEventListener('click', closeAddColModal);
+  $('add-col-backdrop').addEventListener('click', e => { if (e.target === $('add-col-backdrop')) closeAddColModal(); });
+  $('add-col-name').addEventListener('keydown', e => { if (e.key === 'Enter') confirmAddCol(); else if (e.key === 'Escape') closeAddColModal(); });
 
   // Quick-filter pills
   document.querySelectorAll('.kqf-btn').forEach(btn => {

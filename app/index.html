@@ -453,30 +453,27 @@
       <h1>Closer</h1>
       <p>Funil de vendas — arraste os cards entre colunas</p>
     </div>
-    <div class="kanban-controls">
-      <div class="closer-view-tabs">
-        <button class="cvt-btn active" data-view="kanban">Kanban</button>
-        <button class="cvt-btn" data-view="vendas">Vendas</button>
-        <button class="cvt-btn" data-view="descartados">Descartados</button>
-      </div>
-      <span class="kc-sep"></span>
-      <div id="kanban-filters" style="display:flex;align-items:center;gap:8px">
-        <select class="filter-select" id="kanban-filter-mes">
-          <option value="">Todos os meses</option>
-        </select>
-        <div class="kanban-quick-filter">
-          <button class="kqf-btn active" data-closer="">Todos</button>
-          <button class="kqf-btn" data-closer="fernanda">Fernanda</button>
-          <button class="kqf-btn" data-closer="thomaz">Thomaz</button>
-        </div>
-        <select class="filter-select" id="kanban-filter-closer" style="display:none">
-          <option value="">Todos os closers</option>
-          <option value="fernanda">Fernanda</option>
-          <option value="thomaz">Thomaz</option>
-        </select>
-        <button class="btn-ghost btn-sm" id="btn-add-column">+ Coluna</button>
-      </div>
+    <div class="closer-view-tabs">
+      <button class="cvt-btn active" data-view="kanban">Kanban</button>
+      <button class="cvt-btn" data-view="vendas">Vendas</button>
+      <button class="cvt-btn" data-view="descartados">Descartados</button>
     </div>
+  </div>
+  <div class="closer-filter-bar" id="kanban-filters">
+    <select class="filter-select" id="kanban-filter-mes" style="width:auto;min-width:140px">
+      <option value="">Todos os meses</option>
+    </select>
+    <div class="kanban-quick-filter" style="flex:1;justify-content:center">
+      <button class="kqf-btn active" data-closer="">Todos</button>
+      <button class="kqf-btn" data-closer="fernanda">Fernanda</button>
+      <button class="kqf-btn" data-closer="thomaz">Thomaz</button>
+    </div>
+    <select class="filter-select" id="kanban-filter-closer" style="display:none">
+      <option value="">Todos os closers</option>
+      <option value="fernanda">Fernanda</option>
+      <option value="thomaz">Thomaz</option>
+    </select>
+    <button class="btn-ghost btn-sm" id="btn-add-column" style="margin-left:auto;flex-shrink:0">+ Coluna</button>
   </div>
   <div class="kanban-board" id="kanban-board"></div>
   <div id="closer-subview" style="display:none"></div>
@@ -1624,6 +1621,28 @@
          placeholder="Buscar lead por nome, celular ou e-mail..."
          autocomplete="off" spellcheck="false">
   <div class="search-dropdown" id="search-dropdown"></div>
+</div>
+
+<!-- ===== MODAL: NOVA COLUNA KANBAN ===== -->
+<div class="modal-backdrop" id="add-col-backdrop">
+  <div class="modal" style="max-width:400px" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div>
+        <h3 class="modal-title">Nova Coluna</h3>
+        <p class="modal-subtitle">Adicionar coluna ao funil Kanban</p>
+      </div>
+      <button class="modal-close" id="add-col-cancel-x" aria-label="Fechar">×</button>
+    </div>
+    <div class="modal-body">
+      <label class="filter-label" for="add-col-name">Nome da coluna</label>
+      <input type="text" id="add-col-name" class="filter-input" placeholder="Ex: Follow-up" autocomplete="off" style="margin-top:6px">
+      <div id="add-col-error" style="display:none;color:var(--danger,#e05c5c);font-size:12px;margin-top:6px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="add-col-cancel">Cancelar</button>
+      <button class="btn-confirm" id="add-col-confirm" style="background:var(--gold);color:#1a0c00">Criar Coluna</button>
+    </div>
+  </div>
 </div>
 
 <!-- ===== TOASTS ===== -->
