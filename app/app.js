@@ -45,6 +45,7 @@ const ICO_STAR_SM      = _S(`<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 1
 const ICO_PIN_SM       = _S(`<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>`, 11);
 const ICO_PENCIL       = _S(`<path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>`);
 const ICO_COPY         = _S(`<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>`, 13);
+const ICO_TAG          = _S(`<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>`, 14);
 
 const MERGE_FIELDS = [
   { k:'nome',        lbl:'Nome' },
@@ -945,6 +946,7 @@ function switchTab(tab) {
 }
 
 function switchSub(sub) {
+  selectedIds.clear(); updateBulkBar();
   activeSub = sub;
   document.querySelectorAll('.sub-panel').forEach(p => p.style.display = 'none');
   const panel = $('sub-' + sub);
@@ -2659,8 +2661,18 @@ function renderQualificados() {
         <button class="btn-clear" id="qual-limpar">Limpar</button>
       </div>
     </div>
+    <div class="bulk-bar" id="qual-bulk-bar" style="display:none">
+      <span class="bulk-count" id="qual-bulk-count">0 selecionados</span>
+      <div class="bulk-actions">
+        <button class="btn-acao-inline" id="btn-qual-bulk-tag">${ICO_TAG} Adicionar etiqueta</button>
+        <button class="btn-acao-inline btn-nao-qualificar" id="btn-qual-bulk-descartar">${ICO_BAN} Mover para Descartados</button>
+        <button class="btn-acao-inline btn-destructive" id="btn-qual-bulk-delete">${ICO_TRASH} Excluir</button>
+      </div>
+      <button class="btn-ghost btn-sm" id="btn-qual-bulk-clear">${ICO_X_SM} Limpar</button>
+    </div>
     <div class="table-wrap"><table class="leads-table">
       <thead><tr>
+        <th class="cell-chk"><input type="checkbox" id="chk-all-qual" title="Selecionar todos"></th>
         <th>Chegou em</th><th>Nome</th><th>Celular</th><th>Origem</th><th>Renda</th><th>Etiqueta</th><th>Ações</th>
       </tr></thead>
       <tbody id="qual-tbody"></tbody>
@@ -2682,10 +2694,12 @@ function renderQualificados() {
     });
     const tbody = $('qual-tbody');
     if (!leads.length) {
-      tbody.innerHTML = `<tr><td colspan="7" style="padding:32px;text-align:center;color:var(--t3)">Nenhum resultado.</td></tr>`;
-      return;
+      tbody.innerHTML = `<tr><td colspan="8" style="padding:32px;text-align:center;color:var(--t3)">Nenhum resultado.</td></tr>`;
+      const allChkQ = $('chk-all-qual'); if (allChkQ) { allChkQ.checked = false; allChkQ.indeterminate = false; }
+      updateQualBulkBar(); return;
     }
     tbody.innerHTML = leads.map(l => `<tr data-id="${l.id}"${isDup(l.id)?' class="dup-row"':''}>
+      <td class="cell-chk"><input type="checkbox" class="row-chk" data-id="${l.id}" ${selectedIds.has(l.id)?'checked':''}></td>
       <td>${fmtDate(l.datachegada)}</td>
       <td style="display:flex;align-items:center;gap:5px;padding-top:10px;padding-bottom:10px">${isDup(l.id)?`<button class="btn-dup-ico" data-dup-id="${l.id}" title="Possível duplicata — clique para comparar">${ICO_COPY}</button>`:''}<button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
       <td>${esc(l.celular||'—')}</td>
@@ -2714,7 +2728,34 @@ function renderQualificados() {
     tbody.querySelectorAll('[data-excluir]').forEach(b =>
       b.addEventListener('click', () => deleteLead(b.dataset.excluir))
     );
+    // Checkboxes por linha
+    tbody.querySelectorAll('.row-chk').forEach(chk => {
+      chk.addEventListener('change', () => {
+        if (chk.checked) selectedIds.add(chk.dataset.id);
+        else             selectedIds.delete(chk.dataset.id);
+        const q = $('chk-all-qual');
+        if (q) { q.checked = leads.every(l => selectedIds.has(l.id)); q.indeterminate = !q.checked && leads.some(l => selectedIds.has(l.id)); }
+        updateQualBulkBar();
+      });
+    });
+    // Selecionar todos
+    const allChkQ = $('chk-all-qual');
+    if (allChkQ) {
+      allChkQ.checked = leads.length > 0 && leads.every(l => selectedIds.has(l.id));
+      allChkQ.indeterminate = !allChkQ.checked && leads.some(l => selectedIds.has(l.id));
+      allChkQ.onclick = e => {
+        if (e.target.checked) leads.forEach(l => selectedIds.add(l.id));
+        else                  leads.forEach(l => selectedIds.delete(l.id));
+        updateQualBulkBar(); renderQualTbody();
+      };
+    }
+    updateQualBulkBar();
   }
+
+  $('btn-qual-bulk-tag')?.addEventListener('click', openBulkTagModal);
+  $('btn-qual-bulk-descartar')?.addEventListener('click', openBulkDescarteModal);
+  $('btn-qual-bulk-delete')?.addEventListener('click', bulkDelete);
+  $('btn-qual-bulk-clear')?.addEventListener('click', () => { selectedIds.clear(); updateQualBulkBar(); renderQualTbody(); });
 
   ['qual-filter-origem','qual-filter-renda','qual-filter-chegada-de','qual-filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', renderQualTbody); });
   $('qual-busca')?.addEventListener('input', renderQualTbody);
@@ -2954,8 +2995,18 @@ function renderDescartados() {
         <button class="btn-clear" id="desc-limpar">Limpar</button>
       </div>
     </div>
+    <div class="bulk-bar" id="desc-bulk-bar" style="display:none">
+      <span class="bulk-count" id="desc-bulk-count">0 selecionados</span>
+      <div class="bulk-actions">
+        <button class="btn-acao-inline btn-qualificar" id="btn-desc-bulk-reativar">${ICO_UNDO} Reativar para Novos</button>
+        <button class="btn-acao-inline" id="btn-desc-bulk-tag">${ICO_TAG} Adicionar etiqueta</button>
+        <button class="btn-acao-inline btn-destructive" id="btn-desc-bulk-delete">${ICO_TRASH} Excluir</button>
+      </div>
+      <button class="btn-ghost btn-sm" id="btn-desc-bulk-clear">${ICO_X_SM} Limpar</button>
+    </div>
     <div class="table-wrap"><table class="leads-table">
       <thead><tr>
+        <th class="cell-chk"><input type="checkbox" id="chk-all-desc" title="Selecionar todos"></th>
         <th>Chegou em</th><th>Nome</th><th>Celular</th><th>Origem</th><th>Motivo</th><th>Ações</th>
       </tr></thead>
       <tbody id="desc-tbody"></tbody>
@@ -2979,10 +3030,12 @@ function renderDescartados() {
     });
     const tbody = $('desc-tbody');
     if (!leads.length) {
-      tbody.innerHTML = `<tr><td colspan="6" style="padding:32px;text-align:center;color:var(--t3)">Nenhum resultado.</td></tr>`;
-      return;
+      tbody.innerHTML = `<tr><td colspan="7" style="padding:32px;text-align:center;color:var(--t3)">Nenhum resultado.</td></tr>`;
+      const allChkD = $('chk-all-desc'); if (allChkD) { allChkD.checked = false; allChkD.indeterminate = false; }
+      updateDescBulkBar(); return;
     }
     tbody.innerHTML = leads.map(l => `<tr data-id="${l.id}"${isDup(l.id)?' class="dup-row"':''}>
+      <td class="cell-chk"><input type="checkbox" class="row-chk" data-id="${l.id}" ${selectedIds.has(l.id)?'checked':''}></td>
       <td>${fmtDate(l.datachegada)}</td>
       <td style="display:flex;align-items:center;gap:5px;padding-top:10px;padding-bottom:10px">${isDup(l.id)?`<button class="btn-dup-ico" data-dup-id="${l.id}" title="Possível duplicata — clique para comparar">${ICO_COPY}</button>`:''}<button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
       <td>${esc(l.celular||'—')}</td>
@@ -3006,7 +3059,34 @@ function renderDescartados() {
     tbody.querySelectorAll('[data-excluir]').forEach(b =>
       b.addEventListener('click', () => deleteLead(b.dataset.excluir))
     );
+    // Checkboxes por linha
+    tbody.querySelectorAll('.row-chk').forEach(chk => {
+      chk.addEventListener('change', () => {
+        if (chk.checked) selectedIds.add(chk.dataset.id);
+        else             selectedIds.delete(chk.dataset.id);
+        const d = $('chk-all-desc');
+        if (d) { d.checked = leads.every(l => selectedIds.has(l.id)); d.indeterminate = !d.checked && leads.some(l => selectedIds.has(l.id)); }
+        updateDescBulkBar();
+      });
+    });
+    // Selecionar todos
+    const allChkD = $('chk-all-desc');
+    if (allChkD) {
+      allChkD.checked = leads.length > 0 && leads.every(l => selectedIds.has(l.id));
+      allChkD.indeterminate = !allChkD.checked && leads.some(l => selectedIds.has(l.id));
+      allChkD.onclick = e => {
+        if (e.target.checked) leads.forEach(l => selectedIds.add(l.id));
+        else                  leads.forEach(l => selectedIds.delete(l.id));
+        updateDescBulkBar(); renderDescTbody();
+      };
+    }
+    updateDescBulkBar();
   }
+
+  $('btn-desc-bulk-reativar')?.addEventListener('click', bulkReativar);
+  $('btn-desc-bulk-tag')?.addEventListener('click', openBulkTagModal);
+  $('btn-desc-bulk-delete')?.addEventListener('click', bulkDelete);
+  $('btn-desc-bulk-clear')?.addEventListener('click', () => { selectedIds.clear(); updateDescBulkBar(); renderDescTbody(); });
 
   ['desc-filter-origem','desc-filter-renda','desc-filter-motivo','desc-filter-chegada-de','desc-filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', renderDescTbody); });
   $('desc-busca')?.addEventListener('input', renderDescTbody);
@@ -4957,8 +5037,9 @@ async function bulkDelete() {
     if (isLive) {
       const { error } = await supabase.from('leads').delete().in('id', [...selectedIds]);
       if (error) throw error;
-    } else { allLeads = allLeads.filter(l=>!selectedIds.has(l.id)); renderAll(); }
-    selectedIds.clear(); updateBulkBar();
+    }
+    allLeads = allLeads.filter(l => !selectedIds.has(l.id));
+    selectedIds.clear(); updateBulkBar(); renderAll();
     toast(`${n} lead(s) excluído(s).`, 'ok');
   } catch(e) { console.error(e); toast('Erro ao excluir.', 'err'); }
 }
@@ -4989,6 +5070,93 @@ async function bulkQualificar() {
     toast(`${ids.length} lead(s) qualificado(s).`, 'ok');
     selectedIds.clear(); updateBulkBar(); renderAll();
   } catch(e) { console.error(e); toast('Erro ao qualificar.', 'err'); }
+}
+
+function updateQualBulkBar() {
+  const bar = $('qual-bulk-bar'); if (!bar) return;
+  const n = selectedIds.size;
+  bar.style.display = n > 0 ? 'flex' : 'none';
+  const c = $('qual-bulk-count'); if (c) c.textContent = `${n} selecionado${n!==1?'s':''}`;
+}
+function updateDescBulkBar() {
+  const bar = $('desc-bulk-bar'); if (!bar) return;
+  const n = selectedIds.size;
+  bar.style.display = n > 0 ? 'flex' : 'none';
+  const c = $('desc-bulk-count'); if (c) c.textContent = `${n} selecionado${n!==1?'s':''}`;
+}
+
+function openBulkTagModal() {
+  if (!selectedIds.size) return;
+  const colors  = getEtiquetaColors();
+  const allTags = [...new Set([...ETIQUETAS_DEFAULT, ...allLeads.flatMap(l => l.etiquetas || [])])];
+  const pop = document.getElementById('_bulk-tag-pop') || document.createElement('div');
+  pop.id = '_bulk-tag-pop';
+  pop.className = 'modal-backdrop open';
+  pop.innerHTML = `
+    <div class="modal" style="max-width:360px" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h2 class="modal-title">Adicionar etiqueta</h2>
+        <button class="modal-close" id="_btn-tag-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+      </div>
+      <div class="modal-body" style="padding:16px 20px">
+        <p style="font-size:12px;color:var(--t3);margin:0 0 12px">Selecione a etiqueta a adicionar em ${selectedIds.size} lead(s):</p>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          ${allTags.map(t => {
+            const hex = colors[t];
+            const s   = hex ? `background:${hex}22;border-color:${hex}55;color:${hex}` : '';
+            return `<button class="etiqueta-default" data-tag="${esc(t)}"${s?` style="${s}"`:''}>${esc(t)}</button>`;
+          }).join('')}
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content:flex-end">
+        <button class="btn-ghost" id="_btn-tag-cancel">Cancelar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(pop);
+  lucide.createIcons({ nodes: [pop] });
+  pop.querySelectorAll('[data-tag]').forEach(btn =>
+    btn.addEventListener('click', async () => { pop.remove(); await bulkApplyTag(btn.dataset.tag); })
+  );
+  document.getElementById('_btn-tag-close')?.addEventListener('click',  () => pop.remove());
+  document.getElementById('_btn-tag-cancel')?.addEventListener('click', () => pop.remove());
+  pop.addEventListener('click', e => { if (e.target === pop) pop.remove(); });
+}
+
+async function bulkApplyTag(tag) {
+  const ids = [...selectedIds]; if (!ids.length) return;
+  const now = new Date().toISOString();
+  let count = 0;
+  for (const id of ids) {
+    const idx = allLeads.findIndex(l => l.id === id); if (idx === -1) continue;
+    const cur = allLeads[idx].etiquetas || [];
+    if (cur.includes(tag)) continue;
+    const newTags = [...cur, tag];
+    if (isLive) {
+      const { error } = await supabase.from('leads').update({ etiquetas: newTags, atualizadoem: now }).eq('id', id);
+      if (error) { console.error(error); continue; }
+    }
+    allLeads[idx] = { ...allLeads[idx], etiquetas: newTags, atualizadoem: now };
+    count++;
+  }
+  selectedIds.clear(); updateBulkBar(); renderAll();
+  toast(`Etiqueta "${tag}" adicionada a ${count} lead(s).`, 'ok');
+}
+
+async function bulkReativar() {
+  const ids = [...selectedIds]; if (!ids.length) return;
+  const n = ids.length;
+  if (!confirm(`Reativar ${n} lead(s) como Novos?`)) return;
+  const now = new Date().toISOString();
+  const payload = { status: 'aguardando', kanban_column: null, motivo_descarte: null, motivo_descarte_label: null, motivo_descarte_obs: null, atualizadoem: now };
+  try {
+    if (isLive) {
+      const { error } = await supabase.from('leads').update(payload).in('id', ids);
+      if (error) throw error;
+    }
+    ids.forEach(id => { const idx = allLeads.findIndex(l => l.id === id); if (idx !== -1) allLeads[idx] = { ...allLeads[idx], ...payload }; });
+    selectedIds.clear(); updateBulkBar(); renderAll();
+    toast(`${n} lead(s) reativado(s) como Novos.`, 'ok');
+  } catch(e) { console.error(e); toast('Erro ao reativar.', 'err'); }
 }
 
 function openBulkDescarteModal() {
@@ -9113,6 +9281,8 @@ function bindEvents() {
   });
   $('btn-bulk-qualificar').addEventListener('click', bulkQualificar);
   $('btn-bulk-descartar').addEventListener('click', openBulkDescarteModal);
+  $('btn-bulk-tag')?.addEventListener('click', openBulkTagModal);
+  $('btn-bulk-delete')?.addEventListener('click', bulkDelete);
   $('btn-bulk-clear').addEventListener('click', () => { selectedIds.clear(); updateBulkBar(); renderTable(); });
 
   // Perfil
