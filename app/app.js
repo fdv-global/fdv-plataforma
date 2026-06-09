@@ -2296,9 +2296,9 @@ function renderInicio() {
   // kanban_column_since é setado no momento exato em que o lead vai para venda_ganha.
   // atualizadoem é atualizado a cada save (mensagens, obs, etc.), por isso é descartado.
   const isVendaMes  = l => l.kanban_column === 'venda_ganha' &&
-    ((l.kanban_column_since||l.datachegada||'').startsWith(thisMonth));
+    ((l.kanban_column_since||l.realizadaem||l.datachegada||'').startsWith(thisMonth));
   const isVendaPrev = l => l.kanban_column === 'venda_ganha' &&
-    ((l.kanban_column_since||l.datachegada||'').startsWith(prevMonth));
+    ((l.kanban_column_since||l.realizadaem||l.datachegada||'').startsWith(prevMonth));
   const fatAtual = allLeads.filter(isVendaMes).reduce((s,l) => s + parseValor(l.venda_ganha_dados?.valor), 0);
   const fatPrev  = allLeads.filter(isVendaPrev).reduce((s,l) => s + parseValor(l.venda_ganha_dados?.valor), 0);
   const diffFat  = fatAtual - fatPrev;
@@ -3840,8 +3840,8 @@ async function renderVendasView() {
   if (flt.mes)    rows = rows.filter(r => (r.criadoem||'').startsWith(flt.mes));
   if (flt.closer) rows = rows.filter(r => (r.closer||'') === flt.closer);
 
-  // Stats apenas de vendas ativas
-  const activeRows  = allRows.filter(r => r.status !== 'cancelada');
+  // Stats apenas de vendas ativas — respeita o filtro de mês/closer aplicado
+  const activeRows  = rows.filter(r => r.status !== 'cancelada');
   const FORMA_LABELS = {
     avista:           'À vista',
     parcelado_cartao: 'Parcelado — Cartão',
