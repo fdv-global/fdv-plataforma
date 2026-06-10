@@ -888,7 +888,7 @@ function loadLeads() {
       const [{ data: leads, error }, { data: histRows }, { data: vendasRows }] = await Promise.all([
         supabase.from('leads').select('*'),
         supabase.from('lead_historico').select('*').order('movido_em', { ascending: true }),
-        supabase.from('vendas').select('lead_id,valor,valor_entrada,forma_pagamento,programa,observacoes'),
+        supabase.from('vendas').select('lead_id,valor,valor_entrada,forma_pagamento,programa,observacoes,status'),
       ]);
       if (error) { $('loading-layer').style.display = 'none'; showDbError(error.message); return; }
       if (!leads || leads.length === 0) {
@@ -905,13 +905,14 @@ function loadLeads() {
       allLeads = (leads || []).map(d => {
         const lead = mapLead(d, histMap);
         const v = vendasMap[d.id];
-        if (v && !lead.venda_ganha_dados?.valor) {
+        if (v) {
           lead.venda_ganha_dados = {
             valor:    v.valor           || lead.venda_ganha_dados?.valor   || '',
             entrada:  v.valor_entrada   || lead.venda_ganha_dados?.entrada || '',
             forma:    v.forma_pagamento || lead.venda_ganha_dados?.forma   || '',
             programa: v.programa        || lead.venda_ganha_dados?.programa|| '',
             obs:      v.observacoes     || lead.venda_ganha_dados?.obs     || '',
+            status:   v.status          || null,
           };
         }
         return lead;
@@ -2306,18 +2307,20 @@ function renderInicio() {
   })();
   const nowTime = String(hour).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
 
-  // kanban_column_since é setado no momento exato em que o lead vai para venda_ganha.
-  // atualizadoem é atualizado a cada save (mensagens, obs, etc.), por isso é descartado.
+  // realizadaem é a data primária de fechamento; kanban_column_since como fallback.
+  // Canceladas (status da tabela vendas) são excluídas de faturamento e contagem.
   const isVendaMes  = l => l.kanban_column === 'venda_ganha' &&
-    ((l.kanban_column_since||l.realizadaem||l.datachegada||'').startsWith(thisMonth));
+    l.venda_ganha_dados?.status !== 'cancelada' &&
+    ((l.realizadaem||l.kanban_column_since||l.datachegada||'').startsWith(thisMonth));
   const isVendaPrev = l => l.kanban_column === 'venda_ganha' &&
-    ((l.kanban_column_since||l.realizadaem||l.datachegada||'').startsWith(prevMonth));
+    l.venda_ganha_dados?.status !== 'cancelada' &&
+    ((l.realizadaem||l.kanban_column_since||l.datachegada||'').startsWith(prevMonth));
   // --- DEBUG faturamento ---
   const _vendasGanha = allLeads.filter(l => l.kanban_column === 'venda_ganha');
   console.group('[Início] Diagnóstico faturamento — thisMonth:', thisMonth);
   console.log('Total venda_ganha:', _vendasGanha.length);
   _vendasGanha.forEach(l => {
-    const dateUsada = l.kanban_column_since || l.realizadaem || l.datachegada || '';
+    const dateUsada = l.realizadaem || l.kanban_column_since || l.datachegada || '';
     const passa = dateUsada.startsWith(thisMonth);
     console.log(
       passa ? '✅ PASSA' : '❌ FORA',
@@ -2364,7 +2367,7 @@ function renderInicio() {
   const fQualif = mesLeads.filter(l => !['aguardando','descartado','cancelado'].includes(l.status)).length;
   const agendMes = allLeads.filter(l => (l.dataagendamento||'').startsWith(thisMonth));
   const fAgend  = agendMes.length;
-  const fCalls  = agendMes.filter(l => ['realizada','noshow'].includes(l.status) || (l.kanban_column && l.kanban_column !== 'agendado')).length;
+  const fCalls  = agendMes.filter(l => l.status === 'realizada').length;
   const fNoShow = agendMes.filter(l => l.status === 'noshow').length;
   const fVendas = allLeads.filter(isVendaMes).length;
   const fRealiz = Math.max(fCalls - fNoShow, 0);
@@ -2975,8 +2978,15 @@ function renderNoShow() {
   const leads = allLeads
     .filter(l => l.status === 'noshow')
     .sort((a,b) => (b.dataagendamento||'').localeCompare(a.dataagendamento||''));
+  const _nsThisMonth = new Date().toISOString().slice(0,7);
+  const _nsMesCount  = leads.filter(l => (l.dataagendamento||'').startsWith(_nsThisMonth)).length;
+  const _nsMesPt     = new Date().toLocaleDateString('pt-BR', { month:'long', year:'numeric' });
 
-  el.innerHTML = `<div class="table-wrap"><table class="leads-table">
+  el.innerHTML = `
+  <div style="padding:12px 16px 0;color:var(--t2);font-size:13px">
+    <strong style="color:var(--text)">${_nsMesCount}</strong> no-show${_nsMesCount !== 1 ? 's' : ''} em ${_nsMesPt} · ${leads.length} no total
+  </div>
+  <div class="table-wrap"><table class="leads-table">
     <thead><tr>
       <th>Nome</th><th>Data da Call</th><th>Celular</th><th>Ações</th>
     </tr></thead>
@@ -3831,7 +3841,7 @@ async function renderVendasView() {
   let allRows = [];
   if (isLive) {
     try {
-      const { data, error } = await supabase.from('vendas').select('*, leads(nome, celular)').order('criadoem', { ascending: false });
+      const { data, error } = await supabase.from('vendas').select('*, leads(nome, celular, realizadaem, kanban_column_since, datachegada)').order('criadoem', { ascending: false });
       if (!error) allRows = data || [];
     } catch(_) {}
   }
@@ -3845,7 +3855,7 @@ async function renderVendasView() {
     const d = l.venda_ganha_dados || {};
     allRows.push({
       lead_id:         l.id,
-      leads:           { nome: l.nome, celular: l.celular },
+      leads:           { nome: l.nome, celular: l.celular, realizadaem: l.realizadaem, kanban_column_since: l.kanban_column_since, datachegada: l.datachegada },
       closer:          l.closer,
       programa:        d.programa       || null,
       valor:           d.valor          || null,
@@ -3867,12 +3877,21 @@ async function renderVendasView() {
 
   // Meses disponíveis para filtro
   const meses = [...new Set(
-    allRows.map(r => (r.criadoem||'').slice(0,7)).filter(m => /^\d{4}-\d{2}$/.test(m))
+    allRows.map(r => {
+      const ld = r.leads;
+      return (ld?.realizadaem||ld?.kanban_column_since||ld?.datachegada||r.criadoem||'').slice(0,7);
+    }).filter(m => /^\d{4}-\d{2}$/.test(m))
   )].sort().reverse();
 
   // Aplicar filtros
   let rows = allRows;
-  if (flt.mes)    rows = rows.filter(r => (r.criadoem||'').startsWith(flt.mes));
+  if (flt.mes) {
+    rows = rows.filter(r => {
+      const ld = r.leads;
+      const dateRef = ld?.realizadaem || ld?.kanban_column_since || ld?.datachegada || r.criadoem || '';
+      return dateRef.startsWith(flt.mes);
+    });
+  }
   if (flt.closer) rows = rows.filter(r => (r.closer||'') === flt.closer);
 
   // Stats apenas de vendas ativas — respeita o filtro de mês/closer aplicado
@@ -4427,15 +4446,25 @@ function renderRelatorios() {
   const mesFilt    = $('rel-filter-mes').value;
   const origemFilt = $('rel-filter-origem').value;
 
+  // base: filtrado por datachegada — total de leads e qualificados
   let base = [...allLeads];
   if (mesFilt)    base = base.filter(l => (l.datachegada||'').startsWith(mesFilt));
   if (origemFilt) base = base.filter(l => l.origem === origemFilt);
   _relBase = base;
 
-  const agendados  = base.filter(l => l.dataagendamento);
-  const realizadas = base.filter(l => l.status === 'realizada');
-  const noShows    = base.filter(l => l.status === 'noshow');
-  const vendas     = base.filter(l => l.kanban_column === 'venda_ganha');
+  // callsBase: filtrado por dataagendamento — agendados, calls realizadas, no-shows
+  let callsBase = allLeads.filter(l => l.dataagendamento);
+  if (mesFilt)    callsBase = callsBase.filter(l => (l.dataagendamento||'').startsWith(mesFilt));
+  if (origemFilt) callsBase = callsBase.filter(l => l.origem === origemFilt);
+  const agendados  = callsBase;
+  const realizadas = callsBase.filter(l => l.status === 'realizada');
+  const noShows    = callsBase.filter(l => l.status === 'noshow');
+
+  // vendasBase: filtrado por realizadaem como primário; exclui canceladas
+  let vendasBase = [...allLeads];
+  if (mesFilt)    vendasBase = vendasBase.filter(l => (l.realizadaem||l.kanban_column_since||l.datachegada||'').startsWith(mesFilt));
+  if (origemFilt) vendasBase = vendasBase.filter(l => l.origem === origemFilt);
+  const vendas = vendasBase.filter(l => l.kanban_column === 'venda_ganha' && l.venda_ganha_dados?.status !== 'cancelada');
 
   const taxaComp    = agendados.length  ? pct(realizadas.length, agendados.length)  : 0;
   const taxaConv    = realizadas.length ? pct(vendas.length,     realizadas.length) : 0;
@@ -4454,7 +4483,7 @@ function renderRelatorios() {
 
   // Bloco 2: funnel
   const fQualif = base.filter(l=>!['aguardando','descartado','cancelado'].includes(l.status)).length;
-  const fAgend  = base.filter(l=>l.dataagendamento).length;
+  const fAgend  = agendados.length;
   const fCalls  = realizadas.length;
   const fVendas = vendas.length;
   const funnelStages = [
