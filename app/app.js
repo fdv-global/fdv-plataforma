@@ -2299,6 +2299,28 @@ function renderInicio() {
     ((l.kanban_column_since||l.realizadaem||l.datachegada||'').startsWith(thisMonth));
   const isVendaPrev = l => l.kanban_column === 'venda_ganha' &&
     ((l.kanban_column_since||l.realizadaem||l.datachegada||'').startsWith(prevMonth));
+  // --- DEBUG faturamento ---
+  const _vendasGanha = allLeads.filter(l => l.kanban_column === 'venda_ganha');
+  console.group('[Início] Diagnóstico faturamento — thisMonth:', thisMonth);
+  console.log('Total venda_ganha:', _vendasGanha.length);
+  _vendasGanha.forEach(l => {
+    const dateUsada = l.kanban_column_since || l.realizadaem || l.datachegada || '';
+    const passa = dateUsada.startsWith(thisMonth);
+    console.log(
+      passa ? '✅ PASSA' : '❌ FORA',
+      l.nome || l.id,
+      '| kanban_column_since:', l.kanban_column_since || '(vazio)',
+      '| realizadaem:', l.realizadaem || '(vazio)',
+      '| datachegada:', l.datachegada || '(vazio)',
+      '| dateUsada:', dateUsada,
+      '| valor:', l.venda_ganha_dados?.valor
+    );
+  });
+  const _passam = _vendasGanha.filter(isVendaMes);
+  const _totalFat = _passam.reduce((s,l) => s + parseValor(l.venda_ganha_dados?.valor), 0);
+  console.log('Vendas que passam no filtro:', _passam.length, '→ Total:', _totalFat);
+  console.groupEnd();
+  // --- fim DEBUG ---
   const fatAtual = allLeads.filter(isVendaMes).reduce((s,l) => s + parseValor(l.venda_ganha_dados?.valor), 0);
   const fatPrev  = allLeads.filter(isVendaPrev).reduce((s,l) => s + parseValor(l.venda_ganha_dados?.valor), 0);
   const diffFat  = fatAtual - fatPrev;
