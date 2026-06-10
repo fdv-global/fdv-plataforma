@@ -889,9 +889,10 @@ function loadLeads() {
   const fetchLeads = async () => {
     try {
       if (!_kanbanCols) await loadKanbanCols();
-      const [{ data: leads, error }, { data: histRows }] = await Promise.all([
+      const [{ data: leads, error }, { data: histRows }, { data: vendasRows }] = await Promise.all([
         supabase.from('leads').select('*'),
         supabase.from('lead_historico').select('*').order('movido_em', { ascending: true }),
+        supabase.from('vendas').select('lead_id,valor,valor_entrada,forma_pagamento,programa,observacoes'),
       ]);
       if (error) { $('loading-layer').style.display = 'none'; showDbError(error.message); return; }
       if (!leads || leads.length === 0) {
@@ -902,7 +903,23 @@ function loadLeads() {
         if (!histMap[h.lead_id]) histMap[h.lead_id] = [];
         histMap[h.lead_id].push({ col: h.col, colLabel: h.col_label, movidoPor: h.movido_por, movidoEm: h.movido_em });
       });
-      allLeads = (leads || []).map(d => mapLead(d, histMap));
+      // Vendas table is authoritative for valor — merge into lead when venda_ganha_dados.valor is missing
+      const vendasMap = {};
+      (vendasRows || []).forEach(v => { vendasMap[v.lead_id] = v; });
+      allLeads = (leads || []).map(d => {
+        const lead = mapLead(d, histMap);
+        const v = vendasMap[d.id];
+        if (v && !lead.venda_ganha_dados?.valor) {
+          lead.venda_ganha_dados = {
+            valor:    v.valor           || lead.venda_ganha_dados?.valor   || '',
+            entrada:  v.valor_entrada   || lead.venda_ganha_dados?.entrada || '',
+            forma:    v.forma_pagamento || lead.venda_ganha_dados?.forma   || '',
+            programa: v.programa        || lead.venda_ganha_dados?.programa|| '',
+            obs:      v.observacoes     || lead.venda_ganha_dados?.obs     || '',
+          };
+        }
+        return lead;
+      });
       // Keep unread at 0 for the currently open chat
       if (chatActiveSide) {
         const ol = allLeads.find(l => l.id === chatActiveSide);
