@@ -3686,6 +3686,7 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 
 /* Bloco 5: Equipe lado a lado */
 .rel-equipe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+.rel-equipe-grid > .rel-section { margin-top: 0; }
 @media(max-width:900px) { .rel-equipe-grid { grid-template-columns: 1fr; } }
 
 /* UTM CTA card */
