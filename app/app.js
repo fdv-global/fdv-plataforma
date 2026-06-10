@@ -302,10 +302,6 @@ let _expandedCardId  = null; // ID do card do kanban atualmente expandido
 let _relChart        = null; // Instância Chart.js do comparativo mensal
 let relShowUTM        = false;  // toggle aba Análise de Tráfego
 let _relChartDia     = null; // Leads por dia
-let _relChartStatus  = null; // Por status
-let _relChartOrigem  = null; // Por origem/campanha
-let _relChartProf    = null; // Por profissão
-let _relChartRenda   = null; // Por faixa de renda
 
 // Notification state
 let notifUnsub = null;
@@ -4531,9 +4527,9 @@ function renderRelatorios() {
   const utmAgg = field => { const m={}; base.forEach(l=>{ const k=cleanUTMVal(l[field])||'Não identificado'; m[k]=(m[k]||{total:0,ve:0}); m[k].total++; if(l.kanban_column==='venda_ganha') m[k].ve++; }); return Object.entries(m).sort((a,b)=>b[1].total-a[1].total); };
 
   // Destroy charts
-  [_relChart,_relChartDia,_relChartStatus,_relChartOrigem,_relChartProf,_relChartRenda]
+  [_relChart,_relChartDia]
     .forEach(c=>{try{c?.destroy();}catch(e){}});
-  _relChart=_relChartDia=_relChartStatus=_relChartOrigem=_relChartProf=_relChartRenda=null;
+  _relChart=_relChartDia=null;
 
   // ── UTM tab
   if (relShowUTM) {
@@ -4618,7 +4614,18 @@ function renderRelatorios() {
 
   $('relatorios-content').innerHTML = `
 
-  <!-- Bloco 0: Saúde por Origem -->
+  <!-- Bloco 0: Métricas -->
+  <div class="rel-section-head">Métricas do Período</div>
+  <div class="stats-grid rel-summary">
+    ${relStatCard('Total de Leads', base.length, _S('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'), '', 'data-drill="all" data-drill-title="Total de Leads"')}
+    ${relStatCard('Comparecimento', taxaComp+'%', _S('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'), 'accent-petro', 'data-drill="status" data-drill-value="realizada" data-drill-title="Calls Realizadas"')}
+    ${relStatCard('Conversão', taxaConv+'%', ICO_TROPHY, 'accent-green', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
+    ${relStatCard('Faturamento', 'R$\xa0'+fmtValor(faturamento), _S('<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'), 'accent-sand', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
+    ${relStatCard('Ticket Médio', ticketMedio?'R$\xa0'+fmtValor(ticketMedio):'—', _S('<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>'), 'accent-gold')}
+    ${relStatCard('Vendas', vendas.length, ICO_CHECK_CIRCLE, 'accent-gold', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
+  </div>
+
+  <!-- Bloco 1: Saúde por Origem -->
   <div class="rel-section-head">Saúde por Origem</div>
   <div class="rel-block">
     <table class="rel-table rel-origem-table">
@@ -4640,17 +4647,6 @@ function renderRelatorios() {
         </tr>`;
       }).join('')}</tbody>
     </table>
-  </div>
-
-  <!-- Bloco 1: Métricas -->
-  <div class="rel-section-head">Métricas do Período</div>
-  <div class="stats-grid rel-summary">
-    ${relStatCard('Total de Leads', base.length, _S('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'), '', 'data-drill="all" data-drill-title="Total de Leads"')}
-    ${relStatCard('Comparecimento', taxaComp+'%', _S('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'), 'accent-petro', 'data-drill="status" data-drill-value="realizada" data-drill-title="Calls Realizadas"')}
-    ${relStatCard('Conversão', taxaConv+'%', ICO_TROPHY, 'accent-green', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
-    ${relStatCard('Faturamento', 'R$\xa0'+fmtValor(faturamento), _S('<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'), 'accent-sand', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
-    ${relStatCard('Ticket Médio', ticketMedio?'R$\xa0'+fmtValor(ticketMedio):'—', _S('<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>'), 'accent-gold')}
-    ${relStatCard('Vendas', vendas.length, ICO_CHECK_CIRCLE, 'accent-gold', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
   </div>
 
   <!-- Bloco 2: Funil SVG -->
