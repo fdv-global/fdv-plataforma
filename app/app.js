@@ -458,6 +458,20 @@ function updateBreadcrumb() {
 
 // ─── AUTH ────────────────────────────────────────────────────────────
 function initAuth() {
+  // Bypass de autenticação para validação visual local — ativado via ?preview na URL
+  if (new URLSearchParams(location.search).has('preview')) {
+    supabase = createClient(SB_URL, SB_SERVICE_KEY);
+    currentRole = 'admin';
+    document.getElementById('login-screen')?.style.setProperty('display', 'none', 'important');
+    document.getElementById('app')?.style.setProperty('display', 'block', 'important');
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+    applyPermissionsToUI();
+    if (!leadsLoaded) { leadsLoaded = true; loadLeads(); }
+    switchTab('inicio');
+    initSidebar();
+    return;
+  }
+
   isLive = initFirebase();
   if (!isLive) {
     document.getElementById('login-screen').style.setProperty('display', 'none', 'important');
