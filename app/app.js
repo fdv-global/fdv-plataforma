@@ -378,8 +378,101 @@ function etiquetaChip(tag, sm = false) {
   return `<span class="etiqueta-chip${sm?' etiqueta-chip--sm':''}"${style}>${esc(tag)}</span>`;
 }
 
+// ─── SIDEBAR ─────────────────────────────────────────────────────────
+function initSidebar() {
+  const sidebar = document.getElementById('app-sidebar');
+  const main    = document.getElementById('app-main');
+  const toggle  = document.getElementById('sidebar-toggle');
+  if (!sidebar) return;
+
+  // Toggle recolher/expandir
+  toggle?.addEventListener('click', () => {
+    sidebar.classList.toggle('collapsed');
+    main?.classList.toggle('sidebar-collapsed', sidebar.classList.contains('collapsed'));
+  });
+
+  // Auto-colapso ≤1024px
+  const mq = window.matchMedia('(max-width: 1024px)');
+  function handleMQ(e) {
+    if (e.matches) { sidebar.classList.add('collapsed'); main?.classList.add('sidebar-collapsed'); }
+    else { sidebar.classList.remove('collapsed'); main?.classList.remove('sidebar-collapsed'); }
+  }
+  mq.addEventListener('change', handleMQ);
+  handleMQ(mq);
+
+  // Chevron do grupo Comercial — expande/recolhe submenu sem navegar
+  const chevronBtn = document.getElementById('sidebar-comercial-chevron');
+  const comercialGroup = document.getElementById('sidebar-group-comercial');
+  chevronBtn?.addEventListener('click', e => {
+    e.stopPropagation();
+    if (!sidebar.classList.contains('collapsed')) {
+      comercialGroup?.classList.toggle('open');
+    }
+  });
+
+  // Delegação de navegação — todos os itens com data-tab
+  document.querySelectorAll('#app-sidebar .sidebar-item[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+
+  updateSidebarActive(activeTab);
+}
+
+function updateSidebarActive(tab) {
+  const COMERCIAL_TABS = ['agendamentos', 'closer', 'relatorios', 'comercial'];
+  document.querySelectorAll('#app-sidebar .sidebar-item[data-tab]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+  // Expandir grupo Comercial quando sub-aba está ativa
+  const sidebar = document.getElementById('app-sidebar');
+  const group   = document.getElementById('sidebar-group-comercial');
+  if (group && sidebar && !sidebar.classList.contains('collapsed')) {
+    if (COMERCIAL_TABS.includes(tab)) group.classList.add('open');
+  }
+}
+
+const _BC_MAP = {
+  comercial:    [['Comercial', null]],
+  agendamentos: [['Comercial', 'comercial'], ['Agendamentos', null]],
+  closer:       [['Comercial', 'comercial'], ['Closer', null]],
+  relatorios:   [['Comercial', 'comercial'], ['Relatórios', null]],
+  sucesso:      [['Alunas', null]],
+  financeiro:   [['Financeiro', null]],
+  whatsapp:     [['WhatsApp', null]],
+  usuarios:     [['Usuários', null]],
+};
+
+function updateBreadcrumb() {
+  const el = document.getElementById('app-breadcrumb');
+  if (!el) return;
+  const crumbs = _BC_MAP[activeTab] || null;
+  if (!crumbs) { el.innerHTML = ''; return; }
+  el.innerHTML = crumbs.map((c, i) => {
+    const [label, goTab] = c;
+    const isLast = i === crumbs.length - 1;
+    const sep    = i > 0 ? '<span class="bc-sep">›</span>' : '';
+    if (isLast) return sep + `<span class="bc-current">${label}</span>`;
+    return sep + `<button class="bc-link" onclick="switchTab('${goTab}')">${label}</button>`;
+  }).join('');
+}
+
 // ─── AUTH ────────────────────────────────────────────────────────────
 function initAuth() {
+  // Bypass de autenticação para validação visual local — ativado via ?preview na URL
+  if (new URLSearchParams(location.search).has('preview')) {
+    supabase = createClient(SB_URL, SB_SERVICE_KEY);
+    currentRole = 'admin';
+    currentPermissions = { ...ROLE_PERMISSIONS.admin };
+    document.getElementById('login-screen')?.style.setProperty('display', 'none', 'important');
+    document.getElementById('app')?.style.setProperty('display', 'block', 'important');
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+    applyPermissionsToUI();
+    if (!leadsLoaded) { leadsLoaded = true; loadLeads(); }
+    switchTab('inicio');
+    initSidebar();
+    return;
+  }
+
   isLive = initFirebase();
   if (!isLive) {
     document.getElementById('login-screen').style.setProperty('display', 'none', 'important');
@@ -413,6 +506,7 @@ function initAuth() {
       if (hasPerm('usuarios')) loadUsuarios();
       loadNotifications(user.uid);
       switchTab('inicio');
+      initSidebar();
       if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
         Notification.requestPermission();
       }
@@ -447,7 +541,7 @@ function applyPermissionsToUI() {
     closer: 'comercial', relatorios: 'comercial', sucesso: 'alunas',
     financeiro: 'financeiro', usuarios: 'usuarios',
   };
-  document.querySelectorAll('.nav-link[data-tab]').forEach(el => {
+  document.querySelectorAll('.nav-link[data-tab], #app-sidebar .sidebar-item[data-tab]').forEach(el => {
     const tab = el.dataset.tab;
     if (tab === 'whatsapp') {
       el.style.display = (hasPerm('whatsapp_tati') || hasPerm('whatsapp_fernanda') || hasPerm('whatsapp_thomaz')) ? '' : 'none';
@@ -996,6 +1090,8 @@ function switchTab(tab) {
   else if (tab === 'whatsapp')     { if (!waInstancesLoaded) loadWaInstances(); switchWaSub('chats'); }
   else if (tab === 'sucesso')      { activeSucessoSub = null; renderSucesso(); }
   else if (tab === 'financeiro')   { activeFinanceiroSub = null; renderFinanceiro(); }
+  updateSidebarActive(tab);
+  updateBreadcrumb();
 }
 
 function switchSub(sub) {
@@ -3811,6 +3907,7 @@ function switchCloserView(view) {
   if (isKanban)                    renderKanban();
   else if (view === 'vendas')      renderVendasView();
   else if (view === 'descartados') renderDescartadosView();
+  updateBreadcrumb();
 }
 
 async function _backfillVendas(leads) {
@@ -9122,23 +9219,11 @@ function initChatSidebarResize() {
 
 // ─── BUSCA GLOBAL ────────────────────────────────────────────────────
 // O input é um overlay position:fixed fora do header, posicionado via JS.
-// Isso evita qualquer interferência com o stacking context do app-header.
 let _searchTimer = null;
 function openSearch() {
-  const btn     = $('search-btn');
-  const overlay = $('search-overlay');
-  if (!btn || !overlay) return;
-  const r = btn.getBoundingClientRect();
-  const inputH = 34;
-  // Centraliza verticalmente o input com o botão (no mesmo eixo da navbar)
-  overlay.style.top   = Math.round(r.top + (r.height - inputH) / 2) + 'px';
-  overlay.style.right = Math.round(window.innerWidth - r.right) + 'px';
-  overlay.style.display = '';
-  setTimeout(() => $('search-input')?.focus(), 60);
+  $('search-input')?.focus();
 }
 function closeSearch() {
-  const overlay = $('search-overlay');
-  if (overlay) overlay.style.display = 'none';
   const inp = $('search-input'); if (inp) inp.value = '';
   closeSearchDD();
 }
@@ -9783,20 +9868,15 @@ function bindEvents() {
   // ── Resize painel lateral de chats
   initChatSidebarResize();
 
-  // ── Busca global
-  $('search-btn').addEventListener('click', e => {
-    e.stopPropagation();
-    const ov = $('search-overlay');
-    (ov && ov.style.display !== 'none') ? closeSearch() : openSearch();
-  });
-  $('search-input').addEventListener('input', e => {
+  // ── Busca global (input no header)
+  $('search-input')?.addEventListener('input', e => {
     clearTimeout(_searchTimer);
     _searchTimer = setTimeout(() => runSearch(e.target.value), 180);
   });
-  $('search-input').addEventListener('keydown', e => {
+  $('search-input')?.addEventListener('keydown', e => {
     if (e.key === 'Escape') { closeSearch(); e.stopPropagation(); }
   });
-  $('search-input').addEventListener('blur', () => setTimeout(closeSearchDD, 200));
+  $('search-input')?.addEventListener('blur', () => setTimeout(closeSearchDD, 200));
 
   // ── Duplicata compare + merge
   $('dup-compare-close').addEventListener('click', closeDupCompare);
@@ -9814,7 +9894,7 @@ function bindEvents() {
 
   // ── Delegação global: clicar fora da busca fecha overlay + ícone duplicata
   document.addEventListener('click', e => {
-    if (!e.target.closest('#search-overlay') && !e.target.closest('#search-btn')) closeSearch();
+    if (!e.target.closest('#header-search-wrap') && !e.target.closest('#search-overlay')) closeSearch();
     const dupBtn = e.target.closest('.btn-dup-ico');
     if (dupBtn) { e.stopPropagation(); openDupCompare(dupBtn.dataset.dupId); }
   });

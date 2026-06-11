@@ -49,38 +49,25 @@
     <div class="brand-sep"></div>
     <span class="brand-full">Faculdade da Vida</span>
   </div>
-  <nav class="header-nav">
-    <button class="nav-link active" data-tab="inicio"><i data-lucide="house"></i>Início</button>
-
-    <button class="nav-link" data-tab="comercial"><i data-lucide="trees"></i>Comercial</button>
-
-    <button class="nav-link" data-tab="sucesso"><i data-lucide="graduation-cap"></i>Alunas</button>
-
-    <button class="nav-link" data-tab="financeiro"><i data-lucide="coins"></i>Financeiro</button>
-
-    <button class="nav-link" data-tab="whatsapp"><i data-lucide="message-circle"></i>WhatsApp</button>
-    <button class="nav-link admin-only" data-tab="usuarios" style="display:none"><i data-lucide="users"></i>Usuários</button>
-  </nav>
+  <!-- Busca Global — campo aberto no centro do header -->
+  <div class="header-search-wrap" id="header-search-wrap">
+    <i data-lucide="search" class="header-search-icon"></i>
+    <input type="text" id="search-input" class="header-search-input"
+           placeholder="Buscar lead por nome, celular ou e-mail..."
+           autocomplete="off" spellcheck="false">
+    <div class="search-dropdown" id="search-dropdown"></div>
+  </div>
   <div class="header-right">
-    <div class="user-info">
-      <img class="user-avatar" id="user-avatar" src="" alt="" style="display:none">
-      <span class="user-name" id="user-name"></span>
-    </div>
-    <!-- Busca Global — só o botão; o input é um overlay fixed fora do header -->
-    <div class="search-wrapper" id="search-wrapper">
-      <button class="notif-btn" id="search-btn" aria-label="Buscar lead">
-        <i data-lucide="search" style="width:18px;height:18px;stroke-width:1.75"></i>
-      </button>
-    </div>
-
-    <!-- Duplicatas — ícone circular estilo notif, visível apenas quando há pares -->
+    <!-- search-btn mantido oculto para compatibilidade com JS existente -->
+    <button id="search-btn" style="display:none" aria-hidden="true"></button>
+    <!-- Duplicatas -->
     <div class="notif-wrapper" id="dup-notif-wrapper" style="display:none">
       <button class="notif-btn" id="dup-notif-btn" aria-label="Duplicatas encontradas" title="Duplicatas encontradas">
         <i data-lucide="copy" style="width:18px;height:18px;stroke-width:1.75"></i>
         <span class="notif-badge" id="dup-notif-badge" style="background:#d4a017;color:#1a0c00">0</span>
       </button>
     </div>
-
+    <!-- Notificações -->
     <div class="notif-wrapper" id="notif-wrapper">
       <button class="notif-btn" id="notif-btn" aria-label="Notificações">
         <i data-lucide="bell"></i>
@@ -96,14 +83,92 @@
         </div>
       </div>
     </div>
-    <button class="btn-logout" id="btn-logout">Sair</button>
+    <!-- Usuário + online -->
+    <div class="user-info">
+      <img class="user-avatar" id="user-avatar" src="" alt="" style="display:none">
+      <span class="user-name" id="user-name"></span>
+    </div>
     <span class="online-dot"></span>
-    <span class="online-label">online</span>
   </div>
 </header>
 
+<!-- ===== SIDEBAR ===== -->
+<aside class="app-sidebar" id="app-sidebar">
+  <button class="sidebar-toggle" id="sidebar-toggle" title="Expandir/Recolher menu">
+    <i data-lucide="menu"></i>
+  </button>
+  <nav class="sidebar-nav" id="sidebar-nav">
+    <button class="sidebar-item" data-tab="inicio">
+      <i data-lucide="house" class="sidebar-icon"></i>
+      <span class="sidebar-label">Início</span>
+    </button>
+    <!-- Comercial — expansível -->
+    <div class="sidebar-group" id="sidebar-group-comercial">
+      <button class="sidebar-item sidebar-group-btn" id="sidebar-comercial-btn" data-tab="comercial">
+        <i data-lucide="trees" class="sidebar-icon"></i>
+        <span class="sidebar-label">Comercial</span>
+        <button class="sidebar-chevron-btn" id="sidebar-comercial-chevron" title="Expandir" tabindex="-1">
+          <i data-lucide="chevron-down" class="sidebar-chevron"></i>
+        </button>
+      </button>
+      <div class="sidebar-submenu" id="sidebar-submenu-comercial">
+        <button class="sidebar-item sidebar-subitem" data-tab="agendamentos">
+          <i data-lucide="calendar" class="sidebar-icon"></i>
+          <span class="sidebar-label">Agendamentos</span>
+        </button>
+        <button class="sidebar-item sidebar-subitem" data-tab="closer">
+          <i data-lucide="user" class="sidebar-icon"></i>
+          <span class="sidebar-label">Closer</span>
+        </button>
+        <button class="sidebar-item sidebar-subitem" data-tab="relatorios">
+          <i data-lucide="bar-chart-2" class="sidebar-icon"></i>
+          <span class="sidebar-label">Relatórios</span>
+        </button>
+      </div>
+      <!-- Flyout para modo recolhido (hover) -->
+      <div class="sidebar-flyout" id="sidebar-flyout-comercial">
+        <button class="sidebar-item" data-tab="agendamentos">
+          <i data-lucide="calendar" class="sidebar-icon"></i>
+          <span class="sidebar-label">Agendamentos</span>
+        </button>
+        <button class="sidebar-item" data-tab="closer">
+          <i data-lucide="user" class="sidebar-icon"></i>
+          <span class="sidebar-label">Closer</span>
+        </button>
+        <button class="sidebar-item" data-tab="relatorios">
+          <i data-lucide="bar-chart-2" class="sidebar-icon"></i>
+          <span class="sidebar-label">Relatórios</span>
+        </button>
+      </div>
+    </div>
+    <button class="sidebar-item" data-tab="sucesso">
+      <i data-lucide="graduation-cap" class="sidebar-icon"></i>
+      <span class="sidebar-label">Alunas</span>
+    </button>
+    <button class="sidebar-item" data-tab="financeiro">
+      <i data-lucide="coins" class="sidebar-icon"></i>
+      <span class="sidebar-label">Financeiro</span>
+    </button>
+    <button class="sidebar-item" data-tab="whatsapp">
+      <i data-lucide="message-circle" class="sidebar-icon"></i>
+      <span class="sidebar-label">WhatsApp</span>
+    </button>
+    <button class="sidebar-item admin-only" data-tab="usuarios" style="display:none">
+      <i data-lucide="settings" class="sidebar-icon"></i>
+      <span class="sidebar-label">Usuários</span>
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="sidebar-item sidebar-logout" id="btn-logout">
+      <i data-lucide="log-out" class="sidebar-icon"></i>
+      <span class="sidebar-label">Sair</span>
+    </button>
+  </div>
+</aside>
+
 <!-- ===== MAIN ===== -->
 <main class="app-main" id="app-main">
+<div id="app-breadcrumb" class="app-breadcrumb"></div>
 
 <!-- ===== TAB: INÍCIO ===== -->
 <div id="tab-inicio" class="tab-panel">
@@ -1615,13 +1680,8 @@
   </div>
 </div>
 
-<!-- ===== SEARCH OVERLAY — fora do header para evitar stacking context ===== -->
-<div class="search-overlay" id="search-overlay" style="display:none" role="search">
-  <input type="text" class="search-input" id="search-input"
-         placeholder="Buscar lead por nome, celular ou e-mail..."
-         autocomplete="off" spellcheck="false">
-  <div class="search-dropdown" id="search-dropdown"></div>
-</div>
+<!-- search-overlay mantido vazio para compatibilidade com closeSearch() no JS -->
+<div id="search-overlay" style="display:none" aria-hidden="true"></div>
 
 <!-- ===== MODAL: NOVA COLUNA KANBAN ===== -->
 <div class="modal-backdrop" id="add-col-backdrop">
