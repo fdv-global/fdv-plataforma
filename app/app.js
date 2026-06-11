@@ -400,12 +400,15 @@ function initSidebar() {
   mq.addEventListener('change', handleMQ);
   handleMQ(mq);
 
-  // Chevrons de todos os grupos expansíveis
+  // Chevrons de todos os grupos expansíveis — accordion: só um aberto por vez
   document.querySelectorAll('.sidebar-chevron-btn').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
       if (!sidebar.classList.contains('collapsed')) {
-        btn.closest('.sidebar-group')?.classList.toggle('open');
+        const group = btn.closest('.sidebar-group');
+        const isOpen = group?.classList.contains('open');
+        document.querySelectorAll('.sidebar-group.open').forEach(g => g.classList.remove('open'));
+        if (!isOpen) group?.classList.add('open');
       }
     });
   });

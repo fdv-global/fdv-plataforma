@@ -98,14 +98,14 @@
     <i data-lucide="chevron-left"></i>
   </button>
   <nav class="sidebar-nav" id="sidebar-nav">
-    <button class="sidebar-item" data-tab="inicio">
+    <button class="sidebar-item" data-tab="inicio" title="Início">
       <i data-lucide="house" class="sidebar-icon"></i>
       <span class="sidebar-label">Início</span>
     </button>
     <!-- Comercial — expansível -->
     <div class="sidebar-group" id="sidebar-group-comercial">
       <div class="sidebar-group-row">
-        <button class="sidebar-item sidebar-group-btn" id="sidebar-comercial-btn" data-tab="comercial">
+        <button class="sidebar-item sidebar-group-btn" id="sidebar-comercial-btn" data-tab="comercial" title="Comercial">
           <i data-lucide="trees" class="sidebar-icon"></i>
           <span class="sidebar-label">Comercial</span>
         </button>
@@ -114,15 +114,15 @@
         </button>
       </div>
       <div class="sidebar-submenu" id="sidebar-submenu-comercial">
-        <button class="sidebar-item sidebar-subitem" data-tab="agendamentos">
+        <button class="sidebar-item sidebar-subitem" data-tab="agendamentos" title="Agendamentos">
           <i data-lucide="calendar" class="sidebar-icon"></i>
           <span class="sidebar-label">Agendamentos</span>
         </button>
-        <button class="sidebar-item sidebar-subitem" data-tab="closer">
+        <button class="sidebar-item sidebar-subitem" data-tab="closer" title="Closer">
           <i data-lucide="user" class="sidebar-icon"></i>
           <span class="sidebar-label">Closer</span>
         </button>
-        <button class="sidebar-item sidebar-subitem" data-tab="relatorios">
+        <button class="sidebar-item sidebar-subitem" data-tab="relatorios" title="Relatórios">
           <i data-lucide="bar-chart-2" class="sidebar-icon"></i>
           <span class="sidebar-label">Relatórios</span>
         </button>
@@ -146,7 +146,7 @@
     <!-- Alunas — expansível -->
     <div class="sidebar-group" id="sidebar-group-alunas">
       <div class="sidebar-group-row">
-        <button class="sidebar-item sidebar-group-btn" id="sidebar-alunas-btn" data-tab="sucesso">
+        <button class="sidebar-item sidebar-group-btn" id="sidebar-alunas-btn" data-tab="sucesso" title="Alunas">
           <i data-lucide="graduation-cap" class="sidebar-icon"></i>
           <span class="sidebar-label">Alunas</span>
         </button>
@@ -155,19 +155,19 @@
         </button>
       </div>
       <div class="sidebar-submenu" id="sidebar-submenu-alunas">
-        <button class="sidebar-item sidebar-subitem" data-tab="sucesso">
+        <button class="sidebar-item sidebar-subitem" data-tab="sucesso" title="Alunas">
           <i data-lucide="users" class="sidebar-icon"></i>
           <span class="sidebar-label">Alunas</span>
         </button>
-        <button class="sidebar-item sidebar-subitem" data-tab="alunas-sessoes">
+        <button class="sidebar-item sidebar-subitem" data-tab="alunas-sessoes" title="Sessões">
           <i data-lucide="calendar-check" class="sidebar-icon"></i>
           <span class="sidebar-label">Sessões</span>
         </button>
-        <button class="sidebar-item sidebar-subitem" data-tab="alunas-contratos">
+        <button class="sidebar-item sidebar-subitem" data-tab="alunas-contratos" title="Contratos">
           <i data-lucide="file-text" class="sidebar-icon"></i>
           <span class="sidebar-label">Contratos</span>
         </button>
-        <button class="sidebar-item sidebar-subitem" data-tab="alunas-relatorios">
+        <button class="sidebar-item sidebar-subitem" data-tab="alunas-relatorios" title="Relatórios">
           <i data-lucide="bar-chart-2" class="sidebar-icon"></i>
           <span class="sidebar-label">Relatórios</span>
         </button>
@@ -194,7 +194,7 @@
     <!-- Financeiro — expansível -->
     <div class="sidebar-group" id="sidebar-group-financeiro">
       <div class="sidebar-group-row">
-        <button class="sidebar-item sidebar-group-btn" id="sidebar-financeiro-btn" data-tab="financeiro">
+        <button class="sidebar-item sidebar-group-btn" id="sidebar-financeiro-btn" data-tab="financeiro" title="Financeiro">
           <i data-lucide="coins" class="sidebar-icon"></i>
           <span class="sidebar-label">Financeiro</span>
         </button>
@@ -203,15 +203,15 @@
         </button>
       </div>
       <div class="sidebar-submenu" id="sidebar-submenu-financeiro">
-        <button class="sidebar-item sidebar-subitem" data-tab="financeiro-inadimplencia">
+        <button class="sidebar-item sidebar-subitem" data-tab="financeiro-inadimplencia" title="Inadimplência">
           <i data-lucide="alert-triangle" class="sidebar-icon"></i>
           <span class="sidebar-label">Inadimplência</span>
         </button>
-        <button class="sidebar-item sidebar-subitem" data-tab="financeiro-pagamentos">
+        <button class="sidebar-item sidebar-subitem" data-tab="financeiro-pagamentos" title="Pagamentos">
           <i data-lucide="credit-card" class="sidebar-icon"></i>
           <span class="sidebar-label">Pagamentos</span>
         </button>
-        <button class="sidebar-item sidebar-subitem" data-tab="financeiro-relatorios">
+        <button class="sidebar-item sidebar-subitem" data-tab="financeiro-relatorios" title="Relatórios">
           <i data-lucide="bar-chart-2" class="sidebar-icon"></i>
           <span class="sidebar-label">Relatórios</span>
         </button>
@@ -231,17 +231,17 @@
         </button>
       </div>
     </div>
-    <button class="sidebar-item" data-tab="whatsapp">
+    <button class="sidebar-item" data-tab="whatsapp" title="WhatsApp">
       <i data-lucide="message-circle" class="sidebar-icon"></i>
       <span class="sidebar-label">WhatsApp</span>
     </button>
-    <button class="sidebar-item admin-only" data-tab="usuarios" style="display:none">
+    <button class="sidebar-item admin-only" data-tab="usuarios" title="Usuários" style="display:none">
       <i data-lucide="settings" class="sidebar-icon"></i>
       <span class="sidebar-label">Usuários</span>
     </button>
   </nav>
   <div class="sidebar-footer">
-    <button class="sidebar-item sidebar-logout" id="btn-logout">
+    <button class="sidebar-item sidebar-logout" id="btn-logout" title="Sair">
       <i data-lucide="log-out" class="sidebar-icon"></i>
       <span class="sidebar-label">Sair</span>
     </button>
