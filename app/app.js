@@ -8952,12 +8952,11 @@ function buildDupMap() {
 }
 function isDup(id) { return dupMap.has(id); }
 function updateDupAlertBtn() {
-  const wrap  = $('dup-notif-wrapper');
   const badge = $('dup-notif-badge');
-  if (!wrap) return;
+  if (!badge) return;
   const pairs = countDupPairs();
-  wrap.style.display  = pairs > 0 ? '' : 'none';
-  if (badge) badge.textContent = pairs;
+  badge.textContent = pairs;
+  badge.style.display = pairs > 0 ? '' : 'none';
 }
 function openFirstDupPair() {
   for (const [id] of dupMap) { openDupCompare(id); return; }

@@ -456,7 +456,9 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 
 /* Grupo Comercial — expansível */
 .sidebar-group { position: relative; }
-.sidebar-group-btn { justify-content: space-between; }
+.sidebar-group-row { display: flex; align-items: center; }
+.sidebar-group-row > .sidebar-group-btn { flex: 1; min-width: 0; }
+.sidebar-group-btn { justify-content: flex-start; }
 .sidebar-chevron-btn {
   display: flex; align-items: center; justify-content: center;
   margin-left: auto; padding: 2px; background: none; border: none; cursor: pointer;

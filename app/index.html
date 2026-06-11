@@ -61,10 +61,10 @@
     <!-- search-btn mantido oculto para compatibilidade com JS existente -->
     <button id="search-btn" style="display:none" aria-hidden="true"></button>
     <!-- Duplicatas -->
-    <div class="notif-wrapper" id="dup-notif-wrapper" style="display:none">
+    <div class="notif-wrapper" id="dup-notif-wrapper">
       <button class="notif-btn" id="dup-notif-btn" aria-label="Duplicatas encontradas" title="Duplicatas encontradas">
         <i data-lucide="copy" style="width:18px;height:18px;stroke-width:1.75"></i>
-        <span class="notif-badge" id="dup-notif-badge" style="background:#d4a017;color:#1a0c00">0</span>
+        <span class="notif-badge" id="dup-notif-badge" style="background:#d4a017;color:#1a0c00;display:none">0</span>
       </button>
     </div>
     <!-- Notificações -->
@@ -104,13 +104,15 @@
     </button>
     <!-- Comercial — expansível -->
     <div class="sidebar-group" id="sidebar-group-comercial">
-      <button class="sidebar-item sidebar-group-btn" id="sidebar-comercial-btn" data-tab="comercial">
-        <i data-lucide="trees" class="sidebar-icon"></i>
-        <span class="sidebar-label">Comercial</span>
+      <div class="sidebar-group-row">
+        <button class="sidebar-item sidebar-group-btn" id="sidebar-comercial-btn" data-tab="comercial">
+          <i data-lucide="trees" class="sidebar-icon"></i>
+          <span class="sidebar-label">Comercial</span>
+        </button>
         <button class="sidebar-chevron-btn" id="sidebar-comercial-chevron" title="Expandir" tabindex="-1">
           <i data-lucide="chevron-down" class="sidebar-chevron"></i>
         </button>
-      </button>
+      </div>
       <div class="sidebar-submenu" id="sidebar-submenu-comercial">
         <button class="sidebar-item sidebar-subitem" data-tab="agendamentos">
           <i data-lucide="calendar" class="sidebar-icon"></i>
