@@ -414,20 +414,25 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   border-right: 1px solid var(--b0);
   display: flex; flex-direction: column;
   transition: width 0.2s ease;
-  overflow: hidden;
+  overflow: visible;
 }
 .app-sidebar.collapsed { width: 60px; }
 
 .sidebar-toggle {
+  position: absolute; right: -14px; top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(20,26,28,0.8);
+  border: 1px solid rgba(255,255,255,0.15);
+  cursor: pointer; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px; margin: 10px auto 4px;
-  border-radius: var(--r-sm); background: none; border: none;
-  color: var(--t3); cursor: pointer;
-  transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
-  flex-shrink: 0;
+  color: var(--t2);
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
-.sidebar-toggle:hover { color: var(--t1); background: var(--b0); }
-.sidebar-toggle svg { width: 18px; height: 18px; stroke-width: 1.75; }
+.sidebar-toggle:hover { color: var(--t1); background: rgba(206,146,33,0.15); border-color: rgba(206,146,33,0.4); }
+.sidebar-toggle svg { width: 14px; height: 14px; stroke-width: 2; transition: transform 0.2s ease; }
+.app-sidebar.collapsed .sidebar-toggle svg { transform: rotate(180deg); }
 
 .sidebar-nav { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 4px 8px; }
 .sidebar-nav::-webkit-scrollbar { width: 3px; }
@@ -452,7 +457,6 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 
 .app-sidebar.collapsed .sidebar-label { opacity: 0; width: 0; pointer-events: none; }
 .app-sidebar.collapsed .sidebar-chevron { opacity: 0; width: 0; }
-.app-sidebar.collapsed .sidebar-toggle { margin-left: auto; margin-right: auto; }
 
 /* Grupo Comercial — expansível */
 .sidebar-group { position: relative; }
