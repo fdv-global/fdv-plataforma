@@ -400,14 +400,14 @@ function initSidebar() {
   mq.addEventListener('change', handleMQ);
   handleMQ(mq);
 
-  // Chevron do grupo Comercial — expande/recolhe submenu sem navegar
-  const chevronBtn = document.getElementById('sidebar-comercial-chevron');
-  const comercialGroup = document.getElementById('sidebar-group-comercial');
-  chevronBtn?.addEventListener('click', e => {
-    e.stopPropagation();
-    if (!sidebar.classList.contains('collapsed')) {
-      comercialGroup?.classList.toggle('open');
-    }
+  // Chevrons de todos os grupos expansíveis
+  document.querySelectorAll('.sidebar-chevron-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (!sidebar.classList.contains('collapsed')) {
+        btn.closest('.sidebar-group')?.classList.toggle('open');
+      }
+    });
   });
 
   // Delegação de navegação — todos os itens com data-tab
@@ -419,15 +419,20 @@ function initSidebar() {
 }
 
 function updateSidebarActive(tab) {
-  const COMERCIAL_TABS = ['agendamentos', 'closer', 'relatorios', 'comercial'];
+  const GROUP_TABS = {
+    'sidebar-group-comercial':  ['comercial','agendamentos','closer','relatorios'],
+    'sidebar-group-alunas':     ['sucesso','alunas-sessoes','alunas-contratos','alunas-relatorios'],
+    'sidebar-group-financeiro': ['financeiro','financeiro-inadimplencia','financeiro-pagamentos','financeiro-relatorios'],
+  };
   document.querySelectorAll('#app-sidebar .sidebar-item[data-tab]').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tab);
   });
-  // Expandir grupo Comercial quando sub-aba está ativa
   const sidebar = document.getElementById('app-sidebar');
-  const group   = document.getElementById('sidebar-group-comercial');
-  if (group && sidebar && !sidebar.classList.contains('collapsed')) {
-    if (COMERCIAL_TABS.includes(tab)) group.classList.add('open');
+  if (sidebar && !sidebar.classList.contains('collapsed')) {
+    Object.entries(GROUP_TABS).forEach(([id, tabs]) => {
+      const group = document.getElementById(id);
+      if (group && tabs.includes(tab)) group.classList.add('open');
+    });
   }
 }
 
@@ -436,8 +441,14 @@ const _BC_MAP = {
   agendamentos: [['Comercial', 'comercial'], ['Agendamentos', null]],
   closer:       [['Comercial', 'comercial'], ['Closer', null]],
   relatorios:   [['Comercial', 'comercial'], ['Relatórios', null]],
-  sucesso:      [['Alunas', null]],
-  financeiro:   [['Financeiro', null]],
+  sucesso:               [['Alunas', null]],
+  'alunas-sessoes':      [['Alunas', 'sucesso'], ['Sessões', null]],
+  'alunas-contratos':    [['Alunas', 'sucesso'], ['Contratos', null]],
+  'alunas-relatorios':   [['Alunas', 'sucesso'], ['Relatórios', null]],
+  financeiro:                  [['Financeiro', null]],
+  'financeiro-inadimplencia':  [['Financeiro', 'financeiro'], ['Inadimplência', null]],
+  'financeiro-pagamentos':     [['Financeiro', 'financeiro'], ['Pagamentos', null]],
+  'financeiro-relatorios':     [['Financeiro', 'financeiro'], ['Relatórios', null]],
   whatsapp:     [['WhatsApp', null]],
   usuarios:     [['Usuários', null]],
 };
@@ -538,8 +549,10 @@ async function loadCurrentUserProfile(uid) {
 function applyPermissionsToUI() {
   const TAB_PERM = {
     inicio: 'inicio', comercial: 'comercial', agendamentos: 'comercial',
-    closer: 'comercial', relatorios: 'comercial', sucesso: 'alunas',
-    financeiro: 'financeiro', usuarios: 'usuarios',
+    closer: 'comercial', relatorios: 'comercial',
+    sucesso: 'alunas', 'alunas-sessoes': 'alunas', 'alunas-contratos': 'alunas', 'alunas-relatorios': 'alunas',
+    financeiro: 'financeiro', 'financeiro-inadimplencia': 'financeiro', 'financeiro-pagamentos': 'financeiro', 'financeiro-relatorios': 'financeiro',
+    usuarios: 'usuarios',
   };
   document.querySelectorAll('.nav-link[data-tab], #app-sidebar .sidebar-item[data-tab]').forEach(el => {
     const tab = el.dataset.tab;
@@ -1064,8 +1077,18 @@ async function loadAlunas() {
 // ─── TAB / SUB SWITCHING ─────────────────────────────────────────────
 
 function switchTab(tab) {
+  // Telas em construção
+  const COMING_SOON = new Set(['alunas-sessoes','alunas-contratos','alunas-relatorios',
+    'financeiro-inadimplencia','financeiro-pagamentos','financeiro-relatorios']);
+  if (COMING_SOON.has(tab)) { toast('Em breve', 'info'); return; }
+
   // permission guard
-  const TAB_PERM = { comercial:'comercial', agendamentos:'comercial', closer:'comercial', relatorios:'comercial', sucesso:'alunas', financeiro:'financeiro', usuarios:'usuarios' };
+  const TAB_PERM = {
+    comercial:'comercial', agendamentos:'comercial', closer:'comercial', relatorios:'comercial',
+    sucesso:'alunas', financeiro:'financeiro', usuarios:'usuarios',
+    'alunas-sessoes':'alunas', 'alunas-contratos':'alunas', 'alunas-relatorios':'alunas',
+    'financeiro-inadimplencia':'financeiro', 'financeiro-pagamentos':'financeiro', 'financeiro-relatorios':'financeiro',
+  };
   if (tab === 'whatsapp') {
     if (!hasPerm('whatsapp_tati') && !hasPerm('whatsapp_fernanda') && !hasPerm('whatsapp_thomaz')) { switchTab('inicio'); return; }
   } else if (TAB_PERM[tab] && !hasPerm(TAB_PERM[tab])) {

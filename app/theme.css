@@ -40,7 +40,7 @@ h1, h2, h3, h4,
   font-family: 'Red Hat Display', system-ui, sans-serif;
 }
 
-/* ── 5. Navbar — barra fixa full-width ─────────────────────── */
+/* ── 5. Navbar — barra fixa full-width, três zonas ─────────── */
 .app-header {
   position: fixed !important;
   top: 0 !important;
@@ -51,18 +51,43 @@ h1, h2, h3, h4,
   width: 100% !important;
   height: 56px !important;
   min-height: unset !important;
-  background: rgba(18, 24, 26, 0.92) !important;
+  background: rgba(20, 26, 28, 0.55) !important;
   backdrop-filter: blur(24px) saturate(1.5) !important;
   -webkit-backdrop-filter: blur(24px) saturate(1.5) !important;
   border: none !important;
   border-bottom: 1px solid rgba(206, 146, 33, 0.15) !important;
   border-radius: 0 !important;
-  padding: 0 24px !important;
+  padding: 0 !important;
+  gap: 0 !important;
   overflow: visible !important;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.025),
     0 4px 24px rgba(0, 0, 0, 0.20) !important;
   z-index: 200 !important;
+}
+
+/* Zona logo — alinhada com a sidebar */
+.header-brand {
+  width: 220px !important;
+  flex-shrink: 0 !important;
+  padding: 0 16px !important;
+  justify-content: flex-start !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Zona busca — ocupa todo o espaço entre logo e direita */
+.header-search-wrap {
+  flex: 1 !important;
+  max-width: none !important;
+  padding: 0 16px !important;
+}
+
+/* Zona direita — colada na borda */
+.header-right {
+  flex-shrink: 0 !important;
+  padding: 0 16px 0 0 !important;
+  gap: 6px !important;
+  margin-left: 0 !important;
 }
 
 /* ── 5b. Avatar do usuário na taskbar ──────────────────────── */

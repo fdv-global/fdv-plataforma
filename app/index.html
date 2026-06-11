@@ -143,14 +143,94 @@
         </button>
       </div>
     </div>
-    <button class="sidebar-item" data-tab="sucesso">
-      <i data-lucide="graduation-cap" class="sidebar-icon"></i>
-      <span class="sidebar-label">Alunas</span>
-    </button>
-    <button class="sidebar-item" data-tab="financeiro">
-      <i data-lucide="coins" class="sidebar-icon"></i>
-      <span class="sidebar-label">Financeiro</span>
-    </button>
+    <!-- Alunas — expansível -->
+    <div class="sidebar-group" id="sidebar-group-alunas">
+      <div class="sidebar-group-row">
+        <button class="sidebar-item sidebar-group-btn" id="sidebar-alunas-btn" data-tab="sucesso">
+          <i data-lucide="graduation-cap" class="sidebar-icon"></i>
+          <span class="sidebar-label">Alunas</span>
+        </button>
+        <button class="sidebar-chevron-btn" id="sidebar-alunas-chevron" title="Expandir" tabindex="-1">
+          <i data-lucide="chevron-down" class="sidebar-chevron"></i>
+        </button>
+      </div>
+      <div class="sidebar-submenu" id="sidebar-submenu-alunas">
+        <button class="sidebar-item sidebar-subitem" data-tab="sucesso">
+          <i data-lucide="users" class="sidebar-icon"></i>
+          <span class="sidebar-label">Alunas</span>
+        </button>
+        <button class="sidebar-item sidebar-subitem" data-tab="alunas-sessoes">
+          <i data-lucide="calendar-check" class="sidebar-icon"></i>
+          <span class="sidebar-label">Sessões</span>
+        </button>
+        <button class="sidebar-item sidebar-subitem" data-tab="alunas-contratos">
+          <i data-lucide="file-text" class="sidebar-icon"></i>
+          <span class="sidebar-label">Contratos</span>
+        </button>
+        <button class="sidebar-item sidebar-subitem" data-tab="alunas-relatorios">
+          <i data-lucide="bar-chart-2" class="sidebar-icon"></i>
+          <span class="sidebar-label">Relatórios</span>
+        </button>
+      </div>
+      <div class="sidebar-flyout" id="sidebar-flyout-alunas">
+        <button class="sidebar-item" data-tab="sucesso">
+          <i data-lucide="users" class="sidebar-icon"></i>
+          <span class="sidebar-label">Alunas</span>
+        </button>
+        <button class="sidebar-item" data-tab="alunas-sessoes">
+          <i data-lucide="calendar-check" class="sidebar-icon"></i>
+          <span class="sidebar-label">Sessões</span>
+        </button>
+        <button class="sidebar-item" data-tab="alunas-contratos">
+          <i data-lucide="file-text" class="sidebar-icon"></i>
+          <span class="sidebar-label">Contratos</span>
+        </button>
+        <button class="sidebar-item" data-tab="alunas-relatorios">
+          <i data-lucide="bar-chart-2" class="sidebar-icon"></i>
+          <span class="sidebar-label">Relatórios</span>
+        </button>
+      </div>
+    </div>
+    <!-- Financeiro — expansível -->
+    <div class="sidebar-group" id="sidebar-group-financeiro">
+      <div class="sidebar-group-row">
+        <button class="sidebar-item sidebar-group-btn" id="sidebar-financeiro-btn" data-tab="financeiro">
+          <i data-lucide="coins" class="sidebar-icon"></i>
+          <span class="sidebar-label">Financeiro</span>
+        </button>
+        <button class="sidebar-chevron-btn" id="sidebar-financeiro-chevron" title="Expandir" tabindex="-1">
+          <i data-lucide="chevron-down" class="sidebar-chevron"></i>
+        </button>
+      </div>
+      <div class="sidebar-submenu" id="sidebar-submenu-financeiro">
+        <button class="sidebar-item sidebar-subitem" data-tab="financeiro-inadimplencia">
+          <i data-lucide="alert-triangle" class="sidebar-icon"></i>
+          <span class="sidebar-label">Inadimplência</span>
+        </button>
+        <button class="sidebar-item sidebar-subitem" data-tab="financeiro-pagamentos">
+          <i data-lucide="credit-card" class="sidebar-icon"></i>
+          <span class="sidebar-label">Pagamentos</span>
+        </button>
+        <button class="sidebar-item sidebar-subitem" data-tab="financeiro-relatorios">
+          <i data-lucide="bar-chart-2" class="sidebar-icon"></i>
+          <span class="sidebar-label">Relatórios</span>
+        </button>
+      </div>
+      <div class="sidebar-flyout" id="sidebar-flyout-financeiro">
+        <button class="sidebar-item" data-tab="financeiro-inadimplencia">
+          <i data-lucide="alert-triangle" class="sidebar-icon"></i>
+          <span class="sidebar-label">Inadimplência</span>
+        </button>
+        <button class="sidebar-item" data-tab="financeiro-pagamentos">
+          <i data-lucide="credit-card" class="sidebar-icon"></i>
+          <span class="sidebar-label">Pagamentos</span>
+        </button>
+        <button class="sidebar-item" data-tab="financeiro-relatorios">
+          <i data-lucide="bar-chart-2" class="sidebar-icon"></i>
+          <span class="sidebar-label">Relatórios</span>
+        </button>
+      </div>
+    </div>
     <button class="sidebar-item" data-tab="whatsapp">
       <i data-lucide="message-circle" class="sidebar-icon"></i>
       <span class="sidebar-label">WhatsApp</span>
