@@ -218,9 +218,12 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 .app-header {
   position: fixed;
   top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 480px;
+  left: 268px;
+  right: 24px;
+  transform: none;
+  width: auto;
+  max-width: 600px;
+  margin: 0 auto;
   height: 56px;
   border-radius: 100px;
   background: rgba(20, 26, 28, 0.45);
@@ -3578,16 +3581,21 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
    TELA INÍCIO — REDESIGN
    ══════════════════════════════════════════════════════════ */
 .inicio-wrap {
-  max-width: 900px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
   padding: 0 20px 60px;
+  text-align: center;
+}
+.inicio-verse-card {
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
 }
 .inicio-header {
-  width: 100vw;
-  margin-left: calc(-268px - 24px);
-  margin-right: calc(-24px);
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
   text-align: center;
-  padding: 0 20px;
   margin-bottom: 24px;
 }
 .inicio-greeting { text-align: center; width: 100%; }
