@@ -385,34 +385,41 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 /* Search overlay mantido invisível — compatibilidade com closeSearch() */
 #search-overlay { display: none !important; }
 
-/* ── Busca integrada no header ────────────────────────────── */
+/* ── Busca integrada no header — modo lupa ─────────────────── */
 .header-search-wrap {
-  flex: 1; position: relative;
-  display: flex; align-items: center;
-  min-width: 0;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  border-radius: 0;
+  position: relative;
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+.header-search-wrap.expanded {
+  flex: 1;
+  cursor: default;
 }
 .header-search-icon {
-  position: absolute; left: 12px;
-  width: 15px; height: 15px; stroke-width: 1.75;
-  color: var(--t3); pointer-events: none; flex-shrink: 0;
+  width: 18px; height: 18px; stroke-width: 1.75;
+  color: rgba(255,255,255,0.65); flex-shrink: 0;
 }
 .header-search-input,
 #search-input {
-  width: 100%; box-sizing: border-box;
-  padding: 7px 14px 7px 36px; border-radius: 0;
+  width: 0; opacity: 0; overflow: hidden;
+  padding: 0; box-sizing: border-box;
   background: transparent !important; border: none !important;
-  box-shadow: none !important;
-  color: var(--t1); font-size: 13.5px; outline: none;
+  box-shadow: none !important; outline: none !important;
+  color: var(--t1); font-size: 13.5px;
   font-family: inherit;
+  transition: width 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
 }
+.header-search-wrap.expanded .header-search-input,
+.header-search-wrap.expanded #search-input {
+  width: 280px; opacity: 1;
+  padding: 6px 12px;
+}
+.header-search-input::placeholder,
+#search-input::placeholder { color: rgba(255,255,255,0.35); }
 .header-search-input:focus,
 #search-input:focus { border: none !important; box-shadow: none !important; outline: none !important; }
-.header-search-input::placeholder,
-#search-input::placeholder { color: var(--t4); }
 /* neutraliza autofill do browser */
 #search-input:-webkit-autofill,
 #search-input:-webkit-autofill:focus {

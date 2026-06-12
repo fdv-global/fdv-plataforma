@@ -9225,9 +9225,11 @@ function initChatSidebarResize() {
 // O input é um overlay position:fixed fora do header, posicionado via JS.
 let _searchTimer = null;
 function openSearch() {
+  document.getElementById('header-search-wrap')?.classList.add('expanded');
   $('search-input')?.focus();
 }
 function closeSearch() {
+  document.getElementById('header-search-wrap')?.classList.remove('expanded');
   const inp = $('search-input'); if (inp) inp.value = '';
   closeSearchDD();
 }
@@ -9874,6 +9876,7 @@ function bindEvents() {
   initChatSidebarResize();
 
   // ── Busca global (input no header)
+  document.getElementById('header-search-wrap')?.addEventListener('click', () => openSearch());
   $('search-input')?.addEventListener('input', e => {
     clearTimeout(_searchTimer);
     _searchTimer = setTimeout(() => runSearch(e.target.value), 180);
