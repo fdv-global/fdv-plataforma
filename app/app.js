@@ -381,35 +381,16 @@ function etiquetaChip(tag, sm = false) {
 // ─── SIDEBAR ─────────────────────────────────────────────────────────
 function initSidebar() {
   const sidebar = document.getElementById('app-sidebar');
-  const main    = document.getElementById('app-main');
-  const toggle  = document.getElementById('sidebar-toggle');
   if (!sidebar) return;
-
-  // Toggle recolher/expandir
-  toggle?.addEventListener('click', () => {
-    sidebar.classList.toggle('collapsed');
-    main?.classList.toggle('sidebar-collapsed', sidebar.classList.contains('collapsed'));
-  });
-
-  // Auto-colapso ≤1024px
-  const mq = window.matchMedia('(max-width: 1024px)');
-  function handleMQ(e) {
-    if (e.matches) { sidebar.classList.add('collapsed'); main?.classList.add('sidebar-collapsed'); }
-    else { sidebar.classList.remove('collapsed'); main?.classList.remove('sidebar-collapsed'); }
-  }
-  mq.addEventListener('change', handleMQ);
-  handleMQ(mq);
 
   // Chevrons de todos os grupos expansíveis — accordion: só um aberto por vez
   document.querySelectorAll('.sidebar-chevron-btn').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      if (!sidebar.classList.contains('collapsed')) {
-        const group = btn.closest('.sidebar-group');
-        const isOpen = group?.classList.contains('open');
-        document.querySelectorAll('.sidebar-group.open').forEach(g => g.classList.remove('open'));
-        if (!isOpen) group?.classList.add('open');
-      }
+      const group = btn.closest('.sidebar-group');
+      const isOpen = group?.classList.contains('open');
+      document.querySelectorAll('.sidebar-group.open').forEach(g => g.classList.remove('open'));
+      if (!isOpen) group?.classList.add('open');
     });
   });
 
@@ -431,12 +412,10 @@ function updateSidebarActive(tab) {
     btn.classList.toggle('active', btn.dataset.tab === tab);
   });
   const sidebar = document.getElementById('app-sidebar');
-  if (sidebar && !sidebar.classList.contains('collapsed')) {
-    Object.entries(GROUP_TABS).forEach(([id, tabs]) => {
-      const group = document.getElementById(id);
-      if (group && tabs.includes(tab)) group.classList.add('open');
-    });
-  }
+  Object.entries(GROUP_TABS).forEach(([id, tabs]) => {
+    const group = document.getElementById(id);
+    if (group && tabs.includes(tab)) group.classList.add('open');
+  });
 }
 
 const _BC_MAP = {

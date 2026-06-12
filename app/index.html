@@ -94,9 +94,6 @@
 
 <!-- ===== SIDEBAR ===== -->
 <aside class="app-sidebar" id="app-sidebar">
-  <button class="sidebar-toggle" id="sidebar-toggle" title="Expandir/Recolher">
-    <i data-lucide="chevron-left"></i>
-  </button>
   <nav class="sidebar-nav" id="sidebar-nav">
     <button class="sidebar-item" data-tab="inicio" title="Início">
       <i data-lucide="house" class="sidebar-icon"></i>
@@ -240,13 +237,12 @@
       <span class="sidebar-label">Usuários</span>
     </button>
   </nav>
-  <div class="sidebar-footer">
-    <button class="sidebar-item sidebar-logout" id="btn-logout" title="Sair">
-      <i data-lucide="log-out" class="sidebar-icon"></i>
-      <span class="sidebar-label">Sair</span>
-    </button>
-  </div>
 </aside>
+
+<button class="sidebar-signout" id="btn-logout">
+  <i data-lucide="log-out" style="width:16px;height:16px;stroke-width:1.75;flex-shrink:0"></i>
+  Sair
+</button>
 
 <!-- ===== MAIN ===== -->
 <main class="app-main" id="app-main">

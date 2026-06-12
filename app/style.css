@@ -196,10 +196,12 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 .app-header {
   position: fixed;
   top: 12px;
-  left: 256px;
-  right: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 48px);
+  max-width: 1400px;
   height: 56px;
-  border-radius: 16px;
+  border-radius: 100px;
   background: rgba(20, 26, 28, 0.88);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -207,8 +209,8 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   z-index: 100;
   display: flex;
   align-items: center;
-  padding: 0;
-  gap: 0;
+  padding: 0 20px;
+  gap: 12px;
   overflow: visible;
 }
 
@@ -414,37 +416,22 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
    ============================================================ */
 .app-sidebar {
   position: fixed;
-  top: 12px;
+  top: 80px;
   left: 12px;
-  bottom: 12px;
+  bottom: auto;
   width: 220px;
-  border-radius: 16px;
-  background: rgba(20, 26, 28, 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  height: auto;
+  border-radius: 20px;
+  background: rgba(20, 26, 28, 0.35);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   z-index: 150;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  transition: width 0.2s ease;
+  padding: 12px 0;
+  overflow: visible;
 }
-.app-sidebar.collapsed { width: 60px; }
-
-.sidebar-toggle {
-  position: absolute; right: 6px; top: 28px;
-  z-index: 1;
-  width: 28px; height: 28px; border-radius: 50%;
-  background: rgba(20,26,28,0.8);
-  border: 1px solid rgba(255,255,255,0.15);
-  cursor: pointer; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--t2);
-  transition: background var(--fast) var(--ease), color var(--fast) var(--ease), border-color var(--fast) var(--ease);
-}
-.sidebar-toggle:hover { color: var(--t1); background: rgba(206,146,33,0.15); border-color: rgba(206,146,33,0.4); }
-.sidebar-toggle svg { width: 14px; height: 14px; stroke-width: 2; transition: transform 0.2s ease; }
-.app-sidebar.collapsed .sidebar-toggle svg { transform: rotate(180deg); }
 
 .sidebar-nav { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px 8px 4px; }
 .sidebar-nav::-webkit-scrollbar { width: 3px; }
@@ -466,10 +453,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   box-shadow: 0 0 0 1px var(--gold-22);
 }
 .sidebar-icon { width: 18px; height: 18px; stroke-width: 1.75; flex-shrink: 0; }
-.sidebar-label { overflow: hidden; text-overflow: ellipsis; transition: opacity 0.15s ease, width 0.2s ease; }
-
-.app-sidebar.collapsed .sidebar-label { opacity: 0; width: 0; pointer-events: none; }
-.app-sidebar.collapsed .sidebar-chevron { opacity: 0; width: 0; }
+.sidebar-label { overflow: hidden; text-overflow: ellipsis; }
 
 /* Grupo Comercial — expansível */
 .sidebar-group { position: relative; }
@@ -485,7 +469,6 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 .sidebar-chevron-btn:hover { color: var(--t2); background: var(--b1); }
 .sidebar-chevron { width: 14px; height: 14px; stroke-width: 2; transition: transform 0.2s ease, opacity 0.15s ease; }
 .sidebar-group.open .sidebar-chevron { transform: rotate(180deg); }
-.app-sidebar.collapsed .sidebar-chevron-btn { display: none; }
 .sidebar-submenu { display: none; padding-left: 12px; }
 .sidebar-group.open .sidebar-submenu { display: block; }
 .sidebar-subitem { font-size: 13px; padding: 8px 16px 8px 32px; opacity: 0.75; }
@@ -500,12 +483,31 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   box-shadow: 4px 4px 24px rgba(0,0,0,.5);
   z-index: 300;
 }
-.app-sidebar.collapsed .sidebar-group:hover .sidebar-flyout { display: block; }
-
-/* Footer logout */
-.sidebar-footer { padding: 16px 8px 8px; border-top: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
-.sidebar-logout { color: var(--t3); }
-.sidebar-logout:hover { color: #E05C4A; background: rgba(192,57,43,.07); }
+/* Signout flutuante */
+.sidebar-signout {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 100px;
+  background: rgba(20, 26, 28, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  z-index: 150;
+  transition: background 0.15s ease;
+  font-family: inherit;
+}
+.sidebar-signout:hover {
+  background: rgba(20, 26, 28, 0.8);
+  color: rgba(255, 255, 255, 0.9);
+}
 
 /* ============================================================
    LAYOUT
@@ -515,9 +517,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   padding-top: 80px;
   padding-bottom: 40px;
   min-height: 100vh;
-  transition: margin-left 0.2s ease;
 }
-.app-main.sidebar-collapsed { margin-left: 84px; }
 .tab-panel { padding: 0 24px; box-sizing: border-box; }
 
 /* ── Breadcrumb ───────────────────────────────────────────── */
@@ -2093,12 +2093,6 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 /* ============================================================
    RESPONSIVE
    ============================================================ */
-@media (max-width: 1024px) {
-  .app-sidebar:not(.collapsed) { width: 60px; }
-  .app-sidebar:not(.collapsed) .sidebar-label,
-  .app-sidebar:not(.collapsed) .sidebar-chevron { opacity: 0; width: 0; }
-  .app-main:not(.sidebar-collapsed) { margin-left: 84px; }
-}
 @media (max-width: 1100px) {
   .stats-grid { grid-template-columns: repeat(2,1fr); }
 }
