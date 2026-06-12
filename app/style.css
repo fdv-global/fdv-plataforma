@@ -195,8 +195,8 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
    ============================================================ */
 .floating-logo {
   position: fixed;
-  top: 170px;
-  left: 12px;
+  top: 170px !important;
+  left: 12px !important;
   width: auto;
   height: auto;
   border-radius: 50%;
@@ -228,8 +228,8 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   background: rgba(20, 26, 28, 0.25);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(201, 162, 39, 0.3);
-  box-shadow: 0 0 20px rgba(201, 162, 39, 0.08);
+  border: 1px solid rgba(201, 162, 39, 0.5) !important;
+  box-shadow: 0 0 20px rgba(201, 162, 39, 0.12) !important;
   z-index: 100;
   display: flex;
   align-items: center;
@@ -382,45 +382,39 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   display: flex; align-items: center; gap: 8px;
   font-size: 12px; color: var(--t3); flex-shrink: 0;
 }
-.header-divider {
-  width: 1px; height: 24px;
-  background: rgba(201, 162, 39, 0.3);
-  margin: 0 4px;
+.header-icons-group,
+.header-user-group {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(20, 26, 28, 0.4);
+  border: 1px solid rgba(201, 162, 39, 0.3);
+  border-radius: 100px;
+  padding: 6px 14px;
 }
 
 /* Search overlay mantido invisível — compatibilidade com closeSearch() */
 #search-overlay { display: none !important; }
 
-/* ── Busca integrada no header — modo lupa ─────────────────── */
+/* ── Busca integrada no header — sempre visível ─────────────── */
 .header-search-wrap {
   position: relative;
   display: flex; align-items: center; gap: 8px;
-  cursor: pointer;
+  flex: 1;
   background: transparent;
   border: none;
-}
-.header-search-wrap.expanded {
-  flex: 1;
-  cursor: default;
+  cursor: text;
 }
 .header-search-icon {
   width: 18px; height: 18px; stroke-width: 1.75;
-  color: rgba(255,255,255,0.65); flex-shrink: 0;
+  color: rgba(255,255,255,0.5); flex-shrink: 0;
 }
 .header-search-input,
 #search-input {
-  width: 0; opacity: 0; overflow: hidden;
-  padding: 0; box-sizing: border-box;
+  flex: 1; box-sizing: border-box;
+  padding: 6px 12px;
   background: transparent !important; border: none !important;
   box-shadow: none !important; outline: none !important;
   color: var(--t1); font-size: 13.5px;
   font-family: inherit;
-  transition: width 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
-}
-.header-search-wrap.expanded .header-search-input,
-.header-search-wrap.expanded #search-input {
-  width: 280px; opacity: 1;
-  padding: 6px 12px;
 }
 .header-search-input::placeholder,
 #search-input::placeholder { color: rgba(255,255,255,0.35); }
@@ -469,7 +463,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
    ============================================================ */
 .app-sidebar {
   position: fixed;
-  top: 240px;
+  top: 250px !important;
   left: 12px;
   width: 220px;
   height: auto;
