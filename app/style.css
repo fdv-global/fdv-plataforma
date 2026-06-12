@@ -484,7 +484,8 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
    ============================================================ */
 .app-sidebar {
   position: fixed;
-  top: 700px;
+  top: 50%;
+  transform: translateY(-50%);
   left: 24px;
   width: 220px;
   height: auto;
@@ -621,7 +622,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
    ============================================================ */
 .app-main {
   margin-left: 268px;
-  margin-right: 48px;
+  margin-right: 120px;
   padding-top: 96px;
   padding-bottom: 40px;
   min-height: 100vh;
