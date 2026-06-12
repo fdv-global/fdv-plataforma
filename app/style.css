@@ -485,7 +485,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   -webkit-backdrop-filter: none;
 }
 
-.sidebar-nav { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; overflow-x: hidden; padding: 0; }
+.sidebar-nav { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; overflow-x: hidden; padding: 0; }
 .sidebar-nav::-webkit-scrollbar { width: 3px; }
 .sidebar-nav::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 2px; }
 
@@ -515,6 +515,17 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 }
 .sidebar-icon { width: 18px; height: 18px; stroke-width: 1.75; flex-shrink: 0; }
 .sidebar-label { overflow: hidden; text-overflow: ellipsis; }
+/* Especificidade reforçada — cards principais */
+aside .sidebar-item:not(.sidebar-subitem) {
+  border-radius: 20px !important;
+  border: 1px solid rgba(201, 162, 39, 0.5) !important;
+  padding: 14px 18px !important;
+}
+aside .sidebar-group-row {
+  border-radius: 20px !important;
+  border: 1px solid rgba(201, 162, 39, 0.5) !important;
+  padding: 14px 18px !important;
+}
 
 /* Grupo Comercial — expansível */
 .sidebar-group { position: relative; display: flex; flex-direction: column; gap: 6px; }
@@ -534,13 +545,13 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 }
 /* botão dentro do row não é card — o row já é */
 .sidebar-group-row .sidebar-item {
-  background: transparent; border: none;
-  backdrop-filter: none; -webkit-backdrop-filter: none;
-  box-shadow: none; padding: 0; border-radius: 0;
+  background: transparent !important; border: none !important;
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+  box-shadow: none !important; padding: 0 !important; border-radius: 0 !important;
 }
 .sidebar-group-row .sidebar-item:hover,
 .sidebar-group-row .sidebar-item.active {
-  background: transparent; border: none; box-shadow: none;
+  background: transparent !important; border: none !important; box-shadow: none !important;
 }
 .sidebar-group-row > .sidebar-group-btn { flex: 1; min-width: 0; }
 .sidebar-group-btn { justify-content: flex-start; }
@@ -555,17 +566,20 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 .sidebar-group.open .sidebar-chevron { transform: rotate(180deg); }
 .sidebar-submenu { display: none; flex-direction: column; gap: 4px; }
 .sidebar-group.open .sidebar-submenu { display: flex; }
-.sidebar-subitem {
-  font-size: 13px; opacity: 0.85;
-  background: rgba(20, 26, 28, 0.35) !important;
-  border: 1px solid rgba(201, 162, 39, 0.15) !important;
-  border-radius: 10px !important;
-  padding: 8px 12px !important;
-  margin-left: 8px;
+.sidebar-subitem,
+aside .sidebar-submenu .sidebar-item {
+  font-size: 13px; opacity: 0.9;
+  background: rgba(20, 26, 28, 0.4) !important;
+  border: 1px solid rgba(201, 162, 39, 0.35) !important;
+  border-radius: 16px !important;
+  padding: 10px 14px !important;
+  margin: 3px 0 3px 8px !important;
+  box-shadow: none !important;
 }
-.sidebar-subitem:hover {
-  border-color: rgba(201, 162, 39, 0.4) !important;
-  box-shadow: 0 0 8px rgba(201, 162, 39, 0.1) !important;
+.sidebar-subitem:hover,
+aside .sidebar-submenu .sidebar-item:hover {
+  border-color: rgba(201, 162, 39, 0.6) !important;
+  box-shadow: 0 0 10px rgba(201, 162, 39, 0.15) !important;
   background: rgba(20, 26, 28, 0.55) !important;
 }
 .sidebar-subitem .sidebar-icon { width: 14px; height: 14px; }
