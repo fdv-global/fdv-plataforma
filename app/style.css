@@ -484,7 +484,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
    ============================================================ */
 .app-sidebar {
   position: fixed;
-  top: 200px;
+  top: 300px;
   left: 24px;
   width: 220px;
   height: auto;
