@@ -9569,6 +9569,7 @@ function bindEvents() {
     $(id).addEventListener('keydown', e => { if (e.key === 'Enter') loginWithEmail(); })
   );
   $('btn-logout').addEventListener('click', logoutUser);
+  document.getElementById('btn-logo-home').addEventListener('click', () => switchTab('inicio'));
 
   // Usuários
   $('btn-novo-usuario')?.addEventListener('click', openNovoUsuario);
