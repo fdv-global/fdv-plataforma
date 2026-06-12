@@ -197,8 +197,8 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   position: fixed;
   top: 16px;
   left: 16px;
-  width: auto;
-  height: 48px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   background: transparent;
   border: none;
@@ -210,7 +210,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   justify-content: center;
 }
 .floating-logo img {
-  height: 48px;
+  height: 72px;
   width: auto;
   object-fit: contain;
 }
@@ -399,7 +399,8 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   width: 15px; height: 15px; stroke-width: 1.75;
   color: var(--t3); pointer-events: none; flex-shrink: 0;
 }
-.header-search-input {
+.header-search-input,
+#search-input {
   width: 100%; box-sizing: border-box;
   padding: 7px 14px 7px 36px; border-radius: 0;
   background: transparent !important; border: none !important;
@@ -407,8 +408,19 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   color: var(--t1); font-size: 13.5px; outline: none;
   font-family: inherit;
 }
-.header-search-input::placeholder { color: var(--t4); }
-.header-search-input:focus { border-color: var(--gold-28); }
+.header-search-input:focus,
+#search-input:focus { border: none !important; box-shadow: none !important; outline: none !important; }
+.header-search-input::placeholder,
+#search-input::placeholder { color: var(--t4); }
+/* neutraliza autofill do browser */
+#search-input:-webkit-autofill,
+#search-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+  box-shadow: 0 0 0 1000px transparent inset !important;
+  -webkit-text-fill-color: var(--t1) !important;
+  background-color: transparent !important;
+  transition: background-color 9999s ease-in-out 0s;
+}
 .header-search-wrap .search-dropdown {
   position: absolute; top: calc(100% + 6px); left: 0; right: 0;
   display: none; z-index: 400;
@@ -443,7 +455,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
    ============================================================ */
 .app-sidebar {
   position: fixed;
-  top: 80px;
+  top: 160px;
   left: 12px;
   bottom: auto;
   width: 220px;
