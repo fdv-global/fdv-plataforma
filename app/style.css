@@ -198,7 +198,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   top: 20px;
   left: 24px;
   width: 220px;
-  height: 80px;
+  height: 100px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -209,7 +209,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   z-index: 200;
 }
 .floating-logo img {
-  height: 68px;
+  height: 88px;
   width: auto;
   object-fit: contain;
   display: block;
@@ -3582,6 +3582,9 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   margin: 0 auto;
   padding: 0 20px 60px;
 }
+.inicio-header { text-align: center; width: 100%; margin-bottom: 24px; }
+.inicio-greeting { text-align: center; width: 100%; }
+.inicio-date { text-align: center; width: 100%; }
 
 /* Animação de entrada staggered */
 @keyframes fdvFadeUp {
