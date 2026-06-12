@@ -218,7 +218,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 .app-header {
   position: fixed;
   top: 20px;
-  left: 50%;
+  left: calc(268px + (100vw - 268px) / 2);
   transform: translateX(-50%);
   width: 480px;
   height: 56px;
