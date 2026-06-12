@@ -218,7 +218,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 .app-header {
   position: fixed;
   top: 20px;
-  left: calc(268px + (100vw - 268px) / 2);
+  left: 50%;
   transform: translateX(-50%);
   width: 480px;
   height: 56px;
@@ -622,7 +622,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
    ============================================================ */
 .app-main {
   margin-left: 268px;
-  margin-right: 120px;
+  margin-right: 24px;
   padding-top: 96px;
   padding-bottom: 40px;
   min-height: 100vh;
