@@ -197,8 +197,8 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   position: fixed;
   top: 16px;
   left: 16px;
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   background: transparent;
   border: none;
@@ -220,14 +220,14 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   top: 12px;
   left: 50%;
   transform: translateX(-50%);
-  width: calc(100% - 280px);
+  width: calc(100% - 480px);
   max-width: 1200px;
   height: 64px;
   border-radius: 100px;
   background: rgba(20, 26, 28, 0.25);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(201, 162, 39, 0.3);
   z-index: 100;
   display: flex;
   align-items: center;
@@ -389,9 +389,9 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   flex: 1; position: relative;
   display: flex; align-items: center;
   min-width: 0;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
   border-radius: 0;
 }
 .header-search-icon {
@@ -402,7 +402,8 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 .header-search-input {
   width: 100%; box-sizing: border-box;
   padding: 7px 14px 7px 36px; border-radius: 0;
-  background: transparent; border: none;
+  background: transparent !important; border: none !important;
+  box-shadow: none !important;
   color: var(--t1); font-size: 13.5px; outline: none;
   font-family: inherit;
 }
@@ -442,7 +443,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
    ============================================================ */
 .app-sidebar {
   position: fixed;
-  top: 90px;
+  top: 120px;
   left: 12px;
   bottom: auto;
   width: 220px;
