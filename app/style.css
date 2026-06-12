@@ -197,22 +197,23 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   position: fixed;
   top: 16px;
   left: 16px;
-  width: 72px;
-  height: 72px;
+  width: auto;
+  height: auto;
   border-radius: 50%;
   background: transparent;
   border: none;
   cursor: pointer;
   z-index: 200;
-  padding: 0;
+  padding: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .floating-logo img {
-  height: 72px;
+  height: 56px;
   width: auto;
   object-fit: contain;
+  display: block;
 }
 
 .app-header {
@@ -220,8 +221,8 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   top: 12px;
   left: 50%;
   transform: translateX(-50%);
-  width: calc(100% - 480px);
-  max-width: 1200px;
+  width: calc(100% - 600px);
+  max-width: 900px;
   height: 64px;
   border-radius: 100px;
   background: rgba(20, 26, 28, 0.25);
