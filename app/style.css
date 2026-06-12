@@ -3581,8 +3581,8 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
    TELA INÍCIO — REDESIGN
    ══════════════════════════════════════════════════════════ */
 .inicio-wrap {
-  max-width: 100%;
-  margin: 0;
+  max-width: 1200px;
+  margin: 0 auto;
   padding: 0 20px 60px;
   text-align: center;
 }
