@@ -3583,9 +3583,11 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   padding: 0 20px 60px;
 }
 .inicio-header {
-  margin-left: -268px;
   width: 100vw;
+  margin-left: calc(-268px - 24px);
+  margin-right: calc(-24px);
   text-align: center;
+  padding: 0 20px;
   margin-bottom: 24px;
 }
 .inicio-greeting { text-align: center; width: 100%; }
