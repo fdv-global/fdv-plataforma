@@ -2708,6 +2708,7 @@ function renderAgendaSub() {
               ${(l.etiquetas||[]).length ? `<div class="card-etiquetas">${(l.etiquetas||[]).map(t=>etiquetaChip(t,true)).join('')}</div>` : ''}
             </div>
             <div class="agenda-card-btns">
+              ${badgeAgendStatus(l.status, l.status_closer)}
               <button class="btn-ghost btn-sm btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}" title="${l.briefing?'Ver/Editar Briefing':'Adicionar Briefing'}">${l.briefing?`${ICO_CLIPBOARD} Briefing`:'+ Briefing'}</button>
               <button class="btn-ghost btn-sm btn-editar-agend" data-id="${l.id}" title="Editar agendamento">${ICO_PENCIL}</button>
               <button class="btn-icon btn-excluir-agend btn-destructive" data-id="${l.id}" title="Excluir agendamento">${ICO_TRASH}</button>
@@ -2944,6 +2945,156 @@ function renderQualificados() {
   renderQualTbody();
 }
 
+// ─── AGENDADOS OVERVIEW ──────────────────────────────────────────────
+function badgeAgendStatus(status, statusCloser) {
+  if (statusCloser === 'venda_ganha') return `<span class="badge-agend-status badge-agend-status--venda">🏆 Venda</span>`;
+  if (status === 'realizada') return `<span class="badge-agend-status badge-agend-status--realizada">Realizada</span>`;
+  if (status === 'noshow')    return `<span class="badge-agend-status badge-agend-status--noshow">No Show</span>`;
+  return `<span class="badge-agend-status badge-agend-status--agendado">Agendada</span>`;
+}
+
+function renderAgendadosOverview() {
+  const statsEl    = $('agend-overview-stats');
+  const proximasEl = $('agend-proximas-list');
+  if (!statsEl) return;
+
+  if (agendaCalYear === 0) { const n = new Date(); agendaCalYear = n.getFullYear(); agendaCalMonth = n.getMonth(); }
+  const today = new Date().toISOString().slice(0, 10);
+  const ym = `${agendaCalYear}-${String(agendaCalMonth + 1).padStart(2, '0')}`;
+
+  const leadsDoMes   = allLeads.filter(l => (l.dataagendamento || '').startsWith(ym));
+  const nAgendados   = leadsDoMes.length;
+  const nRealizadas  = leadsDoMes.filter(l => l.status === 'realizada').length;
+  const nNoShow      = leadsDoMes.filter(l => l.status === 'noshow').length;
+  const nVendas      = leadsDoMes.filter(l => l.status_closer === 'venda_ganha').length;
+  const nProximas    = allLeads.filter(l => l.status === 'agendado' && (l.dataagendamento || '') >= today).length;
+  const mesLbl       = MCAL_MONTHS[agendaCalMonth] + ' ' + agendaCalYear;
+
+  statsEl.innerHTML = `
+    <div class="stat-card">
+      <div class="stat-top"><span class="stat-label">Agendados</span><span class="stat-icon">📅</span></div>
+      <strong class="stat-num">${nAgendados}</strong>
+      <span class="stat-sub">${mesLbl}</span>
+    </div>
+    <div class="stat-card accent-green">
+      <div class="stat-top"><span class="stat-label">Realizadas</span><span class="stat-icon">✓</span></div>
+      <strong class="stat-num">${nRealizadas}</strong>
+      <span class="stat-sub">calls concluídas</span>
+    </div>
+    <div class="stat-card accent-marsala">
+      <div class="stat-top"><span class="stat-label">No Show</span><span class="stat-icon">✗</span></div>
+      <strong class="stat-num">${nNoShow}</strong>
+      <span class="stat-sub">sem comparecimento</span>
+    </div>
+    <div class="stat-card accent-gold">
+      <div class="stat-top"><span class="stat-label">Vendas</span><span class="stat-icon">🏆</span></div>
+      <strong class="stat-num">${nVendas}</strong>
+      <span class="stat-sub">fechamentos</span>
+    </div>
+    <div class="stat-card accent-petro">
+      <div class="stat-top"><span class="stat-label">Próximas</span><span class="stat-icon">→</span></div>
+      <strong class="stat-num">${nProximas}</strong>
+      <span class="stat-sub">calls a realizar</span>
+    </div>`;
+
+  renderOverviewCal(agendaCalYear, agendaCalMonth);
+
+  const proximas = allLeads
+    .filter(l => l.status === 'agendado' && (l.dataagendamento || '') >= today)
+    .sort((a, b) => ((a.dataagendamento||'')+(a.horaagendamento||'')).localeCompare((b.dataagendamento||'')+(b.horaagendamento||'')));
+
+  if (!proximas.length) {
+    proximasEl.innerHTML = `<div class="proximas-empty">Nenhuma call próxima agendada.</div>`;
+  } else {
+    proximasEl.innerHTML = proximas.slice(0, 5).map(l => {
+      const c = CLOSERS[l.closer];
+      const closerName  = c ? c.name  : (l.closer || '—');
+      const closerColor = c ? c.color : 'var(--t3)';
+      return `<div class="proxima-row">
+        <div class="proxima-data">${fmtDate(l.dataagendamento)}</div>
+        <div class="proxima-info">
+          <button class="proxima-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
+          <span class="proxima-meta">${esc(fmtHora(l.horaagendamento))} · <span style="color:${closerColor}">${esc(closerName)}</span></span>
+        </div>
+        <span class="badge-agend-status badge-agend-status--agendado">Agendada</span>
+      </div>`;
+    }).join('');
+    proximasEl.querySelectorAll('[data-perfil]').forEach(b =>
+      b.addEventListener('click', () => { const l = allLeads.find(x => x.id === b.dataset.perfil); if (l) openPerfil(l); })
+    );
+  }
+
+  const btnVerTodas = $('btn-ver-todas-proximas');
+  if (btnVerTodas) btnVerTodas.onclick = () => switchAgendadosSub('todos');
+}
+
+function renderOverviewCal(year, month) {
+  const cal = $('agend-overview-cal');
+  if (!cal) return;
+
+  const today        = new Date().toISOString().slice(0, 10);
+  const ym           = `${year}-${String(month + 1).padStart(2, '0')}`;
+  const selectedDate = $('agenda-filter-data')?.value || '';
+
+  const dayStatus = {};
+  const rank = { venda: 4, realizada: 3, agendado: 2, noshow: 1 };
+  allLeads.forEach(l => {
+    const d = l.dataagendamento;
+    if (!d || !d.startsWith(ym)) return;
+    const s = l.status_closer === 'venda_ganha' ? 'venda'
+            : l.status === 'realizada'           ? 'realizada'
+            : l.status === 'agendado'            ? 'agendado'
+            : l.status === 'noshow'              ? 'noshow' : null;
+    if (s && (!dayStatus[d] || rank[s] > rank[dayStatus[d]])) dayStatus[d] = s;
+  });
+
+  const firstDay    = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  let grid = '';
+  for (let i = 0; i < firstDay; i++) grid += `<div class="mcal-day mcal-day--empty"></div>`;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const iso = `${ym}-${String(d).padStart(2, '0')}`;
+    const s   = dayStatus[iso];
+    const cls = ['mcal-day',
+      s === 'venda'     ? 'mcal-day--venda'       : '',
+      s === 'realizada' ? 'mcal-day--realizada'    : '',
+      s === 'agendado'  ? 'mcal-day--agendado-fut' : '',
+      s === 'noshow'    ? 'mcal-day--noshow'       : '',
+      selectedDate === iso                          ? 'mcal-day--sel'   : '',
+      iso === today && selectedDate !== iso         ? 'mcal-day--today' : '',
+    ].filter(Boolean).join(' ');
+    grid += `<button class="${cls}" data-date="${iso}">${d}</button>`;
+  }
+
+  cal.innerHTML = `
+    <div class="mcal-nav-row">
+      <button class="mcal-arrow" id="ov-cal-prev">‹</button>
+      <span class="mcal-month-lbl">${MCAL_MONTHS[month]} ${year}</span>
+      <button class="mcal-arrow" id="ov-cal-next">›</button>
+    </div>
+    <div class="mcal-weekdays"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+    <div class="mcal-grid">${grid}</div>`;
+
+  cal.querySelector('#ov-cal-prev').addEventListener('click', () => {
+    agendaCalMonth--; if (agendaCalMonth < 0)  { agendaCalMonth = 11; agendaCalYear--; }
+    renderAgendadosOverview();
+    if (activeAgendadosSub === 'todos') renderAgendaSub();
+  });
+  cal.querySelector('#ov-cal-next').addEventListener('click', () => {
+    agendaCalMonth++; if (agendaCalMonth > 11) { agendaCalMonth = 0;  agendaCalYear++; }
+    renderAgendadosOverview();
+    if (activeAgendadosSub === 'todos') renderAgendaSub();
+  });
+  cal.querySelectorAll('.mcal-day[data-date]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const dp = $('agenda-filter-data');
+      if (dp) dp.value = dp.value === btn.dataset.date ? '' : btn.dataset.date;
+      renderOverviewCal(agendaCalYear, agendaCalMonth);
+      if (activeAgendadosSub === 'todos') renderAgendaSub();
+    });
+  });
+}
+
 // ─── AGENDADOS SUB (wrapper nested) ──────────────────────────────────
 function switchAgendadosSub(sub) {
   activeAgendadosSub = sub;
@@ -2960,6 +3111,7 @@ function switchAgendadosSub(sub) {
 }
 
 function renderAgendadosSub() {
+  renderAgendadosOverview();
   if      (activeAgendadosSub === 'hoje')     renderAgendaHoje();
   else if (activeAgendadosSub === 'todos')    renderAgendaSub();
   else if (activeAgendadosSub === 'briefing') renderBriefingSub();
@@ -3024,6 +3176,7 @@ function renderAgendaHoje() {
               ${(l.etiquetas||[]).length ? `<div class="card-etiquetas">${(l.etiquetas||[]).map(t=>etiquetaChip(t,true)).join('')}</div>` : ''}
             </div>
             <div class="agenda-card-btns">
+              ${badgeAgendStatus(l.status, l.status_closer)}
               <button class="btn-ghost btn-sm btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}" title="${l.briefing?'Ver/Editar Briefing':'Adicionar Briefing'}">${l.briefing?`${ICO_CLIPBOARD} Briefing`:'+ Briefing'}</button>
               <button class="btn-ghost btn-sm btn-editar-agend" data-id="${l.id}" title="Editar agendamento">${ICO_PENCIL}</button>
               <button class="btn-icon btn-excluir-agend btn-destructive" data-id="${l.id}" title="Excluir agendamento">${ICO_TRASH}</button>
@@ -3510,11 +3663,17 @@ function renderMiniCal(year, month) {
   const today = new Date().toISOString().slice(0,10);
   const ym = `${year}-${String(month+1).padStart(2,'0')}`;
 
-  const daysWithCalls = new Set(
-    allLeads
-      .filter(l => l.status === 'agendado' && (l.dataagendamento||'').startsWith(ym))
-      .map(l => l.dataagendamento)
-  );
+  const dayStatusMini = {};
+  const _rank = { venda: 4, realizada: 3, agendado: 2, noshow: 1 };
+  allLeads.forEach(l => {
+    const d = l.dataagendamento;
+    if (!d || !d.startsWith(ym)) return;
+    const s = l.status_closer === 'venda_ganha' ? 'venda'
+            : l.status === 'realizada'           ? 'realizada'
+            : l.status === 'agendado'            ? 'agendado'
+            : l.status === 'noshow'              ? 'noshow' : null;
+    if (s && (!dayStatusMini[d] || _rank[s] > _rank[dayStatusMini[d]])) dayStatusMini[d] = s;
+  });
 
   const firstDay    = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -3523,10 +3682,14 @@ function renderMiniCal(year, month) {
   for (let i = 0; i < firstDay; i++) grid += `<div class="mcal-day mcal-day--empty"></div>`;
   for (let d = 1; d <= daysInMonth; d++) {
     const iso  = `${ym}-${String(d).padStart(2,'0')}`;
+    const _ds = dayStatusMini[iso];
     const cls  = ['mcal-day',
-      daysWithCalls.has(iso)          ? 'mcal-day--calls' : '',
-      selectedDate === iso            ? 'mcal-day--sel' : '',
-      iso === today && selectedDate !== iso ? 'mcal-day--today' : '',
+      _ds === 'venda'     ? 'mcal-day--venda'       : '',
+      _ds === 'realizada' ? 'mcal-day--realizada'    : '',
+      _ds === 'agendado'  ? 'mcal-day--agendado-fut' : '',
+      _ds === 'noshow'    ? 'mcal-day--noshow'       : '',
+      selectedDate === iso                           ? 'mcal-day--sel'   : '',
+      iso === today && selectedDate !== iso          ? 'mcal-day--today' : '',
     ].filter(Boolean).join(' ');
     grid += `<button class="${cls}" data-date="${iso}">${d}</button>`;
   }

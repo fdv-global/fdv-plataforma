@@ -195,7 +195,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
    ============================================================ */
 .floating-logo {
   position: fixed;
-  top: 20px;
+  top: 16px;
   left: 24px;
   width: 220px;
   height: 100px;
@@ -217,13 +217,14 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 
 .app-header {
   position: fixed;
-  top: 20px;
+  top: 16px;
   left: 268px;
   right: 24px;
   transform: none;
   width: auto;
   max-width: 600px;
-  margin: 0 auto;
+  margin-left: auto;
+  margin-right: auto;
   height: 56px;
   border-radius: 100px;
   background: rgba(20, 26, 28, 0.45);
@@ -385,7 +386,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 }
 .header-icons-group {
   position: fixed;
-  top: 20px;
+  top: 16px;
   right: 210px;
   height: 44px;
   display: flex; align-items: center; gap: 10px;
@@ -400,7 +401,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 }
 .header-user-group {
   position: fixed;
-  top: 20px;
+  top: 16px;
   right: 24px;
   height: 44px;
   display: flex; align-items: center; gap: 10px;
@@ -635,8 +636,8 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 /* ── Breadcrumb ───────────────────────────────────────────── */
 .app-breadcrumb {
   display: flex; align-items: center; gap: 6px;
-  padding: 10px 24px 0;
-  font-size: 12.5px; color: var(--t3);
+  padding: 16px 0 8px;
+  font-size: 12px; color: rgba(255,255,255,0.5);
   min-height: 28px;
 }
 .app-breadcrumb:empty { display: none; }
@@ -2148,6 +2149,76 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 .mcal-day--sel {
   background: var(--gold-14) !important; color: #d4982a !important;
   border: 1px solid var(--gold-22) !important; font-weight: 700;
+}
+/* Calendar day status colors */
+.mcal-day--venda       { background: var(--gold-14);             color: var(--gold);    font-weight: 700; }
+.mcal-day--realizada   { background: rgba(76,175,142,.16);       color: var(--green);                    }
+.mcal-day--agendado-fut{ background: rgba(77,181,200,.14);       color: var(--petro-l);                  }
+.mcal-day--noshow      { background: rgba(192,57,43,.11);        color: #e06450;                         }
+
+/* ============================================================
+   AGENDADOS OVERVIEW — painel de síntese no topo
+   ============================================================ */
+.agendados-overview { margin-bottom: 24px; }
+.stats-grid--5 { grid-template-columns: repeat(5, 1fr); }
+
+.agend-overview-layout {
+  display: flex; gap: 20px; align-items: start;
+  margin-top: 20px;
+}
+.agend-overview-cal-wrap {
+  flex-shrink: 0; width: 236px;
+  background: var(--s1); border: 1px solid var(--b0);
+  border-radius: var(--r-lg); padding: 16px;
+}
+.agend-proximas-wrap {
+  flex: 1; min-width: 0;
+  background: var(--s1); border: 1px solid var(--b0);
+  border-radius: var(--r-lg); padding: 18px 20px;
+}
+.agend-proximas-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.agend-proximas-title {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1.3px; color: var(--t3);
+}
+.proxima-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 0; border-bottom: 1px solid var(--b0);
+}
+.proxima-row:last-child { border-bottom: none; }
+.proxima-data {
+  font-size: 11px; font-weight: 700; color: var(--t3);
+  white-space: nowrap; flex-shrink: 0; min-width: 72px;
+}
+.proxima-info { flex: 1; min-width: 0; }
+.proxima-nome {
+  display: block; background: none; border: none; cursor: pointer; padding: 0;
+  font-size: 13px; font-weight: 600; color: var(--t1); text-align: left;
+  font-family: inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: color var(--fast) var(--ease);
+}
+.proxima-nome:hover { color: var(--gold); }
+.proxima-meta { font-size: 11.5px; color: var(--t3); display: block; margin-top: 1px; }
+.proximas-empty { font-size: 13px; color: var(--t3); padding: 20px 0; text-align: center; }
+
+/* Badges de status nas agenda-cards */
+.badge-agend-status {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: var(--r-pill);
+  font-size: 10.5px; font-weight: 700; white-space: nowrap; flex-shrink: 0;
+}
+.badge-agend-status--agendado  { background: rgba(77,181,200,.12);  color: var(--petro-l); }
+.badge-agend-status--realizada { background: var(--green-10);       color: var(--green);   }
+.badge-agend-status--noshow    { background: rgba(192,57,43,.09);   color: #e06450;        }
+.badge-agend-status--venda     { background: var(--gold-10);        color: var(--gold);    }
+
+@media (max-width: 1024px) {
+  .agend-overview-layout   { flex-direction: column; }
+  .agend-overview-cal-wrap { width: 100%; }
+  .stats-grid--5           { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* ============================================================
