@@ -2649,20 +2649,26 @@ function renderAgendaSub() {
   const busca          = ($('agend-filter-busca')?.value || '').toLowerCase().trim();
   const content        = $('agenda-content');
 
-  // Mini cal — inicializa no mês atual se for a primeira vez
   if (agendaCalYear === 0) { const n = new Date(); agendaCalYear = n.getFullYear(); agendaCalMonth = n.getMonth(); }
   renderMiniCal(agendaCalYear, agendaCalMonth);
 
-  let leads = allLeads.filter(l => l.status === 'agendado');
+  // histórico completo — todos os leads com dataagendamento
+  let leads = allLeads.filter(l => l.dataagendamento);
   if (dataFilt)          leads = leads.filter(l => l.dataagendamento === dataFilt);
   else if (mesFilt)      leads = leads.filter(l => (l.dataagendamento || '').startsWith(mesFilt));
-  if (closerFilt)      leads = leads.filter(l => (l.closer || '') === closerFilt);
-  if (origemFilt)      leads = leads.filter(l => l.origem === origemFilt);
-  if (agendadoporFilt) leads = leads.filter(l => l.agendadopor === agendadoporFilt);
-  if (rendaFilt)       leads = leads.filter(l => l.renda === rendaFilt);
-  if (chegadaDe)       leads = leads.filter(l => (l.datachegada||'') >= chegadaDe);
-  if (chegadaAte)      leads = leads.filter(l => (l.datachegada||'') <= chegadaAte);
-  if (busca)           leads = leads.filter(l => (l.nome||'').toLowerCase().includes(busca) || (l.celular||'').includes(busca));
+  if (closerFilt)        leads = leads.filter(l => (l.closer || '') === closerFilt);
+  if (origemFilt)        leads = leads.filter(l => l.origem === origemFilt);
+  if (agendadoporFilt)   leads = leads.filter(l => l.agendadopor === agendadoporFilt);
+  if (rendaFilt)         leads = leads.filter(l => l.renda === rendaFilt);
+  if (chegadaDe)         leads = leads.filter(l => (l.datachegada||'') >= chegadaDe);
+  if (chegadaAte)        leads = leads.filter(l => (l.datachegada||'') <= chegadaAte);
+  if (busca)             leads = leads.filter(l => (l.nome||'').toLowerCase().includes(busca) || (l.celular||'').includes(busca));
+
+  // mais recente primeiro
+  leads.sort((a, b) =>
+    ((b.dataagendamento||'') + (b.horaagendamento||'')).localeCompare(
+     (a.dataagendamento||'') + (a.horaagendamento||''))
+  );
 
   if (!leads.length) {
     content.innerHTML = `<div class="agenda-empty">
@@ -2672,51 +2678,24 @@ function renderAgendaSub() {
     return;
   }
 
-  const groups = {};
-  leads.forEach(l => {
-    const k = l.closer || '_sem';
-    if (!groups[k]) groups[k] = [];
-    groups[k].push(l);
-  });
-  Object.values(groups).forEach(arr =>
-    arr.sort((a, b) => ((a.dataagendamento||'')+(a.horaagendamento||'')).localeCompare((b.dataagendamento||'')+(b.horaagendamento||'')))
-  );
-
-  const order = ['fernanda','thomaz',...Object.keys(groups).filter(k => k!=='fernanda' && k!=='thomaz')];
-
-  content.innerHTML = order.filter(k => groups[k]?.length).map(key => {
-    const c     = CLOSERS[key];
-    const name  = c ? c.name : (key === '_sem' ? 'Sem closer' : key);
-    const color = c ? c.color : 'var(--text-muted)';
-    const bg    = c ? c.bg   : 'var(--bg-elevated)';
-    return `<div class="agenda-group">
-      <div class="agenda-group-header">
-        <div class="agenda-avatar" style="color:${color};background:${bg};border:1.5px solid ${color}">${name[0].toUpperCase()}</div>
-        <h3 class="agenda-group-name">${esc(name)}</h3>
-        <span class="agenda-group-count">${groups[key].length} call${groups[key].length!==1?'s':''}</span>
-      </div>
-      <div class="agenda-cards">
-        ${groups[key].map(l => `
-          <div class="agenda-card">
-            <div class="agenda-card-time">${esc(fmtHora(l.horaagendamento))}</div>
-            <div class="agenda-card-info">
-              <button class="agenda-card-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
-              <span class="agenda-card-sub">${[
-                l.renda, l.origem, l.celular,
-                l.agendadopor ? 'via '+l.agendadopor : null
-              ].filter(Boolean).map(esc).join(' · ')}</span>
-              ${(l.etiquetas||[]).length ? `<div class="card-etiquetas">${(l.etiquetas||[]).map(t=>etiquetaChip(t,true)).join('')}</div>` : ''}
-            </div>
-            <div class="agenda-card-btns">
-              ${badgeAgendStatus(l.status, l.status_closer)}
-              <button class="btn-ghost btn-sm btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}" title="${l.briefing?'Ver/Editar Briefing':'Adicionar Briefing'}">${l.briefing?`${ICO_CLIPBOARD} Briefing`:'+ Briefing'}</button>
-              <button class="btn-ghost btn-sm btn-editar-agend" data-id="${l.id}" title="Editar agendamento">${ICO_PENCIL}</button>
-              <button class="btn-icon btn-excluir-agend btn-destructive" data-id="${l.id}" title="Excluir agendamento">${ICO_TRASH}</button>
-            </div>
-          </div>`).join('')}
-      </div>
-    </div>`;
-  }).join('');
+  content.innerHTML = `<div class="agenda-list">
+    ${leads.map(l => {
+      const c = CLOSERS[l.closer];
+      const closerName  = c ? c.name  : (l.closer || '—');
+      const closerColor = c ? c.color : 'var(--t3)';
+      return `<div class="al-row">
+        <span class="al-data">${fmtDate(l.dataagendamento)}</span>
+        <button class="al-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
+        <span class="al-meta">${fmtHora(l.horaagendamento)} · <span style="color:${closerColor}">${esc(closerName)}</span></span>
+        ${badgeAgendStatus(l.status, l.status_closer)}
+        <div class="al-actions">
+          <button class="btn-ghost btn-sm btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}" title="${l.briefing?'Ver/Editar Briefing':'Adicionar Briefing'}">${ICO_CLIPBOARD}</button>
+          <button class="btn-ghost btn-sm btn-editar-agend" data-id="${l.id}" title="Editar agendamento">${ICO_PENCIL}</button>
+          <button class="btn-icon btn-excluir-agend btn-destructive" data-id="${l.id}" title="Excluir agendamento">${ICO_TRASH}</button>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
 
   content.querySelectorAll('[data-perfil]').forEach(b =>
     b.addEventListener('click', () => { const l = allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
