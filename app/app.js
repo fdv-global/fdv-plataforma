@@ -3089,8 +3089,8 @@ function renderOverviewCal(year, month) {
     btn.addEventListener('click', () => {
       const dp = $('agenda-filter-data');
       if (dp) dp.value = dp.value === btn.dataset.date ? '' : btn.dataset.date;
-      renderOverviewCal(agendaCalYear, agendaCalMonth);
-      if (activeAgendadosSub === 'todos') renderAgendaSub();
+      // sempre abre o subtab Todos e filtra pelo dia clicado
+      switchAgendadosSub('todos');
     });
   });
 }
