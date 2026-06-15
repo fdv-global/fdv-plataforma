@@ -2649,11 +2649,9 @@ function renderAgendaSub() {
   const busca          = ($('agend-filter-busca')?.value || '').toLowerCase().trim();
   const content        = $('agenda-content');
 
-  // Sidebar mini-cal redundante com overview cal — ocultar e colapsar grid
-  const sidebar = document.querySelector('#sub-agendados-todos .agenda-sidebar');
-  if (sidebar) sidebar.style.display = 'none';
-  const agendaLayout = document.querySelector('#sub-agendados-todos .agenda-layout');
-  if (agendaLayout) agendaLayout.style.gridTemplateColumns = '1fr';
+  // Calendário lateral
+  if (agendaCalYear === 0) { const n = new Date(); agendaCalYear = n.getFullYear(); agendaCalMonth = n.getMonth(); }
+  renderMiniCal(agendaCalYear, agendaCalMonth);
 
   // histórico completo — todos os leads com dataagendamento
   let leads = allLeads.filter(l => l.dataagendamento);
@@ -2978,8 +2976,6 @@ function renderAgendadosOverview() {
       <strong class="stat-num">${nProximas}</strong>
       <span class="stat-sub">calls a realizar</span>
     </div>`;
-
-  renderOverviewCal(agendaCalYear, agendaCalMonth);
 
   const proximas = allLeads
     .filter(l => l.status === 'agendado' && (l.dataagendamento || '') >= today)
@@ -3688,7 +3684,12 @@ function renderMiniCal(year, month) {
     </div>
     <div class="mcal-weekdays"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
     <div class="mcal-grid">${grid}</div>
-  `;
+    <div class="cal-legend">
+      <span class="cal-leg-item"><span class="cal-leg-dot cal-leg--venda"></span>Venda</span>
+      <span class="cal-leg-item"><span class="cal-leg-dot cal-leg--realizada"></span>Realizada</span>
+      <span class="cal-leg-item"><span class="cal-leg-dot cal-leg--agendada"></span>Agendada</span>
+      <span class="cal-leg-item"><span class="cal-leg-dot cal-leg--noshow"></span>No Show</span>
+    </div>`;
 
   cal.querySelector('#mcal-prev').addEventListener('click', () => {
     agendaCalMonth--; if (agendaCalMonth < 0)  { agendaCalMonth = 11; agendaCalYear--; }
