@@ -2649,8 +2649,11 @@ function renderAgendaSub() {
   const busca          = ($('agend-filter-busca')?.value || '').toLowerCase().trim();
   const content        = $('agenda-content');
 
-  if (agendaCalYear === 0) { const n = new Date(); agendaCalYear = n.getFullYear(); agendaCalMonth = n.getMonth(); }
-  renderMiniCal(agendaCalYear, agendaCalMonth);
+  // Sidebar mini-cal redundante com overview cal — ocultar e colapsar grid
+  const sidebar = document.querySelector('#sub-agendados-todos .agenda-sidebar');
+  if (sidebar) sidebar.style.display = 'none';
+  const agendaLayout = document.querySelector('#sub-agendados-todos .agenda-layout');
+  if (agendaLayout) agendaLayout.style.gridTemplateColumns = '1fr';
 
   // histórico completo — todos os leads com dataagendamento
   let leads = allLeads.filter(l => l.dataagendamento);
@@ -2689,7 +2692,7 @@ function renderAgendaSub() {
         <span class="al-meta">${fmtHora(l.horaagendamento)} · <span style="color:${closerColor}">${esc(closerName)}</span></span>
         ${badgeAgendStatus(l.status, l.status_closer)}
         <div class="al-actions">
-          <button class="btn-ghost btn-sm btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}" title="${l.briefing?'Ver/Editar Briefing':'Adicionar Briefing'}">${ICO_CLIPBOARD}</button>
+          <button class="btn-ghost btn-sm btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}" title="${l.briefing?'Ver/Editar Briefing':'Adicionar Briefing'}">${ICO_CLIPBOARD} Briefing</button>
           <button class="btn-ghost btn-sm btn-editar-agend" data-id="${l.id}" title="Editar agendamento">${ICO_PENCIL}</button>
           <button class="btn-icon btn-excluir-agend btn-destructive" data-id="${l.id}" title="Excluir agendamento">${ICO_TRASH}</button>
         </div>
@@ -3066,9 +3069,13 @@ function renderOverviewCal(year, month) {
   });
   cal.querySelectorAll('.mcal-day[data-date]').forEach(btn => {
     btn.addEventListener('click', () => {
+      const date = btn.dataset.date;
       const dp = $('agenda-filter-data');
-      if (dp) dp.value = dp.value === btn.dataset.date ? '' : btn.dataset.date;
-      // sempre abre o subtab Todos e filtra pelo dia clicado
+      const newDate = dp?.value === date ? '' : date;
+      if (dp) dp.value = newDate;
+      // limpa filtro de mês para que o dia selecionado não seja mascarado
+      const mp = $('agenda-filter-mes');
+      if (mp) mp.value = '';
       switchAgendadosSub('todos');
     });
   });
