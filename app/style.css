@@ -4122,63 +4122,55 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 }
 .followup-block + .followup-block { margin-top: 16px; }
 
-.followup-block--yellow { border-left: 3px solid #d4982a; }
-.followup-block--green  { border-left: 3px solid var(--green); }
-.followup-block--red    { border-left: 3px solid #e06450; }
-
-.followup-block-body {
+.followup-block--yellow {
+  border-left: 3px solid #c9a227;
   background: rgba(20,26,28,0.75);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,.08);
+}
+.followup-block--green {
+  border-left: 3px solid #1D9E75;
+  background: rgba(20,26,28,0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.followup-block--red {
+  border-left: 3px solid #E24B4A;
+  background: rgba(20,26,28,0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.followup-block-body {
   max-height: 400px; overflow-y: auto;
+  border-top: 1px solid rgba(255,255,255,.06);
   border-radius: 0 0 var(--r) var(--r);
 }
 
 .followup-block-header {
   display: flex; align-items: center; gap: 10px;
-  padding: 11px 16px; border-bottom: 1px solid var(--b0);
+  padding: 11px 16px; border-bottom: 1px solid rgba(255,255,255,.06);
   border-radius: var(--r) var(--r) 0 0;
 }
-.followup-block--yellow .followup-block-header { background: var(--gold); }
-.followup-block--green  .followup-block-header { background: var(--green); }
-.followup-block--red    .followup-block-header { background: rgba(107,39,55,0.7); }
-
-/* texto no cabeçalho: dourado = escuro, verde/vermelho = branco */
-.followup-block--yellow .followup-block-header .followup-block-title { color: #1a1a1a; }
-.followup-block--green  .followup-block-header .followup-block-title { color: rgba(255,255,255,0.95); }
-.followup-block--red    .followup-block-header .followup-block-title { color: rgba(255,255,255,0.7); }
 
 .followup-block-ico { display: flex; align-items: center; flex-shrink: 0; }
-.followup-block--yellow .followup-block-ico { color: #d4982a; }
-.followup-block--green  .followup-block-ico { color: var(--green); }
-.followup-block--red    .followup-block-ico { color: #e06450; }
+.followup-block--yellow .followup-block-ico { color: #c9a227; }
+.followup-block--green  .followup-block-ico { color: #1D9E75; }
+.followup-block--red    .followup-block-ico { color: #E24B4A; }
 
-/* ícone dentro do cabeçalho sólido */
-.followup-block--yellow .followup-block-header .followup-block-ico { color: #1a1a1a; }
-.followup-block--green  .followup-block-header .followup-block-ico { color: rgba(255,255,255,0.95); }
-.followup-block--red    .followup-block-header .followup-block-ico { color: rgba(255,255,255,0.7); }
+.followup-block-title { font-size: 13px; font-weight: 700; flex: 1; }
+.followup-block--yellow .followup-block-title { color: #c9a227; }
+.followup-block--green  .followup-block-title { color: #1D9E75; }
+.followup-block--red    .followup-block-title { color: #E24B4A; }
 
-.followup-block-title { font-size: 13px; font-weight: 700; color: var(--t1); flex: 1; }
 .followup-block-empty { padding: 18px 20px; font-size: 13px; color: var(--t3); text-align: center; }
 
 .followup-sort-select {
-  background: rgba(255,255,255,.06); border: 1px solid var(--b1);
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
   border-radius: var(--r); color: var(--t2);
   font-size: 11.5px; padding: 3px 8px; cursor: pointer; outline: none;
 }
-.followup-sort-select:hover { border-color: var(--b1); opacity: .85; }
-
-/* select dentro do cabeçalho sólido */
-.followup-block--yellow .followup-block-header .followup-sort-select {
-  color: #1a1a1a; background: rgba(0,0,0,0.12); border-color: rgba(0,0,0,0.2);
-}
-.followup-block--green .followup-block-header .followup-sort-select {
-  color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2);
-}
-.followup-block--red   .followup-block-header .followup-sort-select {
-  color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15);
-}
+.followup-sort-select:hover { border-color: rgba(255,255,255,.18); opacity: .9; }
 
 .qual-search-bar { margin-bottom: 10px; }
 .qual-search-bar .search-wrap { max-width: 320px; }
