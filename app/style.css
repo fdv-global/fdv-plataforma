@@ -1134,7 +1134,10 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
    AGENDA DE HOJE
    ============================================================ */
 .agenda-group {
-  background: var(--s1); border: 1px solid var(--b0);
+  background: rgba(20, 26, 28, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.08);
   border-radius: var(--r-lg); overflow: hidden; margin-bottom: 16px;
   animation: slideUp var(--base) var(--ease) both;
   transition: border-color var(--fast) var(--ease);

@@ -532,10 +532,10 @@ h1, h2, h3, h4,
   background: transparent !important;
 }
 .agenda-group {
-  background: rgba(15, 12, 8, 0.75) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  background: rgba(20, 26, 28, 0.75) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
   box-shadow: 0 4px 24px rgba(0,0,0,0.28) !important;
 }
 .briefing-card,
