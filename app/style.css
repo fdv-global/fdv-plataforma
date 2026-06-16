@@ -1193,7 +1193,7 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255,255,255,.08);
-  border-radius: var(--r);
+  border-radius: var(--r-lg);
   overflow: hidden;
 }
 /* scoped para não conflitar com .al-row do accordion */
@@ -1201,13 +1201,13 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
   display: grid;
   grid-template-columns: 80px 1fr auto auto auto;
   align-items: center; gap: 12px;
-  padding: 12px 16px; border-bottom: 0.5px solid rgba(255,255,255,.06);
+  padding: 16px 16px; border-bottom: 1px solid var(--b0);
   transition: background var(--fast) var(--ease);
 }
 .al-row:nth-child(even),
 .leads-row:nth-child(even)                    { background: rgba(255,255,255,.03); }
 .agenda-list .al-row:last-child               { border-bottom: none; }
-.agenda-list .al-row:hover                    { background: rgba(255,255,255,.05); }
+.agenda-list .al-row:hover                    { background: var(--s-hover); }
 .al-data  { font-size: 12px; color: var(--t3); white-space: nowrap; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .al-nome  {
   background: none; border: none; padding: 0; cursor: pointer;
@@ -4169,7 +4169,6 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 
 .followup-block-body {
   max-height: 400px; overflow-y: auto;
-  border-top: 1px solid rgba(255,255,255,.06);
   border-radius: 0 0 var(--r) var(--r);
 }
 
@@ -4212,10 +4211,11 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 
 .followup-row {
   display: flex; align-items: center; gap: 14px;
-  padding: 10px 16px; border-top: 1px solid var(--b0);
+  padding: 16px 16px; border-bottom: 1px solid var(--b0);
   color: var(--t1);
   transition: background var(--base) var(--ease);
 }
+.followup-row:last-child { border-bottom: none; }
 .followup-row:nth-child(even) { background: rgba(255,255,255,.03); }
 .followup-row:hover { background: var(--s-hover); }
 
@@ -4255,7 +4255,7 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255,255,255,.08);
-  border-radius: var(--r);
+  border-radius: var(--r-lg);
   overflow: hidden;
 }
 
@@ -4263,14 +4263,14 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 10px 16px;
-  border-top: 1px solid rgba(255,255,255,.04);
+  padding: 16px 16px;
+  border-bottom: 1px solid var(--b0);
   color: var(--t1);
   transition: background var(--base) var(--ease);
 }
-.noshow-row:first-child { border-top: none; }
+.noshow-row:last-child  { border-bottom: none; }
 .noshow-row--even       { background: rgba(255,255,255,.03); }
-.noshow-row:hover       { background: rgba(255,255,255,.05); }
+.noshow-row:hover       { background: var(--s-hover); }
 
 .noshow-row-main {
   flex: 1;
