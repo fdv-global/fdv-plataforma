@@ -2814,9 +2814,9 @@ function renderQualificados() {
         <span class="followup-row-info">chegou em ${fmtDate(l.datachegada)} · há ${dias}d · ${esc(l.origem||'—')} · ${esc(abrevRenda(l.renda)||'—')}</span>
       </div>
       <div class="followup-row-acoes">
-        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-primary btn-sm" data-fp-contato="${l.id}">+ Contato</button>
         <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
+        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
         <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir">${ICO_TRASH}</button>
       </div>
@@ -2825,17 +2825,22 @@ function renderQualificados() {
 
   function rowEmContato(l) {
     const diasUlt = daysSinceTs(l.ultimo_contato_em);
-    const showSR = (l.contato_count||0) >= 3;
+    const showSR  = (l.contato_count||0) >= 3;
+    const cCount  = l.contato_count || 1;
+    const badgeMod = cCount >= 3 ? 'badge-cc--red' : cCount === 2 ? 'badge-cc--yellow' : 'badge-cc--green';
     return `<div class="followup-row" data-id="${l.id}">
       <div class="followup-row-main">
-        <button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
-        <span class="followup-row-info">chegou em ${fmtDate(l.datachegada)} · Contato ${l.contato_count||1} · ${diasUlt}d atrás</span>
+        <div class="followup-row-name-line">
+          <button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
+          <span class="badge-cc ${badgeMod}">Contato ${cCount}</span>
+        </div>
+        <span class="followup-row-info">chegou em ${fmtDate(l.datachegada)} · ${diasUlt}d desde último contato</span>
       </div>
       <div class="followup-row-acoes">
-        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-primary btn-sm" data-fp-contato="${l.id}">+ Contato</button>
         ${showSR ? `<button class="btn-ghost btn-sm btn-destructive" data-fp-semresposta="${l.id}">Sem resposta</button>` : ''}
         <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
+        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
         <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir">${ICO_TRASH}</button>
       </div>
@@ -2850,8 +2855,8 @@ function renderQualificados() {
         <span class="followup-row-info">chegou em ${fmtDate(l.datachegada)} · ${tentativas} tentativa${tentativas !== 1 ? 's' : ''} · ${esc(l.origem||'—')} · ${esc(abrevRenda(l.renda)||'—')}</span>
       </div>
       <div class="followup-row-acoes">
-        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
+        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
         <button class="btn-ghost btn-sm" data-fp-resgatar="${l.id}">${ICO_UNDO} Resgatar</button>
         <button class="btn-ghost btn-sm btn-destructive" data-descartar="${l.id}">${ICO_BAN} Descartar</button>
@@ -2860,80 +2865,37 @@ function renderQualificados() {
     </div>`;
   }
 
-  // allQual no escopo externo para renderQualTbody acessar via closure
+  // allQual no escopo externo para renderQualBlocks acessar via closure
   let allQual = [];
-  function renderQualTbody() {
-    const origem   = $('qual-filter-origem')?.value || '';
-    const renda    = $('qual-filter-renda')?.value || '';
-    const de       = $('qual-filter-chegada-de')?.value || '';
-    const ate      = $('qual-filter-chegada-ate')?.value || '';
-    const q        = ($('qual-busca')?.value || '').toLowerCase().trim();
-    const leads = allQual.filter(l => {
-      if (origem && l.origem !== origem) return false;
-      if (renda  && l.renda  !== renda)  return false;
-      if (de     && (l.datachegada||'') < de)  return false;
-      if (ate    && (l.datachegada||'') > ate) return false;
-      if (q && !(l.nome||'').toLowerCase().includes(q) && !(l.celular||'').includes(q)) return false;
-      return true;
-    });
-    const tbody = $('qual-tbody');
-    if (!tbody) return;
-    if (!leads.length) {
-      tbody.innerHTML = `<tr><td colspan="9" style="padding:32px;text-align:center;color:var(--t3)">Nenhum resultado.</td></tr>`;
-      const allChkQ = $('chk-all-qual'); if (allChkQ) { allChkQ.checked = false; allChkQ.indeterminate = false; }
-      updateQualBulkBar(); return;
+
+  function sortLeads(arr, order) {
+    const copy = [...arr];
+    if (order === 'newest') return copy.sort((a,b) => (b.datachegada||'').localeCompare(a.datachegada||''));
+    if (order === 'az')     return copy.sort((a,b) => (a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
+    if (order === 'za')     return copy.sort((a,b) => (b.nome||'').localeCompare(a.nome||'', 'pt-BR'));
+    return copy.sort((a,b) => (a.datachegada||'').localeCompare(b.datachegada||''));
+  }
+
+  function renderQualBlocks() {
+    const q = ($('qual-search-top')?.value || '').toLowerCase().trim();
+    const match = l => !q || (l.nome||'').toLowerCase().includes(q) || (l.celular||'').replace(/\D/g,'').includes(q.replace(/\D/g,''));
+
+    const scEl = $('qual-sc-body');
+    const ecEl = $('qual-ec-body');
+    const srEl = $('qual-sr-body');
+
+    if (scEl) {
+      const rows = sortLeads(allQual.filter(l => !l.status_followup || l.status_followup === 'sem_contato').filter(match), $('qual-sort-sc')?.value || 'oldest');
+      scEl.innerHTML = rows.length ? rows.map(rowSemContato).join('') : '<div class="followup-block-empty">Nenhum lead aguardando primeiro contato.</div>';
     }
-    tbody.innerHTML = leads.map(l => `<tr data-id="${l.id}"${isDup(l.id)?' class="dup-row"':''}>
-      <td class="cell-chk"><input type="checkbox" class="row-chk" data-id="${l.id}" ${selectedIds.has(l.id)?'checked':''}></td>
-      <td>${fmtDate(l.datachegada)}</td>
-      <td style="display:flex;align-items:center;gap:5px;padding-top:10px;padding-bottom:10px">${isDup(l.id)?`<button class="btn-dup-ico" data-dup-id="${l.id}" title="Possível duplicata — clique para comparar">${ICO_COPY}</button>`:''}<button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
-      <td>${esc(l.celular||'—')}</td>
-      <td>${badgeOrigem(l.origem)}</td>
-      <td class="cell-renda" title="${esc(l.renda||'')}">${esc(abrevRenda(l.renda))}</td>
-      <td>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</td>
-      <td class="cell-followup">${badgeFollowup(l.status_followup, l.contato_count)}</td>
-      <td class="cell-acoes">
-        <button class="btn-primary btn-sm" data-agendar="${l.id}">${ICO_CALENDAR} Agendar</button>
-        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
-        <button class="btn-ghost btn-sm btn-destructive" data-descartar="${l.id}">${ICO_BAN} Descartar</button>
-        <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir lead">${ICO_TRASH}</button>
-      </td>
-    </tr>`).join('');
-    tbody.querySelectorAll('[data-perfil]').forEach(b =>
-      b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
-    );
-    tbody.querySelectorAll('[data-agendar]').forEach(b =>
-      b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.agendar); if(l) openAgendar(l); })
-    );
-    tbody.querySelectorAll('.btn-wa-lead').forEach(b =>
-      b.addEventListener('click', () => openWaChatFromLead(b.dataset.id))
-    );
-    tbody.querySelectorAll('[data-descartar]').forEach(b =>
-      b.addEventListener('click', () => openDescarteModal(b.dataset.descartar))
-    );
-    tbody.querySelectorAll('[data-excluir]').forEach(b =>
-      b.addEventListener('click', () => deleteLead(b.dataset.excluir))
-    );
-    tbody.querySelectorAll('.row-chk').forEach(chk => {
-      chk.addEventListener('change', () => {
-        if (chk.checked) selectedIds.add(chk.dataset.id);
-        else             selectedIds.delete(chk.dataset.id);
-        const q = $('chk-all-qual');
-        if (q) { q.checked = leads.every(l => selectedIds.has(l.id)); q.indeterminate = !q.checked && leads.some(l => selectedIds.has(l.id)); }
-        updateQualBulkBar();
-      });
-    });
-    const allChkQ = $('chk-all-qual');
-    if (allChkQ) {
-      allChkQ.checked = leads.length > 0 && leads.every(l => selectedIds.has(l.id));
-      allChkQ.indeterminate = !allChkQ.checked && leads.some(l => selectedIds.has(l.id));
-      allChkQ.onclick = e => {
-        if (e.target.checked) leads.forEach(l => selectedIds.add(l.id));
-        else                  leads.forEach(l => selectedIds.delete(l.id));
-        updateQualBulkBar(); renderQualTbody();
-      };
+    if (ecEl) {
+      const rows = sortLeads(allQual.filter(l => l.status_followup === 'em_contato').filter(match), $('qual-sort-ec')?.value || 'oldest');
+      ecEl.innerHTML = rows.length ? rows.map(rowEmContato).join('') : '<div class="followup-block-empty">Nenhum lead em contato no momento.</div>';
     }
-    updateQualBulkBar();
+    if (srEl) {
+      const rows = sortLeads(allQual.filter(l => l.status_followup === 'sem_resposta').filter(match), $('qual-sort-sr')?.value || 'oldest');
+      srEl.innerHTML = rows.length ? rows.map(rowSemResposta).join('') : '<div class="followup-block-empty">Nenhum lead sem resposta.</div>';
+    }
   }
 
   // ─── Try/catch cobre apenas dados + renderização ──────────────────
@@ -2965,11 +2927,14 @@ function renderQualificados() {
     const nContato3p   = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) >= 3).length;
     const nSemResposta = semResposta.length;
 
-    const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
-    const origemOpts = ['Instagram','Facebook','Indicação','Google','WhatsApp','Outros',...uniq(allQual.map(l=>l.origem))];
-    const rendaOpts  = uniq(allQual.map(l=>l.renda));
-
     el.innerHTML = `
+    <div class="qual-search-bar">
+      <div class="search-wrap">
+        <input type="text" id="qual-search-top" placeholder="Buscar por nome ou celular…" autocomplete="off">
+        <span class="search-ico">⌕</span>
+      </div>
+    </div>
+
     <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:20px">
       <div class="stat-card accent-gold">
         <div class="stat-top"><span class="stat-label">Sem contato</span></div>
@@ -3002,124 +2967,62 @@ function renderQualificados() {
       <div class="followup-block-header">
         <span class="followup-block-ico">${ICO_ALERT}</span>
         <span class="followup-block-title">${nSemContato} lead${nSemContato !== 1 ? 's' : ''} aguardando primeiro contato</span>
-        <span class="followup-block-hint">mais antigos primeiro</span>
+        <select class="followup-sort-select" id="qual-sort-sc">
+          <option value="oldest">Mais antigos primeiro</option>
+          <option value="newest">Mais recentes primeiro</option>
+          <option value="az">A → Z</option>
+          <option value="za">Z → A</option>
+        </select>
       </div>
-      <div class="followup-block-body">
-        ${semContato.length ? semContato.map(rowSemContato).join('') : '<div class="followup-block-empty">Nenhum lead aguardando primeiro contato.</div>'}
-      </div>
+      <div class="followup-block-body" id="qual-sc-body"></div>
     </div>
 
     <div class="followup-block followup-block--green">
       <div class="followup-block-header">
         <span class="followup-block-ico">${ICO_MSG_CIRCLE}</span>
         <span class="followup-block-title">${emContato.length} lead${emContato.length !== 1 ? 's' : ''} em processo de contato</span>
+        <select class="followup-sort-select" id="qual-sort-ec">
+          <option value="oldest">Mais antigos primeiro</option>
+          <option value="newest">Mais recentes primeiro</option>
+          <option value="az">A → Z</option>
+          <option value="za">Z → A</option>
+        </select>
       </div>
-      <div class="followup-block-body">
-        ${emContato.length ? emContato.map(rowEmContato).join('') : '<div class="followup-block-empty">Nenhum lead em contato no momento.</div>'}
-      </div>
+      <div class="followup-block-body" id="qual-ec-body"></div>
     </div>
 
     <div class="followup-block followup-block--red">
       <div class="followup-block-header">
         <span class="followup-block-ico">${ICO_X_CIRCLE}</span>
         <span class="followup-block-title">${nSemResposta} lead${nSemResposta !== 1 ? 's' : ''} sem resposta</span>
-        <span class="followup-block-hint">resgatar ou descartar</span>
+        <select class="followup-sort-select" id="qual-sort-sr">
+          <option value="oldest">Mais antigos primeiro</option>
+          <option value="newest">Mais recentes primeiro</option>
+          <option value="az">A → Z</option>
+          <option value="za">Z → A</option>
+        </select>
       </div>
-      <div class="followup-block-body">
-        ${semResposta.length ? semResposta.map(rowSemResposta).join('') : '<div class="followup-block-empty">Nenhum lead sem resposta.</div>'}
-      </div>
-    </div>
+      <div class="followup-block-body" id="qual-sr-body"></div>
+    </div>`;
 
-    <div class="filters-bar" style="margin-top:28px;margin-bottom:14px">
-      <div class="filters-row">
-        <div class="filter-group">
-          <label class="filter-label">Origem</label>
-          <select class="filter-select" id="qual-filter-origem">
-            <option value="">Todas</option>
-            ${[...new Set(origemOpts)].map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
-          </select>
-        </div>
-        <div class="filter-group">
-          <label class="filter-label">Renda</label>
-          <select class="filter-select" id="qual-filter-renda">
-            <option value="">Todas</option>
-            ${rendaOpts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
-          </select>
-        </div>
-        <div class="filter-group">
-          <label class="filter-label">Chegada de</label>
-          <input type="date" class="filter-input filter-input--date" id="qual-filter-chegada-de">
-        </div>
-        <div class="filter-group">
-          <label class="filter-label">até</label>
-          <input type="date" class="filter-input filter-input--date" id="qual-filter-chegada-ate">
-        </div>
-        <div class="filter-group filter-group--search">
-          <label class="filter-label">Buscar</label>
-          <div class="search-wrap">
-            <input type="text" class="filter-input" id="qual-busca" placeholder="Nome ou celular…" autocomplete="off">
-            <span class="search-ico">⌕</span>
-          </div>
-        </div>
-        <button class="btn-clear" id="qual-limpar">Limpar</button>
-      </div>
-    </div>
-    <div class="bulk-bar" id="qual-bulk-bar" style="display:none">
-      <span class="bulk-count" id="qual-bulk-count">0 selecionados</span>
-      <div class="bulk-actions">
-        <button class="btn-acao-inline" id="btn-qual-bulk-tag">${ICO_TAG} Adicionar etiqueta</button>
-        <button class="btn-acao-inline btn-nao-qualificar" id="btn-qual-bulk-descartar">${ICO_BAN} Mover para Descartados</button>
-        <button class="btn-acao-inline btn-destructive" id="btn-qual-bulk-delete">${ICO_TRASH} Excluir</button>
-      </div>
-      <button class="btn-ghost btn-sm" id="btn-qual-bulk-clear">${ICO_X_SM} Limpar</button>
-    </div>
-    <div class="table-wrap"><table class="leads-table">
-      <thead><tr>
-        <th class="cell-chk"><input type="checkbox" id="chk-all-qual" title="Selecionar todos"></th>
-        <th>Chegou em</th><th>Nome</th><th>Celular</th><th>Origem</th><th>Renda</th><th>Etiqueta</th><th>Follow-up</th><th>Ações</th>
-      </tr></thead>
-      <tbody id="qual-tbody"></tbody>
-    </table></div>`;
-
-    el.querySelectorAll('[data-fp-contato]').forEach(b =>
-      b.addEventListener('click', () => followupContato(b.dataset.fpContato))
-    );
-    el.querySelectorAll('[data-fp-semresposta]').forEach(b =>
-      b.addEventListener('click', () => followupSemResposta(b.dataset.fpSemresposta))
-    );
-    el.querySelectorAll('[data-fp-resgatar]').forEach(b =>
-      b.addEventListener('click', () => followupResgatar(b.dataset.fpResgatar))
-    );
-    el.querySelectorAll('.followup-row [data-agendar]').forEach(b =>
-      b.addEventListener('click', () => { const l = allLeads.find(x => x.id === b.dataset.agendar); if (l) openAgendar(l); })
-    );
-    el.querySelectorAll('.followup-row [data-perfil]').forEach(b =>
-      b.addEventListener('click', () => { const l = allLeads.find(x => x.id === b.dataset.perfil); if (l) openPerfil(l); })
-    );
-    el.querySelectorAll('.followup-row .btn-wa-lead').forEach(b =>
-      b.addEventListener('click', () => openWaChatFromLead(b.dataset.id))
-    );
-    el.querySelectorAll('.followup-row [data-descartar]').forEach(b =>
-      b.addEventListener('click', () => openDescarteModal(b.dataset.descartar))
-    );
-    el.querySelectorAll('.followup-row [data-excluir]').forEach(b =>
-      b.addEventListener('click', () => deleteLead(b.dataset.excluir))
-    );
-
-    $('btn-qual-bulk-tag')?.addEventListener('click', openBulkTagModal);
-    $('btn-qual-bulk-descartar')?.addEventListener('click', openBulkDescarteModal);
-    $('btn-qual-bulk-delete')?.addEventListener('click', bulkDelete);
-    $('btn-qual-bulk-clear')?.addEventListener('click', () => { selectedIds.clear(); updateQualBulkBar(); renderQualTbody(); });
-
-    ['qual-filter-origem','qual-filter-renda','qual-filter-chegada-de','qual-filter-chegada-ate'].forEach(id => {
-      const inp = $(id); if (inp) inp.addEventListener('change', renderQualTbody);
+    el.addEventListener('click', e => {
+      const t = e.target.closest('[data-fp-contato],[data-fp-semresposta],[data-fp-resgatar],[data-agendar],[data-perfil],[data-excluir],[data-descartar],.btn-wa-lead');
+      if (!t || !t.closest('.followup-row')) return;
+      if (t.dataset.fpContato)     { followupContato(t.dataset.fpContato); return; }
+      if (t.dataset.fpSemresposta) { followupSemResposta(t.dataset.fpSemresposta); return; }
+      if (t.dataset.fpResgatar)    { followupResgatar(t.dataset.fpResgatar); return; }
+      if (t.dataset.agendar)       { const l=allLeads.find(x=>x.id===t.dataset.agendar); if(l) openAgendar(l); return; }
+      if (t.dataset.perfil)        { const l=allLeads.find(x=>x.id===t.dataset.perfil); if(l) openPerfil(l); return; }
+      if (t.dataset.excluir)       { deleteLead(t.dataset.excluir); return; }
+      if (t.dataset.descartar)     { openDescarteModal(t.dataset.descartar); return; }
+      if (t.classList.contains('btn-wa-lead')) { openWaChatFromLead(t.dataset.id); return; }
     });
-    $('qual-busca')?.addEventListener('input', renderQualTbody);
-    $('qual-limpar')?.addEventListener('click', () => {
-      ['qual-filter-origem','qual-filter-renda','qual-filter-chegada-de','qual-filter-chegada-ate','qual-busca'].forEach(id=>{const inp=$(id);if(inp)inp.value='';});
-      renderQualTbody();
-    });
-    renderQualTbody();
+
+    ['qual-sort-sc','qual-sort-ec','qual-sort-sr'].forEach(id =>
+      $(id)?.addEventListener('change', renderQualBlocks)
+    );
+    $('qual-search-top')?.addEventListener('input', renderQualBlocks);
+    renderQualBlocks();
   } catch (err) {
     console.error('[FDV] renderQualificados ERRO:', err);
     const el2 = $('qualificados-content');
