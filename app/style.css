@@ -4127,8 +4127,10 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .followup-block--red    { border-left: 3px solid #e06450; }
 
 .followup-block-body {
-  background: rgba(20,26,28,0.35);
+  background: rgba(20,26,28,0.75);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.08);
   max-height: 400px; overflow-y: auto;
   border-radius: 0 0 var(--r) var(--r);
 }
@@ -4138,9 +4140,9 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   padding: 11px 16px; border-bottom: 1px solid var(--b0);
   border-radius: var(--r) var(--r) 0 0;
 }
-.followup-block--yellow .followup-block-header { background: rgba(206,146,33,.28); }
-.followup-block--green  .followup-block-header { background: rgba(76,175,142,.25); }
-.followup-block--red    .followup-block-header { background: rgba(192,57,43,.28); }
+.followup-block--yellow .followup-block-header { background: rgba(201,162,39,.85); }
+.followup-block--green  .followup-block-header { background: rgba(29,158,117,.85); }
+.followup-block--red    .followup-block-header { background: rgba(226,75,74,.85); }
 
 .followup-block-ico { display: flex; align-items: center; flex-shrink: 0; }
 .followup-block--yellow .followup-block-ico { color: #d4982a; }
@@ -4175,6 +4177,7 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   color: var(--t1);
   transition: background var(--base) var(--ease);
 }
+.followup-row:nth-child(even) { background: rgba(255,255,255,.03); }
 .followup-row:hover { background: var(--s-hover); }
 
 .followup-row-main { flex: 1; min-width: 0; }
