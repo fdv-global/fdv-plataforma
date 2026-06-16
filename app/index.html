@@ -442,13 +442,9 @@
   <!-- ─── SUB: AGENDADOS ─── -->
   <div id="sub-agendados" class="sub-panel" style="display:none">
 
-    <!-- ── Visão Geral: 5 cards de métricas ── -->
-    <div id="agendados-overview" class="agendados-overview">
-      <div id="agend-overview-stats" class="stats-grid stats-grid--5"></div>
-    </div>
-
-    <!-- Filtros compartilhados: Hoje + Todos (ocultado no Briefing) -->
-    <div class="filters-bar" id="agend-filters-bar" style="margin-bottom:16px">
+    <!-- Métricas + filtros no mesmo container — padrão Novos -->
+    <div class="filters-bar" id="agend-filters-bar">
+      <div id="agend-overview-stats" class="stats-grid stats-grid--5" style="margin-bottom:16px"></div>
       <div class="filters-row">
         <div class="filter-group">
           <label class="filter-label" for="agend-filter-origem">Origem</label>

@@ -2953,7 +2953,34 @@ function renderQualificados() {
     const mesOpts       = [...new Set(allQual.filter(l=>l.datachegada).map(l=>l.datachegada.slice(0,7)))].sort().reverse();
 
     el.innerHTML = `
-    <div class="filters-bar" style="margin-bottom:20px">
+    <div class="filters-bar">
+      <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px">
+        <div class="stat-card accent-gold">
+          <div class="stat-top"><span class="stat-label">Sem contato</span></div>
+          <span class="stat-num">${nSemContato}</span>
+          <div class="stat-sub">aguardando 1º contato</div>
+        </div>
+        <div class="stat-card accent-petro">
+          <div class="stat-top"><span class="stat-label">Contato 1</span></div>
+          <span class="stat-num">${nContato1}</span>
+          <div class="stat-sub">1ª tentativa</div>
+        </div>
+        <div class="stat-card accent-petro">
+          <div class="stat-top"><span class="stat-label">Contato 2</span></div>
+          <span class="stat-num">${nContato2}</span>
+          <div class="stat-sub">2ª tentativa</div>
+        </div>
+        <div class="stat-card accent-green">
+          <div class="stat-top"><span class="stat-label">Contato 3+</span></div>
+          <span class="stat-num">${nContato3p}</span>
+          <div class="stat-sub">3+ tentativas</div>
+        </div>
+        <div class="stat-card accent-marsala">
+          <div class="stat-top"><span class="stat-label">Sem resposta</span></div>
+          <span class="stat-num">${nSemResposta}</span>
+          <div class="stat-sub">resgatar ou descartar</div>
+        </div>
+      </div>
       <div class="filters-row">
         <div class="filter-group">
           <label class="filter-label">Origem</label>
@@ -3006,34 +3033,6 @@ function renderQualificados() {
           </div>
         </div>
         <button class="btn-clear" id="qual-limpar">Limpar</button>
-      </div>
-    </div>
-
-    <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:20px">
-      <div class="stat-card accent-gold">
-        <div class="stat-top"><span class="stat-label">Sem contato</span></div>
-        <span class="stat-num">${nSemContato}</span>
-        <div class="stat-sub">aguardando 1º contato</div>
-      </div>
-      <div class="stat-card accent-petro">
-        <div class="stat-top"><span class="stat-label">Contato 1</span></div>
-        <span class="stat-num">${nContato1}</span>
-        <div class="stat-sub">1ª tentativa</div>
-      </div>
-      <div class="stat-card accent-petro">
-        <div class="stat-top"><span class="stat-label">Contato 2</span></div>
-        <span class="stat-num">${nContato2}</span>
-        <div class="stat-sub">2ª tentativa</div>
-      </div>
-      <div class="stat-card accent-green">
-        <div class="stat-top"><span class="stat-label">Contato 3+</span></div>
-        <span class="stat-num">${nContato3p}</span>
-        <div class="stat-sub">3+ tentativas</div>
-      </div>
-      <div class="stat-card accent-marsala">
-        <div class="stat-top"><span class="stat-label">Sem resposta</span></div>
-        <span class="stat-num">${nSemResposta}</span>
-        <div class="stat-sub">resgatar ou descartar</div>
       </div>
     </div>
 
@@ -3426,6 +3425,28 @@ function renderNoShow() {
 
   el.innerHTML = `
   <div class="filters-bar">
+    <div class="stats-grid" style="margin-bottom:16px">
+      <div class="stat-card accent-marsala">
+        <div class="stat-top"><span class="stat-label">Total no-shows</span></div>
+        <strong class="stat-num">${nTotal}</strong>
+        <span class="stat-sub">todos os períodos</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top"><span class="stat-label">Este mês</span></div>
+        <strong class="stat-num">${nMes}</strong>
+        <span class="stat-sub">${mesPt}</span>
+      </div>
+      <div class="stat-card accent-gold">
+        <div class="stat-top"><span class="stat-label">Esta semana</span></div>
+        <strong class="stat-num">${nSemana}</strong>
+        <span class="stat-sub">últimos 7 dias</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top"><span class="stat-label">Sem data</span></div>
+        <strong class="stat-num">${nSemData}</strong>
+        <span class="stat-sub">sem data de call</span>
+      </div>
+    </div>
     <div class="filters-row">
       <div class="filter-group">
         <label class="filter-label">Origem</label>
@@ -3471,29 +3492,6 @@ function renderNoShow() {
         </div>
       </div>
       <button class="btn-clear" id="ns-btn-limpar">Limpar</button>
-    </div>
-  </div>
-
-  <div class="stats-grid" style="margin-top:20px;margin-bottom:20px">
-    <div class="stat-card accent-marsala">
-      <div class="stat-top"><span class="stat-label">Total no-shows</span></div>
-      <strong class="stat-num">${nTotal}</strong>
-      <span class="stat-sub">todos os períodos</span>
-    </div>
-    <div class="stat-card">
-      <div class="stat-top"><span class="stat-label">Este mês</span></div>
-      <strong class="stat-num">${nMes}</strong>
-      <span class="stat-sub">${mesPt}</span>
-    </div>
-    <div class="stat-card accent-gold">
-      <div class="stat-top"><span class="stat-label">Esta semana</span></div>
-      <strong class="stat-num">${nSemana}</strong>
-      <span class="stat-sub">últimos 7 dias</span>
-    </div>
-    <div class="stat-card">
-      <div class="stat-top"><span class="stat-label">Sem data</span></div>
-      <strong class="stat-num">${nSemData}</strong>
-      <span class="stat-sub">sem data de call</span>
     </div>
   </div>
 
@@ -3592,8 +3590,36 @@ function renderDescartados() {
   const origemOptsD = ['Instagram','Facebook','Indicação','Google','WhatsApp','Outros',...uniq2(allDesc.map(l=>l.origem))];
   const rendaOptsD  = uniq2(allDesc.map(l=>l.renda));
 
+  const descMesAtual = new Date().toISOString().slice(0, 7);
+  const nDescTotal   = allDesc.length;
+  const nDescMes     = allDesc.filter(l => (l.datachegada||'').startsWith(descMesAtual)).length;
+  const motivoFreq   = allDesc.reduce((acc, l) => {
+    const k = l.motivo_descarte_label || l.motivo_descarte || '—';
+    acc[k] = (acc[k] || 0) + 1; return acc;
+  }, {});
+  const motivoTop    = Object.entries(motivoFreq).sort((a,b) => b[1] - a[1])[0];
+  const motivoLabel  = motivoTop ? motivoTop[0] : '—';
+  const motivoCount  = motivoTop ? motivoTop[1] : 0;
+
   el.innerHTML = `
-    <div class="filters-bar" style="margin-bottom:14px">
+    <div class="filters-bar">
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+        <div class="stat-card accent-marsala">
+          <div class="stat-top"><span class="stat-label">Total descartados</span></div>
+          <strong class="stat-num">${nDescTotal}</strong>
+          <span class="stat-sub">todos os períodos</span>
+        </div>
+        <div class="stat-card">
+          <div class="stat-top"><span class="stat-label">Este mês</span></div>
+          <strong class="stat-num">${nDescMes}</strong>
+          <span class="stat-sub">${new Date().toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</span>
+        </div>
+        <div class="stat-card accent-gold">
+          <div class="stat-top"><span class="stat-label">Motivo principal</span></div>
+          <strong class="stat-num">${motivoCount}</strong>
+          <span class="stat-sub" title="${esc(motivoLabel)}">${esc(motivoLabel)}</span>
+        </div>
+      </div>
       <div class="filters-row">
         <div class="filter-group">
           <label class="filter-label">Origem</label>

@@ -2209,7 +2209,7 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 /* ============================================================
    AGENDADOS OVERVIEW — painel de síntese no topo
    ============================================================ */
-.agendados-overview { margin-bottom: 24px; }
+/* .agendados-overview removido — cards agora dentro de .filters-bar */
 .stats-grid--5 { grid-template-columns: repeat(5, 1fr); }
 
 .agend-overview-layout { display: none; } /* removido — cal migrou para subtab Todos */
