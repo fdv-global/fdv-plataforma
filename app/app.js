@@ -3406,48 +3406,172 @@ function gerarAgendaHoje() {
 function renderNoShow() {
   const el = $('noshow-content');
   if (!el) return;
-  const leads = allLeads
-    .filter(l => l.status === 'noshow')
-    .sort((a,b) => (b.dataagendamento||'').localeCompare(a.dataagendamento||''));
-  const _nsThisMonth = new Date().toISOString().slice(0,7);
-  const _nsMesCount  = leads.filter(l => (l.dataagendamento||'').startsWith(_nsThisMonth)).length;
-  const _nsMesPt     = new Date().toLocaleDateString('pt-BR', { month:'long', year:'numeric' });
+
+  const nsAll    = allLeads.filter(l => l.status === 'noshow');
+  const mesAtual = new Date().toISOString().slice(0, 7);
+  const semanaMs = 7 * 24 * 60 * 60 * 1000;
+  const semanaAgo = new Date(Date.now() - semanaMs).toISOString().slice(0, 10);
+
+  const nTotal   = nsAll.length;
+  const nMes     = nsAll.filter(l => (l.dataagendamento||'').startsWith(mesAtual)).length;
+  const nSemana  = nsAll.filter(l => (l.dataagendamento||'') >= semanaAgo).length;
+  const nSemData = nsAll.filter(l => !l.dataagendamento).length;
+  const mesPt    = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+
+  const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a,b) => a.localeCompare(b,'pt-BR'));
+  const origemOpts    = uniq(nsAll.map(l => l.origem));
+  const closerOpts    = uniq(nsAll.map(l => l.closer));
+  const agendPorOpts  = uniq(nsAll.map(l => l.agendadopor));
+  const rendaOpts     = uniq(nsAll.map(l => l.renda));
 
   el.innerHTML = `
-  <div style="padding:12px 16px 0;color:var(--t2);font-size:13px">
-    <strong style="color:var(--text)">${_nsMesCount}</strong> no-show${_nsMesCount !== 1 ? 's' : ''} em ${_nsMesPt} · ${leads.length} no total
+  <div class="filters-bar">
+    <div class="filters-row">
+      <div class="filter-group">
+        <label class="filter-label">Origem</label>
+        <select class="filter-select" id="ns-filter-origem">
+          <option value="">Todas</option>
+          ${origemOpts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Closer</label>
+        <select class="filter-select" id="ns-filter-closer">
+          <option value="">Todos</option>
+          ${closerOpts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Agendado por</label>
+        <select class="filter-select" id="ns-filter-agendadopor">
+          <option value="">Todos</option>
+          ${agendPorOpts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Renda</label>
+        <select class="filter-select" id="ns-filter-renda">
+          <option value="">Todas</option>
+          ${rendaOpts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Chegada de</label>
+        <input type="date" class="filter-input filter-input--date" id="ns-filter-chegada-de">
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">até</label>
+        <input type="date" class="filter-input filter-input--date" id="ns-filter-chegada-ate">
+      </div>
+      <div class="filter-group filter-group--search">
+        <label class="filter-label">Buscar</label>
+        <div class="search-wrap">
+          <input type="text" class="filter-input" id="ns-filter-busca" placeholder="Nome ou celular…" autocomplete="off">
+          <span class="search-ico">⌕</span>
+        </div>
+      </div>
+      <button class="btn-clear" id="ns-btn-limpar">Limpar</button>
+    </div>
   </div>
-  <div class="table-wrap"><table class="leads-table">
-    <thead><tr>
-      <th>Nome</th><th>Data da Call</th><th>Celular</th><th>Ações</th>
-    </tr></thead>
-    <tbody>
-      ${leads.length ? leads.map(l => `<tr>
-        <td><button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
-        <td>${fmtDate(l.dataagendamento)}${l.horaagendamento?' · '+l.horaagendamento.slice(0,5):''}</td>
-        <td>${esc(l.celular||'—')}</td>
-        <td class="cell-acoes">
+
+  <div class="stats-grid" style="margin-top:20px;margin-bottom:20px">
+    <div class="stat-card accent-marsala">
+      <div class="stat-top"><span class="stat-label">Total no-shows</span></div>
+      <strong class="stat-num">${nTotal}</strong>
+      <span class="stat-sub">todos os períodos</span>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><span class="stat-label">Este mês</span></div>
+      <strong class="stat-num">${nMes}</strong>
+      <span class="stat-sub">${mesPt}</span>
+    </div>
+    <div class="stat-card accent-gold">
+      <div class="stat-top"><span class="stat-label">Esta semana</span></div>
+      <strong class="stat-num">${nSemana}</strong>
+      <span class="stat-sub">últimos 7 dias</span>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><span class="stat-label">Sem data</span></div>
+      <strong class="stat-num">${nSemData}</strong>
+      <span class="stat-sub">sem data de call</span>
+    </div>
+  </div>
+
+  <div class="noshow-list" id="ns-list"></div>`;
+
+  function applyNsFilters() {
+    const origem     = $('ns-filter-origem')?.value     || '';
+    const closer     = $('ns-filter-closer')?.value     || '';
+    const agendPor   = $('ns-filter-agendadopor')?.value || '';
+    const renda      = $('ns-filter-renda')?.value      || '';
+    const chegadaDe  = $('ns-filter-chegada-de')?.value  || '';
+    const chegadaAte = $('ns-filter-chegada-ate')?.value || '';
+    const busca      = ($('ns-filter-busca')?.value     || '').toLowerCase().trim();
+
+    let leads = nsAll;
+    if (origem)     leads = leads.filter(l => l.origem === origem);
+    if (closer)     leads = leads.filter(l => l.closer === closer);
+    if (agendPor)   leads = leads.filter(l => l.agendadopor === agendPor);
+    if (renda)      leads = leads.filter(l => l.renda === renda);
+    if (chegadaDe)  leads = leads.filter(l => (l.datachegada||'') >= chegadaDe);
+    if (chegadaAte) leads = leads.filter(l => (l.datachegada||'') <= chegadaAte);
+    if (busca)      leads = leads.filter(l =>
+      (l.nome||'').toLowerCase().includes(busca) ||
+      (l.celular||'').replace(/\D/g,'').includes(busca.replace(/\D/g,''))
+    );
+    leads = leads.sort((a,b) => (b.dataagendamento||'').localeCompare(a.dataagendamento||''));
+
+    const listEl = $('ns-list');
+    if (!listEl) return;
+    if (!leads.length) {
+      listEl.innerHTML = `<div class="noshow-empty">Nenhum lead encontrado com os filtros aplicados.</div>`;
+      return;
+    }
+    listEl.innerHTML = leads.map((l, i) => `
+      <div class="noshow-row${i % 2 === 1 ? ' noshow-row--even' : ''}" data-id="${l.id}">
+        <div class="noshow-row-main">
+          <button class="nome-link noshow-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
+          <span class="noshow-row-meta">
+            ${fmtDate(l.dataagendamento)}${l.horaagendamento?' · '+l.horaagendamento.slice(0,5):''}
+            ${l.origem?' · '+esc(l.origem):''}
+            ${l.renda?' · '+esc(l.renda):''}
+          </span>
+        </div>
+        <div class="noshow-row-acoes">
           <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
           <button class="btn-ghost btn-sm btn-reagendar-ns" data-id="${l.id}">${ICO_REFRESH} Reagendar</button>
           <button class="btn-ghost btn-sm btn-destructive" data-descartar="${l.id}">${ICO_BAN} Descartar</button>
-        </td>
-      </tr>`).join('') :
-      `<tr><td colspan="4" style="padding:36px;text-align:center;color:var(--t3)">Nenhum lead com No Show.</td></tr>`}
-    </tbody>
-  </table></div>`;
+        </div>
+      </div>`).join('');
 
-  el.querySelectorAll('[data-perfil]').forEach(b =>
-    b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
+    listEl.querySelectorAll('[data-perfil]').forEach(b =>
+      b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
+    );
+    listEl.querySelectorAll('.btn-wa-lead').forEach(b =>
+      b.addEventListener('click', () => openWaChatFromLead(b.dataset.id))
+    );
+    listEl.querySelectorAll('.btn-reagendar-ns').forEach(b =>
+      b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.id); if(l) openAgendar(l); })
+    );
+    listEl.querySelectorAll('[data-descartar]').forEach(b =>
+      b.addEventListener('click', () => openDescarteModal(b.dataset.descartar))
+    );
+  }
+
+  ['ns-filter-origem','ns-filter-closer','ns-filter-agendadopor','ns-filter-renda',
+   'ns-filter-chegada-de','ns-filter-chegada-ate'].forEach(id =>
+    $(id)?.addEventListener('change', applyNsFilters)
   );
-  el.querySelectorAll('.btn-wa-lead').forEach(b =>
-    b.addEventListener('click', () => openWaChatFromLead(b.dataset.id))
-  );
-  el.querySelectorAll('.btn-reagendar-ns').forEach(b =>
-    b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.id); if(l) openAgendar(l); })
-  );
-  el.querySelectorAll('[data-descartar]').forEach(b =>
-    b.addEventListener('click', () => openDescarteModal(b.dataset.descartar))
-  );
+  $('ns-filter-busca')?.addEventListener('input', applyNsFilters);
+  $('ns-btn-limpar')?.addEventListener('click', () => {
+    ['ns-filter-origem','ns-filter-closer','ns-filter-agendadopor','ns-filter-renda',
+     'ns-filter-chegada-de','ns-filter-chegada-ate','ns-filter-busca'].forEach(id => {
+      const inp = $(id); if (inp) inp.value = '';
+    });
+    applyNsFilters();
+  });
+
+  applyNsFilters();
 }
 
 // ─── DESCARTADOS SUB ─────────────────────────────────────────────────

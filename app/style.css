@@ -4234,4 +4234,69 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .badge-followup--sem_contato  { background: var(--gold-10);       color: #d4982a; }
 .badge-followup--em_contato   { background: var(--green-10);      color: var(--green); }
 .badge-followup--sem_resposta { background: rgba(192,57,43,.09);  color: #e06450; }
+
+/* ── No Show panel ────────────────────────────────────────────── */
+.noshow-list {
+  background: rgba(20,26,28,0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+.noshow-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(255,255,255,.04);
+  color: var(--t1);
+  transition: background var(--base) var(--ease);
+}
+.noshow-row:first-child { border-top: none; }
+.noshow-row--even       { background: rgba(255,255,255,.03); }
+.noshow-row:hover       { background: rgba(255,255,255,.05); }
+
+.noshow-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.noshow-row-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.noshow-row-name:hover { color: var(--petro-l); text-decoration: underline; }
+.noshow-row-meta {
+  font-size: 11.5px;
+  color: var(--t3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.noshow-row-acoes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.noshow-empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--t3);
+  font-size: 13px;
+}
 .cell-followup { white-space: nowrap; }
