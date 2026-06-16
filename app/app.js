@@ -2840,9 +2840,10 @@ function renderQualificados() {
       <td style="white-space:nowrap">${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">${diasUlt}d desde ult.</small></td>
       <td>${badgeOrigem(l.origem)}</td>
       <td>${esc(abrevRenda(l.renda)||'—')}</td>
-      <td><span class="badge-cc ${badgeMod}">Contato ${cCount}</span>${showSR ? `<br><button class="btn-ghost btn-sm btn-destructive" style="font-size:10px;padding:1px 6px;margin-top:3px" data-fp-semresposta="${l.id}">Sem resposta</button>` : ''}</td>
+      <td><span class="badge-cc ${badgeMod}">Contato ${cCount}</span></td>
       <td class="cell-acoes">
         <button class="btn-primary btn-sm" data-fp-contato="${l.id}">+ Contato</button>
+        ${showSR ? `<button class="btn-ghost btn-sm btn-destructive" data-fp-semresposta="${l.id}">Sem resposta</button>` : ''}
         <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
