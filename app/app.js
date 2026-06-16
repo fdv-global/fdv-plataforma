@@ -2816,6 +2816,7 @@ function renderQualificados() {
       <div class="followup-row-acoes">
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-primary btn-sm" data-fp-contato="${l.id}">+ Contato</button>
+        <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
         <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir">${ICO_TRASH}</button>
       </div>
@@ -2834,6 +2835,7 @@ function renderQualificados() {
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-primary btn-sm" data-fp-contato="${l.id}">+ Contato</button>
         ${showSR ? `<button class="btn-ghost btn-sm btn-destructive" data-fp-semresposta="${l.id}">Sem resposta</button>` : ''}
+        <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
         <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir">${ICO_TRASH}</button>
       </div>
@@ -2849,8 +2851,11 @@ function renderQualificados() {
       </div>
       <div class="followup-row-acoes">
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
+        <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
+        <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
         <button class="btn-ghost btn-sm" data-fp-resgatar="${l.id}">${ICO_UNDO} Resgatar</button>
         <button class="btn-ghost btn-sm btn-destructive" data-descartar="${l.id}">${ICO_BAN} Descartar</button>
+        <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir">${ICO_TRASH}</button>
       </div>
     </div>`;
   }
@@ -3084,6 +3089,9 @@ function renderQualificados() {
     );
     el.querySelectorAll('[data-fp-resgatar]').forEach(b =>
       b.addEventListener('click', () => followupResgatar(b.dataset.fpResgatar))
+    );
+    el.querySelectorAll('.followup-row [data-agendar]').forEach(b =>
+      b.addEventListener('click', () => { const l = allLeads.find(x => x.id === b.dataset.agendar); if (l) openAgendar(l); })
     );
     el.querySelectorAll('.followup-row [data-perfil]').forEach(b =>
       b.addEventListener('click', () => { const l = allLeads.find(x => x.id === b.dataset.perfil); if (l) openPerfil(l); })
