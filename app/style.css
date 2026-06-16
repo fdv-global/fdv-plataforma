@@ -4119,7 +4119,6 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   border-radius: var(--r);
   border: 1px solid var(--b1);
   background: var(--s1);
-  overflow: hidden;
 }
 .followup-block + .followup-block { margin-top: 12px; }
 
@@ -4130,6 +4129,7 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .followup-block-header {
   display: flex; align-items: center; gap: 10px;
   padding: 11px 16px; border-bottom: 1px solid var(--b0);
+  border-radius: var(--r) var(--r) 0 0;
 }
 .followup-block--yellow .followup-block-header { background: rgba(206,146,33,.07); }
 .followup-block--green  .followup-block-header { background: rgba(76,175,142,.07); }

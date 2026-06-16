@@ -2792,20 +2792,7 @@ async function followupResgatar(leadId) {
 
 // ─── QUALIFICADOS SUB ────────────────────────────────────────────────
 function renderQualificados() {
-  const allQual = allLeads.filter(l => l.status === 'qualificado');
-  const el = $('qualificados-content');
-  if (!el) return;
-  if (!allQual.length) {
-    el.innerHTML = `<div class="agenda-empty">
-      <i data-lucide="user-check" class="empty-lucide"></i>
-      <h3>Nenhum lead qualificado</h3>
-      <p>Use a aba "Novos" para qualificar leads e eles aparecerão aqui.</p>
-    </div>`;
-    lucide.createIcons({ nodes: [el] });
-    return;
-  }
-
-  // ─── Helpers locais ──────────────────────────────
+  // ─── Helpers e linhas — FORA do try (evita block-scope em ES module) ─
   const hoje = new Date();
   function daysSince(dateStr) {
     if (!dateStr) return '?';
@@ -2816,22 +2803,6 @@ function renderQualificados() {
     return Math.max(0, Math.round((hoje - new Date(ts)) / 86400000));
   }
 
-  // ─── Segmentação follow-up ───────────────────────
-  const semContato  = allQual.filter(l => !l.status_followup || l.status_followup === 'sem_contato')
-    .sort((a,b) => (a.datachegada||'').localeCompare(b.datachegada||''));
-  const emContato   = allQual.filter(l => l.status_followup === 'em_contato')
-    .sort((a,b) => (a.ultimo_contato_em||'').localeCompare(b.ultimo_contato_em||''));
-  const semResposta = allQual.filter(l => l.status_followup === 'sem_resposta')
-    .sort((a,b) => (a.ultimo_contato_em||'').localeCompare(b.ultimo_contato_em||''));
-
-  // ─── Contagens para os cards ─────────────────────
-  const nSemContato  = semContato.length;
-  const nContato1    = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) === 1).length;
-  const nContato2    = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) === 2).length;
-  const nContato3p   = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) >= 3).length;
-  const nSemResposta = semResposta.length;
-
-  // ─── Linhas dos blocos ───────────────────────────
   function rowSemContato(l) {
     const dias = daysSince(l.datachegada);
     return `<div class="followup-row" data-id="${l.id}">
@@ -2881,11 +2852,116 @@ function renderQualificados() {
     </div>`;
   }
 
-  const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
-  const origemOpts = ['Instagram','Facebook','Indicação','Google','WhatsApp','Outros',...uniq(allQual.map(l=>l.origem))];
-  const rendaOpts  = uniq(allQual.map(l=>l.renda));
+  // allQual no escopo externo para renderQualTbody acessar via closure
+  let allQual = [];
+  function renderQualTbody() {
+    const origem   = $('qual-filter-origem')?.value || '';
+    const renda    = $('qual-filter-renda')?.value || '';
+    const de       = $('qual-filter-chegada-de')?.value || '';
+    const ate      = $('qual-filter-chegada-ate')?.value || '';
+    const q        = ($('qual-busca')?.value || '').toLowerCase().trim();
+    const leads = allQual.filter(l => {
+      if (origem && l.origem !== origem) return false;
+      if (renda  && l.renda  !== renda)  return false;
+      if (de     && (l.datachegada||'') < de)  return false;
+      if (ate    && (l.datachegada||'') > ate) return false;
+      if (q && !(l.nome||'').toLowerCase().includes(q) && !(l.celular||'').includes(q)) return false;
+      return true;
+    });
+    const tbody = $('qual-tbody');
+    if (!tbody) return;
+    if (!leads.length) {
+      tbody.innerHTML = `<tr><td colspan="9" style="padding:32px;text-align:center;color:var(--t3)">Nenhum resultado.</td></tr>`;
+      const allChkQ = $('chk-all-qual'); if (allChkQ) { allChkQ.checked = false; allChkQ.indeterminate = false; }
+      updateQualBulkBar(); return;
+    }
+    tbody.innerHTML = leads.map(l => `<tr data-id="${l.id}"${isDup(l.id)?' class="dup-row"':''}>
+      <td class="cell-chk"><input type="checkbox" class="row-chk" data-id="${l.id}" ${selectedIds.has(l.id)?'checked':''}></td>
+      <td>${fmtDate(l.datachegada)}</td>
+      <td style="display:flex;align-items:center;gap:5px;padding-top:10px;padding-bottom:10px">${isDup(l.id)?`<button class="btn-dup-ico" data-dup-id="${l.id}" title="Possível duplicata — clique para comparar">${ICO_COPY}</button>`:''}<button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
+      <td>${esc(l.celular||'—')}</td>
+      <td>${badgeOrigem(l.origem)}</td>
+      <td class="cell-renda" title="${esc(l.renda||'')}">${esc(abrevRenda(l.renda))}</td>
+      <td>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</td>
+      <td class="cell-followup">${badgeFollowup(l.status_followup, l.contato_count)}</td>
+      <td class="cell-acoes">
+        <button class="btn-primary btn-sm" data-agendar="${l.id}">${ICO_CALENDAR} Agendar</button>
+        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
+        <button class="btn-ghost btn-sm btn-destructive" data-descartar="${l.id}">${ICO_BAN} Descartar</button>
+        <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir lead">${ICO_TRASH}</button>
+      </td>
+    </tr>`).join('');
+    tbody.querySelectorAll('[data-perfil]').forEach(b =>
+      b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
+    );
+    tbody.querySelectorAll('[data-agendar]').forEach(b =>
+      b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.agendar); if(l) openAgendar(l); })
+    );
+    tbody.querySelectorAll('.btn-wa-lead').forEach(b =>
+      b.addEventListener('click', () => openWaChatFromLead(b.dataset.id))
+    );
+    tbody.querySelectorAll('[data-descartar]').forEach(b =>
+      b.addEventListener('click', () => openDescarteModal(b.dataset.descartar))
+    );
+    tbody.querySelectorAll('[data-excluir]').forEach(b =>
+      b.addEventListener('click', () => deleteLead(b.dataset.excluir))
+    );
+    tbody.querySelectorAll('.row-chk').forEach(chk => {
+      chk.addEventListener('change', () => {
+        if (chk.checked) selectedIds.add(chk.dataset.id);
+        else             selectedIds.delete(chk.dataset.id);
+        const q = $('chk-all-qual');
+        if (q) { q.checked = leads.every(l => selectedIds.has(l.id)); q.indeterminate = !q.checked && leads.some(l => selectedIds.has(l.id)); }
+        updateQualBulkBar();
+      });
+    });
+    const allChkQ = $('chk-all-qual');
+    if (allChkQ) {
+      allChkQ.checked = leads.length > 0 && leads.every(l => selectedIds.has(l.id));
+      allChkQ.indeterminate = !allChkQ.checked && leads.some(l => selectedIds.has(l.id));
+      allChkQ.onclick = e => {
+        if (e.target.checked) leads.forEach(l => selectedIds.add(l.id));
+        else                  leads.forEach(l => selectedIds.delete(l.id));
+        updateQualBulkBar(); renderQualTbody();
+      };
+    }
+    updateQualBulkBar();
+  }
 
-  el.innerHTML = `
+  // ─── Try/catch cobre apenas dados + renderização ──────────────────
+  try {
+    allQual = allLeads.filter(l => l.status === 'qualificado');
+    const el = $('qualificados-content');
+    if (!el) return;
+
+    if (!allQual.length) {
+      el.innerHTML = `<div class="agenda-empty">
+        <i data-lucide="user-check" class="empty-lucide"></i>
+        <h3>Nenhum lead qualificado</h3>
+        <p>Use a aba "Novos" para qualificar leads e eles aparecerão aqui.</p>
+      </div>`;
+      lucide.createIcons({ nodes: [el] });
+      return;
+    }
+
+    const semContato  = allQual.filter(l => !l.status_followup || l.status_followup === 'sem_contato')
+      .sort((a,b) => (a.datachegada||'').localeCompare(b.datachegada||''));
+    const emContato   = allQual.filter(l => l.status_followup === 'em_contato')
+      .sort((a,b) => (a.ultimo_contato_em||'').localeCompare(b.ultimo_contato_em||''));
+    const semResposta = allQual.filter(l => l.status_followup === 'sem_resposta')
+      .sort((a,b) => (a.ultimo_contato_em||'').localeCompare(b.ultimo_contato_em||''));
+
+    const nSemContato  = semContato.length;
+    const nContato1    = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) === 1).length;
+    const nContato2    = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) === 2).length;
+    const nContato3p   = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) >= 3).length;
+    const nSemResposta = semResposta.length;
+
+    const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+    const origemOpts = ['Instagram','Facebook','Indicação','Google','WhatsApp','Outros',...uniq(allQual.map(l=>l.origem))];
+    const rendaOpts  = uniq(allQual.map(l=>l.renda));
+
+    el.innerHTML = `
     <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:20px">
       <div class="stat-card accent-gold">
         <div class="stat-top"><span class="stat-label">Sem contato</span></div>
@@ -2991,116 +3067,50 @@ function renderQualificados() {
       <tbody id="qual-tbody"></tbody>
     </table></div>`;
 
-  // ─── Handlers dos blocos follow-up ───────────────
-  el.querySelectorAll('[data-fp-contato]').forEach(b =>
-    b.addEventListener('click', () => followupContato(b.dataset.fpContato))
-  );
-  el.querySelectorAll('[data-fp-semresposta]').forEach(b =>
-    b.addEventListener('click', () => followupSemResposta(b.dataset.fpSemresposta))
-  );
-  el.querySelectorAll('[data-fp-resgatar]').forEach(b =>
-    b.addEventListener('click', () => followupResgatar(b.dataset.fpResgatar))
-  );
-  el.querySelectorAll('.followup-row [data-perfil]').forEach(b =>
-    b.addEventListener('click', () => { const l = allLeads.find(x => x.id === b.dataset.perfil); if (l) openPerfil(l); })
-  );
-  el.querySelectorAll('.followup-row .btn-wa-lead').forEach(b =>
-    b.addEventListener('click', () => openWaChatFromLead(b.dataset.id))
-  );
-  el.querySelectorAll('.followup-row [data-descartar]').forEach(b =>
-    b.addEventListener('click', () => openDescarteModal(b.dataset.descartar))
-  );
-  el.querySelectorAll('.followup-row [data-excluir]').forEach(b =>
-    b.addEventListener('click', () => deleteLead(b.dataset.excluir))
-  );
-
-  function renderQualTbody() {
-    const origem   = $('qual-filter-origem')?.value || '';
-    const renda    = $('qual-filter-renda')?.value || '';
-    const de       = $('qual-filter-chegada-de')?.value || '';
-    const ate      = $('qual-filter-chegada-ate')?.value || '';
-    const q        = ($('qual-busca').value || '').toLowerCase().trim();
-    const leads = allQual.filter(l => {
-      if (origem && l.origem !== origem) return false;
-      if (renda  && l.renda  !== renda)  return false;
-      if (de     && (l.datachegada||'') < de)  return false;
-      if (ate    && (l.datachegada||'') > ate) return false;
-      if (q && !(l.nome||'').toLowerCase().includes(q) && !(l.celular||'').includes(q)) return false;
-      return true;
-    });
-    const tbody = $('qual-tbody');
-    if (!leads.length) {
-      tbody.innerHTML = `<tr><td colspan="9" style="padding:32px;text-align:center;color:var(--t3)">Nenhum resultado.</td></tr>`;
-      const allChkQ = $('chk-all-qual'); if (allChkQ) { allChkQ.checked = false; allChkQ.indeterminate = false; }
-      updateQualBulkBar(); return;
-    }
-    tbody.innerHTML = leads.map(l => `<tr data-id="${l.id}"${isDup(l.id)?' class="dup-row"':''}>
-      <td class="cell-chk"><input type="checkbox" class="row-chk" data-id="${l.id}" ${selectedIds.has(l.id)?'checked':''}></td>
-      <td>${fmtDate(l.datachegada)}</td>
-      <td style="display:flex;align-items:center;gap:5px;padding-top:10px;padding-bottom:10px">${isDup(l.id)?`<button class="btn-dup-ico" data-dup-id="${l.id}" title="Possível duplicata — clique para comparar">${ICO_COPY}</button>`:''}<button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
-      <td>${esc(l.celular||'—')}</td>
-      <td>${badgeOrigem(l.origem)}</td>
-      <td class="cell-renda" title="${esc(l.renda||'')}">${esc(abrevRenda(l.renda))}</td>
-      <td>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</td>
-      <td class="cell-followup">${badgeFollowup(l.status_followup, l.contato_count)}</td>
-      <td class="cell-acoes">
-        <button class="btn-primary btn-sm" data-agendar="${l.id}">${ICO_CALENDAR} Agendar</button>
-        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
-        <button class="btn-ghost btn-sm btn-destructive" data-descartar="${l.id}">${ICO_BAN} Descartar</button>
-        <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir lead">${ICO_TRASH}</button>
-      </td>
-    </tr>`).join('');
-    tbody.querySelectorAll('[data-perfil]').forEach(b =>
-      b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
+    el.querySelectorAll('[data-fp-contato]').forEach(b =>
+      b.addEventListener('click', () => followupContato(b.dataset.fpContato))
     );
-    tbody.querySelectorAll('[data-agendar]').forEach(b =>
-      b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.agendar); if(l) openAgendar(l); })
+    el.querySelectorAll('[data-fp-semresposta]').forEach(b =>
+      b.addEventListener('click', () => followupSemResposta(b.dataset.fpSemresposta))
     );
-    tbody.querySelectorAll('.btn-wa-lead').forEach(b =>
+    el.querySelectorAll('[data-fp-resgatar]').forEach(b =>
+      b.addEventListener('click', () => followupResgatar(b.dataset.fpResgatar))
+    );
+    el.querySelectorAll('.followup-row [data-perfil]').forEach(b =>
+      b.addEventListener('click', () => { const l = allLeads.find(x => x.id === b.dataset.perfil); if (l) openPerfil(l); })
+    );
+    el.querySelectorAll('.followup-row .btn-wa-lead').forEach(b =>
       b.addEventListener('click', () => openWaChatFromLead(b.dataset.id))
     );
-    tbody.querySelectorAll('[data-descartar]').forEach(b =>
+    el.querySelectorAll('.followup-row [data-descartar]').forEach(b =>
       b.addEventListener('click', () => openDescarteModal(b.dataset.descartar))
     );
-    tbody.querySelectorAll('[data-excluir]').forEach(b =>
+    el.querySelectorAll('.followup-row [data-excluir]').forEach(b =>
       b.addEventListener('click', () => deleteLead(b.dataset.excluir))
     );
-    // Checkboxes por linha
-    tbody.querySelectorAll('.row-chk').forEach(chk => {
-      chk.addEventListener('change', () => {
-        if (chk.checked) selectedIds.add(chk.dataset.id);
-        else             selectedIds.delete(chk.dataset.id);
-        const q = $('chk-all-qual');
-        if (q) { q.checked = leads.every(l => selectedIds.has(l.id)); q.indeterminate = !q.checked && leads.some(l => selectedIds.has(l.id)); }
-        updateQualBulkBar();
-      });
+
+    $('btn-qual-bulk-tag')?.addEventListener('click', openBulkTagModal);
+    $('btn-qual-bulk-descartar')?.addEventListener('click', openBulkDescarteModal);
+    $('btn-qual-bulk-delete')?.addEventListener('click', bulkDelete);
+    $('btn-qual-bulk-clear')?.addEventListener('click', () => { selectedIds.clear(); updateQualBulkBar(); renderQualTbody(); });
+
+    ['qual-filter-origem','qual-filter-renda','qual-filter-chegada-de','qual-filter-chegada-ate'].forEach(id => {
+      const inp = $(id); if (inp) inp.addEventListener('change', renderQualTbody);
     });
-    // Selecionar todos
-    const allChkQ = $('chk-all-qual');
-    if (allChkQ) {
-      allChkQ.checked = leads.length > 0 && leads.every(l => selectedIds.has(l.id));
-      allChkQ.indeterminate = !allChkQ.checked && leads.some(l => selectedIds.has(l.id));
-      allChkQ.onclick = e => {
-        if (e.target.checked) leads.forEach(l => selectedIds.add(l.id));
-        else                  leads.forEach(l => selectedIds.delete(l.id));
-        updateQualBulkBar(); renderQualTbody();
-      };
-    }
-    updateQualBulkBar();
-  }
-
-  $('btn-qual-bulk-tag')?.addEventListener('click', openBulkTagModal);
-  $('btn-qual-bulk-descartar')?.addEventListener('click', openBulkDescarteModal);
-  $('btn-qual-bulk-delete')?.addEventListener('click', bulkDelete);
-  $('btn-qual-bulk-clear')?.addEventListener('click', () => { selectedIds.clear(); updateQualBulkBar(); renderQualTbody(); });
-
-  ['qual-filter-origem','qual-filter-renda','qual-filter-chegada-de','qual-filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', renderQualTbody); });
-  $('qual-busca')?.addEventListener('input', renderQualTbody);
-  $('qual-limpar')?.addEventListener('click', () => {
-    ['qual-filter-origem','qual-filter-renda','qual-filter-chegada-de','qual-filter-chegada-ate','qual-busca'].forEach(id=>{const el=$(id);if(el)el.value='';});
+    $('qual-busca')?.addEventListener('input', renderQualTbody);
+    $('qual-limpar')?.addEventListener('click', () => {
+      ['qual-filter-origem','qual-filter-renda','qual-filter-chegada-de','qual-filter-chegada-ate','qual-busca'].forEach(id=>{const inp=$(id);if(inp)inp.value='';});
+      renderQualTbody();
+    });
     renderQualTbody();
-  });
-  renderQualTbody();
+  } catch (err) {
+    console.error('[FDV] renderQualificados ERRO:', err);
+    const el2 = $('qualificados-content');
+    if (el2) el2.innerHTML = `<div style="padding:24px;color:#e06450;font-family:monospace;font-size:13px;background:rgba(192,57,43,.08);border-radius:10px;border:1px solid rgba(192,57,43,.2)">
+      <strong>Erro em Qualificados</strong><br><br>${err.message}<br><br>
+      <small style="color:var(--t3)">${(err.stack||'').split('\n').slice(0,4).join('<br>')}</small>
+    </div>`;
+  }
 }
 
 // ─── AGENDADOS OVERVIEW ──────────────────────────────────────────────
