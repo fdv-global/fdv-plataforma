@@ -2999,7 +2999,9 @@ function renderQualificados() {
         <span class="followup-block-title">${nSemContato} lead${nSemContato !== 1 ? 's' : ''} aguardando primeiro contato</span>
         <span class="followup-block-hint">mais antigos primeiro</span>
       </div>
-      ${semContato.length ? semContato.map(rowSemContato).join('') : '<div class="followup-block-empty">Nenhum lead aguardando primeiro contato.</div>'}
+      <div class="followup-block-body">
+        ${semContato.length ? semContato.map(rowSemContato).join('') : '<div class="followup-block-empty">Nenhum lead aguardando primeiro contato.</div>'}
+      </div>
     </div>
 
     <div class="followup-block followup-block--green">
@@ -3007,7 +3009,9 @@ function renderQualificados() {
         <span class="followup-block-ico">${ICO_MSG_CIRCLE}</span>
         <span class="followup-block-title">${emContato.length} lead${emContato.length !== 1 ? 's' : ''} em processo de contato</span>
       </div>
-      ${emContato.length ? emContato.map(rowEmContato).join('') : '<div class="followup-block-empty">Nenhum lead em contato no momento.</div>'}
+      <div class="followup-block-body">
+        ${emContato.length ? emContato.map(rowEmContato).join('') : '<div class="followup-block-empty">Nenhum lead em contato no momento.</div>'}
+      </div>
     </div>
 
     <div class="followup-block followup-block--red">
@@ -3016,7 +3020,9 @@ function renderQualificados() {
         <span class="followup-block-title">${nSemResposta} lead${nSemResposta !== 1 ? 's' : ''} sem resposta</span>
         <span class="followup-block-hint">resgatar ou descartar</span>
       </div>
-      ${semResposta.length ? semResposta.map(rowSemResposta).join('') : '<div class="followup-block-empty">Nenhum lead sem resposta.</div>'}
+      <div class="followup-block-body">
+        ${semResposta.length ? semResposta.map(rowSemResposta).join('') : '<div class="followup-block-empty">Nenhum lead sem resposta.</div>'}
+      </div>
     </div>
 
     <div class="filters-bar" style="margin-top:28px;margin-bottom:14px">

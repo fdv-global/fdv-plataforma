@@ -4126,6 +4126,8 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .followup-block--green  { border-left: 3px solid var(--green); }
 .followup-block--red    { border-left: 3px solid #e06450; }
 
+.followup-block-body { max-height: 400px; overflow-y: auto; }
+
 .followup-block-header {
   display: flex; align-items: center; gap: 10px;
   padding: 11px 16px; border-bottom: 1px solid var(--b0);
