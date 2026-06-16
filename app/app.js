@@ -2878,12 +2878,22 @@ function renderQualificados() {
   }
 
   function renderQualBlocks() {
-    const q      = ($('qual-search-top')?.value  || '').toLowerCase().trim();
-    const origem = $('qual-filter-origem')?.value || '';
-    const renda  = $('qual-filter-renda')?.value  || '';
+    const q          = ($('qual-search-top')?.value        || '').toLowerCase().trim();
+    const origem     = $('qual-filter-origem')?.value      || '';
+    const renda      = $('qual-filter-renda')?.value       || '';
+    const mes        = $('qual-filter-mes')?.value         || '';
+    const profissao  = $('qual-filter-profissao')?.value   || '';
+    const etiqueta   = $('qual-filter-etiqueta')?.value    || '';
+    const chegadaDe  = $('qual-filter-chegada-de')?.value  || '';
+    const chegadaAte = $('qual-filter-chegada-ate')?.value || '';
     const match  = l => {
-      if (origem && l.origem !== origem) return false;
-      if (renda  && l.renda  !== renda)  return false;
+      if (origem     && l.origem    !== origem)    return false;
+      if (renda      && l.renda     !== renda)     return false;
+      if (mes        && !(l.datachegada||'').startsWith(mes))  return false;
+      if (profissao  && l.profissao !== profissao) return false;
+      if (etiqueta   && l.etiqueta  !== etiqueta)  return false;
+      if (chegadaDe  && (l.datachegada||'') < chegadaDe)  return false;
+      if (chegadaAte && (l.datachegada||'') > chegadaAte) return false;
       if (q && !(l.nome||'').toLowerCase().includes(q) && !(l.celular||'').replace(/\D/g,'').includes(q.replace(/\D/g,''))) return false;
       return true;
     };
@@ -2936,30 +2946,106 @@ function renderQualificados() {
     const nSemResposta = semResposta.length;
 
     const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
-    const origemOpts = uniq(allQual.map(l=>l.origem));
-    const rendaOpts  = uniq(allQual.map(l=>l.renda));
+    const origemOpts    = uniq(allQual.map(l=>l.origem));
+    const rendaOpts     = uniq(allQual.map(l=>l.renda));
+    const profissaoOpts = uniq(allQual.map(l=>l.profissao));
+    const etiquetaOpts  = ['Super Lead','Bom','Neutro','Frio'];
+    const mesOpts       = [...new Set(allQual.filter(l=>l.datachegada).map(l=>l.datachegada.slice(0,7)))].sort().reverse();
+
+    const qsTotal  = allLeads.length;
+    const qsNovos  = allLeads.filter(l=>l.status==='aguardando').length;
+    const qsAgen   = allLeads.filter(l=>l.status==='agendado').length;
+    const qsNS     = allLeads.filter(l=>l.status==='noshow').length;
+    const qsReal   = allLeads.filter(l=>l.status==='realizada').length;
+    const qsVendas = allLeads.filter(l=>l.kanban_column==='venda_ganha').length;
 
     el.innerHTML = `
-    <div class="qual-search-bar">
-      <div class="search-wrap">
-        <input type="text" class="filter-input" id="qual-search-top" placeholder="Buscar por nome ou celular…" autocomplete="off">
-        <span class="search-ico">⌕</span>
+    <div class="stats-grid stats-grid--6" style="margin-bottom:14px">
+      <div class="stat-card">
+        <div class="stat-top"><span class="stat-label">Total</span><span class="stat-icon"><i data-lucide="users" style="width:14px;height:14px"></i></span></div>
+        <strong class="stat-num">${qsTotal}</strong>
+        <span class="stat-sub">leads cadastrados</span>
+      </div>
+      <div class="stat-card accent-gold">
+        <div class="stat-top"><span class="stat-label">Novos</span><span class="stat-icon"><i data-lucide="clock" style="width:14px;height:14px"></i></span></div>
+        <strong class="stat-num">${qsNovos}</strong>
+        <span class="stat-sub">aguardando qualificação</span>
+      </div>
+      <div class="stat-card accent-petro">
+        <div class="stat-top"><span class="stat-label">Agendados</span><span class="stat-icon"><i data-lucide="calendar" style="width:14px;height:14px"></i></span></div>
+        <strong class="stat-num">${qsAgen}</strong>
+        <span class="stat-sub">calls marcadas</span>
+      </div>
+      <div class="stat-card accent-marsala">
+        <div class="stat-top"><span class="stat-label">No Show</span><span class="stat-icon"><i data-lucide="user-x" style="width:14px;height:14px"></i></span></div>
+        <strong class="stat-num">${qsNS}</strong>
+        <span class="stat-sub">não compareceram</span>
+      </div>
+      <div class="stat-card accent-green">
+        <div class="stat-top"><span class="stat-label">Realizadas</span><span class="stat-icon"><i data-lucide="check-circle" style="width:14px;height:14px"></i></span></div>
+        <strong class="stat-num">${qsReal}</strong>
+        <span class="stat-sub">calls concluídas</span>
+      </div>
+      <div class="stat-card accent-sand">
+        <div class="stat-top"><span class="stat-label">Vendas</span><span class="stat-icon"><i data-lucide="trophy" style="width:14px;height:14px"></i></span></div>
+        <strong class="stat-num">${qsVendas}</strong>
+        <span class="stat-sub">vendas fechadas</span>
       </div>
     </div>
-    <div class="qual-filters-bar">
-      <div class="filter-group">
-        <label class="filter-label">Origem</label>
-        <select class="filter-select" id="qual-filter-origem">
-          <option value="">Todas</option>
-          ${origemOpts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
-        </select>
-      </div>
-      <div class="filter-group">
-        <label class="filter-label">Renda</label>
-        <select class="filter-select" id="qual-filter-renda">
-          <option value="">Todas</option>
-          ${rendaOpts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
-        </select>
+
+    <div class="filters-bar" style="margin-bottom:20px">
+      <div class="filters-row">
+        <div class="filter-group">
+          <label class="filter-label">Origem</label>
+          <select class="filter-select" id="qual-filter-origem">
+            <option value="">Todas</option>
+            ${origemOpts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Mês</label>
+          <select class="filter-select" id="qual-filter-mes">
+            <option value="">Todos os meses</option>
+            ${mesOpts.map(m=>{const[y,mo]=m.split('-');return`<option value="${m}">${MONTHS[+mo]} ${y}</option>`;}).join('')}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Renda</label>
+          <select class="filter-select" id="qual-filter-renda">
+            <option value="">Todas</option>
+            ${rendaOpts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Profissão</label>
+          <select class="filter-select" id="qual-filter-profissao">
+            <option value="">Todas</option>
+            ${profissaoOpts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Etiqueta</label>
+          <select class="filter-select" id="qual-filter-etiqueta">
+            <option value="">Todas</option>
+            ${etiquetaOpts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Chegada de</label>
+          <input type="date" class="filter-input filter-input--date" id="qual-filter-chegada-de">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">até</label>
+          <input type="date" class="filter-input filter-input--date" id="qual-filter-chegada-ate">
+        </div>
+        <div class="filter-group filter-group--search">
+          <label class="filter-label">Buscar</label>
+          <div class="search-wrap">
+            <input type="text" class="filter-input" id="qual-search-top" placeholder="Nome ou celular…" autocomplete="off">
+            <span class="search-ico">⌕</span>
+          </div>
+        </div>
+        <button class="btn-clear" id="qual-limpar">Limpar</button>
       </div>
     </div>
 
@@ -3034,6 +3120,8 @@ function renderQualificados() {
       <div class="followup-block-body" id="qual-sr-body"></div>
     </div>`;
 
+    lucide.createIcons({ nodes: [el] });
+
     el.addEventListener('click', e => {
       const t = e.target.closest('[data-fp-contato],[data-fp-semresposta],[data-fp-resgatar],[data-agendar],[data-perfil],[data-excluir],[data-descartar],.btn-wa-lead');
       if (!t || !t.closest('.followup-row')) return;
@@ -3050,10 +3138,14 @@ function renderQualificados() {
     ['qual-sort-sc','qual-sort-ec','qual-sort-sr'].forEach(id =>
       $(id)?.addEventListener('change', renderQualBlocks)
     );
-    ['qual-filter-origem','qual-filter-renda'].forEach(id =>
+    ['qual-filter-origem','qual-filter-renda','qual-filter-mes','qual-filter-profissao','qual-filter-etiqueta','qual-filter-chegada-de','qual-filter-chegada-ate'].forEach(id =>
       $(id)?.addEventListener('change', renderQualBlocks)
     );
     $('qual-search-top')?.addEventListener('input', renderQualBlocks);
+    $('qual-limpar')?.addEventListener('click', () => {
+      ['qual-filter-origem','qual-filter-renda','qual-filter-mes','qual-filter-profissao','qual-filter-etiqueta','qual-filter-chegada-de','qual-filter-chegada-ate','qual-search-top'].forEach(id => { const inp=$(id); if(inp) inp.value=''; });
+      renderQualBlocks();
+    });
     renderQualBlocks();
   } catch (err) {
     console.error('[FDV] renderQualificados ERRO:', err);
