@@ -46,6 +46,7 @@ const ICO_PIN_SM       = _S(`<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.1
 const ICO_PENCIL       = _S(`<path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>`);
 const ICO_COPY         = _S(`<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>`, 13);
 const ICO_TAG          = _S(`<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>`, 14);
+const ICO_ALERT        = _S(`<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>`, 14);
 
 const MERGE_FIELDS = [
   { k:'nome',        lbl:'Nome' },
@@ -2767,6 +2768,28 @@ function renderBriefingSub() {
 // ─── SUB-BADGE COUNTS ────────────────────────────────────────────────
 function updateSubBadges() {}
 
+// ─── FOLLOW-UP ACTIONS ──────────────────────────────────────────────
+async function followupContato(leadId) {
+  const lead = allLeads.find(l => l.id === leadId);
+  if (!lead) return;
+  await saveLead(leadId, {
+    contato_count: (lead.contato_count || 0) + 1,
+    status_followup: 'em_contato',
+    ultimo_contato_em: new Date().toISOString(),
+  });
+  renderAll();
+}
+
+async function followupSemResposta(leadId) {
+  await saveLead(leadId, { status_followup: 'sem_resposta' });
+  renderAll();
+}
+
+async function followupResgatar(leadId) {
+  await saveLead(leadId, { status_followup: 'em_contato' });
+  renderAll();
+}
+
 // ─── QUALIFICADOS SUB ────────────────────────────────────────────────
 function renderQualificados() {
   const allQual = allLeads.filter(l => l.status === 'qualificado');
@@ -2781,12 +2804,143 @@ function renderQualificados() {
     lucide.createIcons({ nodes: [el] });
     return;
   }
+
+  // ─── Helpers locais ──────────────────────────────
+  const hoje = new Date();
+  function daysSince(dateStr) {
+    if (!dateStr) return '?';
+    return Math.max(0, Math.round((hoje - new Date(dateStr + 'T00:00:00')) / 86400000));
+  }
+  function daysSinceTs(ts) {
+    if (!ts) return '?';
+    return Math.max(0, Math.round((hoje - new Date(ts)) / 86400000));
+  }
+
+  // ─── Segmentação follow-up ───────────────────────
+  const semContato  = allQual.filter(l => !l.status_followup || l.status_followup === 'sem_contato')
+    .sort((a,b) => (a.datachegada||'').localeCompare(b.datachegada||''));
+  const emContato   = allQual.filter(l => l.status_followup === 'em_contato')
+    .sort((a,b) => (a.ultimo_contato_em||'').localeCompare(b.ultimo_contato_em||''));
+  const semResposta = allQual.filter(l => l.status_followup === 'sem_resposta')
+    .sort((a,b) => (a.ultimo_contato_em||'').localeCompare(b.ultimo_contato_em||''));
+
+  // ─── Contagens para os cards ─────────────────────
+  const nSemContato  = semContato.length;
+  const nContato1    = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) === 1).length;
+  const nContato2    = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) === 2).length;
+  const nContato3p   = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) >= 3).length;
+  const nSemResposta = semResposta.length;
+
+  // ─── Linhas dos blocos ───────────────────────────
+  function rowSemContato(l) {
+    const dias = daysSince(l.datachegada);
+    return `<div class="followup-row" data-id="${l.id}">
+      <div class="followup-row-main">
+        <button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
+        <span class="followup-row-info">chegou em ${fmtDate(l.datachegada)} · há ${dias}d · ${esc(l.origem||'—')} · ${esc(abrevRenda(l.renda)||'—')}</span>
+      </div>
+      <div class="followup-row-acoes">
+        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
+        <button class="btn-primary btn-sm" data-fp-contato="${l.id}">+ Contato</button>
+        <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
+        <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir">${ICO_TRASH}</button>
+      </div>
+    </div>`;
+  }
+
+  function rowEmContato(l) {
+    const diasUlt = daysSinceTs(l.ultimo_contato_em);
+    const showSR = (l.contato_count||0) >= 3;
+    return `<div class="followup-row" data-id="${l.id}">
+      <div class="followup-row-main">
+        <button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
+        <span class="followup-row-info">chegou em ${fmtDate(l.datachegada)} · Contato ${l.contato_count||1} · ${diasUlt}d atrás</span>
+      </div>
+      <div class="followup-row-acoes">
+        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
+        <button class="btn-primary btn-sm" data-fp-contato="${l.id}">+ Contato</button>
+        ${showSR ? `<button class="btn-ghost btn-sm btn-destructive" data-fp-semresposta="${l.id}">Sem resposta</button>` : ''}
+        <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
+        <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir">${ICO_TRASH}</button>
+      </div>
+    </div>`;
+  }
+
+  function rowSemResposta(l) {
+    const tentativas = l.contato_count || 0;
+    return `<div class="followup-row" data-id="${l.id}">
+      <div class="followup-row-main">
+        <button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
+        <span class="followup-row-info">chegou em ${fmtDate(l.datachegada)} · ${tentativas} tentativa${tentativas !== 1 ? 's' : ''} · ${esc(l.origem||'—')} · ${esc(abrevRenda(l.renda)||'—')}</span>
+      </div>
+      <div class="followup-row-acoes">
+        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
+        <button class="btn-ghost btn-sm" data-fp-resgatar="${l.id}">${ICO_UNDO} Resgatar</button>
+        <button class="btn-ghost btn-sm btn-destructive" data-descartar="${l.id}">${ICO_BAN} Descartar</button>
+      </div>
+    </div>`;
+  }
+
   const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
   const origemOpts = ['Instagram','Facebook','Indicação','Google','WhatsApp','Outros',...uniq(allQual.map(l=>l.origem))];
   const rendaOpts  = uniq(allQual.map(l=>l.renda));
 
   el.innerHTML = `
-    <div class="filters-bar" style="margin-bottom:14px">
+    <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:20px">
+      <div class="stat-card accent-gold">
+        <div class="stat-top"><span class="stat-label">Sem contato</span></div>
+        <span class="stat-num">${nSemContato}</span>
+        <div class="stat-sub">aguardando 1º contato</div>
+      </div>
+      <div class="stat-card accent-petro">
+        <div class="stat-top"><span class="stat-label">Contato 1</span></div>
+        <span class="stat-num">${nContato1}</span>
+        <div class="stat-sub">1ª tentativa</div>
+      </div>
+      <div class="stat-card accent-petro">
+        <div class="stat-top"><span class="stat-label">Contato 2</span></div>
+        <span class="stat-num">${nContato2}</span>
+        <div class="stat-sub">2ª tentativa</div>
+      </div>
+      <div class="stat-card accent-green">
+        <div class="stat-top"><span class="stat-label">Contato 3+</span></div>
+        <span class="stat-num">${nContato3p}</span>
+        <div class="stat-sub">3+ tentativas</div>
+      </div>
+      <div class="stat-card accent-marsala">
+        <div class="stat-top"><span class="stat-label">Sem resposta</span></div>
+        <span class="stat-num">${nSemResposta}</span>
+        <div class="stat-sub">resgatar ou descartar</div>
+      </div>
+    </div>
+
+    <div class="followup-block followup-block--yellow">
+      <div class="followup-block-header">
+        <span class="followup-block-ico">${ICO_ALERT}</span>
+        <span class="followup-block-title">${nSemContato} lead${nSemContato !== 1 ? 's' : ''} aguardando primeiro contato</span>
+        <span class="followup-block-hint">mais antigos primeiro</span>
+      </div>
+      ${semContato.length ? semContato.map(rowSemContato).join('') : '<div class="followup-block-empty">Nenhum lead aguardando primeiro contato.</div>'}
+    </div>
+
+    <div class="followup-block followup-block--green">
+      <div class="followup-block-header">
+        <span class="followup-block-ico">${ICO_MSG_CIRCLE}</span>
+        <span class="followup-block-title">${emContato.length} lead${emContato.length !== 1 ? 's' : ''} em processo de contato</span>
+      </div>
+      ${emContato.length ? emContato.map(rowEmContato).join('') : '<div class="followup-block-empty">Nenhum lead em contato no momento.</div>'}
+    </div>
+
+    <div class="followup-block followup-block--red">
+      <div class="followup-block-header">
+        <span class="followup-block-ico">${ICO_X_CIRCLE}</span>
+        <span class="followup-block-title">${nSemResposta} lead${nSemResposta !== 1 ? 's' : ''} sem resposta</span>
+        <span class="followup-block-hint">resgatar ou descartar</span>
+      </div>
+      ${semResposta.length ? semResposta.map(rowSemResposta).join('') : '<div class="followup-block-empty">Nenhum lead sem resposta.</div>'}
+    </div>
+
+    <div class="filters-bar" style="margin-top:28px;margin-bottom:14px">
       <div class="filters-row">
         <div class="filter-group">
           <label class="filter-label">Origem</label>
@@ -2832,10 +2986,33 @@ function renderQualificados() {
     <div class="table-wrap"><table class="leads-table">
       <thead><tr>
         <th class="cell-chk"><input type="checkbox" id="chk-all-qual" title="Selecionar todos"></th>
-        <th>Chegou em</th><th>Nome</th><th>Celular</th><th>Origem</th><th>Renda</th><th>Etiqueta</th><th>Ações</th>
+        <th>Chegou em</th><th>Nome</th><th>Celular</th><th>Origem</th><th>Renda</th><th>Etiqueta</th><th>Follow-up</th><th>Ações</th>
       </tr></thead>
       <tbody id="qual-tbody"></tbody>
     </table></div>`;
+
+  // ─── Handlers dos blocos follow-up ───────────────
+  el.querySelectorAll('[data-fp-contato]').forEach(b =>
+    b.addEventListener('click', () => followupContato(b.dataset.fpContato))
+  );
+  el.querySelectorAll('[data-fp-semresposta]').forEach(b =>
+    b.addEventListener('click', () => followupSemResposta(b.dataset.fpSemresposta))
+  );
+  el.querySelectorAll('[data-fp-resgatar]').forEach(b =>
+    b.addEventListener('click', () => followupResgatar(b.dataset.fpResgatar))
+  );
+  el.querySelectorAll('.followup-row [data-perfil]').forEach(b =>
+    b.addEventListener('click', () => { const l = allLeads.find(x => x.id === b.dataset.perfil); if (l) openPerfil(l); })
+  );
+  el.querySelectorAll('.followup-row .btn-wa-lead').forEach(b =>
+    b.addEventListener('click', () => openWaChatFromLead(b.dataset.id))
+  );
+  el.querySelectorAll('.followup-row [data-descartar]').forEach(b =>
+    b.addEventListener('click', () => openDescarteModal(b.dataset.descartar))
+  );
+  el.querySelectorAll('.followup-row [data-excluir]').forEach(b =>
+    b.addEventListener('click', () => deleteLead(b.dataset.excluir))
+  );
 
   function renderQualTbody() {
     const origem   = $('qual-filter-origem')?.value || '';
@@ -2853,7 +3030,7 @@ function renderQualificados() {
     });
     const tbody = $('qual-tbody');
     if (!leads.length) {
-      tbody.innerHTML = `<tr><td colspan="8" style="padding:32px;text-align:center;color:var(--t3)">Nenhum resultado.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" style="padding:32px;text-align:center;color:var(--t3)">Nenhum resultado.</td></tr>`;
       const allChkQ = $('chk-all-qual'); if (allChkQ) { allChkQ.checked = false; allChkQ.indeterminate = false; }
       updateQualBulkBar(); return;
     }
@@ -2865,6 +3042,7 @@ function renderQualificados() {
       <td>${badgeOrigem(l.origem)}</td>
       <td class="cell-renda" title="${esc(l.renda||'')}">${esc(abrevRenda(l.renda))}</td>
       <td>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</td>
+      <td class="cell-followup">${badgeFollowup(l.status_followup, l.contato_count)}</td>
       <td class="cell-acoes">
         <button class="btn-primary btn-sm" data-agendar="${l.id}">${ICO_CALENDAR} Agendar</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
@@ -5228,6 +5406,11 @@ function abrevRenda(r) {
 function badgeStatus(s) {
   const labels = { aguardando:'Aguardando', qualificado:'Qualificado', agendado:'Agendado', realizada:'Call Realizada', noshow:'No Show', cancelado:'Cancelado', descartado:'Descartado' };
   return `<span class="badge-status ${s||''}">${labels[s]||s||'—'}</span>`;
+}
+function badgeFollowup(sf, cc) {
+  const key = sf || 'sem_contato';
+  const labels = { sem_contato:'Sem contato', em_contato:`Contato ${cc||1}`, sem_resposta:'Sem resposta' };
+  return `<span class="badge-followup badge-followup--${key}">${labels[key]||key}</span>`;
 }
 // Badge que reflete a coluna Kanban atual (não o status do lead)
 const _KC_BADGE = {
