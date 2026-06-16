@@ -1082,10 +1082,14 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 }
 
 /* Sub-nav secundário (dentro de Agendados) */
+.agend-subtabs-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 32px; margin-bottom: 0;
+}
 .sub-nav--secondary {
   background: transparent; border: none; padding: 0;
-  margin-top: 32px; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,.07);
-  border-radius: 0; padding-bottom: 2px; width: 100%;
+  margin: 0; border-bottom: 1px solid rgba(255,255,255,.07);
+  border-radius: 0; padding-bottom: 2px; flex: 1;
 }
 .sub-nav--secondary .sub-link {
   padding: 6px 16px; border-radius: 8px 8px 0 0; font-size: 12px;

@@ -3281,6 +3281,9 @@ function switchAgendadosSub(sub) {
   // Barra de filtros compartilhada: visível em Hoje e Todos, oculta no Briefing
   const agendBar = $('agend-filters-bar');
   if (agendBar) agendBar.style.display = sub === 'briefing' ? 'none' : '';
+  // Botão "Copiar para WhatsApp" só aparece na subtab Hoje
+  const copiarBtn = $('btn-gerar-agenda-hoje');
+  if (copiarBtn) copiarBtn.style.display = sub === 'hoje' ? '' : 'none';
   renderAgendadosSub();
 }
 
