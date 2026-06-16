@@ -4158,7 +4158,7 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .followup-block--green  .followup-block-ico { color: #1D9E75; }
 .followup-block--red    .followup-block-ico { color: #E24B4A; }
 
-.followup-block-title { font-size: 13px; font-weight: 700; flex: 1; }
+.followup-block-title { font-size: 15px; font-weight: 600; flex: 1; }
 .followup-block--yellow .followup-block-title { color: #c9a227; }
 .followup-block--green  .followup-block-title { color: #1D9E75; }
 .followup-block--red    .followup-block-title { color: #E24B4A; }
