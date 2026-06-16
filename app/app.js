@@ -26,27 +26,29 @@ const SB_ANON    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 const SB_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhZHhjYmhnaW5qdm9lbWFjZGx5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Njk2Nzk4MSwiZXhwIjoyMDkyNTQzOTgxfQ.Vp_JSA4ReP40a25L8GS7stNdROAy5YIIw-7HM98z_RY';
 
 const _S = (d,w=13,extra='') => `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;flex-shrink:0${extra}">${d}</svg>`;
-const ICO_TRASH        = _S(`<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>`, 14);
-const ICO_CALENDAR     = _S(`<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>`);
+const ICO_TRASH        = _S(`<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0"/><path d="M10 11l0 6"/><path d="M14 11l0 6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/>`, 14);
+const ICO_CALENDAR     = _S(`<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/><path d="M11 15h1"/><path d="M12 15v3"/>`);
 const ICO_SMARTPHONE   = _S(`<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>`);
 const ICO_BAN          = _S(`<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>`);
-const ICO_CHECK_SM     = _S(`<path d="M20 6 9 17l-5-5"/>`, 13, ';stroke-width:2.5');
+const ICO_CHECK_SM     = _S(`<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10"/>`, 13, ';stroke-width:2.5');
 const ICO_X_SM         = _S(`<path d="M18 6 6 18"/><path d="m6 6 12 12"/>`, 13, ';stroke-width:2.5');
-const ICO_REFRESH      = _S(`<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>`);
-const ICO_CLIPBOARD    = _S(`<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>`);
+const ICO_REFRESH      = _S(`<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12.5 21h-6.5a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v5"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/><path d="M16 19h6"/><path d="M19 16v6"/>`);
+const ICO_CLIPBOARD    = _S(`<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2"/><path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z"/>`);
 const ICO_CHECK_CIRCLE = _S(`<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>`, 14);
 const ICO_X_CIRCLE     = _S(`<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>`, 14);
-const ICO_UNDO         = _S(`<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/>`);
-const ICO_MSG_CIRCLE   = _S(`<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>`);
+const ICO_UNDO         = _S(`<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>`);
+const ICO_MSG_CIRCLE   = _S(`<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9"/><path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1"/>`);
 const ICO_TROPHY       = _S(`<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>`, 14);
 const ICO_ARROW_RIGHT  = _S(`<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>`);
 const ICO_USER_PLUS    = _S(`<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>`, 14);
 const ICO_STAR_SM      = _S(`<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>`, 11, ';fill:currentColor');
 const ICO_PIN_SM       = _S(`<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>`, 11);
-const ICO_PENCIL       = _S(`<path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>`);
+const ICO_PENCIL       = _S(`<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/><path d="M16 5l3 3"/>`);
 const ICO_COPY         = _S(`<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>`, 13);
 const ICO_TAG          = _S(`<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>`, 14);
 const ICO_ALERT        = _S(`<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>`, 14);
+const ICO_PHONE_CHECK  = _S(`<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2"/><path d="M15 9l2 2l4 -4"/>`, 14);
+const ICO_DISCARD      = _S(`<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12"/><path d="M6 6l12 12"/>`);
 
 const MERGE_FIELDS = [
   { k:'nome',        lbl:'Nome' },
@@ -219,7 +221,9 @@ let modalMode      = 'agendar';
 let supabase       = null;
 let isLive         = false;
 let currentUserDbId = null; // UUID do usuario na tabela Supabase
-let selectedIds   = new Set();
+let selectedIds    = new Set();
+let nsSelectedIds  = new Set();
+let qualSelectedIds = new Set();
 let perfilLeadId  = null;
 let novoLeadId    = null;
 let auth          = null;
@@ -2795,6 +2799,7 @@ async function followupResgatar(leadId) {
 
 // ─── QUALIFICADOS SUB ────────────────────────────────────────────────
 function renderQualificados() {
+  qualSelectedIds.clear();
   // ─── Helpers e linhas — FORA do try (evita block-scope em ES module) ─
   const hoje = new Date();
   function daysSince(dateStr) {
@@ -2808,19 +2813,20 @@ function renderQualificados() {
 
   function rowSemContato(l) {
     const dias = daysSince(l.datachegada);
-    return `<div class="followup-row fdv-list-row" data-id="${l.id}">
-      <div class="followup-row-main">
-        <button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
-        <span class="followup-row-info">chegou em ${fmtDate(l.datachegada)} · há ${dias}d · ${esc(l.origem||'—')} · ${esc(abrevRenda(l.renda)||'—')}</span>
-      </div>
-      <div class="followup-row-acoes">
+    return `<tr class="followup-row" data-id="${l.id}">
+      <td class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></td>
+      <td><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
+      <td style="white-space:nowrap">${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">há ${dias}d</small></td>
+      <td>${badgeOrigem(l.origem)}</td>
+      <td>${esc(abrevRenda(l.renda)||'—')}</td>
+      <td class="cell-acoes">
         <button class="btn-primary btn-sm" data-fp-contato="${l.id}">+ Contato</button>
         <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
         <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir">${ICO_TRASH}</button>
-      </div>
-    </div>`;
+      </td>
+    </tr>`;
   }
 
   function rowEmContato(l) {
@@ -2828,41 +2834,40 @@ function renderQualificados() {
     const showSR  = (l.contato_count||0) >= 3;
     const cCount  = l.contato_count || 1;
     const badgeMod = cCount >= 3 ? 'badge-cc--red' : cCount === 2 ? 'badge-cc--yellow' : 'badge-cc--green';
-    return `<div class="followup-row fdv-list-row" data-id="${l.id}">
-      <div class="followup-row-main">
-        <div class="followup-row-name-line">
-          <button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
-          <span class="badge-cc ${badgeMod}">Contato ${cCount}</span>
-        </div>
-        <span class="followup-row-info">chegou em ${fmtDate(l.datachegada)} · ${diasUlt}d desde último contato</span>
-      </div>
-      <div class="followup-row-acoes">
+    return `<tr class="followup-row" data-id="${l.id}">
+      <td class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></td>
+      <td><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
+      <td style="white-space:nowrap">${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">${diasUlt}d desde ult.</small></td>
+      <td>${badgeOrigem(l.origem)}</td>
+      <td>${esc(abrevRenda(l.renda)||'—')}</td>
+      <td><span class="badge-cc ${badgeMod}">Contato ${cCount}</span>${showSR ? `<br><button class="btn-ghost btn-sm btn-destructive" style="font-size:10px;padding:1px 6px;margin-top:3px" data-fp-semresposta="${l.id}">Sem resposta</button>` : ''}</td>
+      <td class="cell-acoes">
         <button class="btn-primary btn-sm" data-fp-contato="${l.id}">+ Contato</button>
-        ${showSR ? `<button class="btn-ghost btn-sm btn-destructive" data-fp-semresposta="${l.id}">Sem resposta</button>` : ''}
         <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
         <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir">${ICO_TRASH}</button>
-      </div>
-    </div>`;
+      </td>
+    </tr>`;
   }
 
   function rowSemResposta(l) {
     const tentativas = l.contato_count || 0;
-    return `<div class="followup-row fdv-list-row" data-id="${l.id}">
-      <div class="followup-row-main">
-        <button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
-        <span class="followup-row-info">chegou em ${fmtDate(l.datachegada)} · ${tentativas} tentativa${tentativas !== 1 ? 's' : ''} · ${esc(l.origem||'—')} · ${esc(abrevRenda(l.renda)||'—')}</span>
-      </div>
-      <div class="followup-row-acoes">
+    return `<tr class="followup-row" data-id="${l.id}">
+      <td class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></td>
+      <td><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
+      <td style="white-space:nowrap">${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">${tentativas} tentativa${tentativas!==1?'s':''}</small></td>
+      <td>${badgeOrigem(l.origem)}</td>
+      <td>${esc(abrevRenda(l.renda)||'—')}</td>
+      <td class="cell-acoes">
         <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
         <button class="btn-ghost btn-sm" data-fp-resgatar="${l.id}">${ICO_UNDO} Resgatar</button>
-        <button class="btn-ghost btn-sm btn-destructive" data-descartar="${l.id}">${ICO_BAN} Descartar</button>
+        <button class="btn-ghost btn-sm btn-destructive" data-descartar="${l.id}">${ICO_DISCARD} Descartar</button>
         <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir">${ICO_TRASH}</button>
-      </div>
-    </div>`;
+      </td>
+    </tr>`;
   }
 
   // allQual no escopo externo para renderQualBlocks acessar via closure
@@ -2904,16 +2909,23 @@ function renderQualificados() {
 
     if (scEl) {
       const rows = sortLeads(allQual.filter(l => !l.status_followup || l.status_followup === 'sem_contato').filter(match), $('qual-sort-sc')?.value || 'oldest');
-      scEl.innerHTML = rows.length ? rows.map(rowSemContato).join('') : '<div class="followup-block-empty">Nenhum lead aguardando primeiro contato.</div>';
+      scEl.innerHTML = rows.length ? rows.map(rowSemContato).join('') : '<tr><td colspan="6" class="followup-block-empty">Nenhum lead aguardando primeiro contato.</td></tr>';
+      const acSc = scEl.closest('.followup-block')?.querySelector('.qual-chk-all');
+      if (acSc) { const cs=[...scEl.querySelectorAll('.qual-row-chk')]; acSc.checked=cs.length>0&&cs.every(c=>qualSelectedIds.has(c.dataset.id)); acSc.indeterminate=!acSc.checked&&cs.some(c=>qualSelectedIds.has(c.dataset.id)); }
     }
     if (ecEl) {
       const rows = sortLeads(allQual.filter(l => l.status_followup === 'em_contato').filter(match), $('qual-sort-ec')?.value || 'oldest');
-      ecEl.innerHTML = rows.length ? rows.map(rowEmContato).join('') : '<div class="followup-block-empty">Nenhum lead em contato no momento.</div>';
+      ecEl.innerHTML = rows.length ? rows.map(rowEmContato).join('') : '<tr><td colspan="7" class="followup-block-empty">Nenhum lead em contato no momento.</td></tr>';
+      const acEc = ecEl.closest('.followup-block')?.querySelector('.qual-chk-all');
+      if (acEc) { const cs=[...ecEl.querySelectorAll('.qual-row-chk')]; acEc.checked=cs.length>0&&cs.every(c=>qualSelectedIds.has(c.dataset.id)); acEc.indeterminate=!acEc.checked&&cs.some(c=>qualSelectedIds.has(c.dataset.id)); }
     }
     if (srEl) {
       const rows = sortLeads(allQual.filter(l => l.status_followup === 'sem_resposta').filter(match), $('qual-sort-sr')?.value || 'oldest');
-      srEl.innerHTML = rows.length ? rows.map(rowSemResposta).join('') : '<div class="followup-block-empty">Nenhum lead sem resposta.</div>';
+      srEl.innerHTML = rows.length ? rows.map(rowSemResposta).join('') : '<tr><td colspan="6" class="followup-block-empty">Nenhum lead sem resposta.</td></tr>';
+      const acSr = srEl.closest('.followup-block')?.querySelector('.qual-chk-all');
+      if (acSr) { const cs=[...srEl.querySelectorAll('.qual-row-chk')]; acSr.checked=cs.length>0&&cs.every(c=>qualSelectedIds.has(c.dataset.id)); acSr.indeterminate=!acSr.checked&&cs.some(c=>qualSelectedIds.has(c.dataset.id)); }
     }
+    updateQualBulkBar();
   }
 
   // ─── Try/catch cobre apenas dados + renderização ──────────────────
@@ -3036,6 +3048,15 @@ function renderQualificados() {
       </div>
     </div>
 
+    <div class="bulk-bar" id="qual-bulk-bar" style="display:none">
+      <span class="bulk-count" id="qual-bulk-count">0 selecionados</span>
+      <div class="bulk-actions">
+        <button class="btn-acao-inline btn-destructive" id="btn-qual-bulk-excluir">${ICO_TRASH} Excluir</button>
+        <button class="btn-acao-inline" id="btn-qual-bulk-tag">${ICO_TAG} Adicionar etiqueta</button>
+      </div>
+      <button class="btn-ghost btn-sm" id="btn-qual-bulk-clear">${ICO_X_SM} Limpar</button>
+    </div>
+
     <div class="followup-block followup-block--yellow">
       <div class="followup-block-header">
         <span class="followup-block-ico">${ICO_ALERT}</span>
@@ -3047,7 +3068,15 @@ function renderQualificados() {
           <option value="za">Z → A</option>
         </select>
       </div>
-      <div class="followup-block-body" id="qual-sc-body"></div>
+      <div class="followup-block-body">
+        <table class="leads-table">
+          <thead><tr>
+            <th class="cell-chk"><input type="checkbox" class="qual-chk-all" data-block="sc" title="Selecionar todos"></th>
+            <th>Nome</th><th>Chegou em</th><th>Origem</th><th>Renda</th><th>Ações</th>
+          </tr></thead>
+          <tbody id="qual-sc-body"></tbody>
+        </table>
+      </div>
     </div>
 
     <div class="followup-block followup-block--green">
@@ -3062,7 +3091,15 @@ function renderQualificados() {
           <option value="stage">Por etapa</option>
         </select>
       </div>
-      <div class="followup-block-body" id="qual-ec-body"></div>
+      <div class="followup-block-body">
+        <table class="leads-table">
+          <thead><tr>
+            <th class="cell-chk"><input type="checkbox" class="qual-chk-all" data-block="ec" title="Selecionar todos"></th>
+            <th>Nome</th><th>Chegou em</th><th>Origem</th><th>Renda</th><th>Etapa</th><th>Ações</th>
+          </tr></thead>
+          <tbody id="qual-ec-body"></tbody>
+        </table>
+      </div>
     </div>
 
     <div class="followup-block followup-block--red">
@@ -3076,7 +3113,15 @@ function renderQualificados() {
           <option value="za">Z → A</option>
         </select>
       </div>
-      <div class="followup-block-body" id="qual-sr-body"></div>
+      <div class="followup-block-body">
+        <table class="leads-table">
+          <thead><tr>
+            <th class="cell-chk"><input type="checkbox" class="qual-chk-all" data-block="sr" title="Selecionar todos"></th>
+            <th>Nome</th><th>Chegou em</th><th>Origem</th><th>Renda</th><th>Ações</th>
+          </tr></thead>
+          <tbody id="qual-sr-body"></tbody>
+        </table>
+      </div>
     </div>`;
 
     lucide.createIcons({ nodes: [el] });
@@ -3093,6 +3138,42 @@ function renderQualificados() {
       if (t.dataset.descartar)     { openDescarteModal(t.dataset.descartar); return; }
       if (t.classList.contains('btn-wa-lead')) { openWaChatFromLead(t.dataset.id); return; }
     });
+
+    el.addEventListener('change', e => {
+      const chk = e.target.closest('.qual-row-chk');
+      if (chk) {
+        if (chk.checked) qualSelectedIds.add(chk.dataset.id);
+        else             qualSelectedIds.delete(chk.dataset.id);
+        updateQualBulkBar();
+        const block = chk.closest('.followup-block');
+        const allChk = block?.querySelector('.qual-chk-all');
+        if (allChk) { const rs=[...block.querySelectorAll('.qual-row-chk')]; allChk.checked=rs.length>0&&rs.every(c=>qualSelectedIds.has(c.dataset.id)); allChk.indeterminate=!allChk.checked&&rs.some(c=>qualSelectedIds.has(c.dataset.id)); }
+        return;
+      }
+      const allChk = e.target.closest('.qual-chk-all');
+      if (allChk) {
+        const block = allChk.closest('.followup-block');
+        block?.querySelectorAll('.qual-row-chk').forEach(c => { c.checked = allChk.checked; if (allChk.checked) qualSelectedIds.add(c.dataset.id); else qualSelectedIds.delete(c.dataset.id); });
+        updateQualBulkBar();
+      }
+    });
+
+    $('btn-qual-bulk-excluir')?.addEventListener('click', async () => {
+      const ids = [...qualSelectedIds]; if (!ids.length) return;
+      if (!confirm(`Excluir ${ids.length} lead(s)?`)) return;
+      try {
+        if (isLive) { const {error} = await supabase.from('leads').delete().in('id', ids); if (error) throw error; }
+        allLeads = allLeads.filter(l => !qualSelectedIds.has(l.id));
+        qualSelectedIds.clear(); updateQualBulkBar(); renderAll();
+        toast(`${ids.length} lead(s) excluído(s).`, 'ok');
+      } catch(e) { console.error(e); toast('Erro ao excluir.', 'err'); }
+    });
+    $('btn-qual-bulk-tag')?.addEventListener('click', () => {
+      if (!qualSelectedIds.size) return;
+      selectedIds.clear(); qualSelectedIds.forEach(id => selectedIds.add(id));
+      openBulkTagModal();
+    });
+    $('btn-qual-bulk-clear')?.addEventListener('click', () => { qualSelectedIds.clear(); updateQualBulkBar(); renderQualBlocks(); });
 
     ['qual-sort-sc','qual-sort-ec','qual-sort-sr'].forEach(id =>
       $(id)?.addEventListener('change', renderQualBlocks)
@@ -3405,6 +3486,7 @@ function gerarAgendaHoje() {
 function renderNoShow() {
   const el = $('noshow-content');
   if (!el) return;
+  nsSelectedIds.clear();
 
   const nsAll    = allLeads.filter(l => l.status === 'noshow');
   const mesAtual = new Date().toISOString().slice(0, 7);
@@ -3495,10 +3577,19 @@ function renderNoShow() {
     </div>
   </div>
 
+  <div class="bulk-bar" id="ns-bulk-bar" style="display:none">
+    <span class="bulk-count" id="ns-bulk-count">0 selecionados</span>
+    <div class="bulk-actions">
+      <button class="btn-acao-inline" id="btn-ns-bulk-reagendar">${ICO_REFRESH} Reagendar</button>
+      <button class="btn-acao-inline btn-destructive" id="btn-ns-bulk-descartar">${ICO_DISCARD} Descartar</button>
+    </div>
+    <button class="btn-ghost btn-sm" id="btn-ns-bulk-clear">${ICO_X_SM} Limpar</button>
+  </div>
   <div class="table-wrap fdv-list-container">
     <table class="leads-table">
       <thead><tr>
-        <th>Chegou em</th><th>Nome</th><th>Celular</th><th>Origem</th><th>Ações</th>
+        <th class="cell-chk"><input type="checkbox" id="chk-all-ns" title="Selecionar todos"></th>
+        <th>Chegou em</th><th>Nome</th><th>Celular</th><th>Origem</th><th>Renda</th><th>Etiqueta</th><th>Ações</th>
       </tr></thead>
       <tbody id="ns-list"></tbody>
     </table>
@@ -3529,19 +3620,23 @@ function renderNoShow() {
     const listEl = $('ns-list');
     if (!listEl) return;
     if (!leads.length) {
-      listEl.innerHTML = `<tr><td colspan="5" class="noshow-empty">Nenhum lead encontrado com os filtros aplicados.</td></tr>`;
-      return;
+      listEl.innerHTML = `<tr><td colspan="8" class="noshow-empty">Nenhum lead encontrado com os filtros aplicados.</td></tr>`;
+      const allChkNs = $('chk-all-ns'); if (allChkNs) { allChkNs.checked = false; allChkNs.indeterminate = false; }
+      updateNsBulkBar(); return;
     }
     listEl.innerHTML = leads.map(l => `
       <tr class="fdv-list-row" data-id="${l.id}">
+        <td class="cell-chk"><input type="checkbox" class="ns-row-chk" data-id="${l.id}" ${nsSelectedIds.has(l.id)?'checked':''}></td>
         <td class="cell-data-chegou">${fmtDate(l.datachegada)}</td>
         <td class="cell-nome"><button class="nome-link noshow-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
         <td class="cell-fone">${esc(l.celular||'—')}</td>
         <td>${badgeOrigem(l.origem)}</td>
+        <td>${esc(abrevRenda(l.renda)||'—')}</td>
+        <td>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</td>
         <td class="cell-acoes">
           <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
           <button class="btn-ghost btn-sm btn-reagendar-ns" data-id="${l.id}">${ICO_REFRESH} Reagendar</button>
-          <button class="btn-ghost btn-sm btn-destructive" data-descartar="${l.id}">${ICO_BAN} Descartar</button>
+          <button class="btn-ghost btn-sm btn-destructive" data-descartar="${l.id}">${ICO_DISCARD} Descartar</button>
         </td>
       </tr>`).join('');
 
@@ -3557,7 +3652,40 @@ function renderNoShow() {
     listEl.querySelectorAll('[data-descartar]').forEach(b =>
       b.addEventListener('click', () => openDescarteModal(b.dataset.descartar))
     );
+    listEl.querySelectorAll('.ns-row-chk').forEach(chk => {
+      chk.addEventListener('change', () => {
+        if (chk.checked) nsSelectedIds.add(chk.dataset.id);
+        else             nsSelectedIds.delete(chk.dataset.id);
+        const d = $('chk-all-ns');
+        if (d) { d.checked = leads.every(l => nsSelectedIds.has(l.id)); d.indeterminate = !d.checked && leads.some(l => nsSelectedIds.has(l.id)); }
+        updateNsBulkBar();
+      });
+    });
+    const allChkNs = $('chk-all-ns');
+    if (allChkNs) {
+      allChkNs.checked = leads.length > 0 && leads.every(l => nsSelectedIds.has(l.id));
+      allChkNs.indeterminate = !allChkNs.checked && leads.some(l => nsSelectedIds.has(l.id));
+      allChkNs.onclick = e => {
+        if (e.target.checked) leads.forEach(l => nsSelectedIds.add(l.id));
+        else                  leads.forEach(l => nsSelectedIds.delete(l.id));
+        updateNsBulkBar(); applyNsFilters();
+      };
+    }
+    updateNsBulkBar();
   }
+
+  $('btn-ns-bulk-reagendar')?.addEventListener('click', () => {
+    const ids = [...nsSelectedIds];
+    if (!ids.length) return;
+    if (ids.length > 1) { toast(`Selecione um lead por vez para reagendar.`, 'info'); return; }
+    const l = allLeads.find(x => x.id === ids[0]); if (l) openAgendar(l);
+  });
+  $('btn-ns-bulk-descartar')?.addEventListener('click', () => {
+    if (!nsSelectedIds.size) return;
+    selectedIds.clear(); nsSelectedIds.forEach(id => selectedIds.add(id));
+    openBulkDescarteModal();
+  });
+  $('btn-ns-bulk-clear')?.addEventListener('click', () => { nsSelectedIds.clear(); updateNsBulkBar(); applyNsFilters(); });
 
   ['ns-filter-origem','ns-filter-closer','ns-filter-agendadopor','ns-filter-renda',
    'ns-filter-chegada-de','ns-filter-chegada-ate'].forEach(id =>
@@ -5602,15 +5730,14 @@ function btnAcao(l) {
   const st = l.status;
 
   const icoEye   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
-  const icoChat  = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
-  const icoPen   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>`;
-const icoDoc   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
+  const icoPen   = ICO_PENCIL;
+  const icoDoc   = ICO_CLIPBOARD;
 
   let primary = '';
   if      (st === 'aguardando')                  primary = `<button class="btn-acao-inline btn-qualificar"     data-id="${id}" data-action="qualificar-lead" title="Qualificar este lead">${ICO_CHECK_SM} Qualificado</button><button class="btn-acao-inline btn-nao-qualificar" data-id="${id}" data-action="descartar" title="Não qualificar / descartar">${ICO_X_SM} Não Qualificado</button>`;
   else if (st === 'qualificado')                 primary = `<button class="btn-acao-inline btn-agendar"        data-id="${id}" data-action="agendar"         title="Agendar call">${ICO_CALENDAR} Agendar</button>`;
   else if (st === 'agendado' || st === 'noshow') primary = `<button class="btn-acao-inline btn-remarcar"       data-id="${id}" data-action="agendar"         title="Remarcar call">${ICO_REFRESH} Remarcar</button>`;
-  else if (st === 'realizada')                   primary = `<button class="btn-acao-inline btn-ver"            data-id="${id}" data-action="ver"             title="Ver resultado da call">${ICO_CLIPBOARD} Resultado</button>`;
+  else if (st === 'realizada')                   primary = `<button class="btn-acao-inline btn-ver"            data-id="${id}" data-action="ver"             title="Ver resultado da call">${ICO_PHONE_CHECK} Resultado</button>`;
   else if (st === 'descartado')                  primary = `<button class="btn-acao-inline btn-reativar"       data-id="${id}" data-action="reativar"        title="Reativar lead">${ICO_UNDO} Reativar</button>`;
 
   const postcall = st === 'agendado'
@@ -5625,7 +5752,6 @@ const icoDoc   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
   return `<div class="acoes-cell">
     ${primary}${postcall}
     ${briefingBtn}
-    <button class="btn-icon btn-wa-lead" data-id="${id}" title="Abrir no WhatsApp">${icoChat}</button>
     <button class="btn-icon btn-editar"  data-id="${id}" data-action="editar"     title="Editar lead">${icoPen}</button>
     <button class="btn-icon btn-destructive btn-excluir" data-id="${id}" data-action="excluir" title="Excluir lead">${ICO_TRASH}</button>
   </div>`;
@@ -5818,7 +5944,7 @@ async function bulkQualificar() {
 
 function updateQualBulkBar() {
   const bar = $('qual-bulk-bar'); if (!bar) return;
-  const n = selectedIds.size;
+  const n = qualSelectedIds.size;
   bar.style.display = n > 0 ? 'flex' : 'none';
   const c = $('qual-bulk-count'); if (c) c.textContent = `${n} selecionado${n!==1?'s':''}`;
 }
@@ -5827,6 +5953,12 @@ function updateDescBulkBar() {
   const n = selectedIds.size;
   bar.style.display = n > 0 ? 'flex' : 'none';
   const c = $('desc-bulk-count'); if (c) c.textContent = `${n} selecionado${n!==1?'s':''}`;
+}
+function updateNsBulkBar() {
+  const bar = $('ns-bulk-bar'); if (!bar) return;
+  const n = nsSelectedIds.size;
+  bar.style.display = n > 0 ? 'flex' : 'none';
+  const c = $('ns-bulk-count'); if (c) c.textContent = `${n} selecionado${n!==1?'s':''}`;
 }
 
 function openBulkTagModal() {
