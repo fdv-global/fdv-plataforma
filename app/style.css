@@ -2202,7 +2202,10 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 }
 .agend-proximas-wrap {
   display: block; margin-top: 16px;
-  background: var(--s1); border: 1px solid var(--b0);
+  background: rgba(20,26,28,0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.08);
   border-radius: var(--r-lg); padding: 18px 20px;
 }
 .agend-proximas-hdr {
