@@ -3679,7 +3679,7 @@ function renderDescartados() {
       <td style="display:flex;align-items:center;gap:5px;padding-top:10px;padding-bottom:10px">${isDup(l.id)?`<button class="btn-dup-ico" data-dup-id="${l.id}" title="Possível duplicata — clique para comparar">${ICO_COPY}</button>`:''}<button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
       <td>${esc(l.celular||'—')}</td>
       <td>${badgeOrigem(l.origem)}</td>
-      <td><span class="badge-status descartado">${esc(l.motivo_descarte_label||l.motivo_descarte||'—')}</span></td>
+      <td><span class="badge-status descartado" title="${esc(l.motivo_descarte_label||l.motivo_descarte||'—')}">${esc(l.motivo_descarte_label||l.motivo_descarte||'—')}</span></td>
       <td class="cell-acoes">
         <button class="btn-ghost btn-sm" data-reativar="${l.id}">${ICO_UNDO} Reativar</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
