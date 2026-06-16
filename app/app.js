@@ -3495,7 +3495,14 @@ function renderNoShow() {
     </div>
   </div>
 
-  <div class="noshow-list fdv-list-container" id="ns-list"></div>`;
+  <div class="table-wrap fdv-list-container">
+    <table class="leads-table">
+      <thead><tr>
+        <th>Chegou em</th><th>Nome</th><th>Celular</th><th>Origem</th><th>Ações</th>
+      </tr></thead>
+      <tbody id="ns-list"></tbody>
+    </table>
+  </div>`;
 
   function applyNsFilters() {
     const origem     = $('ns-filter-origem')?.value     || '';
@@ -3522,25 +3529,21 @@ function renderNoShow() {
     const listEl = $('ns-list');
     if (!listEl) return;
     if (!leads.length) {
-      listEl.innerHTML = `<div class="noshow-empty">Nenhum lead encontrado com os filtros aplicados.</div>`;
+      listEl.innerHTML = `<tr><td colspan="5" class="noshow-empty">Nenhum lead encontrado com os filtros aplicados.</td></tr>`;
       return;
     }
-    listEl.innerHTML = leads.map((l, i) => `
-      <div class="noshow-row fdv-list-row${i % 2 === 1 ? ' noshow-row--even' : ''}" data-id="${l.id}">
-        <div class="noshow-row-main">
-          <button class="nome-link noshow-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
-          <span class="noshow-row-meta">
-            ${fmtDate(l.dataagendamento)}${l.horaagendamento?' · '+l.horaagendamento.slice(0,5):''}
-            ${l.origem?' · '+esc(l.origem):''}
-            ${l.renda?' · '+esc(l.renda):''}
-          </span>
-        </div>
-        <div class="noshow-row-acoes">
+    listEl.innerHTML = leads.map(l => `
+      <tr class="fdv-list-row" data-id="${l.id}">
+        <td class="cell-data-chegou">${fmtDate(l.datachegada)}</td>
+        <td class="cell-nome"><button class="nome-link noshow-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
+        <td class="cell-fone">${esc(l.celular||'—')}</td>
+        <td>${badgeOrigem(l.origem)}</td>
+        <td class="cell-acoes">
           <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
           <button class="btn-ghost btn-sm btn-reagendar-ns" data-id="${l.id}">${ICO_REFRESH} Reagendar</button>
           <button class="btn-ghost btn-sm btn-destructive" data-descartar="${l.id}">${ICO_BAN} Descartar</button>
-        </div>
-      </div>`).join('');
+        </td>
+      </tr>`).join('');
 
     listEl.querySelectorAll('[data-perfil]').forEach(b =>
       b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })

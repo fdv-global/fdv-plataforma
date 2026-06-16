@@ -4168,6 +4168,7 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   display: flex; align-items: center; gap: 10px;
   padding: 11px 16px; border-bottom: 1px solid rgba(255,255,255,.06);
   border-radius: var(--r) var(--r) 0 0;
+  background: rgba(20, 26, 28, 0.85);
 }
 
 .followup-block-ico { display: flex; align-items: center; flex-shrink: 0; }
