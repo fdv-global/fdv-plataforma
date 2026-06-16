@@ -1183,17 +1183,26 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 .agenda-card-sub        { font-size: 12px; color: var(--t2); display: block; margin-top: 3px; }
 
 /* ── flat list (Todos os Agendamentos) ── */
-.agenda-list { display: flex; flex-direction: column; }
+.agenda-list {
+  display: flex; flex-direction: column;
+  background: rgba(20,26,28,0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: var(--r);
+  overflow: hidden;
+}
 /* scoped para não conflitar com .al-row do accordion */
 .agenda-list .al-row {
   display: grid;
   grid-template-columns: 80px 1fr auto auto auto;
   align-items: center; gap: 12px;
-  padding: 14px 16px; border-bottom: 0.5px solid rgba(255,255,255,.06);
+  padding: 12px 16px; border-bottom: 0.5px solid rgba(255,255,255,.06);
   transition: background var(--fast) var(--ease);
 }
-.agenda-list .al-row:last-child  { border-bottom: none; }
-.agenda-list .al-row:hover       { background: rgba(201,162,39,.05); }
+.agenda-list .al-row:nth-child(even) { background: rgba(255,255,255,.03); }
+.agenda-list .al-row:last-child      { border-bottom: none; }
+.agenda-list .al-row:hover           { background: rgba(255,255,255,.05); }
 .al-data  { font-size: 12px; color: var(--t3); white-space: nowrap; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .al-nome  {
   background: none; border: none; padding: 0; cursor: pointer;
