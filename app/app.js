@@ -1022,9 +1022,12 @@ function loadLeads() {
 
   fetchLeads();
 
-  supabase.channel('leads_realtime')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, fetchLeads)
-    .subscribe();
+  if (!window._leadsRealtimeSubscribed) {
+    window._leadsRealtimeSubscribed = true;
+    supabase.channel('leads_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, fetchLeads)
+      .subscribe();
+  }
 }
 
 function showDbError(msg) {
