@@ -2952,47 +2952,7 @@ function renderQualificados() {
     const etiquetaOpts  = ['Super Lead','Bom','Neutro','Frio'];
     const mesOpts       = [...new Set(allQual.filter(l=>l.datachegada).map(l=>l.datachegada.slice(0,7)))].sort().reverse();
 
-    const qsTotal  = allLeads.length;
-    const qsNovos  = allLeads.filter(l=>l.status==='aguardando').length;
-    const qsAgen   = allLeads.filter(l=>l.status==='agendado').length;
-    const qsNS     = allLeads.filter(l=>l.status==='noshow').length;
-    const qsReal   = allLeads.filter(l=>l.status==='realizada').length;
-    const qsVendas = allLeads.filter(l=>l.kanban_column==='venda_ganha').length;
-
     el.innerHTML = `
-    <div class="stats-grid stats-grid--6" style="margin-bottom:14px">
-      <div class="stat-card">
-        <div class="stat-top"><span class="stat-label">Total</span><span class="stat-icon"><i data-lucide="users" style="width:14px;height:14px"></i></span></div>
-        <strong class="stat-num">${qsTotal}</strong>
-        <span class="stat-sub">leads cadastrados</span>
-      </div>
-      <div class="stat-card accent-gold">
-        <div class="stat-top"><span class="stat-label">Novos</span><span class="stat-icon"><i data-lucide="clock" style="width:14px;height:14px"></i></span></div>
-        <strong class="stat-num">${qsNovos}</strong>
-        <span class="stat-sub">aguardando qualificação</span>
-      </div>
-      <div class="stat-card accent-petro">
-        <div class="stat-top"><span class="stat-label">Agendados</span><span class="stat-icon"><i data-lucide="calendar" style="width:14px;height:14px"></i></span></div>
-        <strong class="stat-num">${qsAgen}</strong>
-        <span class="stat-sub">calls marcadas</span>
-      </div>
-      <div class="stat-card accent-marsala">
-        <div class="stat-top"><span class="stat-label">No Show</span><span class="stat-icon"><i data-lucide="user-x" style="width:14px;height:14px"></i></span></div>
-        <strong class="stat-num">${qsNS}</strong>
-        <span class="stat-sub">não compareceram</span>
-      </div>
-      <div class="stat-card accent-green">
-        <div class="stat-top"><span class="stat-label">Realizadas</span><span class="stat-icon"><i data-lucide="check-circle" style="width:14px;height:14px"></i></span></div>
-        <strong class="stat-num">${qsReal}</strong>
-        <span class="stat-sub">calls concluídas</span>
-      </div>
-      <div class="stat-card accent-sand">
-        <div class="stat-top"><span class="stat-label">Vendas</span><span class="stat-icon"><i data-lucide="trophy" style="width:14px;height:14px"></i></span></div>
-        <strong class="stat-num">${qsVendas}</strong>
-        <span class="stat-sub">vendas fechadas</span>
-      </div>
-    </div>
-
     <div class="filters-bar" style="margin-bottom:20px">
       <div class="filters-row">
         <div class="filter-group">
