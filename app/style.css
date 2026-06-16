@@ -854,7 +854,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 }
 
 .leads-table td {
-  padding: 16px 16px;
+  padding: 12px 16px;
   font-size: 13.5px; font-weight: 500; color: var(--t1);
   border-bottom: 1px solid var(--b0); vertical-align: middle;
 }
@@ -862,7 +862,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   transition: background var(--fast) var(--ease);
 }
 .leads-table tbody tr:nth-child(even)  { background: rgba(255,255,255,.03); }
-.leads-table tbody tr:hover            { background: var(--s-hover); }
+.leads-table tbody tr:hover            { background: rgba(255,255,255,.05); }
 .leads-table tbody tr:last-child td    { border-bottom: none; }
 
 /* cell types */
@@ -1187,27 +1187,16 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 .agenda-card-sub        { font-size: 12px; color: var(--t2); display: block; margin-top: 3px; }
 
 /* ── flat list (Todos os Agendamentos) ── */
-.agenda-list {
-  display: flex; flex-direction: column;
-  background: rgba(20,26,28,0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: var(--r-lg);
-  overflow: hidden;
-}
+/* glass e zebra vêm de .fdv-list-container / .fdv-list-row */
+.agenda-list { display: flex; flex-direction: column; }
 /* scoped para não conflitar com .al-row do accordion */
 .agenda-list .al-row {
   display: grid;
   grid-template-columns: 80px 1fr auto auto auto;
   align-items: center; gap: 12px;
-  padding: 16px 16px; border-bottom: 1px solid var(--b0);
-  transition: background var(--fast) var(--ease);
 }
 .al-row:nth-child(even),
-.leads-row:nth-child(even)                    { background: rgba(255,255,255,.03); }
-.agenda-list .al-row:last-child               { border-bottom: none; }
-.agenda-list .al-row:hover                    { background: var(--s-hover); }
+.leads-row:nth-child(even) { background: rgba(255,255,255,.03); }
 .al-data  { font-size: 12px; color: var(--t3); white-space: nowrap; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .al-nome  {
   background: none; border: none; padding: 0; cursor: pointer;
@@ -4209,15 +4198,8 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 
 .qual-filters-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 16px; }
 
-.followup-row {
-  display: flex; align-items: center; gap: 14px;
-  padding: 16px 16px; border-bottom: 1px solid var(--b0);
-  color: var(--t1);
-  transition: background var(--base) var(--ease);
-}
-.followup-row:last-child { border-bottom: none; }
-.followup-row:nth-child(even) { background: rgba(255,255,255,.03); }
-.followup-row:hover { background: var(--s-hover); }
+/* glass/padding/zebra/hover vêm de .fdv-list-row */
+.followup-row { display: flex; align-items: center; gap: 14px; }
 
 .followup-row-main { flex: 1; min-width: 0; }
 .followup-row-name-line { display: flex; align-items: center; gap: 8px; }
@@ -4250,27 +4232,12 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .badge-followup--sem_resposta { background: rgba(192,57,43,.09);  color: #e06450; }
 
 /* ── No Show panel ────────────────────────────────────────────── */
-.noshow-list {
-  background: rgba(20,26,28,0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: var(--r-lg);
-  overflow: hidden;
-}
+/* glass vem de .fdv-list-container */
+.noshow-list { /* anchor for child selectors */ }
 
-.noshow-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px 16px;
-  border-bottom: 1px solid var(--b0);
-  color: var(--t1);
-  transition: background var(--base) var(--ease);
-}
-.noshow-row:last-child  { border-bottom: none; }
-.noshow-row--even       { background: rgba(255,255,255,.03); }
-.noshow-row:hover       { background: var(--s-hover); }
+/* padding/border/hover vêm de .fdv-list-row */
+.noshow-row { display: flex; align-items: center; gap: 14px; }
+.noshow-row--even { background: rgba(255,255,255,.03); }
 
 .noshow-row-main {
   flex: 1;
@@ -4314,3 +4281,35 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   font-size: 13px;
 }
 .cell-followup { white-space: nowrap; }
+
+/* ═══ FDV — Classes de lista unificadas ════════════════════════════════
+   Aplicadas em: Novos, Qualificados, Agendados, No Show, Descartados
+   ════════════════════════════════════════════════════════════════════ */
+.fdv-list-container {
+  background: rgba(20,26,28,0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: var(--r);
+  overflow: hidden;
+  width: 100%;
+}
+
+.fdv-list-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 0.5px solid rgba(255,255,255,.06);
+  min-height: 52px;
+  font-size: 13px;
+  color: var(--t1);
+  transition: background var(--fast) var(--ease);
+}
+.fdv-list-row:nth-child(even) { background: rgba(255,255,255,.03); }
+.fdv-list-row:last-child       { border-bottom: none; }
+.fdv-list-row:hover            { background: rgba(255,255,255,.05); }
+
+/* table rows: restore table-row display; borders come from td */
+tr.fdv-list-row                { display: table-row; min-height: unset; border: none; }
+/* table-wrap keeps horizontal scroll over fdv-list-container overflow:hidden */
+.table-wrap.fdv-list-container { overflow-x: auto; overflow-y: visible; }

@@ -2683,12 +2683,12 @@ function renderAgendaSub() {
     return;
   }
 
-  content.innerHTML = `<div class="agenda-list">
+  content.innerHTML = `<div class="agenda-list fdv-list-container">
     ${leads.map(l => {
       const c = CLOSERS[l.closer];
       const closerName  = c ? c.name  : (l.closer || '—');
       const closerColor = c ? c.color : 'var(--t3)';
-      return `<div class="al-row">
+      return `<div class="al-row fdv-list-row">
         <span class="al-data">${fmtDate(l.dataagendamento)}</span>
         <button class="al-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
         <span class="al-meta">${fmtHora(l.horaagendamento)} · <span style="color:${closerColor}">${esc(closerName)}</span></span>
@@ -2808,7 +2808,7 @@ function renderQualificados() {
 
   function rowSemContato(l) {
     const dias = daysSince(l.datachegada);
-    return `<div class="followup-row" data-id="${l.id}">
+    return `<div class="followup-row fdv-list-row" data-id="${l.id}">
       <div class="followup-row-main">
         <button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
         <span class="followup-row-info">chegou em ${fmtDate(l.datachegada)} · há ${dias}d · ${esc(l.origem||'—')} · ${esc(abrevRenda(l.renda)||'—')}</span>
@@ -2828,7 +2828,7 @@ function renderQualificados() {
     const showSR  = (l.contato_count||0) >= 3;
     const cCount  = l.contato_count || 1;
     const badgeMod = cCount >= 3 ? 'badge-cc--red' : cCount === 2 ? 'badge-cc--yellow' : 'badge-cc--green';
-    return `<div class="followup-row" data-id="${l.id}">
+    return `<div class="followup-row fdv-list-row" data-id="${l.id}">
       <div class="followup-row-main">
         <div class="followup-row-name-line">
           <button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
@@ -2849,7 +2849,7 @@ function renderQualificados() {
 
   function rowSemResposta(l) {
     const tentativas = l.contato_count || 0;
-    return `<div class="followup-row" data-id="${l.id}">
+    return `<div class="followup-row fdv-list-row" data-id="${l.id}">
       <div class="followup-row-main">
         <button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
         <span class="followup-row-info">chegou em ${fmtDate(l.datachegada)} · ${tentativas} tentativa${tentativas !== 1 ? 's' : ''} · ${esc(l.origem||'—')} · ${esc(abrevRenda(l.renda)||'—')}</span>
@@ -3495,7 +3495,7 @@ function renderNoShow() {
     </div>
   </div>
 
-  <div class="noshow-list" id="ns-list"></div>`;
+  <div class="noshow-list fdv-list-container" id="ns-list"></div>`;
 
   function applyNsFilters() {
     const origem     = $('ns-filter-origem')?.value     || '';
@@ -3526,7 +3526,7 @@ function renderNoShow() {
       return;
     }
     listEl.innerHTML = leads.map((l, i) => `
-      <div class="noshow-row${i % 2 === 1 ? ' noshow-row--even' : ''}" data-id="${l.id}">
+      <div class="noshow-row fdv-list-row${i % 2 === 1 ? ' noshow-row--even' : ''}" data-id="${l.id}">
         <div class="noshow-row-main">
           <button class="nome-link noshow-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
           <span class="noshow-row-meta">
@@ -3669,7 +3669,7 @@ function renderDescartados() {
       </div>
       <button class="btn-ghost btn-sm" id="btn-desc-bulk-clear">${ICO_X_SM} Limpar</button>
     </div>
-    <div class="table-wrap"><table class="leads-table">
+    <div class="table-wrap fdv-list-container"><table class="leads-table">
       <thead><tr>
         <th class="cell-chk"><input type="checkbox" id="chk-all-desc" title="Selecionar todos"></th>
         <th>Chegou em</th><th>Nome</th><th>Celular</th><th>Origem</th><th>Motivo</th><th>Ações</th>
@@ -3699,7 +3699,7 @@ function renderDescartados() {
       const allChkD = $('chk-all-desc'); if (allChkD) { allChkD.checked = false; allChkD.indeterminate = false; }
       updateDescBulkBar(); return;
     }
-    tbody.innerHTML = leads.map(l => `<tr data-id="${l.id}"${isDup(l.id)?' class="dup-row"':''}>
+    tbody.innerHTML = leads.map(l => `<tr class="${['fdv-list-row',isDup(l.id)?'dup-row':''].filter(Boolean).join(' ')}" data-id="${l.id}">
       <td class="cell-chk"><input type="checkbox" class="row-chk" data-id="${l.id}" ${selectedIds.has(l.id)?'checked':''}></td>
       <td>${fmtDate(l.datachegada)}</td>
       <td style="display:flex;align-items:center;gap:5px;padding-top:10px;padding-bottom:10px">${isDup(l.id)?`<button class="btn-dup-ico" data-dup-id="${l.id}" title="Possível duplicata — clique para comparar">${ICO_COPY}</button>`:''}<button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
@@ -5460,7 +5460,7 @@ function renderTable() {
     const etiq = (l.etiquetas||[]).length
       ? (l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')
       : '—';
-    return `<tr data-id="${l.id}" class="${[selectedIds.has(l.id)?'row-selected':'',isDup(l.id)?'dup-row':''].filter(Boolean).join(' ')}" style="cursor:pointer">
+    return `<tr data-id="${l.id}" class="${['fdv-list-row',selectedIds.has(l.id)?'row-selected':'',isDup(l.id)?'dup-row':''].filter(Boolean).join(' ')}" style="cursor:pointer">
       <td class="cell-chk"><input type="checkbox" class="row-chk" data-id="${l.id}" ${selectedIds.has(l.id)?'checked':''}></td>
       <td class="cell-data-chegou">${fmtDate(l.datachegada)}</td>
       <td class="cell-nome">${isDup(l.id)?`<button class="btn-dup-ico" data-dup-id="${l.id}" title="Possível duplicata — clique para comparar">${ICO_COPY}</button> `:''} ${esc(l.nome||'—')}</td>
