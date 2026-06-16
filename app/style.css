@@ -4191,27 +4191,13 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 }
 .followup-sort-select:hover { border-color: rgba(255,255,255,.18); opacity: .9; }
 
-/* Qualificados — alinha thead e tbody com grid fixo por bloco */
-.followup-block .leads-table { width: 100%; table-layout: fixed; }
-.followup-block--yellow .leads-table thead tr,
-.followup-block--yellow .leads-table tbody tr,
-.followup-block--red    .leads-table thead tr,
-.followup-block--red    .leads-table tbody tr {
-  display: grid;
-  grid-template-columns: 40px 1fr 100px 180px 80px 180px;
-  align-items: center;
-  width: 100%;
+/* Qualificados — table-layout: fixed via colgroup no HTML */
+.followup-block .leads-table td,
+.followup-block .leads-table th {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 6px;
 }
-.followup-block--green .leads-table thead tr,
-.followup-block--green .leads-table tbody tr {
-  display: grid;
-  grid-template-columns: 40px 1fr 100px 180px 80px 110px 180px;
-  align-items: center;
-  width: 100%;
-}
-.followup-block .leads-table th,
-.followup-block .leads-table td {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+.followup-block .leads-table td.cell-acoes {
+  overflow: visible; text-overflow: unset; white-space: nowrap; width: auto;
 }
 
 .qual-search-bar { margin-bottom: 10px; }

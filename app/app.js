@@ -2819,6 +2819,7 @@ function renderQualificados() {
       <td style="white-space:nowrap">${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">há ${dias}d</small></td>
       <td>${badgeOrigem(l.origem)}</td>
       <td>${esc(abrevRenda(l.renda)||'—')}</td>
+      <td style="color:var(--t4)">—</td>
       <td class="cell-acoes">
         <button class="btn-primary btn-sm" data-fp-contato="${l.id}">+ Contato</button>
         <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
@@ -2857,9 +2858,10 @@ function renderQualificados() {
     return `<tr class="followup-row" data-id="${l.id}">
       <td class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></td>
       <td><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
-      <td style="white-space:nowrap">${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">${tentativas} tentativa${tentativas!==1?'s':''}</small></td>
+      <td style="white-space:nowrap">${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">${tentativas} tent.</small></td>
       <td>${badgeOrigem(l.origem)}</td>
       <td>${esc(abrevRenda(l.renda)||'—')}</td>
+      <td><span class="badge-cc badge-cc--red">${tentativas} tent${tentativas!==1?'ativas':'ativa'}</span></td>
       <td class="cell-acoes">
         <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
@@ -3070,10 +3072,19 @@ function renderQualificados() {
         </select>
       </div>
       <div class="followup-block-body">
-        <table class="leads-table">
+        <table class="leads-table" style="width:100%;table-layout:fixed;border-collapse:collapse">
+          <colgroup>
+            <col style="width:32px">
+            <col style="width:180px">
+            <col style="width:100px">
+            <col style="width:150px">
+            <col style="width:70px">
+            <col style="width:90px">
+            <col style="min-width:200px">
+          </colgroup>
           <thead><tr>
             <th class="cell-chk"><input type="checkbox" class="qual-chk-all" data-block="sc" title="Selecionar todos"></th>
-            <th>Nome</th><th>Chegou em</th><th>Origem</th><th>Renda</th><th>Ações</th>
+            <th>Nome</th><th>Chegou em</th><th>Origem</th><th>Renda</th><th>Etapa</th><th>Ações</th>
           </tr></thead>
           <tbody id="qual-sc-body"></tbody>
         </table>
@@ -3093,7 +3104,16 @@ function renderQualificados() {
         </select>
       </div>
       <div class="followup-block-body">
-        <table class="leads-table">
+        <table class="leads-table" style="width:100%;table-layout:fixed;border-collapse:collapse">
+          <colgroup>
+            <col style="width:32px">
+            <col style="width:180px">
+            <col style="width:100px">
+            <col style="width:150px">
+            <col style="width:70px">
+            <col style="width:90px">
+            <col style="min-width:200px">
+          </colgroup>
           <thead><tr>
             <th class="cell-chk"><input type="checkbox" class="qual-chk-all" data-block="ec" title="Selecionar todos"></th>
             <th>Nome</th><th>Chegou em</th><th>Origem</th><th>Renda</th><th>Etapa</th><th>Ações</th>
@@ -3115,10 +3135,19 @@ function renderQualificados() {
         </select>
       </div>
       <div class="followup-block-body">
-        <table class="leads-table">
+        <table class="leads-table" style="width:100%;table-layout:fixed;border-collapse:collapse">
+          <colgroup>
+            <col style="width:32px">
+            <col style="width:180px">
+            <col style="width:100px">
+            <col style="width:150px">
+            <col style="width:70px">
+            <col style="width:90px">
+            <col style="min-width:200px">
+          </colgroup>
           <thead><tr>
             <th class="cell-chk"><input type="checkbox" class="qual-chk-all" data-block="sr" title="Selecionar todos"></th>
-            <th>Nome</th><th>Chegou em</th><th>Origem</th><th>Renda</th><th>Ações</th>
+            <th>Nome</th><th>Chegou em</th><th>Origem</th><th>Renda</th><th>Etapa</th><th>Ações</th>
           </tr></thead>
           <tbody id="qual-sr-body"></tbody>
         </table>
