@@ -1084,7 +1084,7 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 /* Sub-nav secundário (dentro de Agendados) */
 .sub-nav--secondary {
   background: transparent; border: none; padding: 0;
-  margin-top: 16px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,.07);
+  margin-top: 32px; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,.07);
   border-radius: 0; padding-bottom: 2px; width: 100%;
 }
 .sub-nav--secondary .sub-link {
