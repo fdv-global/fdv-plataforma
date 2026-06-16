@@ -4127,7 +4127,7 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .followup-block--red    { border-left: 3px solid #e06450; }
 
 .followup-block-body {
-  background: rgba(20,26,28,0.55);
+  background: rgba(20,26,28,0.35);
   backdrop-filter: blur(12px);
   max-height: 400px; overflow-y: auto;
   border-radius: 0 0 var(--r) var(--r);
@@ -4157,12 +4157,22 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 }
 .followup-sort-select:hover { border-color: var(--b1); opacity: .85; }
 
-.qual-search-bar { margin-bottom: 16px; }
+.qual-search-bar { margin-bottom: 10px; }
 .qual-search-bar .search-wrap { max-width: 320px; }
+.qual-search-bar .filter-input {
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.15);
+  color: var(--t1);
+}
+.qual-search-bar .filter-input::placeholder { color: var(--t3); opacity: 1; }
+.qual-search-bar .filter-input:focus { background: rgba(255,255,255,.12); border-color: var(--gold-28); }
+
+.qual-filters-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 16px; }
 
 .followup-row {
   display: flex; align-items: center; gap: 14px;
   padding: 10px 16px; border-top: 1px solid var(--b0);
+  color: var(--t1);
   transition: background var(--base) var(--ease);
 }
 .followup-row:hover { background: var(--s-hover); }

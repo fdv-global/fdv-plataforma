@@ -2873,12 +2873,20 @@ function renderQualificados() {
     if (order === 'newest') return copy.sort((a,b) => (b.datachegada||'').localeCompare(a.datachegada||''));
     if (order === 'az')     return copy.sort((a,b) => (a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
     if (order === 'za')     return copy.sort((a,b) => (b.nome||'').localeCompare(a.nome||'', 'pt-BR'));
+    if (order === 'stage')  return copy.sort((a,b) => (a.contato_count||0) - (b.contato_count||0));
     return copy.sort((a,b) => (a.datachegada||'').localeCompare(b.datachegada||''));
   }
 
   function renderQualBlocks() {
-    const q = ($('qual-search-top')?.value || '').toLowerCase().trim();
-    const match = l => !q || (l.nome||'').toLowerCase().includes(q) || (l.celular||'').replace(/\D/g,'').includes(q.replace(/\D/g,''));
+    const q      = ($('qual-search-top')?.value  || '').toLowerCase().trim();
+    const origem = $('qual-filter-origem')?.value || '';
+    const renda  = $('qual-filter-renda')?.value  || '';
+    const match  = l => {
+      if (origem && l.origem !== origem) return false;
+      if (renda  && l.renda  !== renda)  return false;
+      if (q && !(l.nome||'').toLowerCase().includes(q) && !(l.celular||'').replace(/\D/g,'').includes(q.replace(/\D/g,''))) return false;
+      return true;
+    };
 
     const scEl = $('qual-sc-body');
     const ecEl = $('qual-ec-body');
@@ -2927,11 +2935,31 @@ function renderQualificados() {
     const nContato3p   = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) >= 3).length;
     const nSemResposta = semResposta.length;
 
+    const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+    const origemOpts = uniq(allQual.map(l=>l.origem));
+    const rendaOpts  = uniq(allQual.map(l=>l.renda));
+
     el.innerHTML = `
     <div class="qual-search-bar">
       <div class="search-wrap">
-        <input type="text" id="qual-search-top" placeholder="Buscar por nome ou celular…" autocomplete="off">
+        <input type="text" class="filter-input" id="qual-search-top" placeholder="Buscar por nome ou celular…" autocomplete="off">
         <span class="search-ico">⌕</span>
+      </div>
+    </div>
+    <div class="qual-filters-bar">
+      <div class="filter-group">
+        <label class="filter-label">Origem</label>
+        <select class="filter-select" id="qual-filter-origem">
+          <option value="">Todas</option>
+          ${origemOpts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Renda</label>
+        <select class="filter-select" id="qual-filter-renda">
+          <option value="">Todas</option>
+          ${rendaOpts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
+        </select>
       </div>
     </div>
 
@@ -2986,6 +3014,7 @@ function renderQualificados() {
           <option value="newest">Mais recentes primeiro</option>
           <option value="az">A → Z</option>
           <option value="za">Z → A</option>
+          <option value="stage">Por etapa</option>
         </select>
       </div>
       <div class="followup-block-body" id="qual-ec-body"></div>
@@ -3019,6 +3048,9 @@ function renderQualificados() {
     });
 
     ['qual-sort-sc','qual-sort-ec','qual-sort-sr'].forEach(id =>
+      $(id)?.addEventListener('change', renderQualBlocks)
+    );
+    ['qual-filter-origem','qual-filter-renda'].forEach(id =>
       $(id)?.addEventListener('change', renderQualBlocks)
     );
     $('qual-search-top')?.addEventListener('input', renderQualBlocks);
