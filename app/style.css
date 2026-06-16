@@ -1199,7 +1199,7 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
   align-items: center; gap: 12px;
 }
 .al-row:nth-child(even),
-.leads-row:nth-child(even) { background: rgba(255,255,255,.03); }
+.leads-row:nth-child(even) { background: rgba(255,255,255,.02); }
 .al-data  { font-size: 12px; color: var(--t3); white-space: nowrap; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .al-nome  {
   background: none; border: none; padding: 0; cursor: pointer;
@@ -4240,7 +4240,7 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 
 /* padding/border/hover vêm de .fdv-list-row */
 .noshow-row { display: flex; align-items: center; gap: 14px; }
-.noshow-row--even { background: rgba(255,255,255,.03); }
+.noshow-row--even { background: rgba(255,255,255,.02); }
 
 .noshow-row-main {
   flex: 1;
@@ -4308,9 +4308,9 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   color: var(--t1);
   transition: background var(--fast) var(--ease);
 }
-.fdv-list-row:nth-child(even) { background: rgba(255,255,255,.03); }
+.fdv-list-row:nth-child(even) { background: rgba(255,255,255,.02); }
 .fdv-list-row:last-child       { border-bottom: none; }
-.fdv-list-row:hover            { background: rgba(255,255,255,.05); }
+.fdv-list-row:hover            { background: rgba(206,146,33,0.042); }
 
 /* table rows: restore table-row display; borders come from td */
 tr.fdv-list-row                { display: table-row; min-height: unset; border: none; }
