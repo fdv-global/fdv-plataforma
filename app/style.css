@@ -4210,7 +4210,7 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   grid-template-columns: 28px 2fr 1fr 1fr 80px 110px 1fr;
   align-items: center;
   gap: 8px;
-  padding: 4px 16px;
+  padding: 12px 16px;
 }
 .qual-grid-head > *,
 .followup-block .followup-row > div {
@@ -4225,6 +4225,10 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .followup-block .followup-row-name {
   display: block; max-width: 100%;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.followup-block .followup-row small { color: rgba(255,255,255,.55) !important; }
+.followup-block .followup-row .btn-ghost.btn-sm.btn-icon {
+  color: var(--t1); border-color: rgba(255,255,255,.15);
 }
 .contato-dropdown-wrap {
   position: relative; display: inline-block; flex-shrink: 0;
@@ -4246,7 +4250,7 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .contato-opt:hover { background: rgba(255,255,255,.07); }
 .contato-opt--danger { color: #e06450; }
 .qual-grid-head {
-  font-size: 11px; font-weight: 600; color: var(--t3);
+  font-size: 13px; font-weight: 600; color: rgba(255,255,255,.70);
   border-bottom: 1px solid rgba(255,255,255,.06); padding-bottom: 6px; margin-bottom: 2px;
 }
 
@@ -4266,7 +4270,7 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .badge-cc--green  { background: var(--green-10);       color: var(--green); }
 .badge-cc--yellow { background: var(--gold-10);         color: #d4982a; }
 .badge-cc--red    { background: rgba(192,57,43,.09);    color: #e06450; }
-.badge-cc--gray   { background: rgba(255,255,255,.07);  color: var(--t3); }
+.badge-cc--gray   { background: rgba(255,255,255,.07);  color: var(--t3); border: 1px solid rgba(255,255,255,.15); }
 
 .badge-followup {
   display: inline-flex; align-items: center; gap: 5px;
@@ -4355,7 +4359,7 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   color: var(--t1);
   transition: background var(--fast) var(--ease);
 }
-.fdv-list-row:nth-child(even) { background: rgba(255,255,255,.02); }
+.fdv-list-row:nth-child(even) { background: rgba(255,255,255,.04); }
 .fdv-list-row:last-child       { border-bottom: none; }
 .fdv-list-row:hover            { background: rgba(206,146,33,0.042); }
 
