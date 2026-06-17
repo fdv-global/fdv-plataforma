@@ -7,8 +7,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=29">
+  <link rel="stylesheet" href="style.css?v=30">
   <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
   <link rel="icon" type="image/png" href="assets/fdv-logo-gourado.png">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
@@ -1014,9 +1015,11 @@
 
       <!-- Comentários -->
       <div class="detalhes-section-title">Comentários</div>
-      <textarea class="form-ctrl" id="perfil-obs" rows="3"
-        placeholder="Escrever comentário…"></textarea>
-      <button class="btn-ghost btn-sm btn-comentar-modal" id="btn-comentar-perfil">Comentar</button>
+      <div class="perfil-obs-wrap">
+        <textarea class="form-ctrl" id="perfil-obs" rows="3"
+          placeholder="Escrever comentário…"></textarea>
+        <button class="btn-comentar-send" id="btn-comentar-perfil" title="Comentar"><i class="ti ti-send"></i></button>
+      </div>
       <div id="perfil-comentarios" class="perfil-comentarios"></div>
 
       <!-- Histórico -->

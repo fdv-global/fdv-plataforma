@@ -4640,7 +4640,7 @@ function kanbanCard(l, cols) {
     </div>
     <div class="kc-obs-wrap">
       <textarea class="kc-obs-input" data-id="${l.id}" placeholder="Comentário…"></textarea>
-      <button class="btn-ghost btn-sm kc-obs-save" data-id="${l.id}">Comentar</button>
+      <button class="kc-obs-save" data-id="${l.id}" title="Comentar"><i class="ti ti-send"></i></button>
     </div>
 
   </div>`;
