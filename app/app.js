@@ -2813,21 +2813,20 @@ function renderQualificados() {
 
   function rowSemContato(l) {
     const dias = daysSince(l.datachegada);
-    return `<tr class="followup-row" data-id="${l.id}">
-      <td class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></td>
-      <td><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
-      <td style="white-space:nowrap">${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">há ${dias}d</small></td>
-      <td>${badgeOrigem(l.origem)}</td>
-      <td>${esc(abrevRenda(l.renda)||'—')}</td>
-      <td style="color:var(--t4)">—</td>
-      <td class="cell-acoes">
+    return `<div class="followup-row fdv-list-row" data-id="${l.id}">
+      <div class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></div>
+      <div><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></div>
+      <div>${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">há ${dias}d</small></div>
+      <div>${badgeOrigem(l.origem)}</div>
+      <div>${esc(abrevRenda(l.renda)||'—')}</div>
+      <div class="cell-acoes">
         <button class="btn-primary btn-sm" data-fp-contato="${l.id}">+ Contato</button>
         <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
         <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir">${ICO_TRASH}</button>
-      </td>
-    </tr>`;
+      </div>
+    </div>`;
   }
 
   function rowEmContato(l) {
@@ -2835,42 +2834,40 @@ function renderQualificados() {
     const showSR  = (l.contato_count||0) >= 3;
     const cCount  = l.contato_count || 1;
     const badgeMod = cCount >= 3 ? 'badge-cc--red' : cCount === 2 ? 'badge-cc--yellow' : 'badge-cc--green';
-    return `<tr class="followup-row" data-id="${l.id}">
-      <td class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></td>
-      <td><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
-      <td style="white-space:nowrap">${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">${diasUlt}d desde ult.</small></td>
-      <td>${badgeOrigem(l.origem)}</td>
-      <td>${esc(abrevRenda(l.renda)||'—')}</td>
-      <td><span class="badge-cc ${badgeMod}">Contato ${cCount}</span></td>
-      <td class="cell-acoes">
+    return `<div class="followup-row fdv-list-row" data-id="${l.id}">
+      <div class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></div>
+      <div><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></div>
+      <div>${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">${diasUlt}d desde ult.</small></div>
+      <div>${badgeOrigem(l.origem)}</div>
+      <div>${esc(abrevRenda(l.renda)||'—')}</div>
+      <div><span class="badge-cc ${badgeMod}">Contato ${cCount}</span>${showSR ? `<br><button class="btn-ghost btn-sm btn-destructive" style="font-size:10px;padding:1px 6px;margin-top:3px" data-fp-semresposta="${l.id}">Sem resposta</button>` : ''}</div>
+      <div class="cell-acoes">
         <button class="btn-primary btn-sm" data-fp-contato="${l.id}">+ Contato</button>
-        ${showSR ? `<button class="btn-ghost btn-sm btn-destructive" data-fp-semresposta="${l.id}">Sem resposta</button>` : ''}
         <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
         <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir">${ICO_TRASH}</button>
-      </td>
-    </tr>`;
+      </div>
+    </div>`;
   }
 
   function rowSemResposta(l) {
     const tentativas = l.contato_count || 0;
-    return `<tr class="followup-row" data-id="${l.id}">
-      <td class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></td>
-      <td><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
-      <td style="white-space:nowrap">${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">${tentativas} tent.</small></td>
-      <td>${badgeOrigem(l.origem)}</td>
-      <td>${esc(abrevRenda(l.renda)||'—')}</td>
-      <td><span class="badge-cc badge-cc--red">${tentativas} tent${tentativas!==1?'ativas':'ativa'}</span></td>
-      <td class="cell-acoes">
+    return `<div class="followup-row fdv-list-row" data-id="${l.id}">
+      <div class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></div>
+      <div><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></div>
+      <div>${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">${tentativas} tentativa${tentativas!==1?'s':''}</small></div>
+      <div>${badgeOrigem(l.origem)}</div>
+      <div>${esc(abrevRenda(l.renda)||'—')}</div>
+      <div class="cell-acoes">
         <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
         <button class="btn-ghost btn-sm" data-fp-resgatar="${l.id}">${ICO_UNDO} Resgatar</button>
         <button class="btn-ghost btn-sm btn-destructive" data-descartar="${l.id}">${ICO_DISCARD} Descartar</button>
         <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir">${ICO_TRASH}</button>
-      </td>
-    </tr>`;
+      </div>
+    </div>`;
   }
 
   // allQual no escopo externo para renderQualBlocks acessar via closure
@@ -2912,19 +2909,19 @@ function renderQualificados() {
 
     if (scEl) {
       const rows = sortLeads(allQual.filter(l => !l.status_followup || l.status_followup === 'sem_contato').filter(match), $('qual-sort-sc')?.value || 'oldest');
-      scEl.innerHTML = rows.length ? rows.map(rowSemContato).join('') : '<tr><td colspan="6" class="followup-block-empty">Nenhum lead aguardando primeiro contato.</td></tr>';
+      scEl.innerHTML = rows.length ? rows.map(rowSemContato).join('') : '<div class="followup-block-empty">Nenhum lead aguardando primeiro contato.</div>';
       const acSc = scEl.closest('.followup-block')?.querySelector('.qual-chk-all');
       if (acSc) { const cs=[...scEl.querySelectorAll('.qual-row-chk')]; acSc.checked=cs.length>0&&cs.every(c=>qualSelectedIds.has(c.dataset.id)); acSc.indeterminate=!acSc.checked&&cs.some(c=>qualSelectedIds.has(c.dataset.id)); }
     }
     if (ecEl) {
       const rows = sortLeads(allQual.filter(l => l.status_followup === 'em_contato').filter(match), $('qual-sort-ec')?.value || 'oldest');
-      ecEl.innerHTML = rows.length ? rows.map(rowEmContato).join('') : '<tr><td colspan="7" class="followup-block-empty">Nenhum lead em contato no momento.</td></tr>';
+      ecEl.innerHTML = rows.length ? rows.map(rowEmContato).join('') : '<div class="followup-block-empty">Nenhum lead em contato no momento.</div>';
       const acEc = ecEl.closest('.followup-block')?.querySelector('.qual-chk-all');
       if (acEc) { const cs=[...ecEl.querySelectorAll('.qual-row-chk')]; acEc.checked=cs.length>0&&cs.every(c=>qualSelectedIds.has(c.dataset.id)); acEc.indeterminate=!acEc.checked&&cs.some(c=>qualSelectedIds.has(c.dataset.id)); }
     }
     if (srEl) {
       const rows = sortLeads(allQual.filter(l => l.status_followup === 'sem_resposta').filter(match), $('qual-sort-sr')?.value || 'oldest');
-      srEl.innerHTML = rows.length ? rows.map(rowSemResposta).join('') : '<tr><td colspan="6" class="followup-block-empty">Nenhum lead sem resposta.</td></tr>';
+      srEl.innerHTML = rows.length ? rows.map(rowSemResposta).join('') : '<div class="followup-block-empty">Nenhum lead sem resposta.</div>';
       const acSr = srEl.closest('.followup-block')?.querySelector('.qual-chk-all');
       if (acSr) { const cs=[...srEl.querySelectorAll('.qual-row-chk')]; acSr.checked=cs.length>0&&cs.every(c=>qualSelectedIds.has(c.dataset.id)); acSr.indeterminate=!acSr.checked&&cs.some(c=>qualSelectedIds.has(c.dataset.id)); }
     }
@@ -3072,22 +3069,13 @@ function renderQualificados() {
         </select>
       </div>
       <div class="followup-block-body">
-        <table class="leads-table" style="width:100%;table-layout:fixed;border-collapse:collapse">
-          <colgroup>
-            <col style="width:32px">
-            <col style="width:180px">
-            <col style="width:100px">
-            <col style="width:150px">
-            <col style="width:70px">
-            <col style="width:90px">
-            <col style="min-width:200px">
-          </colgroup>
-          <thead><tr>
-            <th class="cell-chk"><input type="checkbox" class="qual-chk-all" data-block="sc" title="Selecionar todos"></th>
-            <th>Nome</th><th>Chegou em</th><th>Origem</th><th>Renda</th><th>Etapa</th><th>Ações</th>
-          </tr></thead>
-          <tbody id="qual-sc-body"></tbody>
-        </table>
+        <div class="qual-grid">
+          <div class="qual-grid-head">
+            <div class="cell-chk"><input type="checkbox" class="qual-chk-all" data-block="sc" title="Selecionar todos"></div>
+            <div>Nome</div><div>Chegou em</div><div>Origem</div><div>Renda</div><div>Ações</div>
+          </div>
+          <div id="qual-sc-body"></div>
+        </div>
       </div>
     </div>
 
@@ -3104,22 +3092,13 @@ function renderQualificados() {
         </select>
       </div>
       <div class="followup-block-body">
-        <table class="leads-table" style="width:100%;table-layout:fixed;border-collapse:collapse">
-          <colgroup>
-            <col style="width:32px">
-            <col style="width:180px">
-            <col style="width:100px">
-            <col style="width:150px">
-            <col style="width:70px">
-            <col style="width:90px">
-            <col style="min-width:200px">
-          </colgroup>
-          <thead><tr>
-            <th class="cell-chk"><input type="checkbox" class="qual-chk-all" data-block="ec" title="Selecionar todos"></th>
-            <th>Nome</th><th>Chegou em</th><th>Origem</th><th>Renda</th><th>Etapa</th><th>Ações</th>
-          </tr></thead>
-          <tbody id="qual-ec-body"></tbody>
-        </table>
+        <div class="qual-grid">
+          <div class="qual-grid-head">
+            <div class="cell-chk"><input type="checkbox" class="qual-chk-all" data-block="ec" title="Selecionar todos"></div>
+            <div>Nome</div><div>Chegou em</div><div>Origem</div><div>Renda</div><div>Etapa</div><div>Ações</div>
+          </div>
+          <div id="qual-ec-body"></div>
+        </div>
       </div>
     </div>
 
@@ -3135,22 +3114,13 @@ function renderQualificados() {
         </select>
       </div>
       <div class="followup-block-body">
-        <table class="leads-table" style="width:100%;table-layout:fixed;border-collapse:collapse">
-          <colgroup>
-            <col style="width:32px">
-            <col style="width:180px">
-            <col style="width:100px">
-            <col style="width:150px">
-            <col style="width:70px">
-            <col style="width:90px">
-            <col style="min-width:200px">
-          </colgroup>
-          <thead><tr>
-            <th class="cell-chk"><input type="checkbox" class="qual-chk-all" data-block="sr" title="Selecionar todos"></th>
-            <th>Nome</th><th>Chegou em</th><th>Origem</th><th>Renda</th><th>Etapa</th><th>Ações</th>
-          </tr></thead>
-          <tbody id="qual-sr-body"></tbody>
-        </table>
+        <div class="qual-grid">
+          <div class="qual-grid-head">
+            <div class="cell-chk"><input type="checkbox" class="qual-chk-all" data-block="sr" title="Selecionar todos"></div>
+            <div>Nome</div><div>Chegou em</div><div>Origem</div><div>Renda</div><div>Ações</div>
+          </div>
+          <div id="qual-sr-body"></div>
+        </div>
       </div>
     </div>`;
 
