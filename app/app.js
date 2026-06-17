@@ -2708,7 +2708,7 @@ function renderAgendaSub() {
         ${badgeAgendStatus(l.status, l.status_closer)}
         <div class="al-actions">
           <div class="contato-dropdown-wrap">
-            <button class="btn-ghost btn-sm btn-res-toggle" data-id="${l.id}">${ICO_PHONE_CHECK} Resultado ▾</button>
+            <button class="btn-primary btn-sm btn-res-toggle" data-id="${l.id}">${ICO_PHONE_CHECK} Resultado ▾</button>
             <div class="contato-dropdown" style="display:none">
               <button class="contato-opt btn-res-opt" data-id="${l.id}" data-action="realizada">✓ Call Realizada</button>
               <button class="contato-opt contato-opt--danger btn-res-opt" data-id="${l.id}" data-action="noshow">✕ No Show</button>
