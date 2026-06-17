@@ -2688,16 +2688,32 @@ function renderAgendaSub() {
   }
 
   content.innerHTML = `<div class="agenda-list fdv-list-container">
+    <div class="al-head">
+      <label class="al-check-wrap"><input type="checkbox" id="al-check-all"></label>
+      <span>Data</span>
+      <span>Nome</span>
+      <span>Closer</span>
+      <span>Status</span>
+      <span>Ações</span>
+    </div>
     ${leads.map(l => {
       const c = CLOSERS[l.closer];
       const closerName  = c ? c.name  : (l.closer || '—');
       const closerColor = c ? c.color : 'var(--t3)';
       return `<div class="al-row fdv-list-row">
+        <label class="al-check-wrap"><input type="checkbox" class="al-check-row" data-id="${l.id}"></label>
         <span class="al-data">${fmtDate(l.dataagendamento)}</span>
         <button class="al-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
         <span class="al-meta">${fmtHora(l.horaagendamento)} · <span style="color:${closerColor}">${esc(closerName)}</span></span>
         ${badgeAgendStatus(l.status, l.status_closer)}
         <div class="al-actions">
+          <div class="contato-dropdown-wrap">
+            <button class="btn-ghost btn-sm btn-res-toggle" data-id="${l.id}">${ICO_PHONE_CHECK} Resultado ▾</button>
+            <div class="contato-dropdown" style="display:none">
+              <button class="contato-opt btn-res-opt" data-id="${l.id}" data-action="realizada">✓ Call Realizada</button>
+              <button class="contato-opt contato-opt--danger btn-res-opt" data-id="${l.id}" data-action="noshow">✕ No Show</button>
+            </div>
+          </div>
           <button class="btn-ghost btn-sm btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}" title="${l.briefing?'Ver/Editar Briefing':'Adicionar Briefing'}">${ICO_CLIPBOARD} Briefing</button>
           <button class="btn-ghost btn-sm btn-editar-agend" data-id="${l.id}" title="Editar agendamento">${ICO_PENCIL}</button>
           <button class="btn-icon btn-excluir-agend btn-destructive" data-id="${l.id}" title="Excluir agendamento">${ICO_TRASH}</button>
@@ -2718,6 +2734,68 @@ function renderAgendaSub() {
   content.querySelectorAll('.btn-excluir-agend').forEach(b =>
     b.addEventListener('click', () => excluirAgendamento(b.dataset.id))
   );
+
+  const checkAll = content.querySelector('#al-check-all');
+  if (checkAll) {
+    checkAll.addEventListener('change', () => {
+      content.querySelectorAll('.al-check-row').forEach(c => c.checked = checkAll.checked);
+    });
+  }
+
+  if (content._resClickHandler) content.removeEventListener('click', content._resClickHandler);
+  content._resClickHandler = async e => {
+    const toggle = e.target.closest('.btn-res-toggle');
+    if (toggle) {
+      e.stopPropagation();
+      const drop = toggle.closest('.contato-dropdown-wrap')?.querySelector('.contato-dropdown');
+      if (!drop) return;
+      const isOpen = drop.style.display !== 'none';
+      content.querySelectorAll('.contato-dropdown').forEach(d => d.style.display = 'none');
+      if (!isOpen) drop.style.display = 'block';
+      return;
+    }
+    const opt = e.target.closest('.btn-res-opt');
+    if (!opt) return;
+    const id = opt.dataset.id;
+    const action = opt.dataset.action;
+    const lead = allLeads.find(l => l.id === id);
+    if (!lead) return;
+    opt.closest('.contato-dropdown').style.display = 'none';
+    if (action === 'realizada') {
+      const updates = {
+        status:        'realizada',
+        status_closer: 'call_realizada',
+        kanban_column: 'call_realizada',
+        realizadaem:   new Date().toISOString(),
+        atualizadoem:  new Date().toISOString(),
+      };
+      try {
+        await saveLead(id, updates);
+        toast(`Call Realizada — ${lead.nome}`, 'ok');
+        renderAll();
+      } catch(err) { console.error('[FDV] res-opt realizada:', err); toast('Erro ao salvar.', 'err'); }
+    } else if (action === 'noshow') {
+      const updates = {
+        status:        'noshow',
+        kanban_column: null,
+        atualizadoem:  new Date().toISOString(),
+      };
+      try {
+        await saveLead(id, updates);
+        toast(`No Show — ${lead.nome}`, 'ok');
+        renderAll();
+      } catch(err) { console.error('[FDV] res-opt noshow:', err); toast('Erro ao salvar.', 'err'); }
+    }
+  };
+  content.addEventListener('click', content._resClickHandler);
+
+  if (content._resOutsideHandler) document.removeEventListener('click', content._resOutsideHandler);
+  content._resOutsideHandler = e => {
+    if (!content.contains(e.target)) {
+      content.querySelectorAll('.contato-dropdown').forEach(d => d.style.display = 'none');
+    }
+  };
+  document.addEventListener('click', content._resOutsideHandler);
 }
 
 // ─── BRIEFING SUB ────────────────────────────────────────────────────

@@ -1192,12 +1192,23 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 /* ── flat list (Todos os Agendamentos) ── */
 /* glass e zebra vêm de .fdv-list-container / .fdv-list-row */
 .agenda-list { display: flex; flex-direction: column; }
+.agenda-list .al-head {
+  display: grid;
+  grid-template-columns: 28px 80px 1fr auto auto auto;
+  align-items: center; gap: 12px;
+  padding: 8px 16px;
+  font-size: 11px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase;
+  color: rgba(255,255,255,.50);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
 /* scoped para não conflitar com .al-row do accordion */
 .agenda-list .al-row {
   display: grid;
-  grid-template-columns: 80px 1fr auto auto auto;
+  grid-template-columns: 28px 80px 1fr auto auto auto;
   align-items: center; gap: 12px;
 }
+.al-check-wrap { display: flex; align-items: center; justify-content: center; }
+.al-check-wrap input[type="checkbox"] { cursor: pointer; accent-color: var(--green); width: 14px; height: 14px; }
 .al-row:nth-child(even),
 .leads-row:nth-child(even) { background: rgba(255,255,255,.02); }
 .al-data  { font-size: 12px; color: var(--t3); white-space: nowrap; font-variant-numeric: tabular-nums; flex-shrink: 0; }
