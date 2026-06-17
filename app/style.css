@@ -2160,17 +2160,15 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
   outline: none; background: rgba(255,255,255,.04);
   border-color: var(--gold-22); color: var(--t1);
 }
-.kc-obs-save { margin-top: 5px; width: 100%; font-size: 12px; }
-.kc-comments { margin-top: 8px; display: flex; flex-direction: column; gap: 5px; }
-.kc-comment {
-  background: rgba(255,255,255,.04);
-  border-left: 2px solid rgba(255,255,255,.1);
-  border-radius: 3px; padding: 5px 8px;
+.kc-obs-save {
+  margin-top: 5px; width: 100%; font-size: 12px;
+  color: var(--green); border-color: var(--green-18);
 }
-.kc-comment-text { font-size: 12px; color: var(--t1); line-height: 1.35; word-break: break-word; }
-.kc-comment-meta { font-size: 10.5px; color: var(--t3); margin-top: 2px; }
+.kc-obs-save:hover { background: var(--green-10); }
 
-/* Modal: feed de observações */
+/* Modal: botão Comentar + feed */
+.btn-comentar-modal { color: var(--green); border-color: var(--green-18); margin-top: 6px; }
+.btn-comentar-modal:hover { background: var(--green-10); }
 .perfil-comentarios { margin-top: 10px; }
 
 /* ============================================================

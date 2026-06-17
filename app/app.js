@@ -4388,7 +4388,7 @@ function renderKanban() {
     b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
   );
 
-  // Obs pós-call — insert em lead_comentarios
+  // Comentário no card — insert em lead_comentarios
   board.querySelectorAll('.kc-obs-input').forEach(ta => {
     ta.addEventListener('mousedown', e => e.stopPropagation()); // impede drag
   });
@@ -4407,13 +4407,20 @@ function renderKanban() {
           if (error) throw error;
         }
         ta.value = '';
-        await loadKcComments(id, board);
-        toast('Observação salva.', 'ok');
-      } catch(e) { toast('Erro ao salvar obs.', 'err'); }
+        toast('Comentário adicionado.', 'ok');
+      } catch(e) { toast('Erro ao comentar.', 'err'); }
       finally { btn.disabled = false; }
     });
   });
-  loadAllKcComments(board);
+  // Clicar em área em branco do card abre modal de detalhes
+  board.querySelectorAll('.kanban-card').forEach(card => {
+    card.addEventListener('click', e => {
+      if (e.target.closest('button, input, select, textarea, a')) return;
+      const id = card.dataset.id;
+      const lead = allLeads.find(l => l.id === id);
+      if (lead) openPerfil(lead);
+    });
+  });
 
   // Mover para: dropdown
   board.querySelectorAll('.kc-move-select').forEach(sel => {
@@ -4632,9 +4639,8 @@ function kanbanCard(l, cols) {
       <button class="btn-kc-descartar" data-id="${l.id}" title="Descartar lead"><i data-lucide="archive-x"></i> Descartar</button>
     </div>
     <div class="kc-obs-wrap">
-      <textarea class="kc-obs-input" data-id="${l.id}" placeholder="Nova observação…"></textarea>
-      <button class="btn-ghost btn-sm kc-obs-save" data-id="${l.id}">Salvar</button>
-      <div class="kc-comments" data-id="${l.id}"></div>
+      <textarea class="kc-obs-input" data-id="${l.id}" placeholder="Comentário…"></textarea>
+      <button class="btn-ghost btn-sm kc-obs-save" data-id="${l.id}">Comentar</button>
     </div>
 
   </div>`;
@@ -4649,43 +4655,6 @@ async function ensureObsSaved(leadId) {
     if (isLive) await supabase.from('lead_comentarios').insert({ lead_id: leadId, autor_nome: autor, texto });
     ta.value = '';
   } catch(_) {}
-}
-
-async function loadAllKcComments(boardEl) {
-  if (!isLive) return;
-  const containers = boardEl.querySelectorAll('.kc-comments[data-id]');
-  if (!containers.length) return;
-  const leadIds = [...containers].map(el => el.dataset.id);
-  const { data } = await supabase.from('lead_comentarios')
-    .select('lead_id, autor_nome, texto, created_at')
-    .in('lead_id', leadIds).order('created_at', { ascending: false });
-  if (!data) return;
-  const byLead = {};
-  for (const c of data) {
-    if (!byLead[c.lead_id]) byLead[c.lead_id] = [];
-    if (byLead[c.lead_id].length < 2) byLead[c.lead_id].push(c);
-  }
-  containers.forEach(el => {
-    const cs = byLead[el.dataset.id] || [];
-    el.innerHTML = cs.map(c => `<div class="kc-comment">
-      <div class="kc-comment-text">${esc(c.texto)}</div>
-      <div class="kc-comment-meta">${esc(c.autor_nome)} · ${fmtComentarioTime(c.created_at)}</div>
-    </div>`).join('');
-  });
-}
-
-async function loadKcComments(leadId, boardEl) {
-  if (!isLive) return;
-  const el = boardEl?.querySelector(`.kc-comments[data-id="${leadId}"]`)
-    || document.querySelector(`.kc-comments[data-id="${leadId}"]`);
-  if (!el) return;
-  const { data } = await supabase.from('lead_comentarios')
-    .select('autor_nome, texto, created_at').eq('lead_id', leadId)
-    .order('created_at', { ascending: false }).limit(2);
-  el.innerHTML = (data || []).map(c => `<div class="kc-comment">
-    <div class="kc-comment-text">${esc(c.texto)}</div>
-    <div class="kc-comment-meta">${esc(c.autor_nome)} · ${fmtComentarioTime(c.created_at)}</div>
-  </div>`).join('');
 }
 
 function buildHistoryEntry(leadId, colId, colLabel) {
@@ -6949,25 +6918,8 @@ function closePerfil() {
   perfilLeadId = null;
 }
 
-async function salvarObsPerfil() {
-  if (!perfilLeadId) return;
-  const texto = $('perfil-obs').value.trim();
-  if (!texto) return;
-  const btn = $('btn-salvar-obs');
-  btn.disabled = true;
-  try {
-    if (isLive) {
-      const autor = currentUser?.displayName || currentUser?.email || 'Desconhecido';
-      const { error } = await supabase.from('lead_comentarios').insert({ lead_id: perfilLeadId, autor_nome: autor, texto });
-      if (error) throw error;
-      const { data } = await supabase.from('lead_comentarios').select('*')
-        .eq('lead_id', perfilLeadId).order('created_at', { ascending: false });
-      renderPerfilComentarios(data || []);
-    }
-    $('perfil-obs').value = '';
-    toast('Observação salva.', 'ok');
-  } catch(e) { console.error(e); toast('Erro ao salvar.', 'err'); }
-  finally { btn.disabled = false; }
+function salvarObsPerfil() {
+  closePerfil();
 }
 
 function buildHistorico(lead) {
@@ -10565,6 +10517,26 @@ function bindEvents() {
   $('perfil-close').addEventListener('click', closePerfil);
   $('perfil-fechar').addEventListener('click', closePerfil);
   $('btn-salvar-obs').addEventListener('click', salvarObsPerfil);
+  $('btn-comentar-perfil').addEventListener('click', async () => {
+    if (!perfilLeadId) return;
+    const texto = $('perfil-obs').value.trim();
+    if (!texto) return;
+    const btn = $('btn-comentar-perfil');
+    btn.disabled = true;
+    try {
+      if (isLive) {
+        const autor = currentUser?.displayName || currentUser?.email || 'Desconhecido';
+        const { error } = await supabase.from('lead_comentarios').insert({ lead_id: perfilLeadId, autor_nome: autor, texto });
+        if (error) throw error;
+        const { data } = await supabase.from('lead_comentarios').select('*')
+          .eq('lead_id', perfilLeadId).order('created_at', { ascending: false });
+        renderPerfilComentarios(data || []);
+      }
+      $('perfil-obs').value = '';
+      toast('Comentário adicionado.', 'ok');
+    } catch(e) { console.error(e); toast('Erro ao comentar.', 'err'); }
+    finally { btn.disabled = false; }
+  });
   $('perfil-backdrop').addEventListener('click', e => { if(e.target===$('perfil-backdrop')) closePerfil(); });
 
   // Edição inline dos campos de dados pessoais no modal de perfil

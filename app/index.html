@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=28">
+  <link rel="stylesheet" href="style.css?v=29">
   <link rel="stylesheet" href="theme.css">
   <link rel="icon" type="image/png" href="assets/fdv-logo-gourado.png">
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -1012,10 +1012,11 @@
         <div class="perfil-grid" id="perfil-origem"></div>
       </div>
 
-      <!-- Observações -->
-      <div class="detalhes-section-title">Observações</div>
+      <!-- Comentários -->
+      <div class="detalhes-section-title">Comentários</div>
       <textarea class="form-ctrl" id="perfil-obs" rows="3"
-        placeholder="Nova observação…"></textarea>
+        placeholder="Escrever comentário…"></textarea>
+      <button class="btn-ghost btn-sm btn-comentar-modal" id="btn-comentar-perfil">Comentar</button>
       <div id="perfil-comentarios" class="perfil-comentarios"></div>
 
       <!-- Histórico -->
@@ -1048,7 +1049,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn-ghost" id="perfil-fechar">Fechar</button>
-      <button class="btn-confirm" id="btn-salvar-obs">Salvar observações</button>
+      <button class="btn-confirm" id="btn-salvar-obs">Salvar</button>
     </div>
   </div>
 </div>
