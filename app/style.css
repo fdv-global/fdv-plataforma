@@ -878,42 +878,6 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 .leads-table tbody tr:hover            { background: rgba(255,255,255,.05); }
 .leads-table tbody tr:last-child td    { border-bottom: none; }
 
-/* Novos — colunas responsivas (scoped via #table-wrap para não afetar No Shows / Descartados) */
-#table-wrap .leads-table { table-layout: fixed; min-width: 900px; }
-#table-wrap .leads-table th:nth-child(1) { width: 28px; }
-#table-wrap .leads-table th:nth-child(2) { width: 95px; }
-/* th:nth-child(3) = Nome — sem largura fixa, ocupa o restante (equivalente a 1fr) */
-#table-wrap .leads-table th:nth-child(4) { width: 130px; }
-#table-wrap .leads-table th:nth-child(5) { width: 150px; }
-#table-wrap .leads-table th:nth-child(6) { width: 70px; }
-#table-wrap .leads-table th:nth-child(7) { width: 90px; }
-#table-wrap .leads-table th:nth-child(8) { width: 220px; }
-#table-wrap .leads-table .cell-nome     { min-width: 0; max-width: none; }
-
-/* No Show — colunas responsivas */
-#ns-table-wrap .leads-table { table-layout: fixed; min-width: 900px; }
-#ns-table-wrap .leads-table th:nth-child(1) { width: 28px; }
-#ns-table-wrap .leads-table th:nth-child(2) { width: 95px; }
-/* th:nth-child(3) = Nome — ocupa o restante (1fr) */
-#ns-table-wrap .leads-table th:nth-child(4) { width: 130px; }
-#ns-table-wrap .leads-table th:nth-child(5) { width: 150px; }
-#ns-table-wrap .leads-table th:nth-child(6) { width: 70px; }
-#ns-table-wrap .leads-table th:nth-child(7) { width: 90px; }
-#ns-table-wrap .leads-table th:nth-child(8) { width: 220px; }
-#ns-table-wrap .leads-table .cell-nome     { min-width: 0; max-width: none; }
-
-/* Descartados — colunas responsivas (Etapa + Motivo no lugar de Renda + Etiqueta) */
-#desc-table-wrap .leads-table { table-layout: fixed; min-width: 900px; }
-#desc-table-wrap .leads-table th:nth-child(1) { width: 28px; }
-#desc-table-wrap .leads-table th:nth-child(2) { width: 95px; }
-/* th:nth-child(3) = Nome — ocupa o restante (1fr) */
-#desc-table-wrap .leads-table th:nth-child(4) { width: 130px; }  /* Celular */
-#desc-table-wrap .leads-table th:nth-child(5) { width: 150px; }  /* Origem */
-#desc-table-wrap .leads-table th:nth-child(6) { width: 110px; }  /* Etapa (badge curto) */
-#desc-table-wrap .leads-table th:nth-child(7) { width: 150px; }  /* Motivo (texto variável) */
-#desc-table-wrap .leads-table th:nth-child(8) { width: 220px; }  /* Ações */
-#desc-table-wrap .leads-table .cell-nome     { min-width: 0; max-width: none; }
-
 /* cell types */
 .cell-nome  { font-weight: 600; min-width: 150px; max-width: 220px; }
 .cell-nome .nome-link { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
@@ -1250,7 +1214,7 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 .agenda-list { display: flex; flex-direction: column; }
 .agenda-list .al-head {
   display: grid;
-  grid-template-columns: 28px 95px 1fr minmax(100px,150px) minmax(90px,130px) 220px;
+  grid-template-columns: 28px 80px 1fr auto auto auto;
   align-items: center; gap: 12px;
   padding: 8px 16px;
   font-size: 12px; font-weight: 600;
@@ -1262,7 +1226,7 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 /* scoped para não conflitar com .al-row do accordion */
 .agenda-list .al-row {
   display: grid;
-  grid-template-columns: 28px 95px 1fr minmax(100px,150px) minmax(90px,130px) 220px;
+  grid-template-columns: 28px 80px 1fr auto auto auto;
   align-items: center; gap: 12px;
 }
 .al-check-wrap { display: flex; align-items: center; justify-content: center; }
