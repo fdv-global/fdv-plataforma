@@ -4482,43 +4482,42 @@ function renderKanbanMetrics() {
   const totalMes    = kanbanBase.filter(l => (l.kanban_column_since||'').startsWith(currentMonth)).length;
   const taxa        = totalMes > 0 ? Math.round(vendasMes / totalMes * 100) : 0;
 
-  el.innerHTML = `<div class="kanban-metrics-grid">
-    <div class="kpi-mini">
-      <div class="kpi-label">Pipeline</div>
-      <div class="kpi-num">${pipeline}</div>
-      <div class="kpi-sub">leads ativos</div>
+  el.innerHTML = `
+    <div class="stat-card">
+      <div class="stat-top"><span class="stat-label">Pipeline</span></div>
+      <span class="stat-num">${pipeline}</span>
+      <div class="stat-sub">leads ativos</div>
     </div>
-    <div class="kpi-mini accent-gold">
-      <div class="kpi-label">Call Realizada</div>
-      <div class="kpi-num">${nCallRealizada}</div>
-      <div class="kpi-sub">na coluna</div>
+    <div class="stat-card accent-gold">
+      <div class="stat-top"><span class="stat-label">Call Realizada</span></div>
+      <span class="stat-num">${nCallRealizada}</span>
+      <div class="stat-sub">na coluna</div>
     </div>
-    <div class="kpi-mini accent-blue">
-      <div class="kpi-label">Negociação</div>
-      <div class="kpi-num">${nNegociacao}</div>
-      <div class="kpi-sub">na coluna</div>
+    <div class="stat-card accent-blue">
+      <div class="stat-top"><span class="stat-label">Negociação</span></div>
+      <span class="stat-num">${nNegociacao}</span>
+      <div class="stat-sub">na coluna</div>
     </div>
-    <div class="kpi-mini accent-purple">
-      <div class="kpi-label">Decisão</div>
-      <div class="kpi-num">${nDecisao}</div>
-      <div class="kpi-sub">na coluna</div>
+    <div class="stat-card accent-purple">
+      <div class="stat-top"><span class="stat-label">Decisão</span></div>
+      <span class="stat-num">${nDecisao}</span>
+      <div class="stat-sub">na coluna</div>
     </div>
-    <div class="kpi-mini accent-green">
-      <div class="kpi-label">Vendas no mês</div>
-      <div class="kpi-num">${vendasMes}</div>
-      <div class="kpi-sub">${mesLabel}</div>
+    <div class="stat-card accent-green">
+      <div class="stat-top"><span class="stat-label">Vendas no mês</span></div>
+      <span class="stat-num">${vendasMes}</span>
+      <div class="stat-sub">${mesLabel}</div>
     </div>
-    <div class="kpi-mini accent-green">
-      <div class="kpi-label">Conversão</div>
-      <div class="kpi-num">${taxa}%</div>
-      <div class="kpi-sub">ganhos ÷ entradas</div>
+    <div class="stat-card accent-green">
+      <div class="stat-top"><span class="stat-label">Conversão</span></div>
+      <span class="stat-num">${taxa}%</span>
+      <div class="stat-sub">ganhos ÷ entradas</div>
     </div>
-    <div class="kpi-mini accent-red">
-      <div class="kpi-label">Perdidos no mês</div>
-      <div class="kpi-num">${perdidosMes}</div>
-      <div class="kpi-sub">${mesLabel}</div>
-    </div>
-  </div>`;
+    <div class="stat-card accent-red">
+      <div class="stat-top"><span class="stat-label">Perdidos no mês</span></div>
+      <span class="stat-num">${perdidosMes}</span>
+      <div class="stat-sub">${mesLabel}</div>
+    </div>`;
 }
 
 function populateKanbanFilters() {
@@ -4715,9 +4714,6 @@ function switchCloserView(view) {
   const isKanban = view === 'kanban';
   board.style.display   = isKanban ? '' : 'none';
   subview.style.display = isKanban ? 'none' : '';
-
-  const metricsEl = $('kanban-metrics');
-  if (metricsEl) metricsEl.style.display = isKanban ? '' : 'none';
 
   // Filtros sempre visíveis; controles que não se aplicam ficam opacos e não clicáveis
   const kanbanOnly = [

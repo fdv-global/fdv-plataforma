@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=18">
+  <link rel="stylesheet" href="style.css?v=19">
   <link rel="stylesheet" href="theme.css">
   <link rel="icon" type="image/png" href="assets/fdv-logo-gourado.png">
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -587,26 +587,26 @@
       <button class="cvt-btn" data-view="vendas">Vendas</button>
     </div>
   </div>
-  <div id="kanban-metrics"></div>
   <div id="kanban-filters">
-    <div class="kanban-filter-block">
-      <div class="kf-row">
-        <div class="kf-group">
-          <label class="kf-label">Closer</label>
+    <div class="filters-bar">
+      <div id="kanban-metrics" class="stats-grid stats-grid--7" style="margin-bottom:16px"></div>
+      <div class="filters-row">
+        <div class="filter-group">
+          <label class="filter-label">Closer</label>
           <select class="filter-select" id="kanban-filter-closer">
             <option value="">Todos</option>
             <option value="fernanda">Fernanda</option>
             <option value="thomaz">Thomaz</option>
           </select>
         </div>
-        <div class="kf-group">
-          <label class="kf-label">Mês</label>
+        <div class="filter-group">
+          <label class="filter-label">Mês</label>
           <select class="filter-select" id="kanban-filter-mes">
             <option value="">Todos os meses</option>
           </select>
         </div>
-        <div class="kf-group">
-          <label class="kf-label">Etapa</label>
+        <div class="filter-group">
+          <label class="filter-label">Etapa</label>
           <select class="filter-select" id="kf-etapa">
             <option value="">Todas</option>
             <option value="call_realizada">Call Realizada</option>
@@ -614,19 +614,20 @@
             <option value="decisao">Decisão</option>
           </select>
         </div>
-        <div class="kf-group">
-          <label class="kf-label">Origem</label>
+        <div class="filter-group">
+          <label class="filter-label">Origem</label>
           <select class="filter-select" id="kf-origem">
             <option value="">Todas</option>
           </select>
         </div>
-        <div class="kf-group" style="flex:1;min-width:200px">
-          <label class="kf-label">Buscar</label>
-          <div style="display:flex;gap:6px">
-            <input class="filter-input" type="text" id="kf-search" placeholder="Nome ou celular…">
-            <button class="btn-ghost btn-sm" id="kf-clear">Limpar</button>
+        <div class="filter-group filter-group--search">
+          <label class="filter-label">Buscar</label>
+          <div class="search-wrap">
+            <input type="text" class="filter-input" id="kf-search" placeholder="Nome ou celular…" autocomplete="off">
+            <span class="search-ico">⌕</span>
           </div>
         </div>
+        <button class="btn-clear" id="kf-clear">Limpar</button>
       </div>
     </div>
   </div>
