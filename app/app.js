@@ -3685,7 +3685,7 @@ function renderNoShow() {
     </div>
     <button class="btn-ghost btn-sm" id="btn-ns-bulk-clear">${ICO_X_SM} Limpar</button>
   </div>
-  <div class="table-wrap fdv-list-container">
+  <div class="table-wrap fdv-list-container" id="ns-table-wrap">
     <table class="leads-table">
       <thead><tr>
         <th class="cell-chk"><input type="checkbox" id="chk-all-ns" title="Selecionar todos"></th>
