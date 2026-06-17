@@ -4715,14 +4715,8 @@ function switchCloserView(view) {
   board.style.display   = isKanban ? '' : 'none';
   subview.style.display = isKanban ? 'none' : '';
 
-  // Filtros sempre visíveis; controles que não se aplicam ficam opacos e não clicáveis
-  const kanbanOnly = [
-    $('kanban-filters'),
-  ].filter(Boolean);
-  kanbanOnly.forEach(el => {
-    el.style.opacity       = isKanban ? '' : '0.4';
-    el.style.pointerEvents = isKanban ? '' : 'none';
-  });
+  const kf = $('kanban-filters');
+  if (kf) kf.style.display = isKanban ? '' : 'none';
 
   if (isKanban)                    renderKanban();
   else if (view === 'vendas')      renderVendasView();
@@ -4752,8 +4746,13 @@ async function renderVendasView() {
   el.innerHTML = '<div class="table-wrap"><p style="color:var(--t2);padding:24px">Carregando vendas…</p></div>';
 
   // Filtros persistentes
-  if (!renderVendasView._f) renderVendasView._f = { mes: '', closer: '' };
+  if (!renderVendasView._f) renderVendasView._f = {};
   const flt = renderVendasView._f;
+  flt.mes      = flt.mes      ?? '';
+  flt.closer   = flt.closer   ?? '';
+  flt.programa = flt.programa ?? '';
+  flt.forma    = flt.forma    ?? '';
+  flt.search   = flt.search   ?? '';
 
   let allRows = [];
   if (isLive) {
@@ -4800,19 +4799,9 @@ async function renderVendasView() {
     }).filter(m => /^\d{4}-\d{2}$/.test(m))
   )].sort().reverse();
 
-  // Aplicar filtros
-  let rows = allRows;
-  if (flt.mes) {
-    rows = rows.filter(r => {
-      const ld = r.leads;
-      const dateRef = ld?.realizadaem || ld?.kanban_column_since || ld?.datachegada || r.criadoem || '';
-      return dateRef.startsWith(flt.mes);
-    });
-  }
-  if (flt.closer) rows = rows.filter(r => (r.closer||'') === flt.closer);
+  // Programas disponíveis
+  const programas = [...new Set(allRows.filter(r => r.status !== 'cancelada').map(r => r.programa).filter(Boolean))].sort();
 
-  // Stats apenas de vendas ativas — respeita o filtro de mês/closer aplicado
-  const activeRows  = rows.filter(r => r.status !== 'cancelada');
   const FORMA_LABELS = {
     avista:           'À vista',
     parcelado_cartao: 'Parcelado — Cartão',
@@ -4823,90 +4812,221 @@ async function renderVendasView() {
   const fmtCurrency = n => n ? n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) : '—';
   const fmtBRL      = v => fmtCurrency(parseValor(v));
 
-  const faturamento = activeRows.reduce((s, r) => s + parseValor(r.valor), 0);
-  const ticketMedio = activeRows.length ? faturamento / activeRows.length : 0;
+  // Aplicar filtros (search tratado via DOM após render)
+  let rows = allRows.filter(r => r.status !== 'cancelada');
+  if (flt.mes) {
+    rows = rows.filter(r => {
+      const ld = r.leads;
+      const dateRef = ld?.realizadaem || ld?.kanban_column_since || ld?.datachegada || r.criadoem || '';
+      return dateRef.startsWith(flt.mes);
+    });
+  }
+  if (flt.closer)   rows = rows.filter(r => (r.closer||'') === flt.closer);
+  if (flt.programa) rows = rows.filter(r => (r.programa||'') === flt.programa);
+  if (flt.forma)    rows = rows.filter(r => (r.forma_pagamento||'') === flt.forma);
 
-  // Ícones definidos fora do map para não ficarem em template literal aninhado
-  const ICO_EDIT2   = _S('<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',13);
-  const ICO_UNDO2   = _S('<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',13);
-  const ICO_CANCEL2 = _S('<circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>',13);
+  const faturamento = rows.reduce((s, r) => s + parseValor(r.valor), 0);
+  const ticketMedio = rows.length ? faturamento / rows.length : 0;
 
-  // HTML das linhas pré-computado fora do template principal para evitar aninhamento excessivo
+  const ICO_EDIT2 = _S('<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',13);
+
+  const mesOpts      = meses.map(m => `<option value="${m}"${flt.mes===m?' selected':''}>${fmtMes(m)}</option>`).join('');
+  const closerOpts   = Object.entries(CLOSERS).map(([k,c]) => `<option value="${k}"${flt.closer===k?' selected':''}>${esc(c.name)}</option>`).join('');
+  const programaOpts = programas.map(p => `<option value="${esc(p)}"${flt.programa===p?' selected':''}>${esc(p)}</option>`).join('');
+  const formaKeys    = ['avista','parcelado_cartao','parcelado_boleto','pix'];
+  const formaOpts    = formaKeys.map(k => `<option value="${k}"${flt.forma===k?' selected':''}>${FORMA_LABELS[k]}</option>`).join('');
+
   const rowsHtml = rows.map(r => {
-    const cancelled = r.status === 'cancelada';
-    const hasId     = !!r.id;
-    const idAttr    = r.id     || '';
-    const leadAttr  = r.lead_id || '';
-    const cancelBtn = !cancelled
-      ? '<button class="btn-ghost btn-sm btn-cancel-venda" data-id="' + idAttr + '" title="Cancelar venda"' + (!hasId ? ' disabled' : '') + ' style="padding:4px 6px;color:var(--text-muted)">' + ICO_CANCEL2 + '</button>'
-      : '';
-    return '<tr' + (cancelled ? ' style="opacity:0.6"' : '') + '>'
-      + '<td><button class="link-btn" data-perfil-venda="' + leadAttr + '">' + esc(r.leads && r.leads.nome ? r.leads.nome : r.lead_id || '—') + '</button></td>'
+    const hasId      = !!r.id;
+    const idAttr     = r.id      || '';
+    const leadAttr   = r.lead_id || '';
+    const nome       = r.leads?.nome || r.lead_id || '—';
+    const celular    = r.leads?.celular || '';
+    const searchAttr = ((nome + '|' + celular).toLowerCase()).replace(/"/g,'');
+    const closerName = r.closer ? (CLOSERS[r.closer]?.name || r.closer) : '—';
+    return '<tr data-id="' + idAttr + '" data-lead="' + leadAttr + '" data-search="' + searchAttr + '">'
+      + '<td class="cell-chk"><input type="checkbox" class="vv-chk-row row-chk" data-id="' + idAttr + '" data-lead="' + leadAttr + '"></td>'
+      + '<td><button class="link-btn" data-perfil-venda="' + leadAttr + '">' + esc(nome) + '</button></td>'
       + '<td>' + esc(r.programa || '—') + '</td>'
-      + '<td class="vendas-valor"' + (cancelled ? ' style="text-decoration:line-through"' : '') + '>' + fmtBRL(r.valor) + '</td>'
+      + '<td class="vendas-valor">' + fmtBRL(r.valor) + '</td>'
       + '<td>' + fmtBRL(r.valor_entrada) + '</td>'
       + '<td>' + fmtForma(r.forma_pagamento) + '</td>'
-      + '<td>' + esc(r.closer ? (CLOSERS[r.closer] ? CLOSERS[r.closer].name : r.closer) : '—') + '</td>'
-      + '<td>' + fmtDate((r.criadoem || '').slice(0, 10)) + '</td>'
-      + '<td><span class="badge-status ' + (cancelled ? 'cancelado' : 'realizada') + '" style="font-size:10px">' + (cancelled ? 'Cancelada' : 'Ativa') + '</span></td>'
-      + '<td class="cell-acoes" style="white-space:nowrap">'
-        + '<button class="btn-ghost btn-sm btn-edit-venda" data-id="' + idAttr + '" data-lead="' + leadAttr + '" title="Editar"' + (!hasId ? ' disabled' : '') + ' style="padding:4px 6px">' + ICO_EDIT2 + '</button>'
-        + '<button class="btn-ghost btn-sm btn-del-venda" data-id="' + idAttr + '" data-lead="' + leadAttr + '" title="Excluir" style="padding:4px 6px;color:var(--marsala)">' + ICO_TRASH + '</button>'
-        + '<button class="btn-ghost btn-sm btn-vk-venda" data-id="' + idAttr + '" data-lead="' + leadAttr + '" title="Voltar para Kanban" style="padding:4px 6px">' + ICO_UNDO2 + '</button>'
-        + cancelBtn
+      + '<td>' + esc(closerName) + '</td>'
+      + '<td class="cell-acoes">'
+        + '<button class="btn-ghost btn-sm btn-edit-venda" data-id="' + idAttr + '" data-lead="' + leadAttr + '" title="Editar"' + (!hasId ? ' disabled' : '') + '>' + ICO_EDIT2 + '</button>'
+        + '<button class="btn-ghost btn-sm btn-del-venda btn-destructive" data-id="' + idAttr + '" data-lead="' + leadAttr + '" title="Excluir">' + ICO_TRASH + '</button>'
       + '</td>'
       + '</tr>';
   }).join('');
 
-  const mesOpts    = meses.map(m => '<option value="' + m + '"' + (flt.mes === m ? ' selected' : '') + '>' + fmtMes(m) + '</option>').join('');
-  const closerOpts = Object.entries(CLOSERS).map(function(e) { return '<option value="' + e[0] + '"' + (flt.closer === e[0] ? ' selected' : '') + '>' + esc(e[1].name) + '</option>'; }).join('');
-  const tableHtml  = rows.length === 0
+  const tableHtml = rows.length === 0
     ? '<p class="hist-empty" style="margin-top:32px">Nenhuma venda encontrada.</p>'
-    : '<div class="rel-table-wrap"><table class="rel-table"><thead><tr>'
-      + '<th>Lead</th><th>Programa</th><th>Valor</th><th>Entrada</th><th>Forma Pgto</th><th>Closer</th><th>Data</th><th>Status</th><th>Ações</th>'
-      + '</tr></thead><tbody>' + rowsHtml + '</tbody></table></div>';
+    : `<div class="rel-table-wrap">
+        <table class="rel-table vv-table">
+          <thead><tr>
+            <th class="cell-chk"><input type="checkbox" id="vv-chk-all" class="row-chk" title="Selecionar todos"></th>
+            <th>Lead</th><th>Programa</th><th>Valor</th><th>Entrada</th><th>Forma Pgto</th><th>Closer</th><th>Ações</th>
+          </tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>`;
 
   el.innerHTML = `
-    <div class="subview-header">
-      <h2 class="subview-title"><i data-lucide="trophy"></i> Vendas Ganhas</h2>
-      <span class="subview-count">${rows.length} venda${rows.length !== 1 ? 's' : ''}</span>
+    <div class="filters-bar">
+      <div class="stats-grid stats-grid--3" style="margin-bottom:16px">
+        <div class="stat-card accent-gold">
+          <div class="stat-top"><span class="stat-label">Total de Vendas</span></div>
+          <strong class="stat-num">${rows.length}</strong>
+          <span class="stat-sub">contratos fechados</span>
+        </div>
+        <div class="stat-card accent-green">
+          <div class="stat-top"><span class="stat-label">Faturamento</span></div>
+          <strong class="stat-num" style="font-size:22px">${fmtCurrency(faturamento)}</strong>
+          <span class="stat-sub">em vendas ativas</span>
+        </div>
+        <div class="stat-card accent-green">
+          <div class="stat-top"><span class="stat-label">Ticket Médio</span></div>
+          <strong class="stat-num" style="font-size:22px">${fmtCurrency(ticketMedio)}</strong>
+          <span class="stat-sub">por venda ativa</span>
+        </div>
+      </div>
+      <div class="filters-row">
+        <div class="filter-group">
+          <label class="filter-label">Mês</label>
+          <select class="filter-select" id="vv-mes">
+            <option value="">Todos os meses</option>${mesOpts}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Closer</label>
+          <select class="filter-select" id="vv-closer">
+            <option value="">Todos</option>${closerOpts}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Programa</label>
+          <select class="filter-select" id="vv-programa">
+            <option value="">Todos</option>${programaOpts}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Forma Pgto</label>
+          <select class="filter-select" id="vv-forma">
+            <option value="">Todas</option>${formaOpts}
+          </select>
+        </div>
+        <div class="filter-group filter-group--search">
+          <label class="filter-label">Buscar</label>
+          <div class="search-wrap">
+            <input type="text" class="filter-input" id="vv-search" placeholder="Nome ou celular…" autocomplete="off" value="${esc(flt.search)}">
+            <span class="search-ico">⌕</span>
+          </div>
+        </div>
+        <button class="btn-clear" id="vv-limpar">Limpar</button>
+      </div>
     </div>
-    <div class="desc-view-filters" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:0 2px">
-      <select class="filter-select" id="vv-mes" style="width:auto;min-width:140px">
-        <option value="">Todos os meses</option>${mesOpts}
-      </select>
-      <select class="filter-select" id="vv-closer" style="width:auto;min-width:140px">
-        <option value="">Todos os closers</option>${closerOpts}
-      </select>
-      <button class="btn-ghost btn-sm" id="vv-limpar">Limpar</button>
-    </div>
-    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
-      <div class="stat-card accent-gold">
-        <div class="stat-top"><span class="stat-label">Total de Vendas</span><span class="stat-icon">${ICO_TROPHY}</span></div>
-        <strong class="stat-num">${activeRows.length}</strong>
-        <span class="stat-sub">contratos fechados</span>
+    <div class="bulk-bar" id="vv-bulk-bar" style="display:none">
+      <span class="bulk-count" id="vv-bulk-count">0 selecionados</span>
+      <div class="bulk-actions">
+        <button class="btn-acao-inline btn-qualificar" id="btn-vv-bulk-negociacao">Voltar Negociação</button>
+        <button class="btn-acao-inline btn-agendar" id="btn-vv-bulk-agendamento">Voltar Agendamento</button>
+        <button class="btn-acao-inline btn-destructive" id="btn-vv-bulk-excluir">${ICO_TRASH} Excluir</button>
       </div>
-      <div class="stat-card accent-sand">
-        <div class="stat-top"><span class="stat-label">Faturamento</span><span class="stat-icon">${_S('<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>')}</span></div>
-        <strong class="stat-num" style="font-size:26px">${fmtCurrency(faturamento)}</strong>
-        <span class="stat-sub">em vendas ativas</span>
-      </div>
-      <div class="stat-card accent-green">
-        <div class="stat-top"><span class="stat-label">Ticket Médio</span><span class="stat-icon">${ICO_CHECK_CIRCLE}</span></div>
-        <strong class="stat-num" style="font-size:26px">${fmtCurrency(ticketMedio)}</strong>
-        <span class="stat-sub">por venda ativa</span>
-      </div>
+      <button class="btn-ghost btn-sm" id="btn-vv-bulk-clear">${ICO_X_SM} Limpar</button>
     </div>
     ${tableHtml}`;
 
   lucide.createIcons({ nodes: [el] });
 
-  // Filtros
-  el.querySelector('#vv-mes')?.addEventListener('change',    e => { flt.mes    = e.target.value; renderVendasView(); });
-  el.querySelector('#vv-closer')?.addEventListener('change', e => { flt.closer = e.target.value; renderVendasView(); });
-  el.querySelector('#vv-limpar')?.addEventListener('click',  () => { flt.mes = flt.closer = ''; renderVendasView(); });
+  // ── Filtros ─────────────────────────────────────────────────────
+  el.querySelector('#vv-mes')?.addEventListener('change',     e => { flt.mes      = e.target.value; renderVendasView(); });
+  el.querySelector('#vv-closer')?.addEventListener('change',  e => { flt.closer   = e.target.value; renderVendasView(); });
+  el.querySelector('#vv-programa')?.addEventListener('change',e => { flt.programa = e.target.value; renderVendasView(); });
+  el.querySelector('#vv-forma')?.addEventListener('change',   e => { flt.forma    = e.target.value; renderVendasView(); });
+  el.querySelector('#vv-limpar')?.addEventListener('click', () => {
+    flt.mes = flt.closer = flt.programa = flt.forma = flt.search = '';
+    renderVendasView();
+  });
 
-  // Perfil
+  // Search: DOM-only filter, sem re-render
+  function applySearch() {
+    const q = flt.search;
+    el.querySelectorAll('.vv-table tbody tr').forEach(tr => {
+      tr.style.display = (!q || (tr.dataset.search || '').includes(q)) ? '' : 'none';
+    });
+  }
+  applySearch();
+  el.querySelector('#vv-search')?.addEventListener('input', e => {
+    flt.search = e.target.value.trim().toLowerCase();
+    applySearch();
+  });
+
+  // ── Bulk selection ───────────────────────────────────────────────
+  const bulkBar   = el.querySelector('#vv-bulk-bar');
+  const bulkCount = el.querySelector('#vv-bulk-count');
+
+  function updateBulkBar() {
+    const checked = el.querySelectorAll('.vv-chk-row:checked');
+    bulkBar.style.display = checked.length > 0 ? '' : 'none';
+    bulkCount.textContent = checked.length + ' selecionado' + (checked.length !== 1 ? 's' : '');
+    el.querySelectorAll('tr.row-selected').forEach(tr => tr.classList.remove('row-selected'));
+    checked.forEach(chk => chk.closest('tr')?.classList.add('row-selected'));
+  }
+
+  el.querySelector('#vv-chk-all')?.addEventListener('change', e => {
+    el.querySelectorAll('.vv-chk-row').forEach(chk => { chk.checked = e.target.checked; });
+    updateBulkBar();
+  });
+  el.querySelectorAll('.vv-chk-row').forEach(chk => chk.addEventListener('change', updateBulkBar));
+  el.querySelector('#btn-vv-bulk-clear')?.addEventListener('click', () => {
+    const all = el.querySelector('#vv-chk-all');
+    if (all) all.checked = false;
+    el.querySelectorAll('.vv-chk-row').forEach(chk => { chk.checked = false; });
+    updateBulkBar();
+  });
+
+  // ── Bulk actions ─────────────────────────────────────────────────
+  async function bulkVoltarKanban(col) {
+    const items = Array.from(el.querySelectorAll('.vv-chk-row:checked')).map(c => ({ vendaId: c.dataset.id, leadId: c.dataset.lead }));
+    if (!items.length) return;
+    for (const { vendaId, leadId } of items) {
+      if (isLive && vendaId) { await supabase.from('vendas').delete().eq('id', vendaId); }
+      if (leadId) {
+        await saveLead(leadId, {
+          kanban_column:       col,
+          kanban_column_since: new Date().toISOString(),
+          atualizadoem:        new Date().toISOString(),
+        });
+      }
+    }
+    toast(`${items.length} lead${items.length !== 1 ? 's' : ''} movido${items.length !== 1 ? 's' : ''}.`, 'ok');
+    renderVendasView();
+  }
+
+  async function bulkExcluirVendas() {
+    const items = Array.from(el.querySelectorAll('.vv-chk-row:checked')).map(c => ({ vendaId: c.dataset.id, leadId: c.dataset.lead }));
+    if (!items.length) return;
+    const n = items.length;
+    if (!confirm(`Excluir ${n} venda${n !== 1 ? 's' : ''}? Esta ação não pode ser desfeita.`)) return;
+    for (const { vendaId, leadId } of items) {
+      if (isLive && vendaId) { await supabase.from('vendas').delete().eq('id', vendaId); }
+      if (leadId) {
+        await saveLead(leadId, {
+          kanban_column:       'call_realizada',
+          kanban_column_since: new Date().toISOString(),
+          atualizadoem:        new Date().toISOString(),
+        });
+      }
+    }
+    toast(`${n} venda${n !== 1 ? 's' : ''} excluída${n !== 1 ? 's' : ''}.`, 'ok');
+    renderVendasView();
+  }
+
+  el.querySelector('#btn-vv-bulk-negociacao')?.addEventListener('click', () => bulkVoltarKanban('call_realizada'));
+  el.querySelector('#btn-vv-bulk-agendamento')?.addEventListener('click', () => bulkVoltarKanban('fechamento'));
+  el.querySelector('#btn-vv-bulk-excluir')?.addEventListener('click', bulkExcluirVendas);
+
+  // ── Perfil ───────────────────────────────────────────────────────
   el.querySelectorAll('[data-perfil-venda]').forEach(b => {
     b.addEventListener('click', () => {
       const l = allLeads.find(x => x.id === b.dataset.perfilVenda);
@@ -4914,7 +5034,7 @@ async function renderVendasView() {
     });
   });
 
-  // Editar
+  // ── Editar ───────────────────────────────────────────────────────
   el.querySelectorAll('.btn-edit-venda').forEach(b => {
     if (b.disabled) return;
     b.addEventListener('click', () => {
@@ -4923,20 +5043,9 @@ async function renderVendasView() {
     });
   });
 
-  // Excluir
+  // ── Excluir ──────────────────────────────────────────────────────
   el.querySelectorAll('.btn-del-venda').forEach(b => {
     b.addEventListener('click', () => excluirVenda(b.dataset.id, b.dataset.lead));
-  });
-
-  // Voltar para Kanban
-  el.querySelectorAll('.btn-vk-venda').forEach(b => {
-    b.addEventListener('click', () => openVoltaKanban(b.dataset.lead, b.dataset.id));
-  });
-
-  // Cancelar
-  el.querySelectorAll('.btn-cancel-venda').forEach(b => {
-    if (b.disabled) return;
-    b.addEventListener('click', () => cancelarVenda(b.dataset.id));
   });
 }
 
