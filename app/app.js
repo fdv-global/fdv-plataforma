@@ -3466,10 +3466,9 @@ function switchAgendadosSub(sub) {
 }
 
 function renderAgendadosSub() {
+  renderAgendaSub();
   renderAgendadosOverview();
-  if      (activeAgendadosSub === 'hoje')     renderAgendaHoje();
-  else if (activeAgendadosSub === 'todos')    renderAgendaSub();
-  else if (activeAgendadosSub === 'briefing') renderBriefingSub();
+  if (activeAgendadosSub === 'briefing') renderBriefingSub();
 }
 
 // ─── AGENDA DE HOJE ──────────────────────────────────────────────────
@@ -10169,8 +10168,8 @@ function bindEvents() {
     btn.addEventListener('click', () => switchAgendadosSub(btn.dataset.agendadosSub))
   );
 
-  // Agenda de Hoje — copiar
-  $('btn-gerar-agenda-hoje').addEventListener('click', gerarAgendaHoje);
+  // Próximas calls — copiar
+  $('btn-copiar-proximas')?.addEventListener('click', gerarAgendaHoje);
 
   // Tab nav — direct links (Início, WhatsApp, Usuários)
   document.querySelectorAll('.nav-link[data-tab]').forEach(btn =>
@@ -10206,7 +10205,7 @@ function bindEvents() {
   // Agenda filters (Todos — legacy selects no sub-panel)
   ['agenda-filter-mes','agenda-filter-closer'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', renderAgendaSub); });
   $('agenda-filter-data')?.addEventListener('change', renderAgendaSub);
-  $('btn-gerar-agenda').addEventListener('click', gerarAgendaDoDia);
+  $('btn-gerar-agenda')?.addEventListener('click', gerarAgendaDoDia);
 
   // Briefing filters
   ['briefing-filter-mes','briefing-filter-closer'].forEach(id => $(id).addEventListener('change', renderBriefingSub));
