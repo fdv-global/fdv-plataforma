@@ -1837,7 +1837,7 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 /* ── Inline primary action buttons — solid, no glassmorphism ─── */
 .btn-acao-inline {
   display: inline-flex; align-items: center; gap: 5px;
-  padding: 5px 10px; border-radius: var(--r-xs);
+  padding: 5px 10px; border-radius: var(--r);
   font-size: 11.5px; font-weight: 700; letter-spacing: .15px;
   border: 1px solid rgba(206,146,33,.45); background: #192526; color: #CE9221;
   cursor: pointer; white-space: nowrap; font-family: inherit;
