@@ -887,6 +887,12 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 .badge-origem.whatsapp   { background: rgba(37,211,102,.1);  color: #25d366; }
 .badge-origem.outros     { background: var(--b0);            color: var(--t3); }
 
+.badge-etapa { display: inline-block; padding: 2.5px 9px; border-radius: var(--r-pill); font-size: 10.5px; font-weight: 700; white-space: nowrap; letter-spacing: .25px; }
+.badge-etapa--closer  { background: var(--petro-10);            color: var(--petro-l); }
+.badge-etapa--agend   { background: rgba(255,255,255,.07);      color: var(--t2); }
+.badge-etapa--qual    { background: var(--gold-10);             color: #d4982a; }
+.badge-etapa--novos   { background: rgba(29,158,117,.09);       color: #1D9E75; }
+
 /* ── Badges de status ─────────────────────────── */
 .badge-status {
   display: inline-flex; align-items: center; gap: 6px;

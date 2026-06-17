@@ -3900,7 +3900,7 @@ function renderDescartados() {
     <div class="table-wrap fdv-list-container"><table class="leads-table">
       <thead><tr>
         <th class="cell-chk"><input type="checkbox" id="chk-all-desc" title="Selecionar todos"></th>
-        <th>Chegou em</th><th>Nome</th><th>Celular</th><th>Origem</th><th>Motivo</th><th>Ações</th>
+        <th>Chegou em</th><th>Nome</th><th>Celular</th><th>Origem</th><th>Etapa</th><th>Motivo</th><th>Ações</th>
       </tr></thead>
       <tbody id="desc-tbody"></tbody>
     </table></div>`;
@@ -3923,23 +3923,31 @@ function renderDescartados() {
     });
     const tbody = $('desc-tbody');
     if (!leads.length) {
-      tbody.innerHTML = `<tr><td colspan="7" style="padding:32px;text-align:center;color:var(--t3)">Nenhum resultado.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" style="padding:32px;text-align:center;color:var(--t3)">Nenhum resultado.</td></tr>`;
       const allChkD = $('chk-all-desc'); if (allChkD) { allChkD.checked = false; allChkD.indeterminate = false; }
       updateDescBulkBar(); return;
     }
-    tbody.innerHTML = leads.map(l => `<tr class="${['fdv-list-row',isDup(l.id)?'dup-row':''].filter(Boolean).join(' ')}" data-id="${l.id}">
-      <td class="cell-chk"><input type="checkbox" class="row-chk" data-id="${l.id}" ${selectedIds.has(l.id)?'checked':''}></td>
-      <td>${fmtDate(l.datachegada)}</td>
-      <td style="display:flex;align-items:center;gap:5px;padding-top:10px;padding-bottom:10px">${isDup(l.id)?`<button class="btn-dup-ico" data-dup-id="${l.id}" title="Possível duplicata — clique para comparar">${ICO_COPY}</button>`:''}<button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
-      <td>${esc(l.celular||'—')}</td>
-      <td>${badgeOrigem(l.origem)}</td>
-      <td><span class="badge-status descartado" title="${esc(l.motivo_descarte_label||l.motivo_descarte||'—')}">${esc(l.motivo_descarte_label||l.motivo_descarte||'—')}</span></td>
-      <td class="cell-acoes">
-        <button class="btn-ghost btn-sm" data-reativar="${l.id}">${ICO_UNDO} Reativar</button>
-        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
-        <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir lead">${ICO_TRASH}</button>
-      </td>
-    </tr>`).join('');
+    tbody.innerHTML = leads.map(l => {
+      const etapa = l.kanban_column === 'descartado' ? 'Closer'
+        : l.dataagendamento ? 'Agendamentos'
+        : (l.status_followup || Number(l.contato_count) > 0) ? 'Qualificados'
+        : 'Novos';
+      const etapaCls = { Closer:'closer', Agendamentos:'agend', Qualificados:'qual', Novos:'novos' }[etapa];
+      return `<tr class="${['fdv-list-row',isDup(l.id)?'dup-row':''].filter(Boolean).join(' ')}" data-id="${l.id}">
+        <td class="cell-chk"><input type="checkbox" class="row-chk" data-id="${l.id}" ${selectedIds.has(l.id)?'checked':''}></td>
+        <td>${fmtDate(l.datachegada)}</td>
+        <td style="display:flex;align-items:center;gap:5px;padding-top:10px;padding-bottom:10px">${isDup(l.id)?`<button class="btn-dup-ico" data-dup-id="${l.id}" title="Possível duplicata — clique para comparar">${ICO_COPY}</button>`:''}<button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
+        <td>${esc(l.celular||'—')}</td>
+        <td>${badgeOrigem(l.origem)}</td>
+        <td><span class="badge-etapa badge-etapa--${etapaCls}">${etapa}</span></td>
+        <td><span class="badge-status descartado" title="${esc(l.motivo_descarte_label||l.motivo_descarte||'—')}">${esc(l.motivo_descarte_label||l.motivo_descarte||'—')}</span></td>
+        <td class="cell-acoes">
+          <button class="btn-ghost btn-sm" data-reativar="${l.id}">${ICO_UNDO} Reativar</button>
+          <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
+          <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir lead">${ICO_TRASH}</button>
+        </td>
+      </tr>`;
+    }).join('');
     tbody.querySelectorAll('[data-perfil]').forEach(b =>
       b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
     );
