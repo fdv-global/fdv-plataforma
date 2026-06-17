@@ -2885,11 +2885,12 @@ function renderQualificados() {
     const dias = daysSince(l.datachegada);
     return `<div class="followup-row fdv-list-row" data-id="${l.id}">
       <div class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></div>
-      <div><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></div>
       <div>${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">há ${dias}d</small></div>
+      <div><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></div>
+      <div class="cell-fone">${esc(l.celular||'—')}</div>
       <div>${badgeOrigem(l.origem)}</div>
       <div>${esc(abrevRenda(l.renda)||'—')}</div>
-      <div><span class="badge-cc badge-cc--gray">Aguardando</span></div>
+      <div>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</div>
       <div class="cell-acoes">
         ${dropdownContato(l.id)}
         <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
@@ -2907,11 +2908,12 @@ function renderQualificados() {
     const badgeLbl = count >= 3 ? 'Contato 3+' : `Contato ${count}`;
     return `<div class="followup-row fdv-list-row" data-id="${l.id}">
       <div class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></div>
-      <div><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></div>
       <div>${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">${diasUlt}d desde ult.</small></div>
+      <div><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></div>
+      <div class="cell-fone">${esc(l.celular||'—')}</div>
       <div>${badgeOrigem(l.origem)}</div>
       <div>${esc(abrevRenda(l.renda)||'—')}</div>
-      <div><span class="badge-cc ${badgeMod}">${badgeLbl}</span></div>
+      <div>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</div>
       <div class="cell-acoes">
         ${dropdownContato(l.id)}
         <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
@@ -2926,11 +2928,12 @@ function renderQualificados() {
     const count = l.contato_count || 0;
     return `<div class="followup-row fdv-list-row" data-id="${l.id}">
       <div class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></div>
-      <div><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></div>
       <div>${fmtDate(l.datachegada)}</div>
+      <div><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></div>
+      <div class="cell-fone">${esc(l.celular||'—')}</div>
       <div>${badgeOrigem(l.origem)}</div>
       <div>${esc(abrevRenda(l.renda)||'—')}</div>
-      <div><span class="badge-cc badge-cc--red">${count} tentativa${count !== 1 ? 's' : ''}</span></div>
+      <div>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</div>
       <div class="cell-acoes">
         <button class="btn-primary btn-sm" data-fp-resgatar="${l.id}">${ICO_UNDO} Resgatar</button>
         <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
@@ -3029,7 +3032,7 @@ function renderQualificados() {
 
     const gridHead = `<div class="qual-grid-head">
       <div class="cell-chk"><input type="checkbox" class="qual-chk-all" data-block="{BLK}" title="Selecionar todos"></div>
-      <div>Nome</div><div>Chegou em</div><div>Origem</div><div>Renda</div><div>Etapa</div><div>Ações</div>
+      <div>Chegou em</div><div>Nome</div><div>Celular</div><div>Origem</div><div>Renda</div><div>Etiqueta</div><div>Ações</div>
     </div>`;
 
     el.innerHTML = `
