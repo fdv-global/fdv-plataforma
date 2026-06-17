@@ -4497,7 +4497,7 @@ function kanbanCard(l, cols) {
     ${histHtml}
     <div class="kc-actions">
       <select class="kc-move-select" data-id="${l.id}">
-        <option value="">Mover para…</option>
+        <option value="">Mover</option>
         ${moveOpts}
       </select>
       <button class="btn-kc-venda" data-id="${l.id}" title="Registrar venda ganha"><i data-lucide="trophy"></i> Venda Ganha</button>
