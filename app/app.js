@@ -4350,7 +4350,7 @@ function renderKanban() {
         ${colLeads.length ? colLeads.map(l => kanbanCard(l, cols)).join('') : '<div class="kanban-empty"><i data-lucide="inbox" class="empty-lucide-sm"></i><span>Sem leads</span></div>'}
       </div>
     </div>`;
-  }).join('');
+  }).join('') + `<button class="kc-add-col-trigger" id="btn-add-column" title="Adicionar coluna">+</button>`;
   lucide.createIcons();
 
   // Re-apply active search dimming after re-render
@@ -4443,6 +4443,7 @@ function renderKanban() {
     });
   });
 
+  $('btn-add-column')?.addEventListener('click', addKanbanColumn);
   renderKanbanMetrics();
 }
 
@@ -4481,41 +4482,41 @@ function renderKanbanMetrics() {
   const totalMes    = kanbanBase.filter(l => (l.kanban_column_since||'').startsWith(currentMonth)).length;
   const taxa        = totalMes > 0 ? Math.round(vendasMes / totalMes * 100) : 0;
 
-  el.innerHTML = `<div class="stats-grid kanban-metrics-grid">
-    <div class="stat-card">
-      <div class="stat-top"><span class="stat-label">Pipeline</span></div>
-      <span class="stat-num">${pipeline}</span>
-      <div class="stat-sub">leads ativos</div>
+  el.innerHTML = `<div class="kanban-metrics-grid">
+    <div class="kpi-mini">
+      <div class="kpi-label">Pipeline</div>
+      <div class="kpi-num">${pipeline}</div>
+      <div class="kpi-sub">leads ativos</div>
     </div>
-    <div class="stat-card accent-gold">
-      <div class="stat-top"><span class="stat-label">Call Realizada</span></div>
-      <span class="stat-num">${nCallRealizada}</span>
-      <div class="stat-sub">na coluna</div>
+    <div class="kpi-mini accent-gold">
+      <div class="kpi-label">Call Realizada</div>
+      <div class="kpi-num">${nCallRealizada}</div>
+      <div class="kpi-sub">na coluna</div>
     </div>
-    <div class="stat-card accent-blue">
-      <div class="stat-top"><span class="stat-label">Negociação</span></div>
-      <span class="stat-num">${nNegociacao}</span>
-      <div class="stat-sub">na coluna</div>
+    <div class="kpi-mini accent-blue">
+      <div class="kpi-label">Negociação</div>
+      <div class="kpi-num">${nNegociacao}</div>
+      <div class="kpi-sub">na coluna</div>
     </div>
-    <div class="stat-card accent-purple">
-      <div class="stat-top"><span class="stat-label">Decisão</span></div>
-      <span class="stat-num">${nDecisao}</span>
-      <div class="stat-sub">na coluna</div>
+    <div class="kpi-mini accent-purple">
+      <div class="kpi-label">Decisão</div>
+      <div class="kpi-num">${nDecisao}</div>
+      <div class="kpi-sub">na coluna</div>
     </div>
-    <div class="stat-card accent-green">
-      <div class="stat-top"><span class="stat-label">Vendas no mês</span></div>
-      <span class="stat-num">${vendasMes}</span>
-      <div class="stat-sub">${mesLabel}</div>
+    <div class="kpi-mini accent-green">
+      <div class="kpi-label">Vendas no mês</div>
+      <div class="kpi-num">${vendasMes}</div>
+      <div class="kpi-sub">${mesLabel}</div>
     </div>
-    <div class="stat-card accent-green">
-      <div class="stat-top"><span class="stat-label">Conversão</span></div>
-      <span class="stat-num">${taxa}%</span>
-      <div class="stat-sub">ganhos ÷ entradas</div>
+    <div class="kpi-mini accent-green">
+      <div class="kpi-label">Conversão</div>
+      <div class="kpi-num">${taxa}%</div>
+      <div class="kpi-sub">ganhos ÷ entradas</div>
     </div>
-    <div class="stat-card accent-red">
-      <div class="stat-top"><span class="stat-label">Perdidos no mês</span></div>
-      <span class="stat-num">${perdidosMes}</span>
-      <div class="stat-sub">${mesLabel}</div>
+    <div class="kpi-mini accent-red">
+      <div class="kpi-label">Perdidos no mês</div>
+      <div class="kpi-num">${perdidosMes}</div>
+      <div class="kpi-sub">${mesLabel}</div>
     </div>
   </div>`;
 }
@@ -4721,7 +4722,6 @@ function switchCloserView(view) {
   // Filtros sempre visíveis; controles que não se aplicam ficam opacos e não clicáveis
   const kanbanOnly = [
     $('kanban-filters'),
-    $('btn-add-column'),
   ].filter(Boolean);
   kanbanOnly.forEach(el => {
     el.style.opacity       = isKanban ? '' : '0.4';
@@ -10310,7 +10310,6 @@ function bindEvents() {
     kanbanSearchText = '';
     document.querySelectorAll('.kanban-card').forEach(card => card.classList.remove('kc-dimmed'));
   });
-  $('btn-add-column').addEventListener('click', addKanbanColumn);
 
   // Modal: Nova coluna
   $('add-col-confirm').addEventListener('click', confirmAddCol);
