@@ -4388,18 +4388,32 @@ function renderKanban() {
     b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
   );
 
-  // Obs pós-call — salva no blur
+  // Obs pós-call — insert em lead_comentarios
   board.querySelectorAll('.kc-obs-input').forEach(ta => {
     ta.addEventListener('mousedown', e => e.stopPropagation()); // impede drag
-    ta.addEventListener('blur', async () => {
-      const id  = ta.dataset.id;
-      const obs = ta.value.trim();
-      const lead = allLeads.find(l => l.id === id);
-      if (!lead || obs === (lead.obs_call || '').trim()) return;
-      try { await saveLead(id, { obs_call: obs, atualizadoem: new Date().toISOString() }); }
-      catch(e) { toast('Erro ao salvar obs.', 'err'); }
+  });
+  board.querySelectorAll('.kc-obs-save').forEach(btn => {
+    btn.addEventListener('mousedown', e => e.stopPropagation());
+    btn.addEventListener('click', async () => {
+      const id    = btn.dataset.id;
+      const ta    = board.querySelector(`.kc-obs-input[data-id="${id}"]`);
+      const texto = ta?.value.trim();
+      if (!texto) return;
+      btn.disabled = true;
+      try {
+        const autor = currentUser?.displayName || currentUser?.email || 'Desconhecido';
+        if (isLive) {
+          const { error } = await supabase.from('lead_comentarios').insert({ lead_id: id, autor_nome: autor, texto });
+          if (error) throw error;
+        }
+        ta.value = '';
+        await loadKcComments(id, board);
+        toast('Observação salva.', 'ok');
+      } catch(e) { toast('Erro ao salvar obs.', 'err'); }
+      finally { btn.disabled = false; }
     });
   });
+  loadAllKcComments(board);
 
   // Mover para: dropdown
   board.querySelectorAll('.kc-move-select').forEach(sel => {
@@ -4618,19 +4632,60 @@ function kanbanCard(l, cols) {
       <button class="btn-kc-descartar" data-id="${l.id}" title="Descartar lead"><i data-lucide="archive-x"></i> Descartar</button>
     </div>
     <div class="kc-obs-wrap">
-      <textarea class="kc-obs-input" data-id="${l.id}" placeholder="Obs. pós-call…">${esc(l.obs_call||'')}</textarea>
+      <textarea class="kc-obs-input" data-id="${l.id}" placeholder="Nova observação…"></textarea>
+      <button class="btn-ghost btn-sm kc-obs-save" data-id="${l.id}">Salvar</button>
+      <div class="kc-comments" data-id="${l.id}"></div>
     </div>
 
   </div>`;
 }
 
 async function ensureObsSaved(leadId) {
-  const ta   = document.querySelector(`.kc-obs-input[data-id="${leadId}"]`);
-  if (!ta) return;
-  const obs  = ta.value.trim();
-  const lead = allLeads.find(l => l.id === leadId);
-  if (!lead || obs === (lead.obs_call||'').trim()) return;
-  try { await saveLead(leadId, { obs_call: obs, atualizadoem: new Date().toISOString() }); } catch(_) {}
+  const ta = document.querySelector(`.kc-obs-input[data-id="${leadId}"]`);
+  if (!ta || !ta.value.trim()) return;
+  const texto = ta.value.trim();
+  const autor = currentUser?.displayName || currentUser?.email || 'Desconhecido';
+  try {
+    if (isLive) await supabase.from('lead_comentarios').insert({ lead_id: leadId, autor_nome: autor, texto });
+    ta.value = '';
+  } catch(_) {}
+}
+
+async function loadAllKcComments(boardEl) {
+  if (!isLive) return;
+  const containers = boardEl.querySelectorAll('.kc-comments[data-id]');
+  if (!containers.length) return;
+  const leadIds = [...containers].map(el => el.dataset.id);
+  const { data } = await supabase.from('lead_comentarios')
+    .select('lead_id, autor_nome, texto, created_at')
+    .in('lead_id', leadIds).order('created_at', { ascending: false });
+  if (!data) return;
+  const byLead = {};
+  for (const c of data) {
+    if (!byLead[c.lead_id]) byLead[c.lead_id] = [];
+    if (byLead[c.lead_id].length < 2) byLead[c.lead_id].push(c);
+  }
+  containers.forEach(el => {
+    const cs = byLead[el.dataset.id] || [];
+    el.innerHTML = cs.map(c => `<div class="kc-comment">
+      <div class="kc-comment-text">${esc(c.texto)}</div>
+      <div class="kc-comment-meta">${esc(c.autor_nome)} · ${fmtComentarioTime(c.created_at)}</div>
+    </div>`).join('');
+  });
+}
+
+async function loadKcComments(leadId, boardEl) {
+  if (!isLive) return;
+  const el = boardEl?.querySelector(`.kc-comments[data-id="${leadId}"]`)
+    || document.querySelector(`.kc-comments[data-id="${leadId}"]`);
+  if (!el) return;
+  const { data } = await supabase.from('lead_comentarios')
+    .select('autor_nome, texto, created_at').eq('lead_id', leadId)
+    .order('created_at', { ascending: false }).limit(2);
+  el.innerHTML = (data || []).map(c => `<div class="kc-comment">
+    <div class="kc-comment-text">${esc(c.texto)}</div>
+    <div class="kc-comment-meta">${esc(c.autor_nome)} · ${fmtComentarioTime(c.created_at)}</div>
+  </div>`).join('');
 }
 
 function buildHistoryEntry(leadId, colId, colLabel) {
@@ -6761,7 +6816,8 @@ function openPerfil(lead) {
     origemWrap.style.display = 'block';
   } else { origemWrap.style.display = 'none'; }
 
-  $('perfil-obs').value = lead.observacoes || '';
+  $('perfil-obs').value = '';
+  renderPerfilComentarios([]);
 
   // Show static history immediately, then enrich with lead_historico
   renderPerfilHistorico(lead, []);
@@ -6772,6 +6828,10 @@ function openPerfil(lead) {
     supabase.from('lead_historico').select('*').eq('lead_id', lead.id).order('movido_em', { ascending: true })
       .then(({ data }) => {
         if (data && perfilLeadId === lead.id) renderPerfilHistorico(lead, data);
+      });
+    supabase.from('lead_comentarios').select('*').eq('lead_id', lead.id).order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (perfilLeadId === lead.id) renderPerfilComentarios(data || []);
       });
   }
 }
@@ -6800,6 +6860,19 @@ function renderPerfilHistorico(lead, kanbanRows) {
   $('perfil-historico').innerHTML = all.length
     ? all.map(h=>`<div class="hist-item"><span class="hist-ico">${h.ico}</span><div class="hist-body"><div class="hist-label">${esc(h.label)}</div>${h.sub?`<div class="hist-sub">${esc(h.sub)}</div>`:''}</div></div>`).join('')
     : '<p class="hist-empty">Nenhuma ação registrada.</p>';
+}
+
+function renderPerfilComentarios(data) {
+  const el = $('perfil-comentarios');
+  if (!el) return;
+  if (!data?.length) { el.innerHTML = '<p class="hist-empty">Nenhuma observação registrada.</p>'; return; }
+  el.innerHTML = data.map(c => `<div class="hist-item">
+    <span class="hist-ico">${ICO_MSG_CIRCLE}</span>
+    <div class="hist-body">
+      <div class="hist-label">${esc(c.texto)}</div>
+      <div class="hist-sub">${esc(c.autor_nome)} · ${fmtComentarioTime(c.created_at)}</div>
+    </div>
+  </div>`).join('');
 }
 
 function startInlineEdit(el) {
@@ -6878,11 +6951,22 @@ function closePerfil() {
 
 async function salvarObsPerfil() {
   if (!perfilLeadId) return;
-  const obs = $('perfil-obs').value.trim();
+  const texto = $('perfil-obs').value.trim();
+  if (!texto) return;
   const btn = $('btn-salvar-obs');
   btn.disabled = true;
-  try { await saveLead(perfilLeadId, { observacoes: obs, atualizadoem: new Date().toISOString() }); toast('Observações salvas.', 'ok'); }
-  catch(e) { console.error(e); toast('Erro ao salvar.', 'err'); }
+  try {
+    if (isLive) {
+      const autor = currentUser?.displayName || currentUser?.email || 'Desconhecido';
+      const { error } = await supabase.from('lead_comentarios').insert({ lead_id: perfilLeadId, autor_nome: autor, texto });
+      if (error) throw error;
+      const { data } = await supabase.from('lead_comentarios').select('*')
+        .eq('lead_id', perfilLeadId).order('created_at', { ascending: false });
+      renderPerfilComentarios(data || []);
+    }
+    $('perfil-obs').value = '';
+    toast('Observação salva.', 'ok');
+  } catch(e) { console.error(e); toast('Erro ao salvar.', 'err'); }
   finally { btn.disabled = false; }
 }
 
@@ -7365,6 +7449,15 @@ function fmtNotifTime(iso) {
   if (diff < 1440) return `${Math.floor(diff/60)}h`;
   const d = new Date(iso);
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+}
+
+function fmtComentarioTime(iso) {
+  if (!iso) return '';
+  const diff = Math.floor((Date.now() - new Date(iso)) / 60000);
+  if (diff < 1)    return 'agora';
+  if (diff < 60)   return `há ${diff}min`;
+  if (diff < 1440) return `há ${Math.floor(diff/60)}h`;
+  return new Date(iso).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
 }
 
 async function createNotification(userId, data) {
