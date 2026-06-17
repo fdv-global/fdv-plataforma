@@ -4207,22 +4207,44 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .qual-grid-head,
 .followup-block .followup-row {
   display: grid;
-  grid-template-columns: 32px 180px 100px 150px 70px 1fr;
+  grid-template-columns: 28px 1fr 95px 130px 65px 110px 180px;
   align-items: center;
   gap: 8px;
   padding: 4px 16px;
 }
-.followup-block--green .qual-grid-head,
-.followup-block--green .followup-row {
-  grid-template-columns: 32px 180px 100px 150px 70px 90px 1fr;
-}
 .qual-grid-head > *,
+.followup-block .followup-row > div {
+  min-width: 0;
+}
 .followup-block .followup-row > div:not(.cell-acoes) {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .followup-block .followup-row .cell-acoes {
-  display: flex; align-items: center; gap: 6px; flex-wrap: wrap; overflow: visible;
+  display: flex; align-items: center; gap: 5px; flex-wrap: nowrap; overflow: visible;
 }
+.followup-block .followup-row-name {
+  display: block; max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.contato-dropdown-wrap {
+  position: relative; display: inline-block; flex-shrink: 0;
+}
+.contato-dropdown {
+  position: absolute; top: calc(100% + 3px); left: 0;
+  z-index: 200; min-width: 170px;
+  background: #1a2224; border: 1px solid var(--b1);
+  border-radius: var(--r); box-shadow: 0 6px 20px rgba(0,0,0,.4);
+  overflow: hidden;
+}
+.contato-opt {
+  display: block; width: 100%; padding: 7px 13px;
+  font-size: 12px; text-align: left; background: none;
+  border: none; border-bottom: 1px solid rgba(255,255,255,.05);
+  color: var(--t1); cursor: pointer; font-family: inherit; white-space: nowrap;
+}
+.contato-opt:last-child { border-bottom: none; }
+.contato-opt:hover { background: rgba(255,255,255,.07); }
+.contato-opt--danger { color: #e06450; }
 .qual-grid-head {
   font-size: 11px; font-weight: 600; color: var(--t3);
   border-bottom: 1px solid rgba(255,255,255,.06); padding-bottom: 6px; margin-bottom: 2px;
@@ -4244,6 +4266,7 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .badge-cc--green  { background: var(--green-10);       color: var(--green); }
 .badge-cc--yellow { background: var(--gold-10);         color: #d4982a; }
 .badge-cc--red    { background: rgba(192,57,43,.09);    color: #e06450; }
+.badge-cc--gray   { background: rgba(255,255,255,.07);  color: var(--t3); }
 
 .badge-followup {
   display: inline-flex; align-items: center; gap: 5px;

@@ -2775,43 +2775,35 @@ function renderBriefingSub() {
 // ─── SUB-BADGE COUNTS ────────────────────────────────────────────────
 function updateSubBadges() {}
 
-// ─── FOLLOW-UP ACTIONS ──────────────────────────────────────────────
-async function followupContato(leadId) {
-  const lead = allLeads.find(l => l.id === leadId);
-  if (!lead) return;
-  await saveLead(leadId, {
-    contato_count: (lead.contato_count || 0) + 1,
-    status_followup: 'em_contato',
-    ultimo_contato_em: new Date().toISOString(),
-  });
-  renderAll();
-}
-
-async function followupSemResposta(leadId) {
-  await saveLead(leadId, { status_followup: 'sem_resposta' });
-  renderAll();
-}
-
-async function followupResgatar(leadId) {
-  await saveLead(leadId, { status_followup: 'em_contato' });
-  renderAll();
-}
-
 // ─── QUALIFICADOS SUB ────────────────────────────────────────────────
 function renderQualificados() {
   qualSelectedIds.clear();
-  // ─── Helpers e linhas — FORA do try (evita block-scope em ES module) ─
+
   const hoje = new Date();
+
   function daysSince(dateStr) {
     if (!dateStr) return '?';
     return Math.max(0, Math.round((hoje - new Date(dateStr + 'T00:00:00')) / 86400000));
   }
+
   function daysSinceTs(ts) {
     if (!ts) return '?';
     return Math.max(0, Math.round((hoje - new Date(ts)) / 86400000));
   }
 
-  function rowSemContato(l) {
+  function dropdownContato(id) {
+    return `<div class="contato-dropdown-wrap">
+      <button class="btn-primary btn-sm btn-contato-toggle" data-id="${id}">+ Contato</button>
+      <div class="contato-dropdown" id="cdrop-${id}" style="display:none">
+        <button class="contato-opt" data-lead="${id}" data-cc="1" data-sf="em_contato">1º contato</button>
+        <button class="contato-opt" data-lead="${id}" data-cc="2" data-sf="em_contato">2º contato</button>
+        <button class="contato-opt" data-lead="${id}" data-cc="3" data-sf="em_contato">3º contato ou mais</button>
+        <button class="contato-opt contato-opt--danger" data-lead="${id}" data-sf="sem_resposta">Sem resposta</button>
+      </div>
+    </div>`;
+  }
+
+  function rowAguardando(l) {
     const dias = daysSince(l.datachegada);
     return `<div class="followup-row fdv-list-row" data-id="${l.id}">
       <div class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></div>
@@ -2819,8 +2811,9 @@ function renderQualificados() {
       <div>${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">há ${dias}d</small></div>
       <div>${badgeOrigem(l.origem)}</div>
       <div>${esc(abrevRenda(l.renda)||'—')}</div>
+      <div><span class="badge-cc badge-cc--gray">Aguardando</span></div>
       <div class="cell-acoes">
-        <button class="btn-primary btn-sm" data-fp-contato="${l.id}">+ Contato</button>
+        ${dropdownContato(l.id)}
         <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
@@ -2831,18 +2824,18 @@ function renderQualificados() {
 
   function rowEmContato(l) {
     const diasUlt = daysSinceTs(l.ultimo_contato_em);
-    const showSR  = (l.contato_count||0) >= 3;
-    const cCount  = l.contato_count || 1;
-    const badgeMod = cCount >= 3 ? 'badge-cc--red' : cCount === 2 ? 'badge-cc--yellow' : 'badge-cc--green';
+    const count   = l.contato_count || 1;
+    const badgeMod = count >= 3 ? 'badge-cc--red' : count === 2 ? 'badge-cc--yellow' : 'badge-cc--green';
+    const badgeLbl = count >= 3 ? 'Contato 3+' : `Contato ${count}`;
     return `<div class="followup-row fdv-list-row" data-id="${l.id}">
       <div class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></div>
       <div><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></div>
       <div>${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">${diasUlt}d desde ult.</small></div>
       <div>${badgeOrigem(l.origem)}</div>
       <div>${esc(abrevRenda(l.renda)||'—')}</div>
-      <div><span class="badge-cc ${badgeMod}">Contato ${cCount}</span>${showSR ? `<br><button class="btn-ghost btn-sm btn-destructive" style="font-size:10px;padding:1px 6px;margin-top:3px" data-fp-semresposta="${l.id}">Sem resposta</button>` : ''}</div>
+      <div><span class="badge-cc ${badgeMod}">${badgeLbl}</span></div>
       <div class="cell-acoes">
-        <button class="btn-primary btn-sm" data-fp-contato="${l.id}">+ Contato</button>
+        ${dropdownContato(l.id)}
         <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
@@ -2852,25 +2845,24 @@ function renderQualificados() {
   }
 
   function rowSemResposta(l) {
-    const tentativas = l.contato_count || 0;
+    const count = l.contato_count || 0;
     return `<div class="followup-row fdv-list-row" data-id="${l.id}">
       <div class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></div>
       <div><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></div>
-      <div>${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">${tentativas} tentativa${tentativas!==1?'s':''}</small></div>
+      <div>${fmtDate(l.datachegada)}</div>
       <div>${badgeOrigem(l.origem)}</div>
       <div>${esc(abrevRenda(l.renda)||'—')}</div>
+      <div><span class="badge-cc badge-cc--red">${count} tentativa${count !== 1 ? 's' : ''}</span></div>
       <div class="cell-acoes">
+        <button class="btn-primary btn-sm" data-fp-resgatar="${l.id}">${ICO_UNDO} Resgatar</button>
         <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
-        <button class="btn-ghost btn-sm" data-fp-resgatar="${l.id}">${ICO_UNDO} Resgatar</button>
-        <button class="btn-ghost btn-sm btn-destructive" data-descartar="${l.id}">${ICO_DISCARD} Descartar</button>
         <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir">${ICO_TRASH}</button>
       </div>
     </div>`;
   }
 
-  // allQual no escopo externo para renderQualBlocks acessar via closure
   let allQual = [];
 
   function sortLeads(arr, order) {
@@ -2891,7 +2883,7 @@ function renderQualificados() {
     const etiqueta   = $('qual-filter-etiqueta')?.value    || '';
     const chegadaDe  = $('qual-filter-chegada-de')?.value  || '';
     const chegadaAte = $('qual-filter-chegada-ate')?.value || '';
-    const match  = l => {
+    const match = l => {
       if (origem     && l.origem    !== origem)    return false;
       if (renda      && l.renda     !== renda)     return false;
       if (mes        && !(l.datachegada||'').startsWith(mes))  return false;
@@ -2909,13 +2901,13 @@ function renderQualificados() {
 
     if (scEl) {
       const rows = sortLeads(allQual.filter(l => !l.status_followup || l.status_followup === 'sem_contato').filter(match), $('qual-sort-sc')?.value || 'oldest');
-      scEl.innerHTML = rows.length ? rows.map(rowSemContato).join('') : '<div class="followup-block-empty">Nenhum lead aguardando primeiro contato.</div>';
+      scEl.innerHTML = rows.length ? rows.map(rowAguardando).join('') : '<div class="followup-block-empty">Nenhum lead aguardando contato.</div>';
       const acSc = scEl.closest('.followup-block')?.querySelector('.qual-chk-all');
       if (acSc) { const cs=[...scEl.querySelectorAll('.qual-row-chk')]; acSc.checked=cs.length>0&&cs.every(c=>qualSelectedIds.has(c.dataset.id)); acSc.indeterminate=!acSc.checked&&cs.some(c=>qualSelectedIds.has(c.dataset.id)); }
     }
     if (ecEl) {
       const rows = sortLeads(allQual.filter(l => l.status_followup === 'em_contato').filter(match), $('qual-sort-ec')?.value || 'oldest');
-      ecEl.innerHTML = rows.length ? rows.map(rowEmContato).join('') : '<div class="followup-block-empty">Nenhum lead em contato no momento.</div>';
+      ecEl.innerHTML = rows.length ? rows.map(rowEmContato).join('') : '<div class="followup-block-empty">Nenhum lead em processo de contato.</div>';
       const acEc = ecEl.closest('.followup-block')?.querySelector('.qual-chk-all');
       if (acEc) { const cs=[...ecEl.querySelectorAll('.qual-row-chk')]; acEc.checked=cs.length>0&&cs.every(c=>qualSelectedIds.has(c.dataset.id)); acEc.indeterminate=!acEc.checked&&cs.some(c=>qualSelectedIds.has(c.dataset.id)); }
     }
@@ -2928,7 +2920,6 @@ function renderQualificados() {
     updateQualBulkBar();
   }
 
-  // ─── Try/catch cobre apenas dados + renderização ──────────────────
   try {
     allQual = allLeads.filter(l => l.status === 'qualificado');
     const el = $('qualificados-content');
@@ -2944,18 +2935,12 @@ function renderQualificados() {
       return;
     }
 
-    const semContato  = allQual.filter(l => !l.status_followup || l.status_followup === 'sem_contato')
-      .sort((a,b) => (a.datachegada||'').localeCompare(b.datachegada||''));
-    const emContato   = allQual.filter(l => l.status_followup === 'em_contato')
-      .sort((a,b) => (a.ultimo_contato_em||'').localeCompare(b.ultimo_contato_em||''));
-    const semResposta = allQual.filter(l => l.status_followup === 'sem_resposta')
-      .sort((a,b) => (a.ultimo_contato_em||'').localeCompare(b.ultimo_contato_em||''));
-
-    const nSemContato  = semContato.length;
+    const nSemContato  = allQual.filter(l => !l.status_followup || l.status_followup === 'sem_contato').length;
+    const nEmContato   = allQual.filter(l => l.status_followup === 'em_contato').length;
     const nContato1    = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) === 1).length;
     const nContato2    = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) === 2).length;
     const nContato3p   = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) >= 3).length;
-    const nSemResposta = semResposta.length;
+    const nSemResposta = allQual.filter(l => l.status_followup === 'sem_resposta').length;
 
     const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
     const origemOpts    = uniq(allQual.map(l=>l.origem));
@@ -2963,6 +2948,11 @@ function renderQualificados() {
     const profissaoOpts = uniq(allQual.map(l=>l.profissao));
     const etiquetaOpts  = ['Super Lead','Bom','Neutro','Frio'];
     const mesOpts       = [...new Set(allQual.filter(l=>l.datachegada).map(l=>l.datachegada.slice(0,7)))].sort().reverse();
+
+    const gridHead = `<div class="qual-grid-head">
+      <div class="cell-chk"><input type="checkbox" class="qual-chk-all" data-block="{BLK}" title="Selecionar todos"></div>
+      <div>Nome</div><div>Chegou em</div><div>Origem</div><div>Renda</div><div>Etapa</div><div>Ações</div>
+    </div>`;
 
     el.innerHTML = `
     <div class="filters-bar">
@@ -3070,10 +3060,7 @@ function renderQualificados() {
       </div>
       <div class="followup-block-body">
         <div class="qual-grid">
-          <div class="qual-grid-head">
-            <div class="cell-chk"><input type="checkbox" class="qual-chk-all" data-block="sc" title="Selecionar todos"></div>
-            <div>Nome</div><div>Chegou em</div><div>Origem</div><div>Renda</div><div>Ações</div>
-          </div>
+          ${gridHead.replace('{BLK}','sc')}
           <div id="qual-sc-body"></div>
         </div>
       </div>
@@ -3082,7 +3069,7 @@ function renderQualificados() {
     <div class="followup-block followup-block--green">
       <div class="followup-block-header">
         <span class="followup-block-ico">${ICO_MSG_CIRCLE}</span>
-        <span class="followup-block-title">${emContato.length} lead${emContato.length !== 1 ? 's' : ''} em processo de contato</span>
+        <span class="followup-block-title">${nEmContato} lead${nEmContato !== 1 ? 's' : ''} em processo de contato</span>
         <select class="followup-sort-select" id="qual-sort-ec">
           <option value="oldest">Mais antigos primeiro</option>
           <option value="newest">Mais recentes primeiro</option>
@@ -3093,10 +3080,7 @@ function renderQualificados() {
       </div>
       <div class="followup-block-body">
         <div class="qual-grid">
-          <div class="qual-grid-head">
-            <div class="cell-chk"><input type="checkbox" class="qual-chk-all" data-block="ec" title="Selecionar todos"></div>
-            <div>Nome</div><div>Chegou em</div><div>Origem</div><div>Renda</div><div>Etapa</div><div>Ações</div>
-          </div>
+          ${gridHead.replace('{BLK}','ec')}
           <div id="qual-ec-body"></div>
         </div>
       </div>
@@ -3115,10 +3099,7 @@ function renderQualificados() {
       </div>
       <div class="followup-block-body">
         <div class="qual-grid">
-          <div class="qual-grid-head">
-            <div class="cell-chk"><input type="checkbox" class="qual-chk-all" data-block="sr" title="Selecionar todos"></div>
-            <div>Nome</div><div>Chegou em</div><div>Origem</div><div>Renda</div><div>Ações</div>
-          </div>
+          ${gridHead.replace('{BLK}','sr')}
           <div id="qual-sr-body"></div>
         </div>
       </div>
@@ -3127,16 +3108,55 @@ function renderQualificados() {
     lucide.createIcons({ nodes: [el] });
 
     el.addEventListener('click', e => {
-      const t = e.target.closest('[data-fp-contato],[data-fp-semresposta],[data-fp-resgatar],[data-agendar],[data-perfil],[data-excluir],[data-descartar],.btn-wa-lead');
+      const toggleBtn = e.target.closest('.btn-contato-toggle');
+      if (toggleBtn && toggleBtn.closest('.followup-row')) {
+        e.stopPropagation();
+        const id = toggleBtn.dataset.id;
+        const drop = document.getElementById('cdrop-' + id);
+        if (!drop) return;
+        const isOpen = drop.style.display !== 'none';
+        el.querySelectorAll('.contato-dropdown').forEach(d => { d.style.display = 'none'; });
+        if (!isOpen) drop.style.display = 'block';
+        return;
+      }
+
+      const opt = e.target.closest('.contato-opt');
+      if (opt && opt.closest('.followup-row')) {
+        e.stopPropagation();
+        el.querySelectorAll('.contato-dropdown').forEach(d => { d.style.display = 'none'; });
+        const leadId = opt.dataset.lead;
+        const cc     = opt.dataset.cc;
+        const sf     = opt.dataset.sf;
+        const updates = { status_followup: sf, ultimo_contato_em: new Date().toISOString() };
+        if (cc) updates.contato_count = parseInt(cc, 10);
+        (async () => {
+          try { await saveLead(leadId, updates); renderAll(); }
+          catch(err) { console.error('[FDV] contato opt:', err); toast('Erro ao registrar contato.', 'err'); }
+        })();
+        return;
+      }
+
+      const t = e.target.closest('[data-fp-resgatar],[data-agendar],[data-perfil],[data-excluir],[data-descartar],.btn-wa-lead');
       if (!t || !t.closest('.followup-row')) return;
-      if (t.dataset.fpContato)     { followupContato(t.dataset.fpContato); return; }
-      if (t.dataset.fpSemresposta) { followupSemResposta(t.dataset.fpSemresposta); return; }
-      if (t.dataset.fpResgatar)    { followupResgatar(t.dataset.fpResgatar); return; }
-      if (t.dataset.agendar)       { const l=allLeads.find(x=>x.id===t.dataset.agendar); if(l) openAgendar(l); return; }
-      if (t.dataset.perfil)        { const l=allLeads.find(x=>x.id===t.dataset.perfil); if(l) openPerfil(l); return; }
-      if (t.dataset.excluir)       { deleteLead(t.dataset.excluir); return; }
-      if (t.dataset.descartar)     { openDescarteModal(t.dataset.descartar); return; }
+      if (t.dataset.fpResgatar) {
+        (async () => {
+          try { await saveLead(t.dataset.fpResgatar, { status_followup: 'em_contato', ultimo_contato_em: new Date().toISOString() }); renderAll(); }
+          catch(err) { console.error('[FDV] resgatar:', err); toast('Erro ao resgatar.', 'err'); }
+        })();
+        return;
+      }
+      if (t.dataset.agendar)   { const l=allLeads.find(x=>x.id===t.dataset.agendar); if(l) openAgendar(l); return; }
+      if (t.dataset.perfil)    { const l=allLeads.find(x=>x.id===t.dataset.perfil); if(l) openPerfil(l); return; }
+      if (t.dataset.excluir)   { deleteLead(t.dataset.excluir); return; }
+      if (t.dataset.descartar) { openDescarteModal(t.dataset.descartar); return; }
       if (t.classList.contains('btn-wa-lead')) { openWaChatFromLead(t.dataset.id); return; }
+    });
+
+    document.addEventListener('click', function onQualOutside(e) {
+      if (!document.contains(el)) { document.removeEventListener('click', onQualOutside); return; }
+      if (!e.target.closest('.contato-dropdown-wrap')) {
+        el.querySelectorAll('.contato-dropdown').forEach(d => { d.style.display = 'none'; });
+      }
     });
 
     el.addEventListener('change', e => {
