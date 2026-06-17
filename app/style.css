@@ -902,6 +902,18 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 #ns-table-wrap .leads-table th:nth-child(8) { width: 220px; }
 #ns-table-wrap .leads-table .cell-nome     { min-width: 0; max-width: none; }
 
+/* Descartados — colunas responsivas (Etapa + Motivo no lugar de Renda + Etiqueta) */
+#desc-table-wrap .leads-table { table-layout: fixed; min-width: 900px; }
+#desc-table-wrap .leads-table th:nth-child(1) { width: 28px; }
+#desc-table-wrap .leads-table th:nth-child(2) { width: 95px; }
+/* th:nth-child(3) = Nome — ocupa o restante (1fr) */
+#desc-table-wrap .leads-table th:nth-child(4) { width: 130px; }  /* Celular */
+#desc-table-wrap .leads-table th:nth-child(5) { width: 150px; }  /* Origem */
+#desc-table-wrap .leads-table th:nth-child(6) { width: 110px; }  /* Etapa (badge curto) */
+#desc-table-wrap .leads-table th:nth-child(7) { width: 150px; }  /* Motivo (texto variável) */
+#desc-table-wrap .leads-table th:nth-child(8) { width: 220px; }  /* Ações */
+#desc-table-wrap .leads-table .cell-nome     { min-width: 0; max-width: none; }
+
 /* cell types */
 .cell-nome  { font-weight: 600; min-width: 150px; max-width: 220px; }
 .cell-nome .nome-link { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
