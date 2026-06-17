@@ -878,6 +878,18 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 .leads-table tbody tr:hover            { background: rgba(255,255,255,.05); }
 .leads-table tbody tr:last-child td    { border-bottom: none; }
 
+/* Novos — colunas responsivas (scoped via #table-wrap para não afetar No Shows / Descartados) */
+#table-wrap .leads-table { table-layout: fixed; min-width: 900px; }
+#table-wrap .leads-table th:nth-child(1) { width: 28px; }
+#table-wrap .leads-table th:nth-child(2) { width: 95px; }
+/* th:nth-child(3) = Nome — sem largura fixa, ocupa o restante (equivalente a 1fr) */
+#table-wrap .leads-table th:nth-child(4) { width: 130px; }
+#table-wrap .leads-table th:nth-child(5) { width: 150px; }
+#table-wrap .leads-table th:nth-child(6) { width: 70px; }
+#table-wrap .leads-table th:nth-child(7) { width: 90px; }
+#table-wrap .leads-table th:nth-child(8) { width: 220px; }
+#table-wrap .leads-table .cell-nome     { min-width: 0; max-width: none; }
+
 /* cell types */
 .cell-nome  { font-weight: 600; min-width: 150px; max-width: 220px; }
 .cell-nome .nome-link { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
