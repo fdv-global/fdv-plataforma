@@ -774,6 +774,46 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 .stat-card.accent-green   .stat-num { color: var(--green); }
 .stat-card.accent-marsala .stat-num { color: #b87080; }
 .stat-card.accent-sand    .stat-num { color: var(--sand); }
+.stat-card.accent-blue    .stat-num { color: #378ADD; }
+.stat-card.accent-purple  .stat-num { color: #7F77DD; }
+.stat-card.accent-red     .stat-num { color: #E24B4A; }
+
+.stat-card.accent-blue   { border-left-color: #378ADD; background: linear-gradient(150deg, var(--s1) 0%, rgba(55,138,221,.07) 100%); }
+.stat-card.accent-purple { border-left-color: #7F77DD; background: linear-gradient(150deg, var(--s1) 0%, rgba(127,119,221,.07) 100%); }
+.stat-card.accent-red    { border-left-color: #E24B4A; background: linear-gradient(150deg, var(--s1) 0%, rgba(226,75,74,.07) 100%); }
+.stat-card.accent-blue:hover   { box-shadow: 0 6px 24px rgba(55,138,221,.12); }
+.stat-card.accent-purple:hover { box-shadow: 0 6px 24px rgba(127,119,221,.12); }
+.stat-card.accent-red:hover    { box-shadow: 0 6px 24px rgba(226,75,74,.12); }
+
+/* Kanban 7-column metrics grid */
+.kanban-metrics-grid {
+  grid-template-columns: repeat(7, 1fr) !important;
+  margin-top: 16px; margin-bottom: 0;
+}
+.kanban-metrics-grid .stat-card   { padding: 16px 16px 12px; }
+.kanban-metrics-grid .stat-num    { font-size: 28px; letter-spacing: -1px; }
+.kanban-metrics-grid .stat-top    { margin-bottom: 8px; }
+
+/* Kanban filter block */
+.kanban-filter-block {
+  background: var(--s1); border: 1px solid var(--b0);
+  border-radius: 10px; padding: 12px 14px;
+  margin: 14px 0 20px;
+}
+.kf-row   { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.kf-group { display: flex; flex-direction: column; gap: 5px; min-width: 120px; }
+.kf-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1px; color: var(--t3);
+}
+.filter-input {
+  height: 36px; padding: 0 10px; border-radius: var(--r-sm);
+  background: var(--s2); border: 1px solid var(--b1); color: var(--t1);
+  font-size: 13px; font-family: inherit;
+  transition: border-color var(--fast) var(--ease);
+}
+.filter-input:focus { outline: none; border-color: var(--petro-l); }
+.filter-input::placeholder { color: var(--t4); }
 
 /* ============================================================
    FILTERS BAR — Attio inline toolbar

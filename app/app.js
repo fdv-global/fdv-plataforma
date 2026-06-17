@@ -4312,18 +4312,21 @@ function getLeadKanbanCol(lead) {
 
 function renderKanban() {
   const board      = $('kanban-board');
-  const mesFilt    = $('kanban-filter-mes').value;
-  const closerFilt = $('kanban-filter-closer').value;
+  const mesFilt    = $('kanban-filter-mes')?.value    || '';
+  const closerFilt = $('kanban-filter-closer')?.value || '';
+  const etapaFilt  = $('kf-etapa')?.value             || '';
+  const origemFilt = $('kf-origem')?.value             || '';
   const cols       = getKanbanCols();
 
-  // Sync quick-filter pills with the select value
-  document.querySelectorAll('.kqf-btn').forEach(b => b.classList.toggle('active', b.dataset.closer === closerFilt));
+  populateKanbanFilters();
 
   let leads = allLeads.filter(l =>
     l.kanban_column || ['agendado','cancelado','realizada'].includes(l.status)
   );
   if (mesFilt)    leads = leads.filter(l => (l.dataagendamento||l.datachegada||'').startsWith(mesFilt));
   if (closerFilt) leads = leads.filter(l => (l.closer||'') === closerFilt);
+  if (etapaFilt)  leads = leads.filter(l => getLeadKanbanCol(l) === etapaFilt);
+  if (origemFilt) leads = leads.filter(l => (l.origem||'') === origemFilt);
 
   // All leads that belong to the kanban (unfiltered) — used for delete safety check
   const allKanbanLeads = allLeads.filter(l =>
@@ -4440,6 +4443,114 @@ function renderKanban() {
     });
   });
 
+  renderKanbanMetrics();
+}
+
+function renderKanbanMetrics() {
+  const el = $('kanban-metrics');
+  if (!el) return;
+
+  const mesFilt    = $('kanban-filter-mes')?.value    || '';
+  const closerFilt = $('kanban-filter-closer')?.value || '';
+  const etapaFilt  = $('kf-etapa')?.value             || '';
+  const origemFilt = $('kf-origem')?.value             || '';
+
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const [ano, mes]   = currentMonth.split('-');
+  const mesLabel     = new Date(Number(ano), Number(mes) - 1, 2)
+    .toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+
+  const kanbanBase = allLeads.filter(l =>
+    l.kanban_column || ['agendado','cancelado','realizada'].includes(l.status)
+  );
+
+  let filtered = kanbanBase;
+  if (mesFilt)    filtered = filtered.filter(l => (l.dataagendamento||l.datachegada||'').startsWith(mesFilt));
+  if (closerFilt) filtered = filtered.filter(l => (l.closer||'') === closerFilt);
+  if (etapaFilt)  filtered = filtered.filter(l => getLeadKanbanCol(l) === etapaFilt);
+  if (origemFilt) filtered = filtered.filter(l => (l.origem||'') === origemFilt);
+
+  const pipeline       = filtered.filter(l => !['venda_ganha','venda_perdida','descartado'].includes(getLeadKanbanCol(l))).length;
+  const nCallRealizada = filtered.filter(l => getLeadKanbanCol(l) === 'call_realizada').length;
+  const nNegociacao    = filtered.filter(l => getLeadKanbanCol(l) === 'negociacao').length;
+  const nDecisao       = filtered.filter(l => getLeadKanbanCol(l) === 'decisao').length;
+
+  // Always current month — independent of mesFilt
+  const vendasMes   = kanbanBase.filter(l => l.kanban_column === 'venda_ganha' && (l.kanban_column_since||'').startsWith(currentMonth)).length;
+  const perdidosMes = kanbanBase.filter(l => l.kanban_column === 'descartado'  && (l.kanban_column_since||'').startsWith(currentMonth)).length;
+  const totalMes    = kanbanBase.filter(l => (l.kanban_column_since||'').startsWith(currentMonth)).length;
+  const taxa        = totalMes > 0 ? Math.round(vendasMes / totalMes * 100) : 0;
+
+  el.innerHTML = `<div class="stats-grid kanban-metrics-grid">
+    <div class="stat-card">
+      <div class="stat-top"><span class="stat-label">Pipeline</span></div>
+      <span class="stat-num">${pipeline}</span>
+      <div class="stat-sub">leads ativos</div>
+    </div>
+    <div class="stat-card accent-gold">
+      <div class="stat-top"><span class="stat-label">Call Realizada</span></div>
+      <span class="stat-num">${nCallRealizada}</span>
+      <div class="stat-sub">na coluna</div>
+    </div>
+    <div class="stat-card accent-blue">
+      <div class="stat-top"><span class="stat-label">Negociação</span></div>
+      <span class="stat-num">${nNegociacao}</span>
+      <div class="stat-sub">na coluna</div>
+    </div>
+    <div class="stat-card accent-purple">
+      <div class="stat-top"><span class="stat-label">Decisão</span></div>
+      <span class="stat-num">${nDecisao}</span>
+      <div class="stat-sub">na coluna</div>
+    </div>
+    <div class="stat-card accent-green">
+      <div class="stat-top"><span class="stat-label">Vendas no mês</span></div>
+      <span class="stat-num">${vendasMes}</span>
+      <div class="stat-sub">${mesLabel}</div>
+    </div>
+    <div class="stat-card accent-green">
+      <div class="stat-top"><span class="stat-label">Conversão</span></div>
+      <span class="stat-num">${taxa}%</span>
+      <div class="stat-sub">ganhos ÷ entradas</div>
+    </div>
+    <div class="stat-card accent-red">
+      <div class="stat-top"><span class="stat-label">Perdidos no mês</span></div>
+      <span class="stat-num">${perdidosMes}</span>
+      <div class="stat-sub">${mesLabel}</div>
+    </div>
+  </div>`;
+}
+
+function populateKanbanFilters() {
+  const mesSel  = $('kanban-filter-mes');
+  const origSel = $('kf-origem');
+  if (!mesSel || !origSel) return;
+
+  const kanbanLeads = allLeads.filter(l =>
+    l.kanban_column || ['agendado','cancelado','realizada'].includes(l.status)
+  );
+
+  if (mesSel.options.length <= 1) {
+    const months = [...new Set(
+      kanbanLeads.map(l => (l.dataagendamento||l.datachegada||'').slice(0,7)).filter(Boolean)
+    )].sort().reverse();
+    months.forEach(m => {
+      const [y, mo] = m.split('-');
+      const label = new Date(Number(y), Number(mo) - 1, 2)
+        .toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      const opt = document.createElement('option');
+      opt.value = m; opt.textContent = label;
+      mesSel.appendChild(opt);
+    });
+  }
+
+  if (origSel.options.length <= 1) {
+    const origins = [...new Set(kanbanLeads.map(l => l.origem).filter(Boolean))].sort();
+    origins.forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o; opt.textContent = o;
+      origSel.appendChild(opt);
+    });
+  }
 }
 
 function kanbanCard(l, cols) {
@@ -4604,11 +4715,13 @@ function switchCloserView(view) {
   board.style.display   = isKanban ? '' : 'none';
   subview.style.display = isKanban ? 'none' : '';
 
+  const metricsEl = $('kanban-metrics');
+  if (metricsEl) metricsEl.style.display = isKanban ? '' : 'none';
+
   // Filtros sempre visíveis; controles que não se aplicam ficam opacos e não clicáveis
   const kanbanOnly = [
-    $('kanban-filter-mes'),
+    $('kanban-filters'),
     $('btn-add-column'),
-    ...document.querySelectorAll('#tab-closer .kqf-btn'),
   ].filter(Boolean);
   kanbanOnly.forEach(el => {
     el.style.opacity       = isKanban ? '' : '0.4';
@@ -10182,7 +10295,21 @@ function bindEvents() {
   );
 
   // Kanban filters
-  ['kanban-filter-mes','kanban-filter-closer'].forEach(id => $(id).addEventListener('change', renderKanban));
+  ['kanban-filter-mes','kanban-filter-closer','kf-etapa','kf-origem'].forEach(id => {
+    $(id)?.addEventListener('change', renderKanban);
+  });
+  $('kf-search')?.addEventListener('input', e => {
+    kanbanSearchText = e.target.value.toLowerCase().trim();
+    document.querySelectorAll('.kanban-card').forEach(card => {
+      card.classList.toggle('kc-dimmed', !!kanbanSearchText && !card.dataset.nome.includes(kanbanSearchText));
+    });
+  });
+  $('kf-clear')?.addEventListener('click', () => {
+    const inp = $('kf-search');
+    if (inp) inp.value = '';
+    kanbanSearchText = '';
+    document.querySelectorAll('.kanban-card').forEach(card => card.classList.remove('kc-dimmed'));
+  });
   $('btn-add-column').addEventListener('click', addKanbanColumn);
 
   // Modal: Nova coluna
@@ -10191,14 +10318,6 @@ function bindEvents() {
   $('add-col-cancel-x').addEventListener('click', closeAddColModal);
   $('add-col-backdrop').addEventListener('click', e => { if (e.target === $('add-col-backdrop')) closeAddColModal(); });
   $('add-col-name').addEventListener('keydown', e => { if (e.key === 'Enter') confirmAddCol(); else if (e.key === 'Escape') closeAddColModal(); });
-
-  // Quick-filter pills
-  document.querySelectorAll('.kqf-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      $('kanban-filter-closer').value = btn.dataset.closer;
-      renderKanban();
-    });
-  });
 
   // Relatórios filters
   ['rel-filter-mes','rel-filter-origem'].forEach(id => $(id).addEventListener('change', renderRelatorios));

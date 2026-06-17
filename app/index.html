@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=15">
+  <link rel="stylesheet" href="style.css?v=16">
   <link rel="stylesheet" href="theme.css">
   <link rel="icon" type="image/png" href="assets/fdv-logo-gourado.png">
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -587,21 +587,49 @@
       <button class="cvt-btn" data-view="vendas">Vendas</button>
     </div>
   </div>
-  <div class="closer-filter-bar" id="kanban-filters">
-    <select class="filter-select" id="kanban-filter-mes" style="width:auto;min-width:140px">
-      <option value="">Todos os meses</option>
-    </select>
-    <div class="kanban-quick-filter" style="flex:1;justify-content:center">
-      <button class="kqf-btn active" data-closer="">Todos</button>
-      <button class="kqf-btn" data-closer="fernanda">Fernanda</button>
-      <button class="kqf-btn" data-closer="thomaz">Thomaz</button>
+  <div id="kanban-metrics"></div>
+  <div id="kanban-filters">
+    <div class="kanban-filter-block">
+      <div class="kf-row">
+        <div class="kf-group">
+          <label class="kf-label">Closer</label>
+          <select class="filter-select" id="kanban-filter-closer">
+            <option value="">Todos</option>
+            <option value="fernanda">Fernanda</option>
+            <option value="thomaz">Thomaz</option>
+          </select>
+        </div>
+        <div class="kf-group">
+          <label class="kf-label">Mês</label>
+          <select class="filter-select" id="kanban-filter-mes">
+            <option value="">Todos os meses</option>
+          </select>
+        </div>
+        <div class="kf-group">
+          <label class="kf-label">Etapa</label>
+          <select class="filter-select" id="kf-etapa">
+            <option value="">Todas</option>
+            <option value="call_realizada">Call Realizada</option>
+            <option value="negociacao">Negociação</option>
+            <option value="decisao">Decisão</option>
+          </select>
+        </div>
+        <div class="kf-group">
+          <label class="kf-label">Origem</label>
+          <select class="filter-select" id="kf-origem">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div class="kf-group" style="flex:1;min-width:200px">
+          <label class="kf-label">Buscar</label>
+          <div style="display:flex;gap:6px">
+            <input class="filter-input" type="text" id="kf-search" placeholder="Nome ou celular…">
+            <button class="btn-ghost btn-sm" id="kf-clear">Limpar</button>
+          </div>
+        </div>
+        <button class="btn-ghost btn-sm" id="btn-add-column" style="align-self:flex-end;flex-shrink:0">+ Coluna</button>
+      </div>
     </div>
-    <select class="filter-select" id="kanban-filter-closer" style="display:none">
-      <option value="">Todos os closers</option>
-      <option value="fernanda">Fernanda</option>
-      <option value="thomaz">Thomaz</option>
-    </select>
-    <button class="btn-ghost btn-sm" id="btn-add-column" style="margin-left:auto;flex-shrink:0">+ Coluna</button>
   </div>
   <div class="kanban-board" id="kanban-board"></div>
   <div id="closer-subview" style="display:none"></div>
