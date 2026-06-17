@@ -3270,7 +3270,7 @@ function renderAgendadosOverview() {
     </div>`;
 
   const proximas = allLeads
-    .filter(l => l.status === 'agendado' && (l.dataagendamento || '') >= today)
+    .filter(l => ['agendado','realizada'].includes(l.status) && (l.dataagendamento || '') >= today)
     .sort((a, b) => ((a.dataagendamento||'')+(a.horaagendamento||'')).localeCompare((b.dataagendamento||'')+(b.horaagendamento||'')));
 
   if (!proximas.length) {
@@ -3286,7 +3286,7 @@ function renderAgendadosOverview() {
           <button class="proxima-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
           <span class="proxima-meta">${esc(fmtHora(l.horaagendamento))} · <span style="color:${closerColor}">${esc(closerName)}</span></span>
         </div>
-        <span class="badge-agend-status badge-agend-status--agendado">Agendada</span>
+        ${badgeAgendStatus(l.status, l.status_closer)}
       </div>`;
     }).join('');
     proximasEl.querySelectorAll('[data-perfil]').forEach(b =>
@@ -6829,7 +6829,21 @@ async function handlePostCall(action) {
   const lead = allLeads.find(l => l.id === currentId);
   if (!lead) return;
   if (action === 'remarcar') { openAgendar(lead); return; }
-  if (action === 'realizada') { openResultado(lead); return; }
+  if (action === 'realizada') {
+    const updates = {
+      status:        'realizada',
+      status_closer: 'call_realizada',
+      kanban_column: 'call_realizada',
+      realizadaem:   new Date().toISOString(),
+      atualizadoem:  new Date().toISOString(),
+    };
+    try {
+      await saveLead(currentId, updates);
+      toast(`Call Realizada — ${lead.nome}`, 'ok');
+      renderAll();
+    } catch(e) { console.error('[FDV] handlePostCall realizada:', e); toast('Erro ao salvar.', 'err'); }
+    return;
+  }
   const msgs = { noshow:`No Show — ${lead.nome}`, cancelado:`Cancelado — ${lead.nome}` };
   const updates = { status: action, atualizadoem: new Date().toISOString() };
   // No Show → remove do Closer Kanban (kanban_column=null) e vai para aba No Show em Agendamentos
