@@ -3556,26 +3556,26 @@ function renderAgendaHoje() {
 
 function gerarAgendaHoje() {
   const todayStr = new Date().toISOString().slice(0, 10);
-  const leads    = allLeads.filter(l => l.status === 'agendado' && l.dataagendamento === todayStr);
-  if (!leads.length) { toast('Nenhuma call hoje para copiar.', 'err'); return; }
+  const proximas = allLeads
+    .filter(l => ['agendado','realizada'].includes(l.status) && (l.dataagendamento || '') >= todayStr)
+    .sort((a, b) => ((a.dataagendamento||'')+(a.horaagendamento||'')).localeCompare((b.dataagendamento||'')+(b.horaagendamento||'')))
+    .slice(0, 5);
+  if (!proximas.length) { toast('Nenhuma call próxima para copiar.', 'err'); return; }
 
-  leads.sort((a,b) => (a.horaagendamento||'').localeCompare(b.horaagendamento||''));
-  const dateStr = fmtDate(todayStr), dayName = getDayOfWeek(todayStr);
-  const groups  = {};
-  leads.forEach(l => { const k=l.closer||'_sem'; if(!groups[k]) groups[k]=[]; groups[k].push(l); });
+  const groups = {};
+  proximas.forEach(l => { const k = l.closer||'_sem'; if (!groups[k]) groups[k]=[]; groups[k].push(l); });
 
-  let text = `Bom dia! ☀️\n📅 Agenda – ${dateStr} (${dayName})\n`;
+  let text = `📅 Próximas calls\n`;
   ['fernanda','thomaz',...Object.keys(groups).filter(k=>k!=='fernanda'&&k!=='thomaz')].filter(k=>groups[k]).forEach(key => {
     const c = CLOSERS[key];
     text += `\n${c?.icon||'👤'} @${c?.waName||c?.name||(key==='_sem'?'Sem closer':key)}\n`;
     groups[key].forEach(l => {
-      text += `🕐 ${l.horaagendamento||'--:--'} – ${l.nome||'—'}\n`;
-      text += `⏳ Status: Aguardando confirmação\n`;
+      text += `📅 ${fmtDate(l.dataagendamento)} ${l.horaagendamento||'--:--'} – ${l.nome||'—'}\n`;
     });
   });
 
   navigator.clipboard.writeText(text.trimEnd())
-    .then(() => toast('Agenda de hoje copiada!', 'ok'))
+    .then(() => toast('Próximas calls copiadas!', 'ok'))
     .catch(() => toast('Não foi possível copiar.', 'err'));
 }
 
