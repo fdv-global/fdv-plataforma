@@ -888,10 +888,11 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 .badge-origem.outros     { background: var(--b0);            color: var(--t3); }
 
 .badge-etapa { display: inline-block; padding: 2.5px 9px; border-radius: var(--r-pill); font-size: 10.5px; font-weight: 700; white-space: nowrap; letter-spacing: .25px; }
-.badge-etapa--closer  { background: var(--petro-10);            color: var(--petro-l); }
-.badge-etapa--agend   { background: rgba(255,255,255,.07);      color: var(--t2); }
-.badge-etapa--qual    { background: var(--gold-10);             color: #d4982a; }
-.badge-etapa--novos   { background: rgba(29,158,117,.09);       color: #1D9E75; }
+.badge-etapa--closer       { background: var(--petro-10);            color: var(--petro-l); }
+.badge-etapa--venda-perdida{ background: rgba(192,57,43,.10);        color: #e06450; }
+.badge-etapa--agend        { background: rgba(255,255,255,.07);      color: var(--t2); }
+.badge-etapa--qual         { background: var(--gold-10);             color: #d4982a; }
+.badge-etapa--novos        { background: rgba(29,158,117,.09);       color: #1D9E75; }
 
 /* ── Badges de status ─────────────────────────── */
 .badge-status {
@@ -1513,6 +1514,7 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
               opacity var(--base) var(--ease);
 }
 .kanban-card:hover {
+  background: rgba(206,146,33,0.042);
   border-color: var(--gold-22);
   box-shadow: 0 6px 22px rgba(0,0,0,.28), 0 2px 6px rgba(0,0,0,.14);
   transform: translateY(-2px);
@@ -1558,33 +1560,20 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 }
 .btn-kanban-noshow:hover { background: rgba(192,57,43,.18); }
 
-/* Venda Ganha + Descartar action buttons on kanban card */
-/* ── Expand / collapse ── */
-.kc-compact { cursor: pointer; }
-.kc-details {
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition: max-height 200ms ease, opacity 200ms ease;
-}
-.kanban-card.kc-expanded .kc-details {
-  max-height: 600px;
-  opacity: 1;
-}
-.kc-chevron {
-  font-size: 13px; color: var(--t3); flex-shrink: 0;
-  display: inline-block;
-  transition: transform 200ms ease;
-  line-height: 1;
-}
-.kanban-card.kc-expanded .kc-chevron { transform: rotate(90deg); }
-
 .kc-actions {
-  display: flex; gap: 6px; margin-top: 8px;
+  display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap;
 }
+.kc-move-select {
+  flex: 1; min-width: 0; padding: 5px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; font-family: inherit;
+  background: rgba(255,255,255,.04); color: var(--t2);
+  border: 1px solid var(--b1); cursor: pointer;
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+.kc-move-select:hover { background: rgba(255,255,255,.08); border-color: var(--b2); }
 .btn-kc-venda, .btn-kc-descartar {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
-  padding: 5px 8px; border-radius: var(--r-xs);
+  padding: 5px 8px; border-radius: 20px;
   font-size: 11px; font-weight: 700; font-family: inherit;
   border: 1px solid transparent; cursor: pointer; white-space: nowrap;
   transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
@@ -1594,9 +1583,9 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 }
 .btn-kc-venda:hover { background: rgba(206,146,33,.22); }
 .btn-kc-descartar {
-  background: rgba(255,255,255,.04); color: var(--t3); border-color: var(--b1);
+  background: rgba(192,57,43,.08); color: #e06450; border-color: rgba(192,57,43,.2);
 }
-.btn-kc-descartar:hover { background: rgba(192,57,43,.10); color: #e06450; border-color: rgba(192,57,43,.22); }
+.btn-kc-descartar:hover { background: rgba(192,57,43,.18); }
 .btn-kc-venda svg, .btn-kc-descartar svg { width: 12px; height: 12px; flex-shrink: 0; }
 
 /* ============================================================
