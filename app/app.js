@@ -2972,7 +2972,7 @@ function renderQualificados() {
       if (etiqueta   && l.etiqueta  !== etiqueta)  return false;
       if (chegadaDe  && (l.datachegada||'') < chegadaDe)  return false;
       if (chegadaAte && (l.datachegada||'') > chegadaAte) return false;
-      if (q && !(l.nome||'').toLowerCase().includes(q) && !(l.celular||'').replace(/\D/g,'').includes(q.replace(/\D/g,''))) return false;
+      if (q) { const qd = q.replace(/\D/g,''); if (!(l.nome||'').toLowerCase().includes(q) && !(qd && (l.celular||'').replace(/\D/g,'').includes(qd))) return false; }
       return true;
     };
 
