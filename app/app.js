@@ -6632,11 +6632,11 @@ async function getValidCalendarToken(closerKey) {
   return refreshed.access_token;
 }
 
-async function fetchLatestCalendarEvent(closerKey, afterIso) {
+async function fetchCalendarEvents(closerKey) {
   const token = await getValidCalendarToken(closerKey);
   console.log('[GCAL] closer:', closerKey);
   console.log('[GCAL] token (primeiros 20 chars):', token ? token.slice(0, 20) + '…' : 'NULL — sem token');
-  if (!token) return null;
+  if (!token) return [];
 
   const timeMin = new Date();
   timeMin.setHours(0, 0, 0, 0);
@@ -6647,7 +6647,7 @@ async function fetchLatestCalendarEvent(closerKey, afterIso) {
     timeMax:      timeMax.toISOString(),
     orderBy:      'startTime',
     singleEvents: 'true',
-    maxResults:   '10',
+    maxResults:   '20',
   });
   const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`;
   console.log('[GCAL] calendário: primary');
@@ -6659,11 +6659,13 @@ async function fetchLatestCalendarEvent(closerKey, afterIso) {
   console.log('[GCAL] HTTP status:', res.status);
   console.log('[GCAL] resposta completa:', JSON.stringify(data, null, 2));
 
-  if (!data.items?.length) return null;
-  const ev = data.items[0];
-  console.log('[GCAL] evento selecionado:', ev.summary, '| start:', ev.start?.dateTime || ev.start?.date);
-  const startDt = ev.start?.dateTime || ev.start?.date;
-  return startDt ? { startDt, summary: ev.summary } : null;
+  const prefix = `Agenda ${CLOSERS[closerKey].name}`;
+  const events = (data.items || [])
+    .filter(ev => (ev.summary || '').startsWith(prefix))
+    .map(ev => ({ startDt: ev.start?.dateTime || ev.start?.date, summary: ev.summary }))
+    .filter(ev => ev.startDt);
+  console.log('[GCAL] eventos com prefix "' + prefix + '":', events.length);
+  return events;
 }
 
 async function updateCalConnectButtons() {
@@ -6701,28 +6703,41 @@ function schedSelectCloser(closer) {
     if (dtField?.value) { if (hint) hint.style.display = 'none'; return; }
     if (hint) { hint.textContent = 'Buscando na agenda do closer…'; hint.style.color = ''; }
 
-    let ev = null;
-    for (let attempt = 0; attempt < 4 && !ev; attempt++) {
-      if (attempt > 0) {
-        if (hint) hint.textContent = `Buscando na agenda… (${attempt + 1}/4)`;
-        await new Promise(r => setTimeout(r, 2500));
-      }
-      console.log(`[GCAL auto-fill] tentativa ${attempt + 1}/4 — closer: ${cal.closer}, calOpenedAt: ${cal.calOpenedAt}`);
-      try {
-        ev = await fetchLatestCalendarEvent(cal.closer, cal.calOpenedAt);
-        console.log(`[GCAL auto-fill] tentativa ${attempt + 1} resultado:`, ev ?? 'null (sem evento)');
-      }
-      catch (e) { console.warn('[GCAL auto-fill] tentativa', attempt + 1, 'ERRO:', e); break; }
+    let events = [];
+    console.log('[GCAL auto-fill] buscando eventos — closer:', cal.closer);
+    try {
+      events = await fetchCalendarEvents(cal.closer);
+      console.log('[GCAL auto-fill] eventos encontrados:', events.length);
+    } catch (e) { console.warn('[GCAL auto-fill] ERRO:', e); }
+
+    if (!hint) return;
+    if (!events.length) {
+      hint.textContent = 'Nenhum agendamento encontrado — preencha manualmente.';
+      return;
     }
 
-    if (ev?.startDt) {
-      const dt  = new Date(ev.startDt);
-      const pad = n => String(n).padStart(2, '0');
-      dtField.value = `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
-      if (hint) { hint.textContent = '✓ Horário preenchido automaticamente'; hint.style.color = 'var(--green, #4caf50)'; }
-    } else {
-      if (hint) hint.textContent = 'Nenhum evento encontrado — preencha manualmente.';
-    }
+    const WDAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const fmtEv = iso => {
+      const d = new Date(iso);
+      return `${WDAYS[d.getDay()]} ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} às ${String(d.getHours()).padStart(2,'0')}h${String(d.getMinutes()).padStart(2,'0')}`;
+    };
+    const toDtLocal = iso => {
+      const d = new Date(iso); const p = n => String(n).padStart(2,'0');
+      return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+    };
+
+    hint.style.color = '';
+    hint.innerHTML = `<span style="color:var(--text-muted)">Selecione o horário na agenda:</span><div class="gcal-event-list">` +
+      events.map(ev => `<button class="gcal-event-opt" data-dt="${esc(toDtLocal(ev.startDt))}">${esc(fmtEv(ev.startDt))}</button>`).join('') +
+      `</div>`;
+
+    hint.querySelectorAll('.gcal-event-opt').forEach(btn =>
+      btn.addEventListener('click', () => {
+        if (dtField) dtField.value = btn.dataset.dt;
+        hint.textContent = `✓ ${fmtEv(btn.dataset.dt)} selecionado`;
+        hint.style.color = 'var(--green, #4caf50)';
+      })
+    );
   };
   cal._focusCleanup = () => window.removeEventListener('focus', onFocus);
   window.addEventListener('focus', onFocus);
