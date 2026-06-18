@@ -4456,3 +4456,11 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 tr.fdv-list-row                { display: table-row; min-height: unset; border: none; }
 /* table-wrap keeps horizontal scroll over fdv-list-container overflow:hidden */
 .table-wrap.fdv-list-container { overflow-x: auto; overflow-y: visible; }
+
+/* ── Highlight de navegação (busca global → tela do lead) ─────────────── */
+@keyframes row-flash {
+  0%   { background-color: rgba(206,146,33,0.15); }
+  65%  { background-color: rgba(206,146,33,0.15); }
+  100% { background-color: rgba(206,146,33,0); }
+}
+.row-highlight { animation: row-flash 2.3s ease-out forwards; }

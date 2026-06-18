@@ -10264,7 +10264,7 @@ function runSearch(q) {
         if (isDup(lead.id)) {
           openDupCompare(lead.id);
         } else {
-          openPerfil(lead);
+          navigateToLead(lead);
         }
       })
     );
@@ -10285,6 +10285,12 @@ const _STATUS_TO_SUB = {
   cancelado:  'descartados',
 };
 function navigateToLead(lead) {
+  if (lead.kanban_column === 'descartado') {
+    switchTab('agendamentos');
+    switchSub('descartados');
+    setTimeout(() => highlightLead(lead.id), 120);
+    return;
+  }
   if (isInCloser(lead)) {
     switchTab('closer');
     setTimeout(() => highlightLead(lead.id), 200);
@@ -10296,8 +10302,10 @@ function navigateToLead(lead) {
   setTimeout(() => highlightLead(lead.id), 120);
 }
 function highlightLead(id) {
-  // 1. Tabela (Novos / Qualificados / Descartados)
+  // 1. Tabela (Novos / Noshow / Descartados)
   let el = document.querySelector(`tr[data-id="${id}"]`);
+  // 1b. Qualificados (followup-row — div, não <tr>)
+  if (!el) el = document.querySelector(`.followup-row[data-id="${id}"]`);
   // 2. Card do Closer (Kanban)
   if (!el) el = document.querySelector(`.kanban-card[data-id="${id}"]`);
   // 3. Card de agenda (Agendados – hoje / todos)
