@@ -6638,15 +6638,20 @@ async function fetchLatestCalendarEvent(closerKey, afterIso) {
   console.log('[GCAL] token (primeiros 20 chars):', token ? token.slice(0, 20) + '…' : 'NULL — sem token');
   if (!token) return null;
 
+  const timeMin = new Date();
+  timeMin.setHours(0, 0, 0, 0);
+  const timeMax = new Date(timeMin);
+  timeMax.setDate(timeMax.getDate() + 60);
   const params = new URLSearchParams({
-    updatedMin:   afterIso,
-    orderBy:      'updated',
+    timeMin:      timeMin.toISOString(),
+    timeMax:      timeMax.toISOString(),
+    orderBy:      'startTime',
     singleEvents: 'true',
     maxResults:   '10',
   });
   const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`;
   console.log('[GCAL] calendário: primary');
-  console.log('[GCAL] updatedMin (afterIso):', afterIso);
+  console.log('[GCAL] timeMin:', timeMin.toISOString(), '/ timeMax:', timeMax.toISOString());
   console.log('[GCAL] URL:', url);
 
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
@@ -6655,9 +6660,8 @@ async function fetchLatestCalendarEvent(closerKey, afterIso) {
   console.log('[GCAL] resposta completa:', JSON.stringify(data, null, 2));
 
   if (!data.items?.length) return null;
-  const sorted = [...data.items].sort((a, b) => new Date(b.updated) - new Date(a.updated));
-  const ev = sorted[0];
-  console.log('[GCAL] evento selecionado:', ev.summary, '| start:', ev.start?.dateTime || ev.start?.date, '| updated:', ev.updated);
+  const ev = data.items[0];
+  console.log('[GCAL] evento selecionado:', ev.summary, '| start:', ev.start?.dateTime || ev.start?.date);
   const startDt = ev.start?.dateTime || ev.start?.date;
   return startDt ? { startDt, summary: ev.summary } : null;
 }
