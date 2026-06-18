@@ -2751,14 +2751,17 @@ function renderAgendaSub() {
       if (!drop) return;
       const isOpen = drop.style.display !== 'none';
       content.querySelectorAll('.contato-dropdown').forEach(d => {
-        d.style.display = 'none'; d.style.top = ''; d.style.bottom = '';
+        d.style.display = 'none'; d.style.position = ''; d.style.top = ''; d.style.bottom = ''; d.style.left = '';
       });
       if (!isOpen) {
         drop.style.display = 'block';
         const rect   = toggle.getBoundingClientRect();
-        const openUp = rect.bottom + drop.offsetHeight > window.innerHeight;
-        drop.style.top    = openUp ? 'auto' : '100%';
-        drop.style.bottom = openUp ? '100%' : 'auto';
+        const dropH  = drop.offsetHeight;
+        const openUp = rect.bottom + dropH > window.innerHeight;
+        drop.style.position = 'fixed';
+        drop.style.left     = rect.left + 'px';
+        drop.style.top      = openUp ? (rect.top - dropH - 3) + 'px' : (rect.bottom + 3) + 'px';
+        drop.style.bottom   = 'auto';
       }
       return;
     }
