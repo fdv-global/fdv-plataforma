@@ -2656,6 +2656,8 @@ function renderAgendaSub() {
   const chegadaAte     = $('agend-filter-chegada-ate')?.value || '';
   const busca          = ($('agend-filter-busca')?.value || '').toLowerCase().trim();
   const content        = $('agenda-content');
+  // remove qualquer dropdown portado para body de um render anterior
+  document.querySelectorAll('[data-fdv-res-portal]').forEach(d => d.remove());
 
   // Calendário lateral
   if (agendaCalYear === 0) { const n = new Date(); agendaCalYear = n.getFullYear(); agendaCalMonth = n.getMonth(); }
@@ -2742,64 +2744,89 @@ function renderAgendaSub() {
     });
   }
 
-  if (content._resClickHandler) content.removeEventListener('click', content._resClickHandler);
-  content._resClickHandler = async e => {
+  if (content._resClickHandler)  content.removeEventListener('click', content._resClickHandler);
+  if (content._resOutsideHandler) document.removeEventListener('click', content._resOutsideHandler);
+
+  // ── helpers do portal ────────────────────────────────────────────────
+  const closeAllRes = () => {
+    const p = document.querySelector('[data-fdv-res-portal]');
+    if (p) {
+      if (p._resWrap && document.contains(p._resWrap)) p._resWrap.appendChild(p);
+      else p.remove();
+      p.removeAttribute('data-fdv-res-portal');
+      p.style.display = 'none';
+      ['position','top','left','bottom','zIndex'].forEach(k => p.style[k] = '');
+    }
+    content.querySelectorAll('.contato-dropdown').forEach(d => d.style.display = 'none');
+  };
+
+  const handleResAction = async (id, action) => {
+    closeAllRes();
+    const lead = allLeads.find(l => l.id === id);
+    if (!lead) return;
+    if (action === 'realizada') {
+      const upd = { status:'realizada', status_closer:'call_realizada', kanban_column:'call_realizada',
+                    realizadaem:new Date().toISOString(), atualizadoem:new Date().toISOString() };
+      try { await saveLead(id, upd); toast(`Call Realizada — ${lead.nome}`, 'ok'); renderAll(); }
+      catch(err) { console.error('[FDV] res-opt realizada:', err); toast('Erro ao salvar.', 'err'); }
+    } else if (action === 'noshow') {
+      const upd = { status:'noshow', kanban_column:null, atualizadoem:new Date().toISOString() };
+      try { await saveLead(id, upd); toast(`No Show — ${lead.nome}`, 'ok'); renderAll(); }
+      catch(err) { console.error('[FDV] res-opt noshow:', err); toast('Erro ao salvar.', 'err'); }
+    }
+  };
+
+  // ── handler principal ────────────────────────────────────────────────
+  content._resClickHandler = e => {
     const toggle = e.target.closest('.btn-res-toggle');
     if (toggle) {
       e.stopPropagation();
-      const drop = toggle.closest('.contato-dropdown-wrap')?.querySelector('.contato-dropdown');
+      const wrap     = toggle.closest('.contato-dropdown-wrap');
+      const portaled = document.querySelector('[data-fdv-res-portal]');
+      // dropdown pode estar no wrap (normal) ou já portado para o body
+      const drop = wrap?.querySelector('.contato-dropdown')
+                ?? (portaled?._resWrap === wrap ? portaled : null);
       if (!drop) return;
-      const isOpen = drop.style.display !== 'none';
-      content.querySelectorAll('.contato-dropdown').forEach(d => {
-        d.style.display = 'none'; d.style.top = ''; d.style.bottom = '';
-      });
+      const isOpen = drop === portaled;
+      closeAllRes();
       if (!isOpen) {
-        drop.style.display = 'block';
-        const rect   = toggle.getBoundingClientRect();
-        const openUp = rect.bottom + drop.offsetHeight > window.innerHeight;
-        drop.style.top    = openUp ? 'auto' : '100%';
-        drop.style.bottom = openUp ? '100%' : 'auto';
+        const rect = toggle.getBoundingClientRect();
+        drop._resWrap = wrap;
+        drop.setAttribute('data-fdv-res-portal', '');
+        document.body.appendChild(drop);
+        drop.style.display  = 'block';
+        drop.style.position = 'absolute';
+        drop.style.zIndex   = '9999';
+        const dropH  = drop.offsetHeight;
+        const openUp = rect.bottom + dropH > window.innerHeight;
+        drop.style.left   = (rect.left + window.scrollX) + 'px';
+        drop.style.top    = openUp
+          ? (rect.top    + window.scrollY - dropH - 3) + 'px'
+          : (rect.bottom + window.scrollY + 3) + 'px';
+        drop.style.bottom = 'auto';
+        // listener adicionado uma única vez por elemento (sobrevive a re-portals do mesmo el)
+        if (!drop._resListenerAdded) {
+          drop._resListenerAdded = true;
+          drop.addEventListener('click', ev => {
+            const btn = ev.target.closest('.btn-res-opt');
+            if (btn) { ev.stopPropagation(); handleResAction(btn.dataset.id, btn.dataset.action); }
+          });
+        }
       }
       return;
     }
+    // fallback: clique em opção não-portada (caso edge)
     const opt = e.target.closest('.btn-res-opt');
     if (!opt) return;
-    const id = opt.dataset.id;
-    const action = opt.dataset.action;
-    const lead = allLeads.find(l => l.id === id);
-    if (!lead) return;
-    opt.closest('.contato-dropdown').style.display = 'none';
-    if (action === 'realizada') {
-      const updates = {
-        status:        'realizada',
-        status_closer: 'call_realizada',
-        kanban_column: 'call_realizada',
-        realizadaem:   new Date().toISOString(),
-        atualizadoem:  new Date().toISOString(),
-      };
-      try {
-        await saveLead(id, updates);
-        toast(`Call Realizada — ${lead.nome}`, 'ok');
-        renderAll();
-      } catch(err) { console.error('[FDV] res-opt realizada:', err); toast('Erro ao salvar.', 'err'); }
-    } else if (action === 'noshow') {
-      const updates = {
-        status:        'noshow',
-        kanban_column: null,
-        atualizadoem:  new Date().toISOString(),
-      };
-      try {
-        await saveLead(id, updates);
-        toast(`No Show — ${lead.nome}`, 'ok');
-        renderAll();
-      } catch(err) { console.error('[FDV] res-opt noshow:', err); toast('Erro ao salvar.', 'err'); }
-    }
+    handleResAction(opt.dataset.id, opt.dataset.action);
   };
   content.addEventListener('click', content._resClickHandler);
 
-  if (content._resOutsideHandler) document.removeEventListener('click', content._resOutsideHandler);
   content._resOutsideHandler = e => {
-    if (!content.contains(e.target)) {
+    const portaled = document.querySelector('[data-fdv-res-portal]');
+    if (portaled) {
+      if (!portaled.contains(e.target) && !e.target.closest('.btn-res-toggle')) closeAllRes();
+    } else if (!content.contains(e.target)) {
       content.querySelectorAll('.contato-dropdown').forEach(d => d.style.display = 'none');
     }
   };
