@@ -4320,7 +4320,7 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 }
 .contato-dropdown {
   position: absolute; top: calc(100% + 3px); left: 0;
-  z-index: 200; min-width: 170px;
+  z-index: 1000; min-width: 170px;
   background: #1a2224; border: 1px solid var(--b1);
   border-radius: var(--r); box-shadow: 0 6px 20px rgba(0,0,0,.4);
   overflow: hidden;

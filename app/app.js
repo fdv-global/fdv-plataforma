@@ -2750,8 +2750,16 @@ function renderAgendaSub() {
       const drop = toggle.closest('.contato-dropdown-wrap')?.querySelector('.contato-dropdown');
       if (!drop) return;
       const isOpen = drop.style.display !== 'none';
-      content.querySelectorAll('.contato-dropdown').forEach(d => d.style.display = 'none');
-      if (!isOpen) drop.style.display = 'block';
+      content.querySelectorAll('.contato-dropdown').forEach(d => {
+        d.style.display = 'none'; d.style.top = ''; d.style.bottom = '';
+      });
+      if (!isOpen) {
+        drop.style.display = 'block';
+        const rect   = toggle.getBoundingClientRect();
+        const openUp = rect.bottom + drop.offsetHeight > window.innerHeight;
+        drop.style.top    = openUp ? 'auto' : '100%';
+        drop.style.bottom = openUp ? '100%' : 'auto';
+      }
       return;
     }
     const opt = e.target.closest('.btn-res-opt');
