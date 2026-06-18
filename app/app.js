@@ -6595,11 +6595,17 @@ async function getValidCalendarToken(closerKey) {
     .select('access_token,refresh_token,token_expiry')
     .eq('closer_key', closerKey)
     .maybeSingle();
-  if (!data?.refresh_token) return null;
+  console.log('[GCAL token] closer_key:', closerKey);
+  console.log('[GCAL token] row encontrado:', !!data);
+  console.log('[GCAL token] refresh_token presente:', !!data?.refresh_token);
+  console.log('[GCAL token] token_expiry:', data?.token_expiry || 'NULL');
+  if (!data?.refresh_token) { console.warn('[GCAL token] SEM refresh_token — retornando null'); return null; }
 
   if (data.token_expiry && new Date(data.token_expiry) > new Date(Date.now() + 120_000)) {
+    console.log('[GCAL token] access_token ainda válido — reutilizando');
     return data.access_token;
   }
+  console.log('[GCAL token] token expirado ou sem expiry — tentando refresh…');
   const { id: clientId, secret: clientSecret } = await getGcalCreds();
   const res = await fetch('https://oauth2.googleapis.com/token', {
     method:  'POST',
@@ -6612,11 +6618,17 @@ async function getValidCalendarToken(closerKey) {
     }),
   });
   const refreshed = await res.json();
-  if (refreshed.error || !refreshed.access_token) return null;
+  console.log('[GCAL token] refresh HTTP status:', res.status);
+  console.log('[GCAL token] refresh resposta:', JSON.stringify(refreshed));
+  if (refreshed.error || !refreshed.access_token) {
+    console.warn('[GCAL token] refresh FALHOU — retornando null');
+    return null;
+  }
   const newExpiry = new Date(Date.now() + (refreshed.expires_in || 3600) * 1000).toISOString();
   await supabase.from('calendar_tokens')
     .update({ access_token: refreshed.access_token, token_expiry: newExpiry, atualizadoem: new Date().toISOString() })
     .eq('closer_key', closerKey);
+  console.log('[GCAL token] refresh OK — novo expiry:', newExpiry);
   return refreshed.access_token;
 }
 
@@ -6691,8 +6703,12 @@ function schedSelectCloser(closer) {
         if (hint) hint.textContent = `Buscando na agenda… (${attempt + 1}/4)`;
         await new Promise(r => setTimeout(r, 2500));
       }
-      try { ev = await fetchLatestCalendarEvent(cal.closer, cal.calOpenedAt); }
-      catch (e) { console.warn('[GCAL auto-fill]', e); break; }
+      console.log(`[GCAL auto-fill] tentativa ${attempt + 1}/4 — closer: ${cal.closer}, calOpenedAt: ${cal.calOpenedAt}`);
+      try {
+        ev = await fetchLatestCalendarEvent(cal.closer, cal.calOpenedAt);
+        console.log(`[GCAL auto-fill] tentativa ${attempt + 1} resultado:`, ev ?? 'null (sem evento)');
+      }
+      catch (e) { console.warn('[GCAL auto-fill] tentativa', attempt + 1, 'ERRO:', e); break; }
     }
 
     if (ev?.startDt) {
