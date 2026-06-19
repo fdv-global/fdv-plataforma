@@ -3950,7 +3950,7 @@ function renderDescartados() {
     <div class="table-wrap fdv-list-container"><table class="leads-table">
       <thead><tr>
         <th class="cell-chk"><input type="checkbox" id="chk-all-desc" title="Selecionar todos"></th>
-        <th>Chegou em</th><th>Nome</th><th>Celular</th><th>Origem</th><th>Etapa</th><th>Motivo</th><th>Ações</th>
+        <th data-sort-col="datachegada">Chegou em</th><th data-sort-col="nome">Nome</th><th>Celular</th><th data-sort-col="origem">Origem</th><th>Etapa</th><th>Motivo</th><th>Ações</th>
       </tr></thead>
       <tbody id="desc-tbody"></tbody>
     </table></div>`;
@@ -3962,7 +3962,7 @@ function renderDescartados() {
     const de     = $('desc-filter-chegada-de')?.value || '';
     const ate    = $('desc-filter-chegada-ate')?.value || '';
     const q      = ($('desc-busca').value || '').toLowerCase().trim();
-    const leads = allDesc.filter(l => {
+    let leads = allDesc.filter(l => {
       if (origem && l.origem !== origem) return false;
       if (renda  && l.renda  !== renda)  return false;
       if (motivo && l.motivo_descarte !== motivo) return false;
@@ -3971,6 +3971,8 @@ function renderDescartados() {
       if (q && !(l.nome||'').toLowerCase().includes(q) && !(l.celular||'').includes(q)) return false;
       return true;
     });
+    const { col: _dc, dir: _dd } = TABLE_SORT['descartados'] || {};
+    leads = _dc && _dd ? sortTable(leads, _dc, _dd) : [...leads].sort((a,b) => (b.datachegada||'').localeCompare(a.datachegada||''));
     const tbody = $('desc-tbody');
     if (!leads.length) {
       tbody.innerHTML = `<tr><td colspan="8" style="padding:32px;text-align:center;color:var(--t3)">Nenhum resultado.</td></tr>`;
@@ -4032,7 +4034,10 @@ function renderDescartados() {
       };
     }
     updateDescBulkBar();
+    updateSortIcons(el.querySelector('.leads-table thead tr'), 'descartados');
   }
+
+  bindSortHeaders(el.querySelector('.leads-table thead tr'), 'descartados', renderDescTbody);
 
   $('btn-desc-bulk-reativar')?.addEventListener('click', bulkReativar);
   $('btn-desc-bulk-tag')?.addEventListener('click', openBulkTagModal);
