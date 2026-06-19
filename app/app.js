@@ -3132,6 +3132,7 @@ function renderQualificados() {
       if (wrap) {
         pag = document.createElement('div');
         pag.id = 'qual-pagination';
+        pag.className = 'qual-pagination';
         wrap.appendChild(pag);
       }
     }
@@ -3313,7 +3314,7 @@ function renderQualificados() {
         </div>
         <div id="qual-tab-body"></div>
       </div>
-      <div id="qual-pagination"></div>
+      <div id="qual-pagination" class="qual-pagination"></div>
     </div>`;
 
     lucide.createIcons({ nodes: [el] });

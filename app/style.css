@@ -4433,7 +4433,7 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   display: block; max-width: 100%;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.qual-grid .followup-row small { color: rgba(255,255,255,.55) !important; }
+.qual-grid .followup-row small { color: rgba(255,255,255,.55); }
 .qual-grid .followup-row .cell-acoes .btn-ghost.btn-sm,
 .qual-grid .followup-row .cell-acoes .btn-icon {
   padding: 4px 8px; font-size: 13px; width: auto; height: auto;
@@ -4496,14 +4496,14 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .qual-acoes-contato-sub .contato-opt {
   padding-left: 22px;
 }
-.btn-acoes-toggle {
+.btn-ghost.btn-acoes-toggle {
   background: rgba(206,146,33,0.15) !important;
   border: 1px solid rgba(206,146,33,0.5) !important;
   color: #CE9221 !important;
   border-radius: 20px !important;
   font-weight: 500 !important;
 }
-.btn-acoes-toggle:hover {
+.btn-ghost.btn-acoes-toggle:hover {
   background: rgba(206,146,33,0.25) !important;
   border-color: rgba(206,146,33,0.75) !important;
   color: #CE9221 !important;
