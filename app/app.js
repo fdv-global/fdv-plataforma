@@ -2705,7 +2705,7 @@ function renderAgendaSub() {
       <span data-sort-col="dataagendamento">Data</span>
       <span data-sort-col="nome">Nome</span>
       <span data-sort-col="closer">Closer</span>
-      <span>Status</span>
+      <span data-sort-col="status">Status</span>
       <span>Ações</span>
     </div>
     ${leads.map(l => {
