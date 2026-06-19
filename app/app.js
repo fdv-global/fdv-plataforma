@@ -2932,6 +2932,28 @@ function renderQualificados() {
     </div>`;
   }
 
+  function dropdownAcoes(id, tipo) {
+    const primeiro = tipo === 'sr'
+      ? `<button class="qual-acoes-opt" data-fp-resgatar="${id}">Resgatar</button>`
+      : `<button class="qual-acoes-opt btn-contato-toggle" data-id="${id}">+ Contato</button>
+         <div class="contato-dropdown qual-acoes-contato-sub" id="cdrop-${id}" style="display:none">
+           <button class="contato-opt" data-lead="${id}" data-cc="1" data-sf="em_contato">1º contato</button>
+           <button class="contato-opt" data-lead="${id}" data-cc="2" data-sf="em_contato">2º contato</button>
+           <button class="contato-opt" data-lead="${id}" data-cc="3" data-sf="em_contato">3º contato ou mais</button>
+           <button class="contato-opt contato-opt--danger" data-lead="${id}" data-sf="sem_resposta">Sem resposta</button>
+         </div>`;
+    return `<div class="qual-acoes-dropdown-wrap">
+      <button class="btn-ghost btn-sm btn-acoes-toggle" data-id="${id}">Ações ▾</button>
+      <div class="qual-acoes-dropdown" id="adrop-${id}" style="display:none">
+        ${primeiro}
+        <button class="qual-acoes-opt" data-agendar="${id}">Agendar Call</button>
+        <button class="qual-acoes-opt btn-wa-lead" data-id="${id}">WhatsApp</button>
+        <button class="qual-acoes-opt" data-perfil="${id}">Editar</button>
+        <button class="qual-acoes-opt qual-acoes-opt--danger" data-descartar="${id}">Descartar</button>
+      </div>
+    </div>`;
+  }
+
   function rowSemContato(l) {
     const dias = daysSince(l.datachegada);
     return `<div class="followup-row fdv-list-row" data-id="${l.id}">
@@ -2942,12 +2964,7 @@ function renderQualificados() {
       <div>${badgeOrigem(l.origem)}</div>
       <div>${esc(abrevRenda(l.renda)||'—')}</div>
       <div>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</div>
-      <div class="cell-acoes">
-        ${dropdownContato(l.id)}
-        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
-        <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
-        <button class="btn-icon btn-destructive" data-descartar="${l.id}" title="Descartar">${ICO_TRASH}</button>
-      </div>
+      <div class="cell-acoes">${dropdownAcoes(l.id, 'sc_ec')}</div>
     </div>`;
   }
 
@@ -2961,12 +2978,7 @@ function renderQualificados() {
       <div>${badgeOrigem(l.origem)}</div>
       <div>${esc(abrevRenda(l.renda)||'—')}</div>
       <div>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</div>
-      <div class="cell-acoes">
-        ${dropdownContato(l.id)}
-        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
-        <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
-        <button class="btn-icon btn-destructive" data-descartar="${l.id}" title="Descartar">${ICO_TRASH}</button>
-      </div>
+      <div class="cell-acoes">${dropdownAcoes(l.id, 'sc_ec')}</div>
     </div>`;
   }
 
@@ -2980,12 +2992,7 @@ function renderQualificados() {
       <div>${badgeOrigem(l.origem)}</div>
       <div>${esc(abrevRenda(l.renda)||'—')}</div>
       <div>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</div>
-      <div class="cell-acoes">
-        ${dropdownContato(l.id)}
-        <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
-        <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
-        <button class="btn-icon btn-destructive" data-descartar="${l.id}" title="Descartar">${ICO_TRASH}</button>
-      </div>
+      <div class="cell-acoes">${dropdownAcoes(l.id, 'sr')}</div>
     </div>`;
   }
 
@@ -3388,6 +3395,20 @@ function renderQualificados() {
         return;
       }
 
+      // Ações dropdown toggle
+      const acoesBtnToggle = e.target.closest('.btn-acoes-toggle');
+      if (acoesBtnToggle && acoesBtnToggle.closest('.followup-row')) {
+        e.stopPropagation();
+        const id   = acoesBtnToggle.dataset.id;
+        const drop = document.getElementById('adrop-' + id);
+        if (!drop) return;
+        const isOpen = drop.style.display !== 'none';
+        el.querySelectorAll('.qual-acoes-dropdown').forEach(d => { d.style.display = 'none'; });
+        el.querySelectorAll('.contato-dropdown').forEach(d => { d.style.display = 'none'; });
+        if (!isOpen) drop.style.display = 'block';
+        return;
+      }
+
       // Contato dropdown toggle
       const toggleBtn = e.target.closest('.btn-contato-toggle');
       if (toggleBtn && toggleBtn.closest('.followup-row')) {
@@ -3436,7 +3457,8 @@ function renderQualificados() {
     el.addEventListener('click', el._qualClickHandler);
 
     el._qualOutsideHandler = e => {
-      if (!e.target.closest('.contato-dropdown-wrap')) {
+      if (!e.target.closest('.qual-acoes-dropdown-wrap')) {
+        el.querySelectorAll('.qual-acoes-dropdown').forEach(d => { d.style.display = 'none'; });
         el.querySelectorAll('.contato-dropdown').forEach(d => { d.style.display = 'none'; });
       }
     };
