@@ -3730,7 +3730,7 @@ function renderNoShow() {
     <table class="leads-table">
       <thead><tr>
         <th class="cell-chk"><input type="checkbox" id="chk-all-ns" title="Selecionar todos"></th>
-        <th>Chegou em</th><th>Nome</th><th>Celular</th><th>Origem</th><th>Renda</th><th>Etiqueta</th><th>Ações</th>
+        <th data-sort-col="datachegada">Chegou em</th><th data-sort-col="nome">Nome</th><th>Celular</th><th>Origem</th><th>Renda</th><th>Etiqueta</th><th>Ações</th>
       </tr></thead>
       <tbody id="ns-list"></tbody>
     </table>
@@ -3756,7 +3756,10 @@ function renderNoShow() {
       (l.nome||'').toLowerCase().includes(busca) ||
       (l.celular||'').replace(/\D/g,'').includes(busca.replace(/\D/g,''))
     );
-    leads = leads.sort((a,b) => (b.dataagendamento||'').localeCompare(a.dataagendamento||''));
+    const { col: _nsc, dir: _nsd } = TABLE_SORT['noshow'] || {};
+    leads = _nsc && _nsd
+      ? sortTable(leads, _nsc, _nsd)
+      : leads.sort((a,b) => (b.dataagendamento||'').localeCompare(a.dataagendamento||''));
 
     const listEl = $('ns-list');
     if (!listEl) return;
@@ -3813,7 +3816,10 @@ function renderNoShow() {
       };
     }
     updateNsBulkBar();
+    updateSortIcons(el.querySelector('.leads-table thead tr'), 'noshow');
   }
+
+  bindSortHeaders(el.querySelector('.leads-table thead tr'), 'noshow', applyNsFilters);
 
   $('btn-ns-bulk-reagendar')?.addEventListener('click', () => {
     const ids = [...nsSelectedIds];
