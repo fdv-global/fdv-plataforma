@@ -3998,6 +3998,43 @@ function renderDescartados() {
       <tbody id="desc-tbody"></tbody>
     </table></div>`;
 
+  if (el._descClickHandler)  el.removeEventListener('click',  el._descClickHandler);
+  if (el._descChangeHandler) el.removeEventListener('change', el._descChangeHandler);
+
+  el._descClickHandler = e => {
+    const b = e.target.closest('[data-perfil],[data-reativar],[data-excluir],.btn-wa-lead');
+    if (!b || !b.closest('#desc-tbody')) return;
+    if (b.dataset.perfil)   { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); return; }
+    if (b.dataset.reativar) { reativarLead(b.dataset.reativar); return; }
+    if (b.dataset.excluir)  { deleteLead(b.dataset.excluir); return; }
+    if (b.classList.contains('btn-wa-lead')) { openWaChatFromLead(b.dataset.id); return; }
+  };
+  el.addEventListener('click', el._descClickHandler);
+
+  el._descChangeHandler = e => {
+    const chk = e.target.closest('.row-chk');
+    if (chk && chk.closest('#desc-tbody')) {
+      if (chk.checked) selectedIds.add(chk.dataset.id);
+      else             selectedIds.delete(chk.dataset.id);
+      const allChks = [...el.querySelectorAll('#desc-tbody .row-chk')];
+      const d = $('chk-all-desc');
+      if (d) { d.checked = allChks.length > 0 && allChks.every(c => c.checked); d.indeterminate = !d.checked && allChks.some(c => c.checked); }
+      updateDescBulkBar();
+      return;
+    }
+    if (e.target.id === 'chk-all-desc') {
+      const checked = e.target.checked;
+      el.querySelectorAll('#desc-tbody .row-chk').forEach(c => {
+        c.checked = checked;
+        if (checked) selectedIds.add(c.dataset.id);
+        else         selectedIds.delete(c.dataset.id);
+      });
+      updateDescBulkBar();
+      renderDescTbody();
+    }
+  };
+  el.addEventListener('change', el._descChangeHandler);
+
   function renderDescTbody() {
     const origem = $('desc-filter-origem')?.value || '';
     const renda  = $('desc-filter-renda')?.value  || '';
@@ -4043,38 +4080,11 @@ function renderDescartados() {
         </td>
       </tr>`;
     }).join('');
-    tbody.querySelectorAll('[data-perfil]').forEach(b =>
-      b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
-    );
-    tbody.querySelectorAll('[data-reativar]').forEach(b =>
-      b.addEventListener('click', () => reativarLead(b.dataset.reativar))
-    );
-    tbody.querySelectorAll('.btn-wa-lead').forEach(b =>
-      b.addEventListener('click', () => openWaChatFromLead(b.dataset.id))
-    );
-    tbody.querySelectorAll('[data-excluir]').forEach(b =>
-      b.addEventListener('click', () => deleteLead(b.dataset.excluir))
-    );
-    // Checkboxes por linha
-    tbody.querySelectorAll('.row-chk').forEach(chk => {
-      chk.addEventListener('change', () => {
-        if (chk.checked) selectedIds.add(chk.dataset.id);
-        else             selectedIds.delete(chk.dataset.id);
-        const d = $('chk-all-desc');
-        if (d) { d.checked = leads.every(l => selectedIds.has(l.id)); d.indeterminate = !d.checked && leads.some(l => selectedIds.has(l.id)); }
-        updateDescBulkBar();
-      });
-    });
     // Selecionar todos
     const allChkD = $('chk-all-desc');
     if (allChkD) {
       allChkD.checked = leads.length > 0 && leads.every(l => selectedIds.has(l.id));
       allChkD.indeterminate = !allChkD.checked && leads.some(l => selectedIds.has(l.id));
-      allChkD.onclick = e => {
-        if (e.target.checked) leads.forEach(l => selectedIds.add(l.id));
-        else                  leads.forEach(l => selectedIds.delete(l.id));
-        updateDescBulkBar(); renderDescTbody();
-      };
     }
     updateDescBulkBar();
     updateSortIcons(el.querySelector('.leads-table thead tr'), 'descartados');
