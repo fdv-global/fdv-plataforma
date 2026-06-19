@@ -2681,11 +2681,15 @@ function renderAgendaSub() {
   if (chegadaAte)        leads = leads.filter(l => (l.datachegada||'') <= chegadaAte);
   if (busca)             leads = leads.filter(l => (l.nome||'').toLowerCase().includes(busca) || (l.celular||'').includes(busca));
 
-  // mais recente primeiro
-  leads.sort((a, b) =>
-    ((b.dataagendamento||'') + (b.horaagendamento||'')).localeCompare(
-     (a.dataagendamento||'') + (a.horaagendamento||''))
-  );
+  const { col: _agc, dir: _agd } = TABLE_SORT['agendamentos'] || {};
+  if (_agc && _agd) {
+    leads = sortTable(leads, _agc, _agd);
+  } else {
+    leads.sort((a, b) =>
+      ((b.dataagendamento||'') + (b.horaagendamento||'')).localeCompare(
+       (a.dataagendamento||'') + (a.horaagendamento||''))
+    );
+  }
 
   if (!leads.length) {
     content.innerHTML = `<div class="agenda-empty">
@@ -2698,9 +2702,9 @@ function renderAgendaSub() {
   content.innerHTML = `<div class="agenda-list fdv-list-container">
     <div class="al-head">
       <label class="al-check-wrap"><input type="checkbox" id="al-check-all"></label>
-      <span>Data</span>
-      <span>Nome</span>
-      <span>Closer</span>
+      <span data-sort-col="dataagendamento">Data</span>
+      <span data-sort-col="nome">Nome</span>
+      <span data-sort-col="closer">Closer</span>
       <span>Status</span>
       <span>Ações</span>
     </div>
@@ -2729,6 +2733,8 @@ function renderAgendaSub() {
       </div>`;
     }).join('')}
   </div>`;
+
+  bindSortHeaders(content.querySelector('.al-head'), 'agendamentos', renderAgendaSub);
 
   content.querySelectorAll('[data-perfil]').forEach(b =>
     b.addEventListener('click', () => { const l = allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
