@@ -226,6 +226,8 @@ let nsSelectedIds  = new Set();
 let qualSelectedIds  = new Set();
 let qualActiveTab    = 'sc';   // 'sc' | 'ec' | 'sr'
 let qualActiveSubTab = 'c1';   // 'c1' | 'c2' | 'c3p' (only when qualActiveTab === 'ec')
+let qualPage         = 1;
+let qualPageSize     = 10;
 let perfilLeadId  = null;
 let novoLeadId    = null;
 let auth          = null;
@@ -3022,6 +3024,47 @@ function renderQualificados() {
     return [...arr].sort((a,b) => (a.datachegada||'').localeCompare(b.datachegada||''));
   }
 
+  function buildPaginationHtml(current, total, pageSize) {
+    if (total === 0) return '';
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const from = Math.min((current - 1) * pageSize + 1, total);
+    const to   = Math.min(current * pageSize, total);
+
+    // Page number buttons with ellipsis
+    const pages = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (current > 3) pages.push('…');
+      for (let i = Math.max(2, current - 1); i <= Math.min(totalPages - 1, current + 1); i++) pages.push(i);
+      if (current < totalPages - 2) pages.push('…');
+      pages.push(totalPages);
+    }
+    const pageBtns = pages.map(p =>
+      p === '…'
+        ? `<span class="qual-page-ellipsis">…</span>`
+        : `<button class="qual-page-btn${p === current ? ' qual-page-btn--active' : ''}" data-qual-page="${p}" ${p === current ? 'disabled' : ''}>${p}</button>`
+    ).join('');
+
+    return `<div class="qual-pagination">
+      <span class="qual-pagination-info">Mostrando ${from} a ${to} de ${total} lead${total !== 1 ? 's' : ''}</span>
+      <div class="qual-pagination-controls">
+        <button class="qual-page-btn" data-qual-page="first" ${current === 1 ? 'disabled' : ''}>«</button>
+        <button class="qual-page-btn" data-qual-page="prev"  ${current === 1 ? 'disabled' : ''}>‹</button>
+        ${pageBtns}
+        <button class="qual-page-btn" data-qual-page="next"  ${current === totalPages ? 'disabled' : ''}>›</button>
+        <button class="qual-page-btn" data-qual-page="last"  ${current === totalPages ? 'disabled' : ''}>»</button>
+      </div>
+      <select class="filter-select qual-page-size-select" id="qual-page-size">
+        <option value="10"  ${qualPageSize === 10  ? 'selected' : ''}>10 por página</option>
+        <option value="25"  ${qualPageSize === 25  ? 'selected' : ''}>25 por página</option>
+        <option value="50"  ${qualPageSize === 50  ? 'selected' : ''}>50 por página</option>
+        <option value="100" ${qualPageSize === 100 ? 'selected' : ''}>100 por página</option>
+      </select>
+    </div>`;
+  }
+
   function renderQualTab() {
     const el = $('qualificados-content');
     if (!el) return;
@@ -3061,16 +3104,24 @@ function renderQualificados() {
       return true;
     };
 
-    const rows     = applyQualSort(getActiveRows().filter(match));
+    const allRows    = applyQualSort(getActiveRows().filter(match));
+    const total      = allRows.length;
+    const totalPages = Math.max(1, Math.ceil(total / qualPageSize));
+    qualPage         = Math.max(1, Math.min(qualPage, totalPages));
+    const pageRows   = allRows.slice((qualPage - 1) * qualPageSize, qualPage * qualPageSize);
+
     const renderer = getRowRenderer();
     const body     = $('qual-tab-body');
-
     if (body) {
-      body.innerHTML = rows.length
-        ? rows.map(renderer).join('')
+      body.innerHTML = total
+        ? pageRows.map(renderer).join('')
         : `<div class="followup-block-empty">${getEmptyMsg()}</div>`;
       lucide.createIcons({ nodes: [body] });
     }
+
+    // Pagination controls
+    const pag = $('qual-pagination');
+    if (pag) pag.outerHTML = buildPaginationHtml(qualPage, total, qualPageSize);
 
     // Update sort icons and select-all
     updateSortIcons($('qual-grid-head'), 'qual-' + qualActiveTab);
@@ -3230,18 +3281,21 @@ function renderQualificados() {
       <button class="btn-ghost btn-sm" id="btn-qual-bulk-clear">${ICO_X_SM} Limpar</button>
     </div>
 
-    <div class="qual-grid">
-      <div class="qual-grid-head" id="qual-grid-head">
-        <div class="cell-chk"><input type="checkbox" id="qual-chk-all" title="Selecionar todos"></div>
-        <div data-sort-col="datachegada">Chegou em</div>
-        <div data-sort-col="nome">Nome</div>
-        <div>Celular</div>
-        <div data-sort-col="origem">Origem</div>
-        <div data-sort-col="renda">Renda</div>
-        <div>Etiqueta</div>
-        <div>Ações</div>
+    <div class="qual-grid-wrap">
+      <div class="qual-grid">
+        <div class="qual-grid-head" id="qual-grid-head">
+          <div class="cell-chk"><input type="checkbox" id="qual-chk-all" title="Selecionar todos"></div>
+          <div data-sort-col="datachegada">Chegou em</div>
+          <div data-sort-col="nome">Nome</div>
+          <div>Celular</div>
+          <div data-sort-col="origem">Origem</div>
+          <div data-sort-col="renda">Renda</div>
+          <div>Etiqueta</div>
+          <div>Ações</div>
+        </div>
+        <div id="qual-tab-body"></div>
       </div>
-      <div id="qual-tab-body"></div>
+      <div id="qual-pagination"></div>
     </div>`;
 
     lucide.createIcons({ nodes: [el] });
@@ -3254,10 +3308,22 @@ function renderQualificados() {
     el._qualClickHandler = e => {
       // Tab navigation
       const tabBtn = e.target.closest('.qual-tab-btn');
-      if (tabBtn) { qualActiveTab = tabBtn.dataset.tab; renderQualTab(); return; }
+      if (tabBtn) { qualActiveTab = tabBtn.dataset.tab; qualPage = 1; renderQualTab(); return; }
 
       const subTabBtn = e.target.closest('.qual-subtab-btn');
-      if (subTabBtn) { qualActiveSubTab = subTabBtn.dataset.subtab; renderQualTab(); return; }
+      if (subTabBtn) { qualActiveSubTab = subTabBtn.dataset.subtab; qualPage = 1; renderQualTab(); return; }
+
+      // Pagination
+      const pageBtn = e.target.closest('[data-qual-page]');
+      if (pageBtn && !pageBtn.disabled) {
+        const v = pageBtn.dataset.qualPage;
+        if      (v === 'first') qualPage = 1;
+        else if (v === 'prev')  qualPage = Math.max(1, qualPage - 1);
+        else if (v === 'next')  qualPage++;
+        else if (v === 'last')  qualPage = 99999;
+        else                    qualPage = parseInt(v, 10);
+        renderQualTab(); return;
+      }
 
       // Sort headers
       const sortDiv = e.target.closest('[data-sort-col]');
@@ -3272,7 +3338,7 @@ function renderQualificados() {
         ['qual-filter-origem','qual-filter-renda','qual-filter-mes','qual-filter-profissao',
          'qual-filter-etiqueta','qual-filter-chegada-de','qual-filter-chegada-ate','qual-search-top']
           .forEach(id => { const inp=$(id); if(inp) inp.value=''; });
-        renderQualTab();
+        qualPage = 1; renderQualTab();
         return;
       }
 
@@ -3369,9 +3435,13 @@ function renderQualificados() {
     document.addEventListener('click', el._qualOutsideHandler);
 
     el._qualChangeHandler = e => {
+      // Page size
+      if (e.target.id === 'qual-page-size') {
+        qualPageSize = parseInt(e.target.value, 10); qualPage = 1; renderQualTab(); return;
+      }
       // Filter selects
       if (e.target.matches('#qual-filter-origem,#qual-filter-renda,#qual-filter-mes,#qual-filter-profissao,#qual-filter-etiqueta,#qual-filter-chegada-de,#qual-filter-chegada-ate')) {
-        renderQualTab(); return;
+        qualPage = 1; renderQualTab(); return;
       }
       // Select-all checkbox
       if (e.target.id === 'qual-chk-all') {
@@ -3401,7 +3471,7 @@ function renderQualificados() {
     el.addEventListener('change', el._qualChangeHandler);
 
     el._qualInputHandler = e => {
-      if (e.target.id === 'qual-search-top') renderQualTab();
+      if (e.target.id === 'qual-search-top') { qualPage = 1; renderQualTab(); }
     };
     el.addEventListener('input', el._qualInputHandler);
 
