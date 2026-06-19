@@ -3060,8 +3060,7 @@ function renderQualificados() {
         <option value="25"  ${qualPageSize === 25  ? 'selected' : ''}>25 por página</option>
         <option value="50"  ${qualPageSize === 50  ? 'selected' : ''}>50 por página</option>
         <option value="100" ${qualPageSize === 100 ? 'selected' : ''}>100 por página</option>
-      </select>
-    </div>`;
+      </select>`;
   }
 
   function renderQualTab() {
@@ -3119,7 +3118,15 @@ function renderQualificados() {
     }
 
     // Pagination controls
-    const pag = $('qual-pagination');
+    let pag = $('qual-pagination');
+    if (!pag) {
+      const wrap = el.querySelector('.qual-grid-wrap');
+      if (wrap) {
+        pag = document.createElement('div');
+        pag.id = 'qual-pagination';
+        wrap.appendChild(pag);
+      }
+    }
     if (pag) pag.innerHTML = buildPaginationHtml(qualPage, total, qualPageSize);
 
     // Update sort icons and select-all
@@ -3140,6 +3147,10 @@ function renderQualificados() {
     if (!el) return;
 
     if (!allQual.length) {
+      if (el._qualClickHandler)   el.removeEventListener('click',  el._qualClickHandler);
+      if (el._qualChangeHandler)  el.removeEventListener('change', el._qualChangeHandler);
+      if (el._qualInputHandler)   el.removeEventListener('input',  el._qualInputHandler);
+      if (el._qualOutsideHandler) document.removeEventListener('click', el._qualOutsideHandler);
       el.innerHTML = `<div class="agenda-empty">
         <i data-lucide="user-check" class="empty-lucide"></i>
         <h3>Nenhum lead qualificado</h3>
