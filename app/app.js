@@ -4941,6 +4941,10 @@ async function renderVendasView() {
   const formaKeys    = ['avista','parcelado_cartao','parcelado_boleto','pix'];
   const formaOpts    = formaKeys.map(k => `<option value="${k}"${flt.forma===k?' selected':''}>${FORMA_LABELS[k]}</option>`).join('');
 
+  rows.forEach(r => { r._nome = r.leads?.nome || ''; });
+  const { col: _vc, dir: _vd } = TABLE_SORT['vendas'] || {};
+  if (_vc && _vd) rows = sortTable(rows, _vc, _vd);
+
   const rowsHtml = rows.map(r => {
     const hasId      = !!r.id;
     const idAttr     = r.id      || '';
@@ -4970,7 +4974,7 @@ async function renderVendasView() {
         <table class="rel-table vv-table">
           <thead><tr>
             <th class="cell-chk"><input type="checkbox" id="vv-chk-all" class="row-chk" title="Selecionar todos"></th>
-            <th>Lead</th><th>Programa</th><th>Valor</th><th>Entrada</th><th>Forma Pgto</th><th>Closer</th><th>Ações</th>
+            <th data-sort-col="_nome">Lead</th><th data-sort-col="programa">Programa</th><th data-sort-col="valor">Valor</th><th>Entrada</th><th>Forma Pgto</th><th data-sort-col="closer">Closer</th><th>Ações</th>
           </tr></thead>
           <tbody>${rowsHtml}</tbody>
         </table>
@@ -5042,6 +5046,9 @@ async function renderVendasView() {
     ${tableHtml}`;
 
   lucide.createIcons({ nodes: [el] });
+
+  bindSortHeaders(el.querySelector('.rel-table thead tr'), 'vendas', renderVendasView);
+  updateSortIcons(el.querySelector('.rel-table thead tr'), 'vendas');
 
   // ── Filtros ─────────────────────────────────────────────────────
   el.querySelector('#vv-mes')?.addEventListener('change',     e => { flt.mes      = e.target.value; renderVendasView(); });
