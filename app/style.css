@@ -4496,6 +4496,18 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .qual-acoes-contato-sub .contato-opt {
   padding-left: 22px;
 }
+.btn-acoes-toggle {
+  background: rgba(206,146,33,0.15);
+  border: 1px solid rgba(206,146,33,0.5);
+  color: #CE9221;
+  border-radius: 20px;
+  font-weight: 500;
+}
+.btn-acoes-toggle:hover {
+  background: rgba(206,146,33,0.25);
+  border-color: rgba(206,146,33,0.75);
+  color: #CE9221;
+}
 
 .qual-grid-head {
   position: sticky; top: 0; z-index: 10;
