@@ -4260,34 +4260,35 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 }
 .qual-subtab-nav {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   padding: 10px 16px;
-  background: var(--s1);
+  background: transparent;
   border-bottom: 1px solid var(--b0);
 }
 .qual-subtab-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 14px;
+  padding: 4px 14px;
   background: transparent;
-  border: 1px solid var(--b0);
-  border-radius: 6px;
-  color: var(--t3);
+  border: 0.5px solid rgba(255,255,255,0.15);
+  border-radius: 20px;
+  color: rgba(255,255,255,0.5);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 400;
   cursor: pointer;
   transition: all .15s;
 }
-.qual-subtab-btn:hover { background: var(--s2); color: var(--t1); }
+.qual-subtab-btn:hover { border-color: rgba(206,146,33,0.3); color: rgba(255,255,255,0.75); }
 .qual-subtab-btn--active {
-  background: var(--s2);
-  border-color: var(--gold);
-  color: var(--t1);
+  border-color: rgba(206,146,33,0.5);
+  background: rgba(206,146,33,0.12);
+  color: #CE9221;
+  font-weight: 500;
 }
 .qual-subtab-btn--active .qual-tab-badge {
-  background: var(--gold);
-  color: #000;
+  background: rgba(206,146,33,0.2);
+  color: #CE9221;
 }
 
 /* ── Follow-up pipeline (Qualificados) ─────────── */
