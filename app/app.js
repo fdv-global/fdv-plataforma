@@ -2952,12 +2952,10 @@ function renderQualificados() {
   }
 
   function rowEmContato(l) {
-    const diasUlt   = daysSinceTs(l.ultimo_contato_em);
-    const count     = l.contato_count || 1;
-    const showAgen  = count >= 2;
+    const dias = daysSince(l.datachegada);
     return `<div class="followup-row fdv-list-row" data-id="${l.id}">
       <div class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></div>
-      <div>${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">${diasUlt}d desde ult.</small></div>
+      <div>${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">há ${dias}d</small></div>
       <div><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></div>
       <div class="cell-fone">${esc(l.celular||'—')}</div>
       <div>${badgeOrigem(l.origem)}</div>
@@ -2965,7 +2963,6 @@ function renderQualificados() {
       <div>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</div>
       <div class="cell-acoes">
         ${dropdownContato(l.id)}
-        ${showAgen?`<button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar Call">${ICO_CALENDAR}</button>`:''}
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
         <button class="btn-icon btn-destructive" data-descartar="${l.id}" title="Descartar">${ICO_TRASH}</button>
@@ -2974,16 +2971,17 @@ function renderQualificados() {
   }
 
   function rowSemResposta(l) {
+    const dias = daysSince(l.datachegada);
     return `<div class="followup-row fdv-list-row" data-id="${l.id}">
       <div class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></div>
-      <div>${fmtDate(l.datachegada)}</div>
+      <div>${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">há ${dias}d</small></div>
       <div><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></div>
       <div class="cell-fone">${esc(l.celular||'—')}</div>
       <div>${badgeOrigem(l.origem)}</div>
       <div>${esc(abrevRenda(l.renda)||'—')}</div>
       <div>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</div>
       <div class="cell-acoes">
-        <button class="btn-primary btn-sm" data-fp-resgatar="${l.id}">${ICO_UNDO} Resgatar</button>
+        ${dropdownContato(l.id)}
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
         <button class="btn-icon btn-destructive" data-descartar="${l.id}" title="Descartar">${ICO_TRASH}</button>
