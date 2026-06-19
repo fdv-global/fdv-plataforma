@@ -2944,7 +2944,6 @@ function renderQualificados() {
       <div>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</div>
       <div class="cell-acoes">
         ${dropdownContato(l.id)}
-        <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar Call">${ICO_CALENDAR}</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
         <button class="btn-icon btn-destructive" data-descartar="${l.id}" title="Descartar">${ICO_TRASH}</button>
@@ -2964,7 +2963,6 @@ function renderQualificados() {
       <div>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</div>
       <div class="cell-acoes">
         ${dropdownContato(l.id)}
-        <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar Call">${ICO_CALENDAR}</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
         <button class="btn-icon btn-destructive" data-descartar="${l.id}" title="Descartar">${ICO_TRASH}</button>
@@ -2984,7 +2982,6 @@ function renderQualificados() {
       <div>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</div>
       <div class="cell-acoes">
         ${dropdownContato(l.id)}
-        <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar Call">${ICO_CALENDAR}</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
         <button class="btn-icon btn-destructive" data-descartar="${l.id}" title="Descartar">${ICO_TRASH}</button>
