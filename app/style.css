@@ -4359,6 +4359,14 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 
 .qual-filters-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 16px; }
 
+/* Sub-painel de Qualificados sangra além do padding do .tab-panel (0 24px)
+   para dar largura máxima à tabela sem afetar os outros painéis */
+#sub-qualificados { margin: 0 -24px; }
+#qualificados-content .filters-bar,
+#qualificados-content .qual-tab-nav,
+#qualificados-content .qual-subtab-nav,
+#qualificados-content .bulk-bar { padding-left: 24px; padding-right: 24px; }
+
 .qual-grid { width: 100%; }
 
 /* glass/padding/zebra/hover vêm de .fdv-list-row */
