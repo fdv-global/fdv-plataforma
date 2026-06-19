@@ -3025,7 +3025,7 @@ function renderQualificados() {
   }
 
   function buildPaginationHtml(current, total, pageSize) {
-    if (total === 0) return '';
+    if (total === 0) return '<div id="qual-pagination"></div>';
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
     const from = Math.min((current - 1) * pageSize + 1, total);
     const to   = Math.min(current * pageSize, total);
@@ -3047,7 +3047,7 @@ function renderQualificados() {
         : `<button class="qual-page-btn${p === current ? ' qual-page-btn--active' : ''}" data-qual-page="${p}" ${p === current ? 'disabled' : ''}>${p}</button>`
     ).join('');
 
-    return `<div class="qual-pagination">
+    return `<div id="qual-pagination" class="qual-pagination">
       <span class="qual-pagination-info">Mostrando ${from} a ${to} de ${total} lead${total !== 1 ? 's' : ''}</span>
       <div class="qual-pagination-controls">
         <button class="qual-page-btn" data-qual-page="first" ${current === 1 ? 'disabled' : ''}>«</button>
