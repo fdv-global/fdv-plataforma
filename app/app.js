@@ -3255,7 +3255,11 @@ function renderQualificados() {
       });
     });
 
-    el.addEventListener('click', e => {
+    if (el._qualClickHandler)   el.removeEventListener('click',  el._qualClickHandler);
+    if (el._qualChangeHandler)  el.removeEventListener('change', el._qualChangeHandler);
+    if (el._qualOutsideHandler) document.removeEventListener('click', el._qualOutsideHandler);
+
+    el._qualClickHandler = e => {
       const toggleBtn = e.target.closest('.btn-contato-toggle');
       if (toggleBtn && toggleBtn.closest('.followup-row')) {
         e.stopPropagation();
@@ -3298,16 +3302,17 @@ function renderQualificados() {
       if (t.dataset.excluir)   { deleteLead(t.dataset.excluir); return; }
       if (t.dataset.descartar) { openDescarteModal(t.dataset.descartar); return; }
       if (t.classList.contains('btn-wa-lead')) { openWaChatFromLead(t.dataset.id); return; }
-    });
+    };
+    el.addEventListener('click', el._qualClickHandler);
 
-    document.addEventListener('click', function onQualOutside(e) {
-      if (!document.contains(el)) { document.removeEventListener('click', onQualOutside); return; }
+    el._qualOutsideHandler = e => {
       if (!e.target.closest('.contato-dropdown-wrap')) {
         el.querySelectorAll('.contato-dropdown').forEach(d => { d.style.display = 'none'; });
       }
-    });
+    };
+    document.addEventListener('click', el._qualOutsideHandler);
 
-    el.addEventListener('change', e => {
+    el._qualChangeHandler = e => {
       const chk = e.target.closest('.qual-row-chk');
       if (chk) {
         if (chk.checked) qualSelectedIds.add(chk.dataset.id);
@@ -3324,7 +3329,8 @@ function renderQualificados() {
         block?.querySelectorAll('.qual-row-chk').forEach(c => { c.checked = allChk.checked; if (allChk.checked) qualSelectedIds.add(c.dataset.id); else qualSelectedIds.delete(c.dataset.id); });
         updateQualBulkBar();
       }
-    });
+    };
+    el.addEventListener('change', el._qualChangeHandler);
 
     $('btn-qual-bulk-excluir')?.addEventListener('click', async () => {
       const ids = [...qualSelectedIds]; if (!ids.length) return;
