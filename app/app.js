@@ -2638,10 +2638,16 @@ function applyFilters() {
     return true;
   });
 
+  const { col: _nsc, dir: _nsd } = TABLE_SORT['novos'] || {};
+  filteredLeads = _nsc && _nsd
+    ? sortTable(filteredLeads, _nsc, _nsd)
+    : [...filteredLeads].sort((a, b) => (b.datachegada||'').localeCompare(a.datachegada||''));
+
   renderTable();
   renderCards();
   updateCount();
   updateStats();
+  updateSortIcons(document.querySelector('.leads-table thead tr'), 'novos');
 }
 
 // ─── AGENDA SUB ──────────────────────────────────────────────────────
@@ -10536,6 +10542,10 @@ function bindEvents() {
   // Leads filters (Novos)
   ['filter-status','filter-origem','filter-mes','filter-renda','filter-profissao','filter-etiqueta','filter-chegada-de','filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', applyFilters); });
   ['filter-busca'].forEach(id => { const el=$(id); if(el) el.addEventListener('input', applyFilters); });
+  // Sort headers — Novos (thead estático, bind único)
+  document.querySelector('.leads-table thead tr')?.querySelectorAll('[data-sort-col]').forEach(th => {
+    th.addEventListener('click', () => { cycleSortState('novos', th.dataset.sortCol); applyFilters(); });
+  });
   $('btn-limpar').addEventListener('click', () => {
     ['filter-status','filter-origem','filter-mes','filter-renda','filter-profissao','filter-etiqueta'].forEach(id => { const el=$(id); if(el) el.value=''; });
     ['filter-busca','filter-chegada-de','filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.value=''; });
