@@ -6128,6 +6128,47 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ─── SORT TABLE ──────────────────────────────────────────────────────
+const TABLE_SORT = {};
+
+function sortTable(rows, col, dir) {
+  if (!col || !dir) return rows;
+  const copy = [...rows];
+  return copy.sort((a, b) => {
+    const av = String(a[col] ?? '');
+    const bv = String(b[col] ?? '');
+    const cmp = av.localeCompare(bv, 'pt-BR', { numeric: true });
+    return dir === 'asc' ? cmp : -cmp;
+  });
+}
+
+function cycleSortState(tableId, col) {
+  const cur = TABLE_SORT[tableId] || {};
+  if (cur.col !== col)        TABLE_SORT[tableId] = { col, dir: 'asc' };
+  else if (cur.dir === 'asc') TABLE_SORT[tableId] = { col, dir: 'desc' };
+  else                        TABLE_SORT[tableId] = { col: null, dir: null };
+}
+
+function updateSortIcons(container, tableId) {
+  if (!container) return;
+  const { col, dir } = TABLE_SORT[tableId] || {};
+  container.querySelectorAll('[data-sort-col]').forEach(el => {
+    el.classList.remove('sort-asc', 'sort-desc');
+    if (el.dataset.sortCol === col && dir) el.classList.add('sort-' + dir);
+  });
+}
+
+function bindSortHeaders(container, tableId, rerenderFn) {
+  if (!container) return;
+  container.querySelectorAll('[data-sort-col]').forEach(el => {
+    el.addEventListener('click', () => {
+      cycleSortState(tableId, el.dataset.sortCol);
+      rerenderFn();
+    });
+  });
+  updateSortIcons(container, tableId);
+}
+
 // ─── STATS ───────────────────────────────────────────────────────────
 function updateStats() {
   const mes  = $('filter-mes').value;

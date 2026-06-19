@@ -4473,3 +4473,25 @@ tr.fdv-list-row                { display: table-row; min-height: unset; border: 
   color: var(--t1); transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
 .gcal-event-opt:hover { background: rgba(206,146,33,0.18); border-color: rgba(206,146,33,0.65); }
+
+/* ─── SORTABLE COLUMN HEADERS ──────────────────────────────────────────── */
+.leads-table th[data-sort-col],
+.qual-grid-head [data-sort-col],
+.al-head [data-sort-col],
+.rel-table th[data-sort-col] {
+  cursor: pointer;
+  user-select: none;
+  transition: color var(--fast) var(--ease);
+}
+.leads-table th[data-sort-col]:hover,
+.qual-grid-head [data-sort-col]:hover,
+.al-head [data-sort-col]:hover,
+.rel-table th[data-sort-col]:hover { color: var(--t1); }
+.leads-table th[data-sort-col].sort-asc::after,
+.qual-grid-head [data-sort-col].sort-asc::after,
+.al-head [data-sort-col].sort-asc::after,
+.rel-table th[data-sort-col].sort-asc::after  { content: ' ↑'; }
+.leads-table th[data-sort-col].sort-desc::after,
+.qual-grid-head [data-sort-col].sort-desc::after,
+.al-head [data-sort-col].sort-desc::after,
+.rel-table th[data-sort-col].sort-desc::after { content: ' ↓'; }
