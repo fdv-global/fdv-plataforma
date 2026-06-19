@@ -34,9 +34,21 @@ var CONFIG = {
     table: 'leads',
   },
 
+  // Mapeamento de colunas — Formação
+  FORMACAO_COLUMNS: {
+    origem: 1, data: 2, status: 3, nome: 4, telefone: 5,
+    email: 6, instagram: 7, profissao: 8, renda: 9,
+    utmCampaign: 10, utmMedium: 11, utmContent: 12, utmSource: 13,
+    desafio: 14, motivo: 15, jaParticipou: 16, jaEAluna: 17,
+    tempoConhece: 18, deOnde: 19, origem2: 20,
+  },
+
+  FLAG_COLUMN_FORMACAO: 'U',   // coluna 21
+
   // Linhas iniciais de cada aba (ignora histórico antigo)
   START_ROW_ISCAS: 2038,
   START_ROW_RESPONDI: 1153,
+  START_ROW_FORMACAO: 2,
 
   // Data de corte para o backfill (inclusive)
   BACKFILL_FROM: new Date(2026, 4, 25), // 25 de maio de 2026 — data de corte do reset
@@ -53,6 +65,7 @@ var CONFIG = {
 function syncLeads() {
   processSheet('Iscas', CONFIG.ISCAS_COLUMNS, CONFIG.FLAG_COLUMN_ISCAS, 'Iscas', CONFIG.START_ROW_ISCAS);
   processSheet('Respondi.app', CONFIG.RESPONDI_COLUMNS, CONFIG.FLAG_COLUMN_RESPONDI, 'Respondi.app', CONFIG.START_ROW_RESPONDI);
+  processSheetFormacao('Formação', CONFIG.FORMACAO_COLUMNS, CONFIG.FLAG_COLUMN_FORMACAO, 'Formação', CONFIG.START_ROW_FORMACAO);
 }
 
 // ─── PROCESSAR ABA ───────────────────────────────────────────────────
@@ -131,7 +144,7 @@ function sendToSupabase(lead) {
     headers: {
       'apikey': CONFIG.SUPABASE.key,
       'Authorization': 'Bearer ' + CONFIG.SUPABASE.key,
-      'Prefer': 'return=minimal',
+      'Prefer': 'return=minimal,resolution=ignore-duplicates',
     },
     payload: JSON.stringify(lead),
     muteHttpExceptions: true,
@@ -144,6 +157,9 @@ function sendToSupabase(lead) {
     if (code >= 200 && code < 300) {
       Logger.log('✅ Lead enviado: ' + lead.nome + ' (' + lead.origem + ')');
       return true;
+    } else if (code === 409) {
+      Logger.log('✅ Duplicata ignorada: ' + lead.nome + ' (' + lead.origem + ')');
+      return true;
     } else {
       Logger.log('❌ Erro ' + code + ' ao enviar ' + lead.nome + ': ' + response.getContentText());
       return false;
@@ -152,6 +168,69 @@ function sendToSupabase(lead) {
     Logger.log('❌ Exceção ao enviar ' + lead.nome + ': ' + e.message);
     return false;
   }
+}
+
+// ─── ABA FORMAÇÃO ────────────────────────────────────────────────────
+function processSheetFormacao(sheetName, cols, flagCol, fonte, startRow) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    Logger.log('Aba "' + sheetName + '" não encontrada — pulando.');
+    return;
+  }
+
+  var lastRow = sheet.getLastRow();
+  if (lastRow < startRow) return;
+
+  var flagColIdx = columnLetterToIndex(flagCol);
+  var data = sheet.getRange(startRow, 1, lastRow - startRow + 1, flagColIdx).getValues();
+
+  data.forEach(function (row, i) {
+    var rowNumber = i + startRow;
+    var flagCell = sheet.getRange(rowNumber, flagColIdx);
+    var flag = String(flagCell.getValue()).trim();
+
+    if (flag === CONFIG.FLAG_OK || flag === CONFIG.FLAG_ERR) return;
+
+    var lead = buildLeadFormacao(row, cols, fonte);
+    var success = sendToSupabase(lead);
+
+    flagCell.setValue(success ? CONFIG.FLAG_OK : CONFIG.FLAG_ERR);
+    SpreadsheetApp.flush();
+  });
+}
+
+function buildLeadFormacao(row, cols, fonte) {
+  function get(colNum) {
+    return colNum ? String(row[colNum - 1] || '').trim() : '';
+  }
+
+  var obsLines = [];
+  if (get(cols.desafio))      obsLines.push('Desafio: '           + get(cols.desafio));
+  if (get(cols.motivo))       obsLines.push('Motivo: '            + get(cols.motivo));
+  if (get(cols.jaParticipou)) obsLines.push('Já participou: '     + get(cols.jaParticipou));
+  if (get(cols.jaEAluna))     obsLines.push('Já é aluna: '        + get(cols.jaEAluna));
+  if (get(cols.tempoConhece)) obsLines.push('Tempo que conhece: ' + get(cols.tempoConhece));
+  if (get(cols.deOnde))       obsLines.push('De onde conhece: '   + get(cols.deOnde));
+  if (get(cols.origem2))      obsLines.push('ORIGEM2: '           + get(cols.origem2));
+
+  return {
+    nome:         get(cols.nome),
+    celular:      get(cols.telefone),
+    email:        get(cols.email),
+    instagram:    get(cols.instagram),
+    profissao:    get(cols.profissao),
+    renda:        get(cols.renda),
+    origem:       get(cols.origem) || fonte,
+    status:       'aguardando',
+    datachegada:  Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'),
+    observacoes:  obsLines.length > 0 ? obsLines.join('\n') : null,
+    etiquetas:    [],
+    utm_campaign: get(cols.utmCampaign) || null,
+    utm_medium:   get(cols.utmMedium)   || null,
+    utm_content:  get(cols.utmContent)  || null,
+    utm_source:   get(cols.utmSource)   || null,
+  };
 }
 
 // ─── UTILITÁRIOS ─────────────────────────────────────────────────────
