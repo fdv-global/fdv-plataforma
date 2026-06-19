@@ -2956,9 +2956,10 @@ function renderQualificados() {
 
   function rowSemContato(l) {
     const dias = daysSince(l.datachegada);
+    const diasCor = typeof dias === 'number' ? (dias <= 3 ? '#1D9E75' : dias <= 5 ? '#CE9221' : '#E24B4A') : 'var(--t3)';
     return `<div class="followup-row fdv-list-row" data-id="${l.id}">
       <div class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></div>
-      <div>${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">há ${dias}d</small></div>
+      <div>${fmtDate(l.datachegada)}<br><small style="color:${diasCor}">há ${dias}d</small></div>
       <div><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></div>
       <div class="cell-fone">${esc(l.celular||'—')}</div>
       <div>${badgeOrigem(l.origem)}</div>
@@ -2970,9 +2971,10 @@ function renderQualificados() {
 
   function rowEmContato(l) {
     const dias = daysSince(l.datachegada);
+    const diasCor = typeof dias === 'number' ? (dias <= 3 ? '#1D9E75' : dias <= 5 ? '#CE9221' : '#E24B4A') : 'var(--t3)';
     return `<div class="followup-row fdv-list-row" data-id="${l.id}">
       <div class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></div>
-      <div>${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">há ${dias}d</small></div>
+      <div>${fmtDate(l.datachegada)}<br><small style="color:${diasCor}">há ${dias}d</small></div>
       <div><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></div>
       <div class="cell-fone">${esc(l.celular||'—')}</div>
       <div>${badgeOrigem(l.origem)}</div>
@@ -2984,9 +2986,10 @@ function renderQualificados() {
 
   function rowSemResposta(l) {
     const dias = daysSince(l.datachegada);
+    const diasCor = typeof dias === 'number' ? (dias <= 3 ? '#1D9E75' : dias <= 5 ? '#CE9221' : '#E24B4A') : 'var(--t3)';
     return `<div class="followup-row fdv-list-row" data-id="${l.id}">
       <div class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></div>
-      <div>${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">há ${dias}d</small></div>
+      <div>${fmtDate(l.datachegada)}<br><small style="color:${diasCor}">há ${dias}d</small></div>
       <div><button class="nome-link followup-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></div>
       <div class="cell-fone">${esc(l.celular||'—')}</div>
       <div>${badgeOrigem(l.origem)}</div>
