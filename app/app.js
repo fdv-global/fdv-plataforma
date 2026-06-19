@@ -5077,17 +5077,7 @@ async function renderVendasView() {
   bindSortHeaders(el.querySelector('.rel-table thead tr'), 'vendas', renderVendasView);
   updateSortIcons(el.querySelector('.rel-table thead tr'), 'vendas');
 
-  // ── Filtros ─────────────────────────────────────────────────────
-  el.querySelector('#vv-mes')?.addEventListener('change',     e => { flt.mes      = e.target.value; renderVendasView(); });
-  el.querySelector('#vv-closer')?.addEventListener('change',  e => { flt.closer   = e.target.value; renderVendasView(); });
-  el.querySelector('#vv-programa')?.addEventListener('change',e => { flt.programa = e.target.value; renderVendasView(); });
-  el.querySelector('#vv-forma')?.addEventListener('change',   e => { flt.forma    = e.target.value; renderVendasView(); });
-  el.querySelector('#vv-limpar')?.addEventListener('click', () => {
-    flt.mes = flt.closer = flt.programa = flt.forma = flt.search = '';
-    renderVendasView();
-  });
-
-  // Search: DOM-only filter, sem re-render
+  // ── Search: DOM-only filter, sem re-render ───────────────────────
   function applySearch() {
     const q = flt.search;
     el.querySelectorAll('.vv-table tbody tr').forEach(tr => {
@@ -5095,12 +5085,8 @@ async function renderVendasView() {
     });
   }
   applySearch();
-  el.querySelector('#vv-search')?.addEventListener('input', e => {
-    flt.search = e.target.value.trim().toLowerCase();
-    applySearch();
-  });
 
-  // ── Bulk selection ───────────────────────────────────────────────
+  // ── Bulk helpers ─────────────────────────────────────────────────
   const bulkBar   = el.querySelector('#vv-bulk-bar');
   const bulkCount = el.querySelector('#vv-bulk-count');
 
@@ -5112,19 +5098,6 @@ async function renderVendasView() {
     checked.forEach(chk => chk.closest('tr')?.classList.add('row-selected'));
   }
 
-  el.querySelector('#vv-chk-all')?.addEventListener('change', e => {
-    el.querySelectorAll('.vv-chk-row').forEach(chk => { chk.checked = e.target.checked; });
-    updateBulkBar();
-  });
-  el.querySelectorAll('.vv-chk-row').forEach(chk => chk.addEventListener('change', updateBulkBar));
-  el.querySelector('#btn-vv-bulk-clear')?.addEventListener('click', () => {
-    const all = el.querySelector('#vv-chk-all');
-    if (all) all.checked = false;
-    el.querySelectorAll('.vv-chk-row').forEach(chk => { chk.checked = false; });
-    updateBulkBar();
-  });
-
-  // ── Bulk actions ─────────────────────────────────────────────────
   async function bulkVoltarKanban(col) {
     const items = Array.from(el.querySelectorAll('.vv-chk-row:checked')).map(c => ({ vendaId: c.dataset.id, leadId: c.dataset.lead }));
     if (!items.length) return;
@@ -5161,31 +5134,39 @@ async function renderVendasView() {
     renderVendasView();
   }
 
-  el.querySelector('#btn-vv-bulk-negociacao')?.addEventListener('click', () => bulkVoltarKanban('call_realizada'));
-  el.querySelector('#btn-vv-bulk-agendamento')?.addEventListener('click', () => bulkVoltarKanban('fechamento'));
-  el.querySelector('#btn-vv-bulk-excluir')?.addEventListener('click', bulkExcluirVendas);
+  // ── Event delegation no container estável ────────────────────────
+  if (el._vvClickHandler)  el.removeEventListener('click',  el._vvClickHandler);
+  if (el._vvChangeHandler) el.removeEventListener('change', el._vvChangeHandler);
+  if (el._vvInputHandler)  el.removeEventListener('input',  el._vvInputHandler);
 
-  // ── Perfil ───────────────────────────────────────────────────────
-  el.querySelectorAll('[data-perfil-venda]').forEach(b => {
-    b.addEventListener('click', () => {
-      const l = allLeads.find(x => x.id === b.dataset.perfilVenda);
-      if (l) openPerfil(l);
-    });
-  });
+  el._vvClickHandler = e => {
+    if (e.target.closest('#vv-limpar'))               { flt.mes = flt.closer = flt.programa = flt.forma = flt.search = ''; renderVendasView(); return; }
+    if (e.target.closest('#btn-vv-bulk-clear'))        { const a=el.querySelector('#vv-chk-all'); if(a) a.checked=false; el.querySelectorAll('.vv-chk-row').forEach(c=>{c.checked=false;}); updateBulkBar(); return; }
+    if (e.target.closest('#btn-vv-bulk-negociacao'))   { bulkVoltarKanban('call_realizada'); return; }
+    if (e.target.closest('#btn-vv-bulk-agendamento'))  { bulkVoltarKanban('fechamento'); return; }
+    if (e.target.closest('#btn-vv-bulk-excluir'))      { bulkExcluirVendas(); return; }
+    const b = e.target.closest('[data-perfil-venda],.btn-edit-venda,.btn-del-venda');
+    if (!b) return;
+    if (b.dataset.perfilVenda)                         { const l=allLeads.find(x=>x.id===b.dataset.perfilVenda); if(l) openPerfil(l); return; }
+    if (b.classList.contains('btn-edit-venda') && !b.disabled) { const row=allRows.find(r=>r.id===b.dataset.id); if(row) openEditarVenda(row); return; }
+    if (b.classList.contains('btn-del-venda'))         { excluirVenda(b.dataset.id, b.dataset.lead); return; }
+  };
+  el.addEventListener('click', el._vvClickHandler);
 
-  // ── Editar ───────────────────────────────────────────────────────
-  el.querySelectorAll('.btn-edit-venda').forEach(b => {
-    if (b.disabled) return;
-    b.addEventListener('click', () => {
-      const row = allRows.find(r => r.id === b.dataset.id);
-      if (row) openEditarVenda(row);
-    });
-  });
+  el._vvChangeHandler = e => {
+    if (e.target.matches('#vv-mes'))      { flt.mes      = e.target.value; renderVendasView(); return; }
+    if (e.target.matches('#vv-closer'))   { flt.closer   = e.target.value; renderVendasView(); return; }
+    if (e.target.matches('#vv-programa')) { flt.programa = e.target.value; renderVendasView(); return; }
+    if (e.target.matches('#vv-forma'))    { flt.forma    = e.target.value; renderVendasView(); return; }
+    if (e.target.matches('#vv-chk-all'))  { el.querySelectorAll('.vv-chk-row').forEach(c=>{c.checked=e.target.checked;}); updateBulkBar(); return; }
+    if (e.target.closest('.vv-chk-row'))  { updateBulkBar(); }
+  };
+  el.addEventListener('change', el._vvChangeHandler);
 
-  // ── Excluir ──────────────────────────────────────────────────────
-  el.querySelectorAll('.btn-del-venda').forEach(b => {
-    b.addEventListener('click', () => excluirVenda(b.dataset.id, b.dataset.lead));
-  });
+  el._vvInputHandler = e => {
+    if (e.target.matches('#vv-search')) { flt.search = e.target.value.trim().toLowerCase(); applySearch(); }
+  };
+  el.addEventListener('input', el._vvInputHandler);
 }
 
 // ─── EDITAR VENDA ─────────────────────────────────────────────────────
