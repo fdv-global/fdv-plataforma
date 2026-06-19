@@ -2465,10 +2465,9 @@ function renderInicio() {
   const proximaCall = callsHojeList.find(l => (l.horaagendamento||'') >= nowTime);
   const proximaHora = proximaCall?.horaagendamento?.slice(0,5) || null;
 
-  // Conversão: leads entrados este mês que viraram venda este mês
+  // Conversão: vendas do mês ÷ calls realizadas do mês
   const leadesMes      = allLeads.filter(l => (l.datachegada||'').startsWith(thisMonth)).length;
   const vendasMesCount = allLeads.filter(isVendaMes).length;
-  const convMes = leadesMes ? Math.round(vendasMesCount / leadesMes * 100) : 0;
 
   // Funil: apenas leads com datachegada neste mês (cohort mensal)
   const mesLeads = allLeads.filter(l => (l.datachegada||'').startsWith(thisMonth));
@@ -2484,9 +2483,10 @@ function renderInicio() {
   const fNoShow = agendMes.filter(l => l.status === 'noshow').length;
   const fVendas = allLeads.filter(isVendaMes).length;
   const fRealiz = Math.max(fCalls - fNoShow, 0);
+  const convMes = fCalls  ? Math.round(vendasMesCount / fCalls  * 100) : 0;
   const pctQ  = fLeads  ? Math.round(fQualif/fLeads *100) : 0;
   const pctC  = fAgend  ? Math.round(fCalls /fAgend *100) : 0;
-  const pctNS = fCalls  ? Math.round(fNoShow/fCalls *100) : 0;
+  const pctNS = fAgend  ? Math.round(fNoShow/fAgend *100) : 0;
   const pctV  = fRealiz ? Math.round(fVendas/fRealiz*100) : 0;
 
   const arrowSvg = (rate) => `
