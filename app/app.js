@@ -223,7 +223,9 @@ let isLive         = false;
 let currentUserDbId = null; // UUID do usuario na tabela Supabase
 let selectedIds    = new Set();
 let nsSelectedIds  = new Set();
-let qualSelectedIds = new Set();
+let qualSelectedIds  = new Set();
+let qualActiveTab    = 'sc';   // 'sc' | 'ec' | 'sr'
+let qualActiveSubTab = 'c1';   // 'c1' | 'c2' | 'c3p' (only when qualActiveTab === 'ec')
 let perfilLeadId  = null;
 let novoLeadId    = null;
 let auth          = null;
@@ -2928,7 +2930,7 @@ function renderQualificados() {
     </div>`;
   }
 
-  function rowAguardando(l) {
+  function rowSemContato(l) {
     const dias = daysSince(l.datachegada);
     return `<div class="followup-row fdv-list-row" data-id="${l.id}">
       <div class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></div>
@@ -2940,19 +2942,17 @@ function renderQualificados() {
       <div>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</div>
       <div class="cell-acoes">
         ${dropdownContato(l.id)}
-        <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
-        <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir">${ICO_TRASH}</button>
+        <button class="btn-icon btn-destructive" data-descartar="${l.id}" title="Descartar">${ICO_TRASH}</button>
       </div>
     </div>`;
   }
 
   function rowEmContato(l) {
-    const diasUlt = daysSinceTs(l.ultimo_contato_em);
-    const count   = l.contato_count || 1;
-    const badgeMod = count >= 3 ? 'badge-cc--red' : count === 2 ? 'badge-cc--yellow' : 'badge-cc--green';
-    const badgeLbl = count >= 3 ? 'Contato 3+' : `Contato ${count}`;
+    const diasUlt   = daysSinceTs(l.ultimo_contato_em);
+    const count     = l.contato_count || 1;
+    const showAgen  = count >= 2;
     return `<div class="followup-row fdv-list-row" data-id="${l.id}">
       <div class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></div>
       <div>${fmtDate(l.datachegada)}<br><small style="color:var(--t3)">${diasUlt}d desde ult.</small></div>
@@ -2963,16 +2963,15 @@ function renderQualificados() {
       <div>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</div>
       <div class="cell-acoes">
         ${dropdownContato(l.id)}
-        <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
+        ${showAgen?`<button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar Call">${ICO_CALENDAR}</button>`:''}
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
-        <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir">${ICO_TRASH}</button>
+        <button class="btn-icon btn-destructive" data-descartar="${l.id}" title="Descartar">${ICO_TRASH}</button>
       </div>
     </div>`;
   }
 
   function rowSemResposta(l) {
-    const count = l.contato_count || 0;
     return `<div class="followup-row fdv-list-row" data-id="${l.id}">
       <div class="cell-chk"><input type="checkbox" class="qual-row-chk" data-id="${l.id}" ${qualSelectedIds.has(l.id)?'checked':''}></div>
       <div>${fmtDate(l.datachegada)}</div>
@@ -2983,33 +2982,65 @@ function renderQualificados() {
       <div>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</div>
       <div class="cell-acoes">
         <button class="btn-primary btn-sm" data-fp-resgatar="${l.id}">${ICO_UNDO} Resgatar</button>
-        <button class="btn-ghost btn-sm btn-icon" data-agendar="${l.id}" title="Agendar">${ICO_CALENDAR}</button>
         <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
         <button class="btn-ghost btn-sm btn-icon" data-perfil="${l.id}" title="Editar">${ICO_PENCIL}</button>
-        <button class="btn-icon btn-destructive" data-excluir="${l.id}" title="Excluir">${ICO_TRASH}</button>
+        <button class="btn-icon btn-destructive" data-descartar="${l.id}" title="Descartar">${ICO_TRASH}</button>
       </div>
     </div>`;
   }
 
   let allQual = [];
 
-  function sortLeads(arr, order) {
-    const copy = [...arr];
-    if (order === 'newest') return copy.sort((a,b) => (b.datachegada||'').localeCompare(a.datachegada||''));
-    if (order === 'az')     return copy.sort((a,b) => (a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
-    if (order === 'za')     return copy.sort((a,b) => (b.nome||'').localeCompare(a.nome||'', 'pt-BR'));
-    if (order === 'stage')  return copy.sort((a,b) => (a.contato_count||0) - (b.contato_count||0));
-    return copy.sort((a,b) => (a.datachegada||'').localeCompare(b.datachegada||''));
+  function getActiveRows() {
+    if (qualActiveTab === 'sc') return allQual.filter(l => !l.status_followup || l.status_followup === 'sem_contato');
+    if (qualActiveTab === 'ec') {
+      const ec = allQual.filter(l => l.status_followup === 'em_contato');
+      if (qualActiveSubTab === 'c1')  return ec.filter(l => !l.contato_count || l.contato_count === 1);
+      if (qualActiveSubTab === 'c2')  return ec.filter(l => (l.contato_count||0) === 2);
+      if (qualActiveSubTab === 'c3p') return ec.filter(l => (l.contato_count||0) >= 3);
+      return ec;
+    }
+    if (qualActiveTab === 'sr') return allQual.filter(l => l.status_followup === 'sem_resposta');
+    return [];
   }
 
-  function applyQualSort(arr, blk) {
-    const { col, dir } = TABLE_SORT['qual-' + blk] || {};
+  function getRowRenderer() {
+    if (qualActiveTab === 'sc') return rowSemContato;
+    if (qualActiveTab === 'ec') return rowEmContato;
+    return rowSemResposta;
+  }
+
+  function getEmptyMsg() {
+    if (qualActiveTab === 'sc') return 'Nenhum lead aguardando contato.';
+    if (qualActiveTab === 'ec') return 'Nenhum lead nesta etapa de contato.';
+    return 'Nenhum lead sem resposta.';
+  }
+
+  function applyQualSort(arr) {
+    const { col, dir } = TABLE_SORT['qual-' + qualActiveTab] || {};
     if (col && dir) return sortTable(arr, col, dir);
-    const selectId = { sc: 'qual-sort-sc', ec: 'qual-sort-ec', sr: 'qual-sort-sr' }[blk];
-    return sortLeads(arr, $(selectId)?.value || 'oldest');
+    return [...arr].sort((a,b) => (a.datachegada||'').localeCompare(b.datachegada||''));
   }
 
-  function renderQualBlocks() {
+  function renderQualTab() {
+    const el = $('qualificados-content');
+    if (!el) return;
+
+    // Update tab active states
+    el.querySelectorAll('.qual-tab-btn').forEach(b => {
+      b.classList.toggle('qual-tab-btn--active', b.dataset.tab === qualActiveTab);
+    });
+
+    // Sub-tab nav visibility + active states
+    const subNav = $('qual-subtab-nav');
+    if (subNav) {
+      subNav.style.display = qualActiveTab === 'ec' ? 'flex' : 'none';
+      subNav.querySelectorAll('.qual-subtab-btn').forEach(b => {
+        b.classList.toggle('qual-subtab-btn--active', b.dataset.subtab === qualActiveSubTab);
+      });
+    }
+
+    // Apply filters
     const q          = ($('qual-search-top')?.value        || '').toLowerCase().trim();
     const origem     = $('qual-filter-origem')?.value      || '';
     const renda      = $('qual-filter-renda')?.value       || '';
@@ -3030,30 +3061,27 @@ function renderQualificados() {
       return true;
     };
 
-    const scEl = $('qual-sc-body');
-    const ecEl = $('qual-ec-body');
-    const srEl = $('qual-sr-body');
+    const rows     = applyQualSort(getActiveRows().filter(match));
+    const renderer = getRowRenderer();
+    const body     = $('qual-tab-body');
 
-    if (scEl) {
-      const rows = applyQualSort(allQual.filter(l => !l.status_followup || l.status_followup === 'sem_contato').filter(match), 'sc');
-      scEl.innerHTML = rows.length ? rows.map(rowAguardando).join('') : '<div class="followup-block-empty">Nenhum lead aguardando contato.</div>';
-      const acSc = scEl.closest('.followup-block')?.querySelector('.qual-chk-all');
-      if (acSc) { const cs=[...scEl.querySelectorAll('.qual-row-chk')]; acSc.checked=cs.length>0&&cs.every(c=>qualSelectedIds.has(c.dataset.id)); acSc.indeterminate=!acSc.checked&&cs.some(c=>qualSelectedIds.has(c.dataset.id)); }
+    if (body) {
+      body.innerHTML = rows.length
+        ? rows.map(renderer).join('')
+        : `<div class="followup-block-empty">${getEmptyMsg()}</div>`;
+      lucide.createIcons({ nodes: [body] });
     }
-    if (ecEl) {
-      const rows = applyQualSort(allQual.filter(l => l.status_followup === 'em_contato').filter(match), 'ec');
-      ecEl.innerHTML = rows.length ? rows.map(rowEmContato).join('') : '<div class="followup-block-empty">Nenhum lead em processo de contato.</div>';
-      const acEc = ecEl.closest('.followup-block')?.querySelector('.qual-chk-all');
-      if (acEc) { const cs=[...ecEl.querySelectorAll('.qual-row-chk')]; acEc.checked=cs.length>0&&cs.every(c=>qualSelectedIds.has(c.dataset.id)); acEc.indeterminate=!acEc.checked&&cs.some(c=>qualSelectedIds.has(c.dataset.id)); }
+
+    // Update sort icons and select-all
+    updateSortIcons($('qual-grid-head'), 'qual-' + qualActiveTab);
+    const chkAll = $('qual-chk-all');
+    if (chkAll && body) {
+      const cs = [...body.querySelectorAll('.qual-row-chk')];
+      chkAll.checked       = cs.length > 0 && cs.every(c => qualSelectedIds.has(c.dataset.id));
+      chkAll.indeterminate = !chkAll.checked && cs.some(c => qualSelectedIds.has(c.dataset.id));
     }
-    if (srEl) {
-      const rows = applyQualSort(allQual.filter(l => l.status_followup === 'sem_resposta').filter(match), 'sr');
-      srEl.innerHTML = rows.length ? rows.map(rowSemResposta).join('') : '<div class="followup-block-empty">Nenhum lead sem resposta.</div>';
-      const acSr = srEl.closest('.followup-block')?.querySelector('.qual-chk-all');
-      if (acSr) { const cs=[...srEl.querySelectorAll('.qual-row-chk')]; acSr.checked=cs.length>0&&cs.every(c=>qualSelectedIds.has(c.dataset.id)); acSr.indeterminate=!acSr.checked&&cs.some(c=>qualSelectedIds.has(c.dataset.id)); }
-    }
+
     updateQualBulkBar();
-    ['sc','ec','sr'].forEach(blk => updateSortIcons($('qual-grid-head-' + blk), 'qual-' + blk));
   }
 
   try {
@@ -3073,7 +3101,7 @@ function renderQualificados() {
 
     const nSemContato  = allQual.filter(l => !l.status_followup || l.status_followup === 'sem_contato').length;
     const nEmContato   = allQual.filter(l => l.status_followup === 'em_contato').length;
-    const nContato1    = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) === 1).length;
+    const nContato1    = allQual.filter(l => l.status_followup === 'em_contato' && (!l.contato_count || l.contato_count === 1)).length;
     const nContato2    = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) === 2).length;
     const nContato3p   = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) >= 3).length;
     const nSemResposta = allQual.filter(l => l.status_followup === 'sem_resposta').length;
@@ -3084,11 +3112,6 @@ function renderQualificados() {
     const profissaoOpts = uniq(allQual.map(l=>l.profissao));
     const etiquetaOpts  = ['Super Lead','Bom','Neutro','Frio'];
     const mesOpts       = [...new Set(allQual.filter(l=>l.datachegada).map(l=>l.datachegada.slice(0,7)))].sort().reverse();
-
-    const gridHead = `<div class="qual-grid-head" id="qual-grid-head-{BLK}">
-      <div class="cell-chk"><input type="checkbox" class="qual-chk-all" data-block="{BLK}" title="Selecionar todos"></div>
-      <div data-sort-col="datachegada">Chegou em</div><div data-sort-col="nome">Nome</div><div>Celular</div><div data-sort-col="origem">Origem</div><div data-sort-col="renda">Renda</div><div>Etiqueta</div><div>Ações</div>
-    </div>`;
 
     el.innerHTML = `
     <div class="filters-bar">
@@ -3174,96 +3197,128 @@ function renderQualificados() {
       </div>
     </div>
 
+    <div class="qual-tab-nav">
+      <button class="qual-tab-btn${qualActiveTab==='sc'?' qual-tab-btn--active':''}" data-tab="sc">
+        Sem Contato <span class="qual-tab-badge">${nSemContato}</span>
+      </button>
+      <button class="qual-tab-btn${qualActiveTab==='ec'?' qual-tab-btn--active':''}" data-tab="ec">
+        Em Contato <span class="qual-tab-badge">${nEmContato}</span>
+      </button>
+      <button class="qual-tab-btn${qualActiveTab==='sr'?' qual-tab-btn--active':''}" data-tab="sr">
+        Sem Resposta <span class="qual-tab-badge">${nSemResposta}</span>
+      </button>
+    </div>
+
+    <div class="qual-subtab-nav" id="qual-subtab-nav" style="${qualActiveTab==='ec'?'display:flex':'display:none'}">
+      <button class="qual-subtab-btn${qualActiveSubTab==='c1'?' qual-subtab-btn--active':''}" data-subtab="c1">
+        Contato 1 <span class="qual-tab-badge">${nContato1}</span>
+      </button>
+      <button class="qual-subtab-btn${qualActiveSubTab==='c2'?' qual-subtab-btn--active':''}" data-subtab="c2">
+        Contato 2 <span class="qual-tab-badge">${nContato2}</span>
+      </button>
+      <button class="qual-subtab-btn${qualActiveSubTab==='c3p'?' qual-subtab-btn--active':''}" data-subtab="c3p">
+        Contato 3+ <span class="qual-tab-badge">${nContato3p}</span>
+      </button>
+    </div>
+
     <div class="bulk-bar" id="qual-bulk-bar" style="display:none">
       <span class="bulk-count" id="qual-bulk-count">0 selecionados</span>
       <div class="bulk-actions">
-        <button class="btn-acao-inline btn-destructive" id="btn-qual-bulk-excluir">${ICO_TRASH} Excluir</button>
-        <button class="btn-acao-inline" id="btn-qual-bulk-tag">${ICO_TAG} Adicionar etiqueta</button>
+        <button class="btn-acao-inline" id="btn-qual-bulk-contato">+ Contato</button>
+        <button class="btn-acao-inline btn-destructive" id="btn-qual-bulk-descartar">${ICO_TRASH} Descartar</button>
       </div>
       <button class="btn-ghost btn-sm" id="btn-qual-bulk-clear">${ICO_X_SM} Limpar</button>
     </div>
 
-    <div class="followup-block followup-block--yellow">
-      <div class="followup-block-header">
-        <span class="followup-block-ico">${ICO_ALERT}</span>
-        <span class="followup-block-title">${nSemContato} lead${nSemContato !== 1 ? 's' : ''} aguardando primeiro contato</span>
-        <select class="followup-sort-select" id="qual-sort-sc">
-          <option value="oldest">Mais antigos primeiro</option>
-          <option value="newest">Mais recentes primeiro</option>
-          <option value="az">A → Z</option>
-          <option value="za">Z → A</option>
-        </select>
+    <div class="qual-grid">
+      <div class="qual-grid-head" id="qual-grid-head">
+        <div class="cell-chk"><input type="checkbox" id="qual-chk-all" title="Selecionar todos"></div>
+        <div data-sort-col="datachegada">Chegou em</div>
+        <div data-sort-col="nome">Nome</div>
+        <div>Celular</div>
+        <div data-sort-col="origem">Origem</div>
+        <div data-sort-col="renda">Renda</div>
+        <div>Etiqueta</div>
+        <div>Ações</div>
       </div>
-      <div class="followup-block-body">
-        <div class="qual-grid">
-          ${gridHead.replace('{BLK}','sc')}
-          <div id="qual-sc-body"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="followup-block followup-block--green">
-      <div class="followup-block-header">
-        <span class="followup-block-ico">${ICO_MSG_CIRCLE}</span>
-        <span class="followup-block-title">${nEmContato} lead${nEmContato !== 1 ? 's' : ''} em processo de contato</span>
-        <select class="followup-sort-select" id="qual-sort-ec">
-          <option value="oldest">Mais antigos primeiro</option>
-          <option value="newest">Mais recentes primeiro</option>
-          <option value="az">A → Z</option>
-          <option value="za">Z → A</option>
-          <option value="stage">Por etapa</option>
-        </select>
-      </div>
-      <div class="followup-block-body">
-        <div class="qual-grid">
-          ${gridHead.replace('{BLK}','ec')}
-          <div id="qual-ec-body"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="followup-block followup-block--red">
-      <div class="followup-block-header">
-        <span class="followup-block-ico">${ICO_X_CIRCLE}</span>
-        <span class="followup-block-title">${nSemResposta} lead${nSemResposta !== 1 ? 's' : ''} sem resposta</span>
-        <select class="followup-sort-select" id="qual-sort-sr">
-          <option value="oldest">Mais antigos primeiro</option>
-          <option value="newest">Mais recentes primeiro</option>
-          <option value="az">A → Z</option>
-          <option value="za">Z → A</option>
-        </select>
-      </div>
-      <div class="followup-block-body">
-        <div class="qual-grid">
-          ${gridHead.replace('{BLK}','sr')}
-          <div id="qual-sr-body"></div>
-        </div>
-      </div>
+      <div id="qual-tab-body"></div>
     </div>`;
 
     lucide.createIcons({ nodes: [el] });
 
-    // Sort headers — um bind por bloco após el.innerHTML
-    ['sc','ec','sr'].forEach(blk => {
-      const h = $('qual-grid-head-' + blk);
-      if (!h) return;
-      h.querySelectorAll('[data-sort-col]').forEach(div => {
-        div.addEventListener('click', () => {
-          cycleSortState('qual-' + blk, div.dataset.sortCol);
-          renderQualBlocks();
-        });
-      });
-    });
-
     if (el._qualClickHandler)   el.removeEventListener('click',  el._qualClickHandler);
     if (el._qualChangeHandler)  el.removeEventListener('change', el._qualChangeHandler);
+    if (el._qualInputHandler)   el.removeEventListener('input',  el._qualInputHandler);
     if (el._qualOutsideHandler) document.removeEventListener('click', el._qualOutsideHandler);
 
     el._qualClickHandler = e => {
+      // Tab navigation
+      const tabBtn = e.target.closest('.qual-tab-btn');
+      if (tabBtn) { qualActiveTab = tabBtn.dataset.tab; renderQualTab(); return; }
+
+      const subTabBtn = e.target.closest('.qual-subtab-btn');
+      if (subTabBtn) { qualActiveSubTab = subTabBtn.dataset.subtab; renderQualTab(); return; }
+
+      // Sort headers
+      const sortDiv = e.target.closest('[data-sort-col]');
+      if (sortDiv && sortDiv.closest('#qual-grid-head')) {
+        cycleSortState('qual-' + qualActiveTab, sortDiv.dataset.sortCol);
+        renderQualTab();
+        return;
+      }
+
+      // Limpar filtros
+      if (e.target.closest('#qual-limpar')) {
+        ['qual-filter-origem','qual-filter-renda','qual-filter-mes','qual-filter-profissao',
+         'qual-filter-etiqueta','qual-filter-chegada-de','qual-filter-chegada-ate','qual-search-top']
+          .forEach(id => { const inp=$(id); if(inp) inp.value=''; });
+        renderQualTab();
+        return;
+      }
+
+      // Bulk actions
+      if (e.target.closest('#btn-qual-bulk-clear')) {
+        qualSelectedIds.clear(); updateQualBulkBar(); renderQualTab(); return;
+      }
+      if (e.target.closest('#btn-qual-bulk-contato')) {
+        const ids = [...qualSelectedIds]; if (!ids.length) return;
+        if (!confirm(`Registrar + Contato para ${ids.length} lead(s)? (contato_count incrementado)`)) return;
+        (async () => {
+          try {
+            for (const id of ids) {
+              const l = allLeads.find(x => x.id === id);
+              if (!l) continue;
+              const cc = Math.max(1, (l.contato_count||0) + 1);
+              await saveLead(id, { status_followup: 'em_contato', contato_count: cc, ultimo_contato_em: new Date().toISOString() });
+            }
+            qualSelectedIds.clear(); renderAll();
+            toast(`Contato registrado para ${ids.length} lead(s).`, 'ok');
+          } catch(err) { console.error(err); toast('Erro ao registrar contato.', 'err'); }
+        })();
+        return;
+      }
+      if (e.target.closest('#btn-qual-bulk-descartar')) {
+        const ids = [...qualSelectedIds]; if (!ids.length) return;
+        if (!confirm(`Descartar ${ids.length} lead(s)?`)) return;
+        (async () => {
+          try {
+            if (isLive) {
+              const {error} = await supabase.from('leads').update({status:'descartado'}).in('id', ids);
+              if (error) throw error;
+            }
+            ids.forEach(id => { const l=allLeads.find(x=>x.id===id); if(l) l.status='descartado'; });
+            qualSelectedIds.clear(); renderAll();
+            toast(`${ids.length} lead(s) descartado(s).`, 'ok');
+          } catch(err) { console.error(err); toast('Erro ao descartar.', 'err'); }
+        })();
+        return;
+      }
+
+      // Contato dropdown toggle
       const toggleBtn = e.target.closest('.btn-contato-toggle');
       if (toggleBtn && toggleBtn.closest('.followup-row')) {
         e.stopPropagation();
-        const id = toggleBtn.dataset.id;
+        const id   = toggleBtn.dataset.id;
         const drop = document.getElementById('cdrop-' + id);
         if (!drop) return;
         const isOpen = drop.style.display !== 'none';
@@ -3272,13 +3327,14 @@ function renderQualificados() {
         return;
       }
 
+      // Contato option
       const opt = e.target.closest('.contato-opt');
       if (opt && opt.closest('.followup-row')) {
         e.stopPropagation();
         el.querySelectorAll('.contato-dropdown').forEach(d => { d.style.display = 'none'; });
-        const leadId = opt.dataset.lead;
-        const cc     = opt.dataset.cc;
-        const sf     = opt.dataset.sf;
+        const leadId  = opt.dataset.lead;
+        const cc      = opt.dataset.cc;
+        const sf      = opt.dataset.sf;
         const updates = { status_followup: sf, ultimo_contato_em: new Date().toISOString() };
         if (cc) updates.contato_count = parseInt(cc, 10);
         (async () => {
@@ -3288,7 +3344,8 @@ function renderQualificados() {
         return;
       }
 
-      const t = e.target.closest('[data-fp-resgatar],[data-agendar],[data-perfil],[data-excluir],[data-descartar],.btn-wa-lead');
+      // Row action buttons
+      const t = e.target.closest('[data-fp-resgatar],[data-agendar],[data-perfil],[data-descartar],.btn-wa-lead');
       if (!t || !t.closest('.followup-row')) return;
       if (t.dataset.fpResgatar) {
         (async () => {
@@ -3299,7 +3356,6 @@ function renderQualificados() {
       }
       if (t.dataset.agendar)   { const l=allLeads.find(x=>x.id===t.dataset.agendar); if(l) openAgendar(l); return; }
       if (t.dataset.perfil)    { const l=allLeads.find(x=>x.id===t.dataset.perfil); if(l) openPerfil(l); return; }
-      if (t.dataset.excluir)   { deleteLead(t.dataset.excluir); return; }
       if (t.dataset.descartar) { openDescarteModal(t.dataset.descartar); return; }
       if (t.classList.contains('btn-wa-lead')) { openWaChatFromLead(t.dataset.id); return; }
     };
@@ -3313,54 +3369,43 @@ function renderQualificados() {
     document.addEventListener('click', el._qualOutsideHandler);
 
     el._qualChangeHandler = e => {
+      // Filter selects
+      if (e.target.matches('#qual-filter-origem,#qual-filter-renda,#qual-filter-mes,#qual-filter-profissao,#qual-filter-etiqueta,#qual-filter-chegada-de,#qual-filter-chegada-ate')) {
+        renderQualTab(); return;
+      }
+      // Select-all checkbox
+      if (e.target.id === 'qual-chk-all') {
+        const body = $('qual-tab-body');
+        body?.querySelectorAll('.qual-row-chk').forEach(c => {
+          c.checked = e.target.checked;
+          if (e.target.checked) qualSelectedIds.add(c.dataset.id);
+          else                  qualSelectedIds.delete(c.dataset.id);
+        });
+        updateQualBulkBar(); return;
+      }
+      // Row checkbox
       const chk = e.target.closest('.qual-row-chk');
       if (chk) {
         if (chk.checked) qualSelectedIds.add(chk.dataset.id);
         else             qualSelectedIds.delete(chk.dataset.id);
         updateQualBulkBar();
-        const block = chk.closest('.followup-block');
-        const allChk = block?.querySelector('.qual-chk-all');
-        if (allChk) { const rs=[...block.querySelectorAll('.qual-row-chk')]; allChk.checked=rs.length>0&&rs.every(c=>qualSelectedIds.has(c.dataset.id)); allChk.indeterminate=!allChk.checked&&rs.some(c=>qualSelectedIds.has(c.dataset.id)); }
-        return;
-      }
-      const allChk = e.target.closest('.qual-chk-all');
-      if (allChk) {
-        const block = allChk.closest('.followup-block');
-        block?.querySelectorAll('.qual-row-chk').forEach(c => { c.checked = allChk.checked; if (allChk.checked) qualSelectedIds.add(c.dataset.id); else qualSelectedIds.delete(c.dataset.id); });
-        updateQualBulkBar();
+        const body   = $('qual-tab-body');
+        const chkAll = $('qual-chk-all');
+        if (chkAll && body) {
+          const cs = [...body.querySelectorAll('.qual-row-chk')];
+          chkAll.checked       = cs.length > 0 && cs.every(c => qualSelectedIds.has(c.dataset.id));
+          chkAll.indeterminate = !chkAll.checked && cs.some(c => qualSelectedIds.has(c.dataset.id));
+        }
       }
     };
     el.addEventListener('change', el._qualChangeHandler);
 
-    $('btn-qual-bulk-excluir')?.addEventListener('click', async () => {
-      const ids = [...qualSelectedIds]; if (!ids.length) return;
-      if (!confirm(`Excluir ${ids.length} lead(s)?`)) return;
-      try {
-        if (isLive) { const {error} = await supabase.from('leads').delete().in('id', ids); if (error) throw error; }
-        allLeads = allLeads.filter(l => !qualSelectedIds.has(l.id));
-        qualSelectedIds.clear(); updateQualBulkBar(); renderAll();
-        toast(`${ids.length} lead(s) excluído(s).`, 'ok');
-      } catch(e) { console.error(e); toast('Erro ao excluir.', 'err'); }
-    });
-    $('btn-qual-bulk-tag')?.addEventListener('click', () => {
-      if (!qualSelectedIds.size) return;
-      selectedIds.clear(); qualSelectedIds.forEach(id => selectedIds.add(id));
-      openBulkTagModal();
-    });
-    $('btn-qual-bulk-clear')?.addEventListener('click', () => { qualSelectedIds.clear(); updateQualBulkBar(); renderQualBlocks(); });
+    el._qualInputHandler = e => {
+      if (e.target.id === 'qual-search-top') renderQualTab();
+    };
+    el.addEventListener('input', el._qualInputHandler);
 
-    ['qual-sort-sc','qual-sort-ec','qual-sort-sr'].forEach(id =>
-      $(id)?.addEventListener('change', renderQualBlocks)
-    );
-    ['qual-filter-origem','qual-filter-renda','qual-filter-mes','qual-filter-profissao','qual-filter-etiqueta','qual-filter-chegada-de','qual-filter-chegada-ate'].forEach(id =>
-      $(id)?.addEventListener('change', renderQualBlocks)
-    );
-    $('qual-search-top')?.addEventListener('input', renderQualBlocks);
-    $('qual-limpar')?.addEventListener('click', () => {
-      ['qual-filter-origem','qual-filter-renda','qual-filter-mes','qual-filter-profissao','qual-filter-etiqueta','qual-filter-chegada-de','qual-filter-chegada-ate','qual-search-top'].forEach(id => { const inp=$(id); if(inp) inp.value=''; });
-      renderQualBlocks();
-    });
-    renderQualBlocks();
+    renderQualTab();
   } catch (err) {
     console.error('[FDV] renderQualificados ERRO:', err);
     const el2 = $('qualificados-content');
