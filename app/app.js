@@ -3002,6 +3002,13 @@ function renderQualificados() {
     return copy.sort((a,b) => (a.datachegada||'').localeCompare(b.datachegada||''));
   }
 
+  function applyQualSort(arr, blk) {
+    const { col, dir } = TABLE_SORT['qual-' + blk] || {};
+    if (col && dir) return sortTable(arr, col, dir);
+    const selectId = { sc: 'qual-sort-sc', ec: 'qual-sort-ec', sr: 'qual-sort-sr' }[blk];
+    return sortLeads(arr, $(selectId)?.value || 'oldest');
+  }
+
   function renderQualBlocks() {
     const q          = ($('qual-search-top')?.value        || '').toLowerCase().trim();
     const origem     = $('qual-filter-origem')?.value      || '';
@@ -3028,24 +3035,25 @@ function renderQualificados() {
     const srEl = $('qual-sr-body');
 
     if (scEl) {
-      const rows = sortLeads(allQual.filter(l => !l.status_followup || l.status_followup === 'sem_contato').filter(match), $('qual-sort-sc')?.value || 'oldest');
+      const rows = applyQualSort(allQual.filter(l => !l.status_followup || l.status_followup === 'sem_contato').filter(match), 'sc');
       scEl.innerHTML = rows.length ? rows.map(rowAguardando).join('') : '<div class="followup-block-empty">Nenhum lead aguardando contato.</div>';
       const acSc = scEl.closest('.followup-block')?.querySelector('.qual-chk-all');
       if (acSc) { const cs=[...scEl.querySelectorAll('.qual-row-chk')]; acSc.checked=cs.length>0&&cs.every(c=>qualSelectedIds.has(c.dataset.id)); acSc.indeterminate=!acSc.checked&&cs.some(c=>qualSelectedIds.has(c.dataset.id)); }
     }
     if (ecEl) {
-      const rows = sortLeads(allQual.filter(l => l.status_followup === 'em_contato').filter(match), $('qual-sort-ec')?.value || 'oldest');
+      const rows = applyQualSort(allQual.filter(l => l.status_followup === 'em_contato').filter(match), 'ec');
       ecEl.innerHTML = rows.length ? rows.map(rowEmContato).join('') : '<div class="followup-block-empty">Nenhum lead em processo de contato.</div>';
       const acEc = ecEl.closest('.followup-block')?.querySelector('.qual-chk-all');
       if (acEc) { const cs=[...ecEl.querySelectorAll('.qual-row-chk')]; acEc.checked=cs.length>0&&cs.every(c=>qualSelectedIds.has(c.dataset.id)); acEc.indeterminate=!acEc.checked&&cs.some(c=>qualSelectedIds.has(c.dataset.id)); }
     }
     if (srEl) {
-      const rows = sortLeads(allQual.filter(l => l.status_followup === 'sem_resposta').filter(match), $('qual-sort-sr')?.value || 'oldest');
+      const rows = applyQualSort(allQual.filter(l => l.status_followup === 'sem_resposta').filter(match), 'sr');
       srEl.innerHTML = rows.length ? rows.map(rowSemResposta).join('') : '<div class="followup-block-empty">Nenhum lead sem resposta.</div>';
       const acSr = srEl.closest('.followup-block')?.querySelector('.qual-chk-all');
       if (acSr) { const cs=[...srEl.querySelectorAll('.qual-row-chk')]; acSr.checked=cs.length>0&&cs.every(c=>qualSelectedIds.has(c.dataset.id)); acSr.indeterminate=!acSr.checked&&cs.some(c=>qualSelectedIds.has(c.dataset.id)); }
     }
     updateQualBulkBar();
+    ['sc','ec','sr'].forEach(blk => updateSortIcons($('qual-grid-head-' + blk), 'qual-' + blk));
   }
 
   try {
@@ -3077,9 +3085,9 @@ function renderQualificados() {
     const etiquetaOpts  = ['Super Lead','Bom','Neutro','Frio'];
     const mesOpts       = [...new Set(allQual.filter(l=>l.datachegada).map(l=>l.datachegada.slice(0,7)))].sort().reverse();
 
-    const gridHead = `<div class="qual-grid-head">
+    const gridHead = `<div class="qual-grid-head" id="qual-grid-head-{BLK}">
       <div class="cell-chk"><input type="checkbox" class="qual-chk-all" data-block="{BLK}" title="Selecionar todos"></div>
-      <div>Chegou em</div><div>Nome</div><div>Celular</div><div>Origem</div><div>Renda</div><div>Etiqueta</div><div>Ações</div>
+      <div data-sort-col="datachegada">Chegou em</div><div data-sort-col="nome">Nome</div><div>Celular</div><div data-sort-col="origem">Origem</div><div data-sort-col="renda">Renda</div><div>Etiqueta</div><div>Ações</div>
     </div>`;
 
     el.innerHTML = `
@@ -3234,6 +3242,18 @@ function renderQualificados() {
     </div>`;
 
     lucide.createIcons({ nodes: [el] });
+
+    // Sort headers — um bind por bloco após el.innerHTML
+    ['sc','ec','sr'].forEach(blk => {
+      const h = $('qual-grid-head-' + blk);
+      if (!h) return;
+      h.querySelectorAll('[data-sort-col]').forEach(div => {
+        div.addEventListener('click', () => {
+          cycleSortState('qual-' + blk, div.dataset.sortCol);
+          renderQualBlocks();
+        });
+      });
+    });
 
     el.addEventListener('click', e => {
       const toggleBtn = e.target.closest('.btn-contato-toggle');
