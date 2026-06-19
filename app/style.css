@@ -4359,11 +4359,13 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 
 .qual-filters-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 16px; }
 
+.qual-grid { width: 100%; overflow-x: auto; }
+
 /* glass/padding/zebra/hover vêm de .fdv-list-row */
 .qual-grid-head,
 .qual-grid .followup-row {
   display: grid;
-  grid-template-columns: 28px 95px 180px 130px 1fr 80px 100px 220px;
+  grid-template-columns: 28px 95px 160px 120px 160px 80px 100px 220px;
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
