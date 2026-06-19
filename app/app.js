@@ -2946,7 +2946,7 @@ function renderQualificados() {
       <button class="btn-ghost btn-sm btn-acoes-toggle" data-id="${id}">Ações ▾</button>
       <div class="qual-acoes-dropdown" id="adrop-${id}" style="display:none">
         ${primeiro}
-        <button class="qual-acoes-opt" data-agendar="${id}">Agendar Call</button>
+        <button class="qual-acoes-opt qual-acoes-opt--agendar" data-agendar="${id}">Agendar Call</button>
         <button class="qual-acoes-opt btn-wa-lead" data-id="${id}">WhatsApp</button>
         <button class="qual-acoes-opt" data-perfil="${id}">Editar</button>
         <button class="qual-acoes-opt qual-acoes-opt--danger" data-descartar="${id}">Descartar</button>

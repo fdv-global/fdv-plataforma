@@ -4483,6 +4483,7 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
 .qual-acoes-opt:hover { background: rgba(255,255,255,.07); }
 .qual-acoes-opt--danger { color: #e06450; }
 .qual-acoes-opt--danger:hover { background: rgba(224,100,80,.08); }
+.qual-acoes-opt--agendar { color: #CE9221; }
 .qual-acoes-contato-sub {
   position: static; box-shadow: none; border-radius: 0;
   border: none; border-top: 1px solid rgba(255,255,255,.05);
