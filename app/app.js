@@ -3768,6 +3768,43 @@ function renderNoShow() {
     </table>
   </div>`;
 
+  if (el._nsClickHandler)   el.removeEventListener('click',  el._nsClickHandler);
+  if (el._nsChangeHandler)  el.removeEventListener('change', el._nsChangeHandler);
+
+  el._nsClickHandler = e => {
+    const b = e.target.closest('[data-perfil],[data-descartar],.btn-wa-lead,.btn-reagendar-ns');
+    if (!b) return;
+    if (b.dataset.perfil)    { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); return; }
+    if (b.dataset.descartar) { openDescarteModal(b.dataset.descartar); return; }
+    if (b.classList.contains('btn-wa-lead'))      { openWaChatFromLead(b.dataset.id); return; }
+    if (b.classList.contains('btn-reagendar-ns')) { const l=allLeads.find(x=>x.id===b.dataset.id); if(l) openAgendar(l); return; }
+  };
+  el.addEventListener('click', el._nsClickHandler);
+
+  el._nsChangeHandler = e => {
+    const chk = e.target.closest('.ns-row-chk');
+    if (chk) {
+      if (chk.checked) nsSelectedIds.add(chk.dataset.id);
+      else             nsSelectedIds.delete(chk.dataset.id);
+      const allChks = [...el.querySelectorAll('#ns-list .ns-row-chk')];
+      const d = $('chk-all-ns');
+      if (d) { d.checked = allChks.length > 0 && allChks.every(c => c.checked); d.indeterminate = !d.checked && allChks.some(c => c.checked); }
+      updateNsBulkBar();
+      return;
+    }
+    if (e.target.id === 'chk-all-ns') {
+      const checked = e.target.checked;
+      el.querySelectorAll('#ns-list .ns-row-chk').forEach(c => {
+        c.checked = checked;
+        if (checked) nsSelectedIds.add(c.dataset.id);
+        else         nsSelectedIds.delete(c.dataset.id);
+      });
+      updateNsBulkBar();
+      applyNsFilters();
+    }
+  };
+  el.addEventListener('change', el._nsChangeHandler);
+
   function applyNsFilters() {
     const origem     = $('ns-filter-origem')?.value     || '';
     const closer     = $('ns-filter-closer')?.value     || '';
@@ -3816,36 +3853,10 @@ function renderNoShow() {
         </td>
       </tr>`).join('');
 
-    listEl.querySelectorAll('[data-perfil]').forEach(b =>
-      b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
-    );
-    listEl.querySelectorAll('.btn-wa-lead').forEach(b =>
-      b.addEventListener('click', () => openWaChatFromLead(b.dataset.id))
-    );
-    listEl.querySelectorAll('.btn-reagendar-ns').forEach(b =>
-      b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.id); if(l) openAgendar(l); })
-    );
-    listEl.querySelectorAll('[data-descartar]').forEach(b =>
-      b.addEventListener('click', () => openDescarteModal(b.dataset.descartar))
-    );
-    listEl.querySelectorAll('.ns-row-chk').forEach(chk => {
-      chk.addEventListener('change', () => {
-        if (chk.checked) nsSelectedIds.add(chk.dataset.id);
-        else             nsSelectedIds.delete(chk.dataset.id);
-        const d = $('chk-all-ns');
-        if (d) { d.checked = leads.every(l => nsSelectedIds.has(l.id)); d.indeterminate = !d.checked && leads.some(l => nsSelectedIds.has(l.id)); }
-        updateNsBulkBar();
-      });
-    });
     const allChkNs = $('chk-all-ns');
     if (allChkNs) {
       allChkNs.checked = leads.length > 0 && leads.every(l => nsSelectedIds.has(l.id));
       allChkNs.indeterminate = !allChkNs.checked && leads.some(l => nsSelectedIds.has(l.id));
-      allChkNs.onclick = e => {
-        if (e.target.checked) leads.forEach(l => nsSelectedIds.add(l.id));
-        else                  leads.forEach(l => nsSelectedIds.delete(l.id));
-        updateNsBulkBar(); applyNsFilters();
-      };
     }
     updateNsBulkBar();
     updateSortIcons(el.querySelector('.leads-table thead tr'), 'noshow');
