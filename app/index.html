@@ -278,7 +278,6 @@
     <button class="sub-link active" data-sub="novos">Novos</button>
     <button class="sub-link" data-sub="qualificados">Qualificados</button>
     <button class="sub-link" data-sub="agendados">Agendados</button>
-    <button class="sub-link" data-sub="noshow">No Show</button>
     <button class="sub-link" data-sub="descartados">Descartados</button>
   </div>
 
@@ -452,7 +451,7 @@
   <!-- ─── SUB: AGENDADOS ─── -->
   <div id="sub-agendados" class="sub-panel" style="display:none">
 
-    <!-- Métricas + filtros no mesmo container — padrão Novos -->
+    <!-- Métricas + filtros -->
     <div class="filters-bar" id="agend-filters-bar">
       <div id="agend-overview-stats" class="stats-grid stats-grid--5" style="margin-bottom:16px"></div>
       <div class="filters-row">
@@ -460,12 +459,6 @@
           <label class="filter-label" for="agend-filter-origem">Origem</label>
           <select class="filter-select" id="agend-filter-origem">
             <option value="">Todas</option>
-            <option value="Instagram">Instagram</option>
-            <option value="Facebook">Facebook</option>
-            <option value="Indicação">Indicação</option>
-            <option value="Google">Google</option>
-            <option value="WhatsApp">WhatsApp</option>
-            <option value="Outros">Outros</option>
           </select>
         </div>
         <div class="filter-group">
@@ -489,7 +482,13 @@
           </select>
         </div>
         <div class="filter-group">
-          <label class="filter-label" for="agend-filter-chegada-de">Chegada de</label>
+          <label class="filter-label" for="agenda-filter-mes">Mês</label>
+          <select class="filter-select" id="agenda-filter-mes">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="agend-filter-chegada-de">Data de</label>
           <input type="date" class="filter-input filter-input--date" id="agend-filter-chegada-de">
         </div>
         <div class="filter-group">
@@ -507,35 +506,18 @@
       </div>
     </div>
 
-    <!-- Todos os Agendamentos -->
-    <div class="agend-todos-block">
-      <div class="agend-todos-block-hdr">
-        <span class="agend-todos-block-title">
-          <i data-lucide="calendar-days" style="width:14px;height:14px"></i>
-          Todos os Agendamentos
-        </span>
-      </div>
-      <div class="agend-todos-block-body">
-        <input type="date" id="agenda-filter-data" style="display:none">
-        <div class="agenda-layout">
-          <div class="agenda-sidebar">
-            <div id="agenda-mini-cal"></div>
-          </div>
-          <div id="agenda-content"></div>
-        </div>
-      </div>
-    </div>
+    <!-- Sub-abas pílulas: Agendados | Realizadas | No Show -->
+    <div id="agend-tab-nav" class="agend-tab-nav"></div>
 
-    <!-- Próximas calls (compacto, embaixo) -->
-    <div class="agend-proximas-wrap" style="margin-top:16px">
-      <div class="agend-proximas-hdr">
-        <span class="agend-proximas-title"><i data-lucide="calendar" style="width:13px;height:13px"></i>Próximas calls</span>
-        <button class="btn-icon" id="btn-copiar-proximas" title="Copiar para WhatsApp">
-          <i data-lucide="copy" style="width:14px;height:14px"></i>
-        </button>
-      </div>
-      <div id="agend-proximas-list"></div>
-    </div>
+    <!-- Conteúdo: Agendados / Realizadas -->
+    <input type="date" id="agenda-filter-data" style="display:none">
+    <div id="agenda-content"></div>
+
+    <!-- Conteúdo: No Show (alimentado por renderNoShow) -->
+    <div id="noshow-content" style="display:none"></div>
+
+    <!-- Proximas calls — mantido oculto para compatibilidade com renderAgendadosOverview -->
+    <div id="agend-proximas-list" style="display:none"></div>
 
     <!-- Briefing (acessado programaticamente) -->
     <div id="sub-agendados-briefing" class="sub-panel--inner" style="display:none">
@@ -573,10 +555,8 @@
     </div>
   </div><!-- /sub-agendados -->
 
-  <!-- ─── SUB: NO SHOW ─── -->
-  <div id="sub-noshow" class="sub-panel" style="display:none">
-    <div id="noshow-content"></div>
-  </div>
+  <!-- ─── SUB: NO SHOW ─── (conteúdo movido para sub-abas de Agendados) -->
+  <div id="sub-noshow" class="sub-panel" style="display:none"></div>
 
   <!-- ─── SUB: DESCARTADOS ─── -->
   <div id="sub-descartados" class="sub-panel" style="display:none">

@@ -244,6 +244,7 @@ let dragLeadId    = null;
 let dragColId     = null;
 let closerView    = 'kanban'; // 'kanban' | 'vendas' | 'descartados'
 let activeAgendadosSub   = 'hoje'; // 'hoje' | 'todos' | 'briefing'
+let agendActiveTab       = 'agendados'; // 'agendados' | 'realizadas' | 'noshow'
 let activeSucessoSub    = null;   // null = landing page
 let activeFinanceiroSub = null;   // null = landing page
 let allAlunas           = [];
@@ -1128,7 +1129,6 @@ function renderActiveSub() {
   if      (activeSub === 'novos')        { populateMonths(); applyFilters(); }
   else if (activeSub === 'qualificados') renderQualificados();
   else if (activeSub === 'agendados')    renderAgendadosSub();
-  else if (activeSub === 'noshow')       renderNoShow();
   else if (activeSub === 'descartados')  renderDescartados();
 }
 
@@ -2669,20 +2669,28 @@ function renderAgendaSub() {
   // remove qualquer dropdown portado para body de um render anterior
   document.querySelectorAll('[data-fdv-res-portal]').forEach(d => d.remove());
 
-  // Calendário lateral
-  if (agendaCalYear === 0) { const n = new Date(); agendaCalYear = n.getFullYear(); agendaCalMonth = n.getMonth(); }
-  renderMiniCal(agendaCalYear, agendaCalMonth);
+  // Origens dinâmicas — popula o select com valores reais dos leads agendados
+  const _allAgend = allLeads.filter(l => l.dataagendamento);
+  const _uniqAgend = arr => [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  const _origemSel = $('agend-filter-origem');
+  if (_origemSel) {
+    const _cur = _origemSel.value;
+    _origemSel.innerHTML = `<option value="">Todas</option>${_uniqAgend(_allAgend.map(l=>l.origem)).map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}`;
+    if (_cur) _origemSel.value = _cur;
+  }
 
-  // histórico completo — todos os leads com dataagendamento
-  let leads = allLeads.filter(l => l.dataagendamento);
+  // Filtra por status do tab ativo (agendados | realizadas)
+  const _statusMap = { agendados: 'agendado', realizadas: 'realizada' };
+  const _targetStatus = _statusMap[agendActiveTab] || 'agendado';
+  let leads = _allAgend.filter(l => l.status === _targetStatus);
   if (dataFilt)          leads = leads.filter(l => l.dataagendamento === dataFilt);
   else if (mesFilt)      leads = leads.filter(l => (l.dataagendamento || '').startsWith(mesFilt));
   if (closerFilt)        leads = leads.filter(l => (l.closer || '') === closerFilt);
   if (origemFilt)        leads = leads.filter(l => l.origem === origemFilt);
   if (agendadoporFilt)   leads = leads.filter(l => l.agendadopor === agendadoporFilt);
   if (rendaFilt)         leads = leads.filter(l => l.renda === rendaFilt);
-  if (chegadaDe)         leads = leads.filter(l => (l.datachegada||'') >= chegadaDe);
-  if (chegadaAte)        leads = leads.filter(l => (l.datachegada||'') <= chegadaAte);
+  if (chegadaDe)         leads = leads.filter(l => (l.dataagendamento||'') >= chegadaDe);
+  if (chegadaAte)        leads = leads.filter(l => (l.dataagendamento||'') <= chegadaAte);
   if (busca)             leads = leads.filter(l => (l.nome||'').toLowerCase().includes(busca) || (l.celular||'').includes(busca));
 
   const { col: _agc, dir: _agd } = TABLE_SORT['agendamentos'] || {};
@@ -3695,9 +3703,42 @@ function switchAgendadosSub(sub) {
 }
 
 function renderAgendadosSub() {
-  renderAgendaSub();
   renderAgendadosOverview();
+  _renderAgendTabNav();
+  const contentEl = $('agenda-content');
+  const nsEl      = $('noshow-content');
+  if (agendActiveTab === 'noshow') {
+    if (contentEl) contentEl.style.display = 'none';
+    if (nsEl)      nsEl.style.display      = '';
+    renderNoShow();
+  } else {
+    if (contentEl) contentEl.style.display = '';
+    if (nsEl)      nsEl.style.display      = 'none';
+    renderAgendaSub();
+  }
   if (activeAgendadosSub === 'briefing') renderBriefingSub();
+}
+
+function _renderAgendTabNav() {
+  const nav = $('agend-tab-nav');
+  if (!nav) return;
+  const nAgendados  = allLeads.filter(l => l.status === 'agendado').length;
+  const nRealizadas = allLeads.filter(l => l.status === 'realizada').length;
+  const nNoShow     = allLeads.filter(l => l.status === 'noshow').length;
+  nav.innerHTML = `<div class="qual-tab-nav">
+    <button class="qual-tab-btn${agendActiveTab==='agendados'?' qual-tab-btn--active':''}" data-agend-tab="agendados">
+      Agendados <span class="qual-tab-badge">${nAgendados}</span>
+    </button>
+    <button class="qual-tab-btn${agendActiveTab==='realizadas'?' qual-tab-btn--active':''}" data-agend-tab="realizadas">
+      Realizadas <span class="qual-tab-badge">${nRealizadas}</span>
+    </button>
+    <button class="qual-tab-btn${agendActiveTab==='noshow'?' qual-tab-btn--active':''}" data-agend-tab="noshow">
+      No Show <span class="qual-tab-badge">${nNoShow}</span>
+    </button>
+  </div>`;
+  nav.querySelectorAll('[data-agend-tab]').forEach(btn =>
+    btn.addEventListener('click', () => { agendActiveTab = btn.dataset.agendTab; renderAgendadosSub(); })
+  );
 }
 
 // ─── AGENDA DE HOJE ──────────────────────────────────────────────────
@@ -10770,8 +10811,9 @@ function bindEvents() {
     renderAgendadosSub();
   });
 
-  // Agenda filters (Todos — legacy selects no sub-panel)
-  ['agenda-filter-mes','agenda-filter-closer'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', renderAgendaSub); });
+  // Agenda filters
+  ['agenda-filter-mes'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', renderAgendadosSub); });
+  ['agenda-filter-closer'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', renderAgendaSub); });
   $('agenda-filter-data')?.addEventListener('change', renderAgendaSub);
   $('btn-gerar-agenda')?.addEventListener('click', gerarAgendaDoDia);
 
