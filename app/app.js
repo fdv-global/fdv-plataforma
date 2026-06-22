@@ -2806,9 +2806,12 @@ function renderAgendaSub() {
       const closerColor = c ? c.color : 'var(--t3)';
       return `<div class="al-row fdv-list-row">
         <label class="al-check-wrap"><input type="checkbox" class="al-check-row" data-id="${l.id}"></label>
-        <span class="al-data">${fmtDate(l.dataagendamento)}</span>
+        <div class="agend-cell-data">
+          <div>${fmtDate(l.dataagendamento)}</div>
+          <div class="muted">${fmtHora(l.horaagendamento)}</div>
+        </div>
         <button class="al-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
-        <span class="al-meta">${fmtHora(l.horaagendamento)} · <span style="color:${closerColor}">${esc(closerName)}</span></span>
+        <span class="al-meta" style="color:${closerColor}">${esc(closerName)}</span>
         ${badgeAgendStatus(l.status, l.status_closer)}
         <div class="al-actions">
           <div class="qual-acoes-dropdown-wrap">
