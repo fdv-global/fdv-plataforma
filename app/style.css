@@ -1216,11 +1216,12 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
   display: grid;
   grid-template-columns: 28px 95px 1fr 80px 100px 120px;
   align-items: center; gap: 12px;
-  padding: 10px 14px;
-  font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
-  color: rgba(255,255,255,0.4);
-  background: rgba(0,0,0,0.4);
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  position: sticky; top: 0; z-index: 10;
+  padding: 4px 14px;
+  background: rgba(0,0,0,0.6);
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1.3px; color: rgba(255,255,255,0.4); white-space: nowrap;
+  border-bottom: 1px solid var(--b0);
 }
 .btn-res-toggle { border-radius: 20px; }
 /* scoped para não conflitar com .al-row do accordion */
