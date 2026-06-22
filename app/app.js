@@ -2732,6 +2732,7 @@ function renderAgendaSub() {
           </div>
           <button class="btn-ghost btn-sm btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}" title="${l.briefing?'Ver/Editar Briefing':'Adicionar Briefing'}">${ICO_CLIPBOARD} Briefing</button>
           <button class="btn-ghost btn-sm btn-editar-agend" data-id="${l.id}" title="Editar agendamento">${ICO_PENCIL}</button>
+          <button class="btn-ghost btn-sm btn-destructive btn-descartar-agend" data-id="${l.id}" title="Descartar lead">${ICO_DISCARD} Descartar</button>
           <button class="btn-icon btn-excluir-agend btn-destructive" data-id="${l.id}" title="Excluir agendamento">${ICO_TRASH}</button>
         </div>
       </div>`;
@@ -2748,6 +2749,9 @@ function renderAgendaSub() {
   );
   content.querySelectorAll('.btn-editar-agend').forEach(b =>
     b.addEventListener('click', () => { const l = allLeads.find(x=>x.id===b.dataset.id); if(l) openEditarAgendamento(l); })
+  );
+  content.querySelectorAll('.btn-descartar-agend').forEach(b =>
+    b.addEventListener('click', () => openDescarteModal(b.dataset.id))
   );
   content.querySelectorAll('.btn-excluir-agend').forEach(b =>
     b.addEventListener('click', () => excluirAgendamento(b.dataset.id))
@@ -3758,6 +3762,7 @@ function renderAgendaHoje() {
               ${badgeAgendStatus(l.status, l.status_closer)}
               <button class="btn-ghost btn-sm btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}" title="${l.briefing?'Ver/Editar Briefing':'Adicionar Briefing'}">${l.briefing?`${ICO_CLIPBOARD} Briefing`:'+ Briefing'}</button>
               <button class="btn-ghost btn-sm btn-editar-agend" data-id="${l.id}" title="Editar agendamento">${ICO_PENCIL}</button>
+              <button class="btn-ghost btn-sm btn-destructive btn-descartar-agend" data-id="${l.id}" title="Descartar lead">${ICO_DISCARD} Descartar</button>
               <button class="btn-icon btn-excluir-agend btn-destructive" data-id="${l.id}" title="Excluir agendamento">${ICO_TRASH}</button>
             </div>
           </div>`).join('')}
@@ -3773,6 +3778,9 @@ function renderAgendaHoje() {
   );
   content.querySelectorAll('.btn-editar-agend').forEach(b =>
     b.addEventListener('click', () => { const l=allLeads.find(x=>x.id===b.dataset.id); if(l) openEditarAgendamento(l); })
+  );
+  content.querySelectorAll('.btn-descartar-agend').forEach(b =>
+    b.addEventListener('click', () => openDescarteModal(b.dataset.id))
   );
   content.querySelectorAll('.btn-excluir-agend').forEach(b =>
     b.addEventListener('click', () => excluirAgendamento(b.dataset.id))
