@@ -1214,20 +1214,29 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 .agenda-list { display: flex; flex-direction: column; }
 .agenda-list .al-head {
   display: grid;
-  grid-template-columns: 28px 80px 1fr auto auto auto;
+  grid-template-columns: 28px 95px 1fr 80px 100px 120px;
   align-items: center; gap: 12px;
-  padding: 8px 16px;
-  font-size: 12px; font-weight: 600;
-  color: rgba(255,255,255,.50);
-  background: rgba(255,255,255,.03);
-  border-bottom: 1px solid rgba(255,255,255,.08);
+  padding: 6px 14px;
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.4);
+  background: rgba(0,0,0,0.4);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 .btn-res-toggle { border-radius: 20px; }
 /* scoped para não conflitar com .al-row do accordion */
 .agenda-list .al-row {
   display: grid;
-  grid-template-columns: 28px 80px 1fr auto auto auto;
+  grid-template-columns: 28px 95px 1fr 80px 100px 120px;
   align-items: center; gap: 12px;
+}
+/* No Show — cabeçalho da tabela com mesmo padrão de Agendados */
+#noshow-content .leads-table thead tr { background: rgba(0,0,0,0.4); }
+#noshow-content .leads-table th {
+  padding: 6px 14px;
+  font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.4);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 .al-check-wrap { display: flex; align-items: center; justify-content: center; }
 .al-check-wrap input[type="checkbox"] { cursor: pointer; accent-color: var(--green); width: 14px; height: 14px; }

@@ -3934,16 +3934,6 @@ function renderNoShow() {
   nsSelectedIds.clear();
 
   const nsAll    = allLeads.filter(l => l.status === 'noshow');
-  const mesAtual = new Date().toISOString().slice(0, 7);
-  const semanaMs = 7 * 24 * 60 * 60 * 1000;
-  const semanaAgo = new Date(Date.now() - semanaMs).toISOString().slice(0, 10);
-
-  const nTotal   = nsAll.length;
-  const nMes     = nsAll.filter(l => (l.dataagendamento||'').startsWith(mesAtual)).length;
-  const nSemana  = nsAll.filter(l => (l.dataagendamento||'') >= semanaAgo).length;
-  const nSemData = nsAll.filter(l => !l.dataagendamento).length;
-  const mesPt    = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-
   const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a,b) => a.localeCompare(b,'pt-BR'));
   const origemOpts    = uniq(nsAll.map(l => l.origem));
   const closerOpts    = uniq(nsAll.map(l => l.closer));
@@ -3952,28 +3942,6 @@ function renderNoShow() {
 
   el.innerHTML = `
   <div class="filters-bar">
-    <div class="stats-grid" style="margin-bottom:16px">
-      <div class="stat-card accent-marsala">
-        <div class="stat-top"><span class="stat-label">Total no-shows</span></div>
-        <strong class="stat-num">${nTotal}</strong>
-        <span class="stat-sub">todos os períodos</span>
-      </div>
-      <div class="stat-card">
-        <div class="stat-top"><span class="stat-label">Este mês</span></div>
-        <strong class="stat-num">${nMes}</strong>
-        <span class="stat-sub">${mesPt}</span>
-      </div>
-      <div class="stat-card accent-gold">
-        <div class="stat-top"><span class="stat-label">Esta semana</span></div>
-        <strong class="stat-num">${nSemana}</strong>
-        <span class="stat-sub">últimos 7 dias</span>
-      </div>
-      <div class="stat-card">
-        <div class="stat-top"><span class="stat-label">Sem data</span></div>
-        <strong class="stat-num">${nSemData}</strong>
-        <span class="stat-sub">sem data de call</span>
-      </div>
-    </div>
     <div class="filters-row">
       <div class="filter-group">
         <label class="filter-label">Origem</label>
