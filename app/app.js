@@ -228,6 +228,10 @@ let qualActiveTab    = 'sc';   // 'sc' | 'ec' | 'sr'
 let qualActiveSubTab = 'c1';   // 'c1' | 'c2' | 'c3p' (only when qualActiveTab === 'ec')
 let qualPage         = 1;
 let qualPageSize     = 10;
+let agendPage        = 1;
+let agendPageSize    = 10;
+let nsPage           = 1;
+let nsPageSize       = 10;
 let perfilLeadId  = null;
 let novoLeadId    = null;
 let auth          = null;
@@ -2654,6 +2658,76 @@ function applyFilters() {
   updateSortIcons(document.querySelector('.leads-table thead tr'), 'novos');
 }
 
+function buildAgendPaginationHtml(current, total) {
+  if (total === 0) return '';
+  const ps = agendPageSize;
+  const totalPages = Math.max(1, Math.ceil(total / ps));
+  const from = Math.min((current - 1) * ps + 1, total);
+  const to   = Math.min(current * ps, total);
+  const pages = [];
+  if (totalPages <= 7) { for (let i = 1; i <= totalPages; i++) pages.push(i); }
+  else {
+    pages.push(1);
+    if (current > 3) pages.push('…');
+    for (let i = Math.max(2, current - 1); i <= Math.min(totalPages - 1, current + 1); i++) pages.push(i);
+    if (current < totalPages - 2) pages.push('…');
+    pages.push(totalPages);
+  }
+  const pageBtns = pages.map(p =>
+    p === '…' ? `<span class="qual-page-ellipsis">…</span>`
+              : `<button class="qual-page-btn${p === current ? ' qual-page-btn--active' : ''}" data-agend-page="${p}" ${p === current ? 'disabled' : ''}>${p}</button>`
+  ).join('');
+  return `<span class="qual-pagination-info">Mostrando ${from} a ${to} de ${total} agendamento${total !== 1 ? 's' : ''}</span>
+    <div class="qual-pagination-controls">
+      <button class="qual-page-btn" data-agend-page="first" ${current === 1 ? 'disabled' : ''}>«</button>
+      <button class="qual-page-btn" data-agend-page="prev"  ${current === 1 ? 'disabled' : ''}>‹</button>
+      ${pageBtns}
+      <button class="qual-page-btn" data-agend-page="next"  ${current === totalPages ? 'disabled' : ''}>›</button>
+      <button class="qual-page-btn" data-agend-page="last"  ${current === totalPages ? 'disabled' : ''}>»</button>
+    </div>
+    <select class="filter-select qual-page-size-select" id="agend-page-size">
+      <option value="10"  ${ps === 10  ? 'selected' : ''}>10 por página</option>
+      <option value="25"  ${ps === 25  ? 'selected' : ''}>25 por página</option>
+      <option value="50"  ${ps === 50  ? 'selected' : ''}>50 por página</option>
+      <option value="100" ${ps === 100 ? 'selected' : ''}>100 por página</option>
+    </select>`;
+}
+
+function buildNsPaginationHtml(current, total) {
+  if (total === 0) return '';
+  const ps = nsPageSize;
+  const totalPages = Math.max(1, Math.ceil(total / ps));
+  const from = Math.min((current - 1) * ps + 1, total);
+  const to   = Math.min(current * ps, total);
+  const pages = [];
+  if (totalPages <= 7) { for (let i = 1; i <= totalPages; i++) pages.push(i); }
+  else {
+    pages.push(1);
+    if (current > 3) pages.push('…');
+    for (let i = Math.max(2, current - 1); i <= Math.min(totalPages - 1, current + 1); i++) pages.push(i);
+    if (current < totalPages - 2) pages.push('…');
+    pages.push(totalPages);
+  }
+  const pageBtns = pages.map(p =>
+    p === '…' ? `<span class="qual-page-ellipsis">…</span>`
+              : `<button class="qual-page-btn${p === current ? ' qual-page-btn--active' : ''}" data-ns-page="${p}" ${p === current ? 'disabled' : ''}>${p}</button>`
+  ).join('');
+  return `<span class="qual-pagination-info">Mostrando ${from} a ${to} de ${total} no-show${total !== 1 ? 's' : ''}</span>
+    <div class="qual-pagination-controls">
+      <button class="qual-page-btn" data-ns-page="first" ${current === 1 ? 'disabled' : ''}>«</button>
+      <button class="qual-page-btn" data-ns-page="prev"  ${current === 1 ? 'disabled' : ''}>‹</button>
+      ${pageBtns}
+      <button class="qual-page-btn" data-ns-page="next"  ${current === totalPages ? 'disabled' : ''}>›</button>
+      <button class="qual-page-btn" data-ns-page="last"  ${current === totalPages ? 'disabled' : ''}>»</button>
+    </div>
+    <select class="filter-select qual-page-size-select" id="ns-page-size">
+      <option value="10"  ${ps === 10  ? 'selected' : ''}>10 por página</option>
+      <option value="25"  ${ps === 25  ? 'selected' : ''}>25 por página</option>
+      <option value="50"  ${ps === 50  ? 'selected' : ''}>50 por página</option>
+      <option value="100" ${ps === 100 ? 'selected' : ''}>100 por página</option>
+    </select>`;
+}
+
 // ─── AGENDA SUB ──────────────────────────────────────────────────────
 function renderAgendaSub() {
   const dataFilt       = $('agenda-filter-data')?.value;
@@ -2703,7 +2777,13 @@ function renderAgendaSub() {
     );
   }
 
-  if (!leads.length) {
+  // Paginação
+  const agendTotal = leads.length;
+  const agendTotalPages = Math.max(1, Math.ceil(agendTotal / agendPageSize));
+  agendPage = Math.max(1, Math.min(agendPage, agendTotalPages));
+  const pageLeads = leads.slice((agendPage - 1) * agendPageSize, agendPage * agendPageSize);
+
+  if (!agendTotal) {
     content.innerHTML = `<div class="agenda-empty">
       <i data-lucide="calendar-x" class="empty-lucide"></i>
       <h3>Nenhuma call encontrada</h3><p>Sem calls para os filtros selecionados.</p></div>`;
@@ -2720,7 +2800,7 @@ function renderAgendaSub() {
       <span data-sort-col="status">Status</span>
       <span>Ações</span>
     </div>
-    ${leads.map(l => {
+    ${pageLeads.map(l => {
       const c = CLOSERS[l.closer];
       const closerName  = c ? c.name  : (l.closer || '—');
       const closerColor = c ? c.color : 'var(--t3)';
@@ -2731,65 +2811,41 @@ function renderAgendaSub() {
         <span class="al-meta">${fmtHora(l.horaagendamento)} · <span style="color:${closerColor}">${esc(closerName)}</span></span>
         ${badgeAgendStatus(l.status, l.status_closer)}
         <div class="al-actions">
-          <div class="contato-dropdown-wrap">
-            <button class="btn-primary btn-sm btn-res-toggle" data-id="${l.id}">${ICO_PHONE_CHECK} Resultado ▾</button>
-            <div class="contato-dropdown" style="display:none">
-              <button class="contato-opt btn-res-opt" data-id="${l.id}" data-action="realizada">✓ Call Realizada</button>
-              <button class="contato-opt contato-opt--danger btn-res-opt" data-id="${l.id}" data-action="noshow">✕ No Show</button>
+          <div class="qual-acoes-dropdown-wrap">
+            <button class="btn-ghost btn-sm btn-acoes-toggle" data-id="${l.id}">Ações ▾</button>
+            <div class="qual-acoes-dropdown" id="adrop-${l.id}" style="display:none">
+              <button class="qual-acoes-opt btn-res-toggle-sub" data-id="${l.id}">Resultado ▾</button>
+              <div class="contato-dropdown qual-acoes-contato-sub" id="rdrop-${l.id}" style="display:none">
+                <button class="contato-opt btn-res-opt" data-id="${l.id}" data-action="realizada">✓ Call Realizada</button>
+                <button class="contato-opt contato-opt--danger btn-res-opt" data-id="${l.id}" data-action="noshow">✕ No Show</button>
+              </div>
+              <button class="qual-acoes-opt btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}">Briefing</button>
+              <button class="qual-acoes-opt btn-editar-agend" data-id="${l.id}">Editar</button>
+              <button class="qual-acoes-opt qual-acoes-opt--danger btn-descartar-agend" data-id="${l.id}">Descartar</button>
+              <button class="qual-acoes-opt qual-acoes-opt--danger btn-excluir-agend" data-id="${l.id}">Excluir</button>
             </div>
           </div>
-          <button class="btn-ghost btn-sm btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}" title="${l.briefing?'Ver/Editar Briefing':'Adicionar Briefing'}">${ICO_CLIPBOARD} Briefing</button>
-          <button class="btn-ghost btn-sm btn-editar-agend" data-id="${l.id}" title="Editar agendamento">${ICO_PENCIL}</button>
-          <button class="btn-ghost btn-sm btn-destructive btn-descartar-agend" data-id="${l.id}" title="Descartar lead">${ICO_DISCARD} Descartar</button>
-          <button class="btn-icon btn-excluir-agend btn-destructive" data-id="${l.id}" title="Excluir agendamento">${ICO_TRASH}</button>
         </div>
       </div>`;
     }).join('')}
+  </div>
+  <div class="qual-pagination">
+    ${buildAgendPaginationHtml(agendPage, agendTotal)}
   </div>`;
 
-  bindSortHeaders(content.querySelector('.al-head'), 'agendamentos', renderAgendaSub);
+  bindSortHeaders(content.querySelector('.al-head'), 'agendamentos', () => { agendPage = 1; renderAgendadosSub(); });
 
-  content.querySelectorAll('[data-perfil]').forEach(b =>
-    b.addEventListener('click', () => { const l = allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); })
-  );
-  content.querySelectorAll('.btn-briefing-open').forEach(b =>
-    b.addEventListener('click', () => { const l = allLeads.find(x=>x.id===b.dataset.id); if(l) openBriefing(l); })
-  );
-  content.querySelectorAll('.btn-editar-agend').forEach(b =>
-    b.addEventListener('click', () => { const l = allLeads.find(x=>x.id===b.dataset.id); if(l) openEditarAgendamento(l); })
-  );
-  content.querySelectorAll('.btn-descartar-agend').forEach(b =>
-    b.addEventListener('click', () => openDescarteModal(b.dataset.id))
-  );
-  content.querySelectorAll('.btn-excluir-agend').forEach(b =>
-    b.addEventListener('click', () => excluirAgendamento(b.dataset.id))
-  );
+  if (content._resClickHandler)    content.removeEventListener('click', content._resClickHandler);
+  if (content._resOutsideHandler)  document.removeEventListener('click', content._resOutsideHandler);
+  if (content._acoeOutsideHandler) document.removeEventListener('click', content._acoeOutsideHandler);
 
-  const checkAll = content.querySelector('#al-check-all');
-  if (checkAll) {
-    checkAll.addEventListener('change', () => {
-      content.querySelectorAll('.al-check-row').forEach(c => c.checked = checkAll.checked);
-    });
-  }
-
-  if (content._resClickHandler)  content.removeEventListener('click', content._resClickHandler);
-  if (content._resOutsideHandler) document.removeEventListener('click', content._resOutsideHandler);
-
-  // ── helpers do portal ────────────────────────────────────────────────
-  const closeAllRes = () => {
-    const p = document.querySelector('[data-fdv-res-portal]');
-    if (p) {
-      if (p._resWrap && document.contains(p._resWrap)) p._resWrap.appendChild(p);
-      else p.remove();
-      p.removeAttribute('data-fdv-res-portal');
-      p.style.display = 'none';
-      ['position','top','left','bottom','zIndex'].forEach(k => p.style[k] = '');
-    }
+  const closeAllDrops = () => {
+    content.querySelectorAll('.qual-acoes-dropdown').forEach(d => d.style.display = 'none');
     content.querySelectorAll('.contato-dropdown').forEach(d => d.style.display = 'none');
   };
 
   const handleResAction = async (id, action) => {
-    closeAllRes();
+    closeAllDrops();
     const lead = allLeads.find(l => l.id === id);
     if (!lead) return;
     if (action === 'realizada') {
@@ -2804,61 +2860,79 @@ function renderAgendaSub() {
     }
   };
 
-  // ── handler principal ────────────────────────────────────────────────
   content._resClickHandler = e => {
-    const toggle = e.target.closest('.btn-res-toggle');
-    if (toggle) {
+    // Ações dropdown toggle
+    const acoes = e.target.closest('.btn-acoes-toggle');
+    if (acoes) {
       e.stopPropagation();
-      const wrap     = toggle.closest('.contato-dropdown-wrap');
-      const portaled = document.querySelector('[data-fdv-res-portal]');
-      // dropdown pode estar no wrap (normal) ou já portado para o body
-      const drop = wrap?.querySelector('.contato-dropdown')
-                ?? (portaled?._resWrap === wrap ? portaled : null);
+      const drop = document.getElementById('adrop-' + acoes.dataset.id);
       if (!drop) return;
-      const isOpen = drop === portaled;
-      closeAllRes();
-      if (!isOpen) {
-        const rect = toggle.getBoundingClientRect();
-        drop._resWrap = wrap;
-        drop.setAttribute('data-fdv-res-portal', '');
-        document.body.appendChild(drop);
-        drop.style.display  = 'block';
-        drop.style.position = 'absolute';
-        drop.style.zIndex   = '9999';
-        const dropH  = drop.offsetHeight;
-        const openUp = rect.bottom + dropH > window.innerHeight;
-        drop.style.left   = (rect.left + window.scrollX) + 'px';
-        drop.style.top    = openUp
-          ? (rect.top    + window.scrollY - dropH - 3) + 'px'
-          : (rect.bottom + window.scrollY + 3) + 'px';
-        drop.style.bottom = 'auto';
-        // listener adicionado uma única vez por elemento (sobrevive a re-portals do mesmo el)
-        if (!drop._resListenerAdded) {
-          drop._resListenerAdded = true;
-          drop.addEventListener('click', ev => {
-            const btn = ev.target.closest('.btn-res-opt');
-            if (btn) { ev.stopPropagation(); handleResAction(btn.dataset.id, btn.dataset.action); }
-          });
-        }
-      }
+      const isOpen = drop.style.display !== 'none';
+      closeAllDrops();
+      if (!isOpen) drop.style.display = 'block';
       return;
     }
-    // fallback: clique em opção não-portada (caso edge)
-    const opt = e.target.closest('.btn-res-opt');
-    if (!opt) return;
-    handleResAction(opt.dataset.id, opt.dataset.action);
+    // Resultado sub-toggle
+    const resSub = e.target.closest('.btn-res-toggle-sub');
+    if (resSub) {
+      e.stopPropagation();
+      const drop = document.getElementById('rdrop-' + resSub.dataset.id);
+      if (!drop) return;
+      const isOpen = drop.style.display !== 'none';
+      content.querySelectorAll('.contato-dropdown').forEach(d => d.style.display = 'none');
+      if (!isOpen) drop.style.display = 'block';
+      return;
+    }
+    // Resultado action
+    const resOpt = e.target.closest('.btn-res-opt');
+    if (resOpt) { handleResAction(resOpt.dataset.id, resOpt.dataset.action); return; }
+    // Abrir perfil
+    const perfil = e.target.closest('[data-perfil]');
+    if (perfil) { const l = allLeads.find(x => x.id === perfil.dataset.perfil); if (l) openPerfil(l); return; }
+    // Briefing
+    const briefing = e.target.closest('.btn-briefing-open');
+    if (briefing) { const l = allLeads.find(x => x.id === briefing.dataset.id); if (l) openBriefing(l); return; }
+    // Editar
+    const editar = e.target.closest('.btn-editar-agend');
+    if (editar) { const l = allLeads.find(x => x.id === editar.dataset.id); if (l) openEditarAgendamento(l); return; }
+    // Descartar
+    const descartar = e.target.closest('.btn-descartar-agend');
+    if (descartar) { openDescarteModal(descartar.dataset.id); return; }
+    // Excluir
+    const excluir = e.target.closest('.btn-excluir-agend');
+    if (excluir) { excluirAgendamento(excluir.dataset.id); return; }
+    // Paginação — botão de página
+    const pageBtn = e.target.closest('[data-agend-page]');
+    if (pageBtn && !pageBtn.disabled) {
+      const v = pageBtn.dataset.agendPage;
+      if      (v === 'first') agendPage = 1;
+      else if (v === 'prev')  agendPage = Math.max(1, agendPage - 1);
+      else if (v === 'next')  agendPage++;
+      else if (v === 'last')  agendPage = 999999;
+      else                    agendPage = parseInt(v, 10);
+      renderAgendadosSub();
+      return;
+    }
+    // Paginação — tamanho por página
+    if (e.target.id === 'agend-page-size') {
+      agendPageSize = parseInt(e.target.value, 10);
+      agendPage = 1;
+      renderAgendadosSub();
+      return;
+    }
+    // Checkbox todos
+    const checkAllEl = e.target.closest('#al-check-all');
+    if (checkAllEl) {
+      content.querySelectorAll('.al-check-row').forEach(c => c.checked = checkAllEl.checked);
+      return;
+    }
   };
   content.addEventListener('click', content._resClickHandler);
 
-  content._resOutsideHandler = e => {
-    const portaled = document.querySelector('[data-fdv-res-portal]');
-    if (portaled) {
-      if (!portaled.contains(e.target) && !e.target.closest('.btn-res-toggle')) closeAllRes();
-    } else if (!content.contains(e.target)) {
-      content.querySelectorAll('.contato-dropdown').forEach(d => d.style.display = 'none');
-    }
+  content._acoeOutsideHandler = e => {
+    if (!e.target.closest('.qual-acoes-dropdown-wrap')) closeAllDrops();
   };
-  document.addEventListener('click', content._resOutsideHandler);
+  document.addEventListener('click', content._acoeOutsideHandler);
 }
 
 // ─── BRIEFING SUB ────────────────────────────────────────────────────
@@ -3737,7 +3811,7 @@ function _renderAgendTabNav() {
     </button>
   </div>`;
   nav.querySelectorAll('[data-agend-tab]').forEach(btn =>
-    btn.addEventListener('click', () => { agendActiveTab = btn.dataset.agendTab; renderAgendadosSub(); })
+    btn.addEventListener('click', () => { agendActiveTab = btn.dataset.agendTab; agendPage = 1; nsPage = 1; renderAgendadosSub(); })
   );
 }
 
@@ -3964,18 +4038,38 @@ function renderNoShow() {
       </tr></thead>
       <tbody id="ns-list"></tbody>
     </table>
-  </div>`;
+  </div>
+  <div id="ns-pagination" class="qual-pagination"></div>`;
 
   if (el._nsClickHandler)   el.removeEventListener('click',  el._nsClickHandler);
   if (el._nsChangeHandler)  el.removeEventListener('change', el._nsChangeHandler);
 
   el._nsClickHandler = e => {
     const b = e.target.closest('[data-perfil],[data-descartar],.btn-wa-lead,.btn-reagendar-ns');
-    if (!b) return;
-    if (b.dataset.perfil)    { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); return; }
-    if (b.dataset.descartar) { openDescarteModal(b.dataset.descartar); return; }
-    if (b.classList.contains('btn-wa-lead'))      { openWaChatFromLead(b.dataset.id); return; }
-    if (b.classList.contains('btn-reagendar-ns')) { const l=allLeads.find(x=>x.id===b.dataset.id); if(l) openAgendar(l); return; }
+    if (b) {
+      if (b.dataset.perfil)    { const l=allLeads.find(x=>x.id===b.dataset.perfil); if(l) openPerfil(l); return; }
+      if (b.dataset.descartar) { openDescarteModal(b.dataset.descartar); return; }
+      if (b.classList.contains('btn-wa-lead'))      { openWaChatFromLead(b.dataset.id); return; }
+      if (b.classList.contains('btn-reagendar-ns')) { const l=allLeads.find(x=>x.id===b.dataset.id); if(l) openAgendar(l); return; }
+    }
+    // Paginação — botão de página
+    const pageBtn = e.target.closest('[data-ns-page]');
+    if (pageBtn && !pageBtn.disabled) {
+      const v = pageBtn.dataset.nsPage;
+      if      (v === 'first') nsPage = 1;
+      else if (v === 'prev')  nsPage = Math.max(1, nsPage - 1);
+      else if (v === 'next')  nsPage++;
+      else if (v === 'last')  nsPage = 999999;
+      else                    nsPage = parseInt(v, 10);
+      applyNsFilters();
+      return;
+    }
+    // Paginação — tamanho por página
+    if (e.target.id === 'ns-page-size') {
+      nsPageSize = parseInt(e.target.value, 10);
+      nsPage = 1;
+      applyNsFilters();
+    }
   };
   el.addEventListener('click', el._nsClickHandler);
 
@@ -4030,12 +4124,17 @@ function renderNoShow() {
 
     const listEl = $('ns-list');
     if (!listEl) return;
-    if (!leads.length) {
+    const nsTotal = leads.length;
+    const nsTotalPages = Math.max(1, Math.ceil(nsTotal / nsPageSize));
+    nsPage = Math.max(1, Math.min(nsPage, nsTotalPages));
+    const nsPageLeads = leads.slice((nsPage - 1) * nsPageSize, nsPage * nsPageSize);
+    if (!nsTotal) {
       listEl.innerHTML = `<tr><td colspan="8" class="noshow-empty">Nenhum lead encontrado com os filtros aplicados.</td></tr>`;
       const allChkNs = $('chk-all-ns'); if (allChkNs) { allChkNs.checked = false; allChkNs.indeterminate = false; }
+      const nsPag = $('ns-pagination'); if (nsPag) nsPag.innerHTML = '';
       updateNsBulkBar(); return;
     }
-    listEl.innerHTML = leads.map(l => `
+    listEl.innerHTML = nsPageLeads.map(l => `
       <tr class="fdv-list-row" data-id="${l.id}">
         <td class="cell-chk"><input type="checkbox" class="ns-row-chk" data-id="${l.id}" ${nsSelectedIds.has(l.id)?'checked':''}></td>
         <td class="cell-data-chegou">${fmtDate(l.datachegada)}</td>
@@ -4053,9 +4152,11 @@ function renderNoShow() {
 
     const allChkNs = $('chk-all-ns');
     if (allChkNs) {
-      allChkNs.checked = leads.length > 0 && leads.every(l => nsSelectedIds.has(l.id));
-      allChkNs.indeterminate = !allChkNs.checked && leads.some(l => nsSelectedIds.has(l.id));
+      allChkNs.checked = nsPageLeads.length > 0 && nsPageLeads.every(l => nsSelectedIds.has(l.id));
+      allChkNs.indeterminate = !allChkNs.checked && nsPageLeads.some(l => nsSelectedIds.has(l.id));
     }
+    const nsPag = $('ns-pagination');
+    if (nsPag) nsPag.innerHTML = buildNsPaginationHtml(nsPage, nsTotal);
     updateNsBulkBar();
     updateSortIcons(el.querySelector('.leads-table thead tr'), 'noshow');
   }
@@ -4077,14 +4178,15 @@ function renderNoShow() {
 
   ['ns-filter-origem','ns-filter-closer','ns-filter-agendadopor','ns-filter-renda',
    'ns-filter-chegada-de','ns-filter-chegada-ate'].forEach(id =>
-    $(id)?.addEventListener('change', applyNsFilters)
+    $(id)?.addEventListener('change', () => { nsPage = 1; applyNsFilters(); })
   );
-  $('ns-filter-busca')?.addEventListener('input', applyNsFilters);
+  $('ns-filter-busca')?.addEventListener('input', () => { nsPage = 1; applyNsFilters(); });
   $('ns-btn-limpar')?.addEventListener('click', () => {
     ['ns-filter-origem','ns-filter-closer','ns-filter-agendadopor','ns-filter-renda',
      'ns-filter-chegada-de','ns-filter-chegada-ate','ns-filter-busca'].forEach(id => {
       const inp = $(id); if (inp) inp.value = '';
     });
+    nsPage = 1;
     applyNsFilters();
   });
 
