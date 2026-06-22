@@ -1229,15 +1229,7 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
   grid-template-columns: 28px 95px 1fr 80px 100px 120px;
   align-items: center; gap: 12px;
 }
-/* No Show — cabeçalho da tabela com mesmo padrão de Agendados */
-#noshow-content .leads-table thead tr { background: rgba(0,0,0,0.4); }
-#noshow-content .leads-table th {
-  padding: 6px 14px;
-  font-size: 10px; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.06em;
-  color: rgba(255,255,255,0.4);
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-}
+
 .agend-cell-data { display: flex; flex-direction: column; gap: 2px; }
 .agend-cell-data > div:first-child { font-size: 12px; color: var(--t3); font-variant-numeric: tabular-nums; }
 .muted { font-size: 11px; color: rgba(255,255,255,0.35); }

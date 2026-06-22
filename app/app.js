@@ -2808,7 +2808,7 @@ function renderAgendaSub() {
         <label class="al-check-wrap"><input type="checkbox" class="al-check-row" data-id="${l.id}"></label>
         <div class="agend-cell-data">
           <div>${fmtDate(l.dataagendamento)}</div>
-          <div class="muted">${fmtHora(l.horaagendamento)}</div>
+          <div class="muted" style="color:${l.status==='realizada'?'#1D9E75':l.status==='noshow'?'#E24B4A':'#CE9221'}">${fmtHora(l.horaagendamento)}</div>
         </div>
         <button class="al-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
         <span class="al-meta" style="color:${closerColor}">${esc(closerName)}</span>
@@ -4001,14 +4001,16 @@ function renderNoShow() {
     </div>
     <button class="btn-ghost btn-sm" id="btn-ns-bulk-clear">${ICO_X_SM} Limpar</button>
   </div>
-  <div class="table-wrap fdv-list-container">
-    <table class="leads-table">
-      <thead><tr>
-        <th class="cell-chk"><input type="checkbox" id="chk-all-ns" title="Selecionar todos"></th>
-        <th data-sort-col="datachegada">Chegou em</th><th data-sort-col="nome">Nome</th><th>Celular</th><th>Origem</th><th>Renda</th><th>Etiqueta</th><th>Ações</th>
-      </tr></thead>
-      <tbody id="ns-list"></tbody>
-    </table>
+  <div class="agenda-list fdv-list-container">
+    <div class="al-head">
+      <label class="al-check-wrap"><input type="checkbox" id="chk-all-ns" title="Selecionar todos"></label>
+      <span data-sort-col="dataagendamento">Data</span>
+      <span data-sort-col="nome">Nome</span>
+      <span data-sort-col="closer">Closer</span>
+      <span>Status</span>
+      <span>Ações</span>
+    </div>
+    <div id="ns-list"></div>
   </div>
   <div id="ns-pagination" class="qual-pagination"></div>`;
 
@@ -4100,26 +4102,31 @@ function renderNoShow() {
     nsPage = Math.max(1, Math.min(nsPage, nsTotalPages));
     const nsPageLeads = leads.slice((nsPage - 1) * nsPageSize, nsPage * nsPageSize);
     if (!nsTotal) {
-      listEl.innerHTML = `<tr><td colspan="8" class="noshow-empty">Nenhum lead encontrado com os filtros aplicados.</td></tr>`;
+      listEl.innerHTML = `<div class="agenda-empty" style="padding:24px;text-align:center;color:var(--t3)">Nenhum lead encontrado com os filtros aplicados.</div>`;
       const allChkNs = $('chk-all-ns'); if (allChkNs) { allChkNs.checked = false; allChkNs.indeterminate = false; }
       const nsPag = $('ns-pagination'); if (nsPag) nsPag.innerHTML = '';
       updateNsBulkBar(); return;
     }
-    listEl.innerHTML = nsPageLeads.map(l => `
-      <tr class="fdv-list-row" data-id="${l.id}">
-        <td class="cell-chk"><input type="checkbox" class="ns-row-chk" data-id="${l.id}" ${nsSelectedIds.has(l.id)?'checked':''}></td>
-        <td class="cell-data-chegou">${fmtDate(l.datachegada)}</td>
-        <td class="cell-nome"><button class="nome-link noshow-row-name" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
-        <td class="cell-fone">${esc(l.celular||'—')}</td>
-        <td>${badgeOrigem(l.origem)}</td>
-        <td>${esc(abrevRenda(l.renda)||'—')}</td>
-        <td>${(l.etiquetas||[]).slice(0,2).map(t=>etiquetaChip(t,true)).join('')||'—'}</td>
-        <td class="cell-acoes">
+    listEl.innerHTML = nsPageLeads.map(l => {
+      const _c = CLOSERS[l.closer];
+      const _closerName  = _c ? _c.name  : (l.closer || '—');
+      const _closerColor = _c ? _c.color : 'var(--t3)';
+      return `<div class="al-row fdv-list-row" data-id="${l.id}">
+        <label class="al-check-wrap"><input type="checkbox" class="ns-row-chk" data-id="${l.id}" ${nsSelectedIds.has(l.id)?'checked':''}></label>
+        <div class="agend-cell-data">
+          <div>${fmtDate(l.dataagendamento)}</div>
+          <div class="muted" style="color:#E24B4A">${fmtHora(l.horaagendamento)}</div>
+        </div>
+        <button class="al-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
+        <span class="al-meta" style="color:${_closerColor}">${esc(_closerName)}</span>
+        ${badgeAgendStatus(l.status, l.status_closer)}
+        <div class="al-actions">
           <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
           <button class="btn-ghost btn-sm btn-reagendar-ns" data-id="${l.id}">${ICO_REFRESH} Reagendar</button>
           <button class="btn-ghost btn-sm btn-destructive" data-descartar="${l.id}">${ICO_DISCARD} Descartar</button>
-        </td>
-      </tr>`).join('');
+        </div>
+      </div>`;
+    }).join('');
 
     const allChkNs = $('chk-all-ns');
     if (allChkNs) {
@@ -4129,10 +4136,10 @@ function renderNoShow() {
     const nsPag = $('ns-pagination');
     if (nsPag) nsPag.innerHTML = buildNsPaginationHtml(nsPage, nsTotal);
     updateNsBulkBar();
-    updateSortIcons(el.querySelector('.leads-table thead tr'), 'noshow');
+    updateSortIcons(el.querySelector('.al-head'), 'noshow');
   }
 
-  bindSortHeaders(el.querySelector('.leads-table thead tr'), 'noshow', applyNsFilters);
+  bindSortHeaders(el.querySelector('.al-head'), 'noshow', applyNsFilters);
 
   $('btn-ns-bulk-reagendar')?.addEventListener('click', () => {
     const ids = [...nsSelectedIds];
