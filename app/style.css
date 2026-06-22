@@ -1216,7 +1216,7 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
   display: grid;
   grid-template-columns: 28px 95px 1fr 80px 100px 120px;
   align-items: center; gap: 12px;
-  padding: 6px 14px;
+  padding: 10px 14px;
   font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
   color: rgba(255,255,255,0.4);
   background: rgba(0,0,0,0.4);
@@ -1231,7 +1231,7 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 }
 
 .agend-cell-data { display: flex; flex-direction: column; gap: 2px; }
-.agend-cell-data > div:first-child { font-size: 12px; color: var(--t3); font-variant-numeric: tabular-nums; }
+.agend-cell-data > div:first-child { font-size: 12px; color: rgba(255,255,255,0.7); font-variant-numeric: tabular-nums; }
 .muted { font-size: 11px; color: rgba(255,255,255,0.35); }
 .al-check-wrap { display: flex; align-items: center; justify-content: center; }
 .al-check-wrap input[type="checkbox"] { cursor: pointer; accent-color: var(--green); width: 14px; height: 14px; }
