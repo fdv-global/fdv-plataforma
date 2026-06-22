@@ -7535,7 +7535,7 @@ async function confirmar() {
         status:'agendado', closer:cal.closer,
         dataagendamento:datePart, horaagendamento:timePart,
         observacoes:obs, agendadopor,
-        kanban_column:'agendado',
+        kanban_column:null,
         atualizadoem:new Date().toISOString()
       });
       toast(`Call agendada — ${timePart} · ${fmtDate(datePart)}`, 'ok');
