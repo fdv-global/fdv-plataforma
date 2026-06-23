@@ -2487,7 +2487,7 @@ function renderInicio() {
   // Agendados/Calls/NoShow → dataagendamento this month (quando a call estava marcada)
   // Vendas → kanban_column_since this month (quando fechou)
   const fLeads  = mesLeads.length;
-  const fQualif = mesLeads.filter(l => !['aguardando','descartado','cancelado'].includes(l.status)).length;
+  const fQualif = mesLeads.filter(l => l.status === 'qualificado').length;
   const agendMes = allLeads.filter(l => (l.dataagendamento||'').startsWith(thisMonth));
   const fAgend  = agendMes.length;
   const fCalls  = agendMes.filter(l => l.status === 'realizada').length;
