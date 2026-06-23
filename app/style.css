@@ -1991,7 +1991,10 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 /* ============================================================
    RELATÓRIOS
    ============================================================ */
-.rel-filters { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-left: auto; }
+.rel-filters         { display: flex; align-items: center; margin-left: auto; }
+.rel-filters-left    { display: flex; gap: 8px; flex: 1; }
+.rel-filters-center  { display: flex; justify-content: center; flex: 1; }
+.rel-filters-right   { display: flex; justify-content: flex-end; flex: 1; }
 /* Garantir padrão dark e suprimir estilização nativa do OS */
 .rel-filters .filter-select {
   width: auto; min-width: 150px;
