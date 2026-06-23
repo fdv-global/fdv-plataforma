@@ -2044,6 +2044,7 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 .rel-table td          { padding: 12px 16px; font-size: 13px; font-weight: 500; color: var(--t1); border-bottom: 1px solid var(--b0); }
 .rel-table tbody tr:last-child td { border-bottom: none; }
 .rel-table tbody tr:hover         { background: var(--s-hover); }
+.rel-table--zebra tbody tr:nth-child(even) { background: rgba(255,255,255,0.02); }
 
 /* ── Linhas clicáveis nos relatórios ─────────────────────── */
 .rel-drill-row { cursor: pointer; }

@@ -5969,17 +5969,19 @@ function renderRelatorios() {
 
   const viewExecutivo = `
     <div class="rel-section-head">Métricas do Período</div>
-    <div class="stats-grid rel-summary">
+    <div class="stats-grid rel-summary" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
       ${relStatCard('Total de Leads', base.length, _S('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'), '', 'data-drill="all" data-drill-title="Total de Leads"')}
       ${relStatCard('Calls Realizadas', realizadas.length, _S('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'), 'accent-petro', 'data-drill="status" data-drill-value="realizada" data-drill-title="Calls Realizadas"')}
       ${relStatCard('Comparecimento', taxaComp+'%', _S('<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>'), '', '')}
       ${relStatCard('Conversão', taxaConv+'%', ICO_TROPHY, 'accent-green', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
+    </div>
+    <div class="stats-grid rel-summary" style="grid-template-columns:repeat(3,1fr)">
       ${relStatCard('Vendas', vendas.length, ICO_CHECK_CIRCLE, 'accent-gold', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
       ${relStatCard('Faturamento', 'R$\xa0'+fmtValor(faturamento), _S('<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'), 'accent-sand', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
       ${relStatCard('Ticket Médio', ticketMedio ? 'R$\xa0'+fmtValor(ticketMedio) : '—', _S('<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>'), 'accent-gold')}
     </div>
 
-    <div class="rel-section-head">Funil de Conversão</div>
+    <div class="rel-section-head">Comportamento dos Leads</div>
     <div class="rel-block" style="padding:20px 24px">
       ${funnelStages.map((s, i) => {
         const pctOfTotal = funnelMax ? Math.round(s.val / funnelMax * 100) : 0;
@@ -6031,7 +6033,7 @@ function renderRelatorios() {
   const viewOperacional = `
     <div class="rel-section-head">Saúde por Origem</div>
     <div class="rel-block">
-      <div class="rel-table-wrap"><table class="rel-table rel-origem-table">
+      <div class="rel-table-wrap"><table class="rel-table rel-table--zebra rel-origem-table">
         <thead><tr><th>Origem</th><th>Leads</th><th>Qualificados</th><th>Conv. %</th></tr></thead>
         <tbody>${funnelByOrigin.map(r => `<tr>
           <td><strong>${esc(r.o)}</strong></td>
@@ -6058,7 +6060,8 @@ function renderRelatorios() {
     <div class="rel-section-head">Histórico Mensal</div>
     ${relTable('', ['Mês','Leads','Calls Realizadas','No Shows','Vendas','Faturamento'],
       mesEntries.map(([m, d]) => [fmtMes(m), d.total, d.re, d.ns, d.ve, d.val ? 'R$\xa0'+fmtValor(d.val) : '—']),
-      i => { const e = mesEntries; return { type: 'mes', value: e[i][0], title: 'Mês: '+fmtMes(e[i][0]) }; }
+      i => { const e = mesEntries; return { type: 'mes', value: e[i][0], title: 'Mês: '+fmtMes(e[i][0]) }; },
+      'rel-table--zebra'
     )}
 
     <div class="rel-section-head">Motivos de Perda</div>
@@ -6079,7 +6082,8 @@ function renderRelatorios() {
     <div class="rel-section-head">Por Responsável</div>
     ${relTable('', ['Responsável','Agend.','Calls','Vendas'],
       Object.entries(respMap).sort((a, b) => b[1].ve - a[1].ve).map(([r, d]) => [r, d.ag, d.re, d.ve]),
-      null
+      null,
+      'rel-table--zebra'
     )}`;
 
   $('relatorios-content').innerHTML = `
@@ -6106,12 +6110,12 @@ function relStatCard(label, val, ico, accent='', drill='') {
   </div>`;
 }
 
-function relTable(title, headers, rows, getDrill = null) {
+function relTable(title, headers, rows, getDrill = null, tableClass = '') {
   if (!rows.length) return '';
   const head = title ? `<h3 class="rel-section-title">${esc(title)}</h3>` : '';
   return `<div class="rel-section">${head}
     <div class="rel-table-wrap">
-      <table class="rel-table">
+      <table class="rel-table${tableClass ? ' '+tableClass : ''}">
         <thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead>
         <tbody>${rows.map((row,i) => {
           const d = getDrill ? getDrill(i) : null;
@@ -11142,15 +11146,12 @@ function bindEvents() {
 
   // ── Exportação de relatórios
   $('rel-export-csv')?.addEventListener('click', exportRelatoriosCSV);
-  document.querySelectorAll('#rel-view-toggle .rel-toggle-btn').forEach(btn => {
+  document.querySelectorAll('#rel-view-toggle .qual-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       _relView = btn.dataset.view;
-      document.querySelectorAll('#rel-view-toggle .rel-toggle-btn').forEach(b => {
-        const active = b.dataset.view === _relView;
-        b.style.background = active ? 'rgba(206,146,33,0.12)' : 'transparent';
-        b.style.border     = active ? '0.5px solid rgba(206,146,33,0.4)' : '0.5px solid transparent';
-        b.style.color      = active ? '#CE9221' : 'rgba(232,228,220,0.5)';
-      });
+      document.querySelectorAll('#rel-view-toggle .qual-tab-btn').forEach(b =>
+        b.classList.toggle('qual-tab-btn--active', b.dataset.view === _relView)
+      );
       renderRelatorios();
     });
   });
