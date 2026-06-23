@@ -2743,17 +2743,8 @@ function renderAgendaSub() {
   // remove qualquer dropdown portado para body de um render anterior
   document.querySelectorAll('[data-fdv-res-portal]').forEach(d => d.remove());
 
-  // Origens dinâmicas — popula o select com valores reais dos leads agendados
-  const _allAgend = allLeads.filter(l => l.dataagendamento);
-  const _uniqAgend = arr => [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
-  const _origemSel = $('agend-filter-origem');
-  if (_origemSel) {
-    const _cur = _origemSel.value;
-    _origemSel.innerHTML = `<option value="">Todas</option>${_uniqAgend(_allAgend.map(l=>l.origem)).map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}`;
-    if (_cur) _origemSel.value = _cur;
-  }
-
   // Filtra por status do tab ativo (agendados | realizadas)
+  const _allAgend = allLeads.filter(l => l.dataagendamento);
   const _statusMap = { agendados: 'agendado', realizadas: 'realizada' };
   const _targetStatus = _statusMap[agendActiveTab] || 'agendado';
   let leads = _allAgend.filter(l => l.status === _targetStatus);
@@ -3782,6 +3773,21 @@ function switchAgendadosSub(sub) {
 function renderAgendadosSub() {
   renderAgendadosOverview();
   _renderAgendTabNav();
+
+  // Origens dinâmicas — popula o select compartilhado com valores da sub-aba ativa
+  const _uniqAgend = arr => [...new Set(arr.filter(Boolean))].sort((a,b) => a.localeCompare(b,'pt-BR'));
+  const _origemSel = $('agend-filter-origem');
+  if (_origemSel) {
+    const _cur = _origemSel.value;
+    const _statusMap = { agendados: 'agendado', realizadas: 'realizada', noshow: 'noshow' };
+    const _status = _statusMap[agendActiveTab];
+    const _tabLeads = _status
+      ? allLeads.filter(l => l.status === _status)
+      : allLeads.filter(l => l.dataagendamento);
+    _origemSel.innerHTML = `<option value="">Todas</option>${_uniqAgend(_tabLeads.map(l => l.origem)).map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('')}`;
+    if (_cur) _origemSel.value = _cur;
+  }
+
   const contentEl = $('agenda-content');
   const nsEl      = $('noshow-content');
   if (agendActiveTab === 'noshow') {
@@ -3938,7 +3944,6 @@ function renderNoShow() {
 
   const nsAll    = allLeads.filter(l => l.status === 'noshow');
   const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a,b) => a.localeCompare(b,'pt-BR'));
-  const origemOpts    = uniq(nsAll.map(l => l.origem));
   const closerOpts    = uniq(nsAll.map(l => l.closer));
   const agendPorOpts  = uniq(nsAll.map(l => l.agendadopor));
   const rendaOpts     = uniq(nsAll.map(l => l.renda));
@@ -3946,13 +3951,6 @@ function renderNoShow() {
   el.innerHTML = `
   <div class="filters-bar">
     <div class="filters-row">
-      <div class="filter-group">
-        <label class="filter-label">Origem</label>
-        <select class="filter-select" id="ns-filter-origem">
-          <option value="">Todas</option>
-          ${origemOpts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
-        </select>
-      </div>
       <div class="filter-group">
         <label class="filter-label">Closer</label>
         <select class="filter-select" id="ns-filter-closer">
@@ -4071,7 +4069,7 @@ function renderNoShow() {
   el.addEventListener('change', el._nsChangeHandler);
 
   function applyNsFilters() {
-    const origem     = $('ns-filter-origem')?.value     || '';
+    const origem     = $('agend-filter-origem')?.value  || '';
     const closer     = $('ns-filter-closer')?.value     || '';
     const agendPor   = $('ns-filter-agendadopor')?.value || '';
     const renda      = $('ns-filter-renda')?.value      || '';
@@ -4154,16 +4152,17 @@ function renderNoShow() {
   });
   $('btn-ns-bulk-clear')?.addEventListener('click', () => { nsSelectedIds.clear(); updateNsBulkBar(); applyNsFilters(); });
 
-  ['ns-filter-origem','ns-filter-closer','ns-filter-agendadopor','ns-filter-renda',
+  ['ns-filter-closer','ns-filter-agendadopor','ns-filter-renda',
    'ns-filter-chegada-de','ns-filter-chegada-ate'].forEach(id =>
     $(id)?.addEventListener('change', () => { nsPage = 1; applyNsFilters(); })
   );
   $('ns-filter-busca')?.addEventListener('input', () => { nsPage = 1; applyNsFilters(); });
   $('ns-btn-limpar')?.addEventListener('click', () => {
-    ['ns-filter-origem','ns-filter-closer','ns-filter-agendadopor','ns-filter-renda',
+    ['ns-filter-closer','ns-filter-agendadopor','ns-filter-renda',
      'ns-filter-chegada-de','ns-filter-chegada-ate','ns-filter-busca'].forEach(id => {
       const inp = $(id); if (inp) inp.value = '';
     });
+    const origemEl = $('agend-filter-origem'); if (origemEl) origemEl.value = '';
     nsPage = 1;
     applyNsFilters();
   });
