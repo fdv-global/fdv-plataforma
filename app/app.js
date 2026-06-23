@@ -215,7 +215,7 @@ let _drillLeads      = [];        // leads do drill-down atual
 let _drillTitle      = '';
 let _drillStatusFilt = '';
 let _relBase         = [];        // leads filtrados do último renderRelatorios()
-let _utmTab          = 'utm_source'; // aba ativa em Performance por Campanha
+let _relView         = 'executivo';  // visão ativa nos relatórios (executivo | operacional)
 let currentId      = null;
 let modalMode      = 'agendar';
 let supabase       = null;
@@ -314,7 +314,6 @@ let mpSelected = null;
 let kanbanSearchText = '';
 let _expandedCardId  = null; // ID do card do kanban atualmente expandido
 let _relChart        = null; // Instância Chart.js do comparativo mensal
-let relShowUTM        = false;  // toggle aba Análise de Tráfego
 let _relChartDia     = null; // Leads por dia
 
 // Notification state
@@ -5869,375 +5868,226 @@ function _parseRenda(v) {
 }
 
 function renderRelatorios() {
-  const mesFilt    = $('rel-filter-mes').value;
-  const origemFilt = $('rel-filter-origem').value;
+  const mesFilt = $('rel-filter-mes').value;
 
-  // base: filtrado por datachegada — total de leads e qualificados
   let base = [...allLeads];
-  if (mesFilt)    base = base.filter(l => (l.datachegada||'').startsWith(mesFilt));
-  if (origemFilt) base = base.filter(l => l.origem === origemFilt);
+  if (mesFilt) base = base.filter(l => (l.datachegada||'').startsWith(mesFilt));
   _relBase = base;
 
-  // callsBase: filtrado por dataagendamento — agendados, calls realizadas, no-shows
   let callsBase = allLeads.filter(l => l.dataagendamento);
-  if (mesFilt)    callsBase = callsBase.filter(l => (l.dataagendamento||'').startsWith(mesFilt));
-  if (origemFilt) callsBase = callsBase.filter(l => l.origem === origemFilt);
+  if (mesFilt) callsBase = callsBase.filter(l => (l.dataagendamento||'').startsWith(mesFilt));
   const agendados  = callsBase;
   const realizadas = callsBase.filter(l => l.status === 'realizada');
-  const noShows    = callsBase.filter(l => l.status === 'noshow');
 
-  // vendasBase: filtrado por realizadaem como primário; exclui canceladas
   let vendasBase = [...allLeads];
-  if (mesFilt)    vendasBase = vendasBase.filter(l => (l.realizadaem||l.kanban_column_since||l.datachegada||'').startsWith(mesFilt));
-  if (origemFilt) vendasBase = vendasBase.filter(l => l.origem === origemFilt);
+  if (mesFilt) vendasBase = vendasBase.filter(l => (l.realizadaem||l.kanban_column_since||l.datachegada||'').startsWith(mesFilt));
   const vendas = vendasBase.filter(l => l.kanban_column === 'venda_ganha' && l.venda_ganha_dados?.status !== 'cancelada');
 
   const taxaComp    = agendados.length  ? pct(realizadas.length, agendados.length)  : 0;
   const taxaConv    = realizadas.length ? pct(vendas.length,     realizadas.length) : 0;
-  const faturamento = vendas.reduce((s,l)=>s+parseValor(l.venda_ganha_dados?.valor),0);
-  const ticketMedio = vendas.length ? Math.round(faturamento/vendas.length) : 0;
+  const faturamento = vendas.reduce((s, l) => s + parseValor(l.venda_ganha_dados?.valor), 0);
+  const ticketMedio = vendas.length ? Math.round(faturamento / vendas.length) : 0;
 
-  // Velocidade: avg days datachegada → dataagendamento for realizadas
-  const velocDias = (() => {
-    const vals = realizadas.map(l => {
-      const t1 = l.datachegada    ? new Date(l.datachegada)    : null;
-      const t2 = l.dataagendamento? new Date(l.dataagendamento): null;
-      return (t1&&t2&&t2>=t1) ? Math.round((t2-t1)/86400000) : null;
-    }).filter(v=>v!==null);
-    return vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : 0;
-  })();
-
-  // Bloco 2: funnel
-  const fQualif = base.filter(l=>!['aguardando','descartado','cancelado'].includes(l.status)).length;
-  const fAgend  = agendados.length;
-  const fCalls  = realizadas.length;
-  const fVendas = vendas.length;
+  const fQualif = base.filter(l => !['aguardando','descartado','cancelado'].includes(l.status)).length;
   const funnelStages = [
-    { label:'Leads', val:base.length },
-    { label:'Qualificados', val:fQualif },
-    { label:'Agendados', val:fAgend },
-    { label:'C. Realizadas', val:fCalls },
-    { label:'Vendas', val:fVendas },
+    { label: 'Leads',            val: base.length },
+    { label: 'Qualificados',     val: fQualif },
+    { label: 'Agendados',        val: agendados.length },
+    { label: 'Calls Realizadas', val: realizadas.length },
+    { label: 'Vendas',           val: vendas.length },
   ];
 
-  // Bloco 0: saúde por origem — agrupa leads por canal com métricas de funil
   const funnelByOrigin = Object.entries(
-    base.reduce((m,l) => {
-      const o = l.origem||'Outros';
-      if(!m[o]) m[o]={total:0,qualif:0,vendas:0};
+    base.reduce((m, l) => {
+      const o = l.origem || 'Outros';
+      if (!m[o]) m[o] = { total: 0, qualif: 0, vendas: 0 };
       m[o].total++;
-      if(!['aguardando','descartado','cancelado'].includes(l.status)) m[o].qualif++;
-      if(l.kanban_column==='venda_ganha') m[o].vendas++;
+      if (!['aguardando','descartado','cancelado'].includes(l.status)) m[o].qualif++;
+      if (l.kanban_column === 'venda_ganha') m[o].vendas++;
       return m;
     }, {})
-  ).map(([o,d]) => ({o,...d,conv:d.total?pct(d.vendas,d.total):0,qualifPct:d.total?pct(d.qualif,d.total):0}))
-   .sort((a,b) => b.total-a.total);
-  const maxLeadsOrig = Math.max(...funnelByOrigin.map(r=>r.total),1);
+  ).map(([o, d]) => ({ o, ...d, conv: d.total ? pct(d.vendas, d.total) : 0 }))
+   .sort((a, b) => b.total - a.total);
 
-  // Bloco 3: canais
-  const origemMap = {};
-  base.forEach(l => {
-    const o=l.origem||'Outros';
-    if(!origemMap[o]) origemMap[o]={total:0,vendas:0,qualif:0};
-    origemMap[o].total++;
-    if(l.kanban_column==='venda_ganha') origemMap[o].vendas++;
-    const renda = _parseRenda(l.renda);
-    if(renda>=REL_CONFIG.rendaThreshold) origemMap[o].qualif++;
+  const closerMap = {}, respMap = {};
+  agendados.forEach(l => {
+    const k = l.closer || '_sem';
+    if (!closerMap[k]) closerMap[k] = { ag: 0, re: 0, ve: 0, val: 0 };
+    closerMap[k].ag++;
+    const r = l.agendadopor || '—';
+    if (!respMap[r]) respMap[r] = { ag: 0, re: 0, ve: 0 };
+    respMap[r].ag++;
+    if (l.status === 'realizada') respMap[r].re++;
+    if (l.kanban_column === 'venda_ganha') respMap[r].ve++;
   });
-  const canalRanking = Object.entries(origemMap)
-    .map(([o,d])=>({o,...d,conv:d.total?pct(d.vendas,d.total):0,qualifPct:d.total?pct(d.qualif,d.total):0}))
-    .sort((a,b)=>b.conv-a.conv||b.total-a.total);
-  const maxVol  = Math.max(...canalRanking.map(r=>r.total),1);
-  const maxConv = Math.max(...canalRanking.map(r=>r.conv),1);
-  const topCanal= canalRanking[0];
-
-  // Bloco 4: profissão e renda
-  const profMap  = {}, rendaMap = {};
-  const buildMap = (m,key,l)=>{ const v=(l[key]||'Não inf.').slice(0,25); m[v]=(m[v]||0)+1; };
-  base.forEach(l=>{ buildMap(profMap,'profissao',l); buildMap(rendaMap,'renda',l); });
-  const topN = (m,n=8) => Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,n);
-  const profEntries = topN(profMap,7);
-  const rendaEntries= topN(rendaMap,7);
-
-  // Bloco 5: por closer
-  const closerMap={}, respMap={};
-  realizadas.forEach(l=>{
-    const k=l.closer||'_sem';
-    if(!closerMap[k]) closerMap[k]={ag:0,re:0,ns:0,ve:0,val:0};
+  realizadas.forEach(l => {
+    const k = l.closer || '_sem';
+    if (!closerMap[k]) closerMap[k] = { ag: 0, re: 0, ve: 0, val: 0 };
     closerMap[k].re++;
-    if(l.kanban_column==='venda_ganha'){closerMap[k].ve++;closerMap[k].val+=parseValor(l.venda_ganha_dados?.valor);}
+    if (l.kanban_column === 'venda_ganha') { closerMap[k].ve++; closerMap[k].val += parseValor(l.venda_ganha_dados?.valor); }
   });
-  agendados.forEach(l=>{ const k=l.closer||'_sem'; if(!closerMap[k]) closerMap[k]={ag:0,re:0,ns:0,ve:0,val:0}; closerMap[k].ag++; });
-  noShows.forEach(l=>{ const k=l.closer||'_sem'; if(!closerMap[k]) closerMap[k]={ag:0,re:0,ns:0,ve:0,val:0}; closerMap[k].ns++; });
-  agendados.forEach(l=>{ const r=l.agendadopor||'—'; if(!respMap[r]) respMap[r]={ag:0,re:0,ve:0}; respMap[r].ag++; if(l.status==='realizada') respMap[r].re++; if(l.kanban_column==='venda_ganha') respMap[r].ve++; });
 
-  // Bloco 6: histórico mensal
   const mesMap = {};
-  base.forEach(l=>{ if(!l.datachegada) return; const m=l.datachegada.slice(0,7); if(!mesMap[m]) mesMap[m]={total:0,re:0,ve:0,ns:0,val:0}; mesMap[m].total++; if(l.status==='realizada') mesMap[m].re++; if(l.kanban_column==='venda_ganha'){mesMap[m].ve++;mesMap[m].val+=parseValor(l.venda_ganha_dados?.valor);} if(l.status==='noshow') mesMap[m].ns++; });
-  const mesEntries = Object.entries(mesMap).sort((a,b)=>b[0].localeCompare(a[0]));
+  base.forEach(l => {
+    if (!l.datachegada) return;
+    const m = l.datachegada.slice(0, 7);
+    if (!mesMap[m]) mesMap[m] = { total: 0, re: 0, ve: 0, ns: 0, val: 0 };
+    mesMap[m].total++;
+    if (l.status === 'realizada') mesMap[m].re++;
+    if (l.kanban_column === 'venda_ganha') { mesMap[m].ve++; mesMap[m].val += parseValor(l.venda_ganha_dados?.valor); }
+    if (l.status === 'noshow') mesMap[m].ns++;
+  });
+  const mesEntries = Object.entries(mesMap).sort((a, b) => b[0].localeCompare(a[0]));
 
-  // UTM
-  const hasUTM = base.some(l=>l.utm_campaign||l.utm_source||l.utm_content);
-  const cleanUTMVal = v => (!v||/^\{\{.*\}\}$/.test(v.trim()))?null:v;
-  const utmAgg = field => { const m={}; base.forEach(l=>{ const k=cleanUTMVal(l[field])||'Não identificado'; m[k]=(m[k]||{total:0,ve:0}); m[k].total++; if(l.kanban_column==='venda_ganha') m[k].ve++; }); return Object.entries(m).sort((a,b)=>b[1].total-a[1].total); };
+  const motivosMap = {};
+  base.forEach(l => {
+    if (!l.motivo_perda_label) return;
+    motivosMap[l.motivo_perda_label] = (motivosMap[l.motivo_perda_label] || 0) + 1;
+  });
+  const motivosEntries = Object.entries(motivosMap).sort((a, b) => b[1] - a[1]);
 
-  // Destroy charts
-  [_relChart,_relChartDia]
-    .forEach(c=>{try{c?.destroy();}catch(e){}});
-  _relChart=_relChartDia=null;
+  const profMapV = {}, rendaMapV = {};
+  vendas.forEach(l => {
+    const p = (l.profissao || 'Não inf.').slice(0, 25);
+    profMapV[p] = (profMapV[p] || 0) + 1;
+    const r = (l.renda || 'Não inf.').slice(0, 25);
+    rendaMapV[r] = (rendaMapV[r] || 0) + 1;
+  });
+  const topProfV  = Object.entries(profMapV).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const topRendaV = Object.entries(rendaMapV).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
-  // ── UTM tab
-  if (relShowUTM) {
-    // Top anúncio por conversão (excluindo "Não identificado")
-    const contentEntries = utmAgg('utm_content').filter(([k])=>k!=='Não identificado'&&k!=='(não informado)');
-    const topAd = contentEntries.reduce((best,e) => {
-      const c=e[1].total?pct(e[1].ve,e[1].total):-1;
-      const bc=best?pct(best[1].ve,best[1].total):-1;
-      return c>bc?e:best;
-    }, null);
+  [_relChart, _relChartDia].forEach(c => { try { c?.destroy(); } catch(e) {} });
+  _relChart = _relChartDia = null;
 
-    const utmTableHTML = (field) => {
-      const lbl={utm_source:'Origem',utm_campaign:'Campanha',utm_content:'Anúncio'}[field];
-      const allE = utmAgg(field);
-      const nonZero = allE.filter(([,d])=>d.total>0);
-      const zero    = allE.filter(([,d])=>d.total===0);
-      const maxV = Math.max(...nonZero.map(([,d])=>d.total),1);
-      const maxC = Math.max(...nonZero.map(([,d])=>d.total?pct(d.ve,d.total):0),1);
-      const rows = [...nonZero, ...zero];
-      return `<div data-utm-panel="${field}" ${_utmTab!==field?'style="display:none"':''}>
-        <div class="utm-perf-panel"><table class="rel-table">
-          <thead><tr><th>${lbl}</th><th>Leads</th><th>Vendas</th><th>Conv.</th></tr></thead>
-          <tbody>${rows.map(([k,d])=>{
-            const convPct = d.total?pct(d.ve,d.total):0;
-            const volW    = Math.round(d.total/maxV*100);
-            const convW   = Math.round(convPct/maxC*100);
-            return `<tr class="rel-drill-row${d.total===0?' roi-zero':''}" data-drill="${field}" data-drill-value="${esc(k)}" data-drill-title="${esc(lbl+': '+k)}">
-              <td>
-                <div class="utm-name-cell" title="${esc(k)}">${esc(k)}</div>
-                ${d.total>0?`<div class="utm-mini-bars">
-                  <div class="utm-mb-row"><div style="width:${volW}%;background:var(--petro-l)"></div></div>
-                  <div class="utm-mb-row"><div style="width:${convW}%;background:var(--gold)"></div></div>
-                </div>`:''}
-              </td>
-              <td>${d.total}</td>
-              <td>${d.ve}</td>
-              <td style="color:${convPct>0?'var(--green)':'var(--t3)'};font-weight:${convPct>0?700:400}">${convPct}%</td>
-            </tr>`;
-          }).join('')}</tbody>
-        </table></div>
-      </div>`;
-    };
+  const convBadge = p => {
+    const col = p >= 30 ? 'var(--green)' : p >= 10 ? 'var(--gold)' : '#E24B4A';
+    return `<span style="background:${col}20;color:${col};border:1px solid ${col}40;padding:1px 8px;border-radius:12px;font-size:12px;font-weight:700">${p}%</span>`;
+  };
 
-    $('relatorios-content').innerHTML = `
-      <div class="rel-utm-tab">
-        <button class="btn-ghost btn-sm" id="rel-utm-back" style="margin-bottom:20px">← Voltar ao Relatório</button>
-        ${topAd&&topAd[1].ve>0?`
-        <div class="rel-utm-topad rel-block" style="margin-bottom:24px;padding:20px 24px;display:flex;align-items:center;gap:16px;border-left:3px solid var(--gold)">
-          ${ICO_TROPHY}
-          <div>
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:4px">Top anúncio do período</div>
-            <div style="font-size:15px;font-weight:700;color:var(--t1)">${esc(topAd[0])}</div>
+  const FUNIL_COLORS = ['#1a5f75', '#1D9E75', '#CE9221', '#E24B4A', '#7B5EA7'];
+  const funnelMax = funnelStages[0]?.val || 1;
+
+  const viewExecutivo = `
+    <div class="rel-section-head">Métricas do Período</div>
+    <div class="stats-grid rel-summary">
+      ${relStatCard('Total de Leads', base.length, _S('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'), '', 'data-drill="all" data-drill-title="Total de Leads"')}
+      ${relStatCard('Calls Realizadas', realizadas.length, _S('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'), 'accent-petro', 'data-drill="status" data-drill-value="realizada" data-drill-title="Calls Realizadas"')}
+      ${relStatCard('Comparecimento', taxaComp+'%', _S('<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>'), '', '')}
+      ${relStatCard('Conversão', taxaConv+'%', ICO_TROPHY, 'accent-green', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
+      ${relStatCard('Vendas', vendas.length, ICO_CHECK_CIRCLE, 'accent-gold', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
+      ${relStatCard('Faturamento', 'R$\xa0'+fmtValor(faturamento), _S('<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'), 'accent-sand', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
+      ${relStatCard('Ticket Médio', ticketMedio ? 'R$\xa0'+fmtValor(ticketMedio) : '—', _S('<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>'), 'accent-gold')}
+    </div>
+
+    <div class="rel-section-head">Funil de Conversão</div>
+    <div class="rel-block" style="padding:20px 24px">
+      ${funnelStages.map((s, i) => {
+        const pctOfTotal = funnelMax ? Math.round(s.val / funnelMax * 100) : 0;
+        return `<div style="margin-bottom:${i < funnelStages.length - 1 ? '14' : '0'}px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+            <span style="font-size:12px;font-weight:600;color:rgba(232,228,220,0.7)">${s.label}</span>
+            <span style="font-size:13px;font-weight:700;color:rgba(232,228,220,0.9)">${s.val}&nbsp;<span style="color:${FUNIL_COLORS[i]};font-size:11px">(${pctOfTotal}%)</span></span>
           </div>
-          <div style="margin-left:auto;text-align:right">
-            <div style="font-size:28px;font-weight:800;color:var(--gold);line-height:1">${pct(topAd[1].ve,topAd[1].total)}%</div>
-            <div style="font-size:11px;color:var(--t3)">${topAd[1].total} leads · ${topAd[1].ve} vendas</div>
+          <div style="height:10px;background:rgba(255,255,255,0.06);border-radius:6px;overflow:hidden">
+            <div style="width:${pctOfTotal}%;height:100%;background:${FUNIL_COLORS[i]};border-radius:6px;transition:width .5s"></div>
           </div>
-        </div>`:''}
-        <div class="rel-section-head">Performance por Campanha</div>
-        <div class="utm-tab-bar sub-nav" style="margin-bottom:14px">
-          <button class="sub-link${_utmTab==='utm_source'?' active':''}" data-utm-tab="utm_source">Por Origem</button>
-          <button class="sub-link${_utmTab==='utm_campaign'?' active':''}" data-utm-tab="utm_campaign">Por Campanha</button>
-          <button class="sub-link${_utmTab==='utm_content'?' active':''}" data-utm-tab="utm_content">Por Anúncio</button>
-        </div>
-        ${['utm_source','utm_campaign','utm_content'].map(utmTableHTML).join('')}
-      </div>`;
-    lucide.createIcons();
-    $('rel-utm-back').addEventListener('click',()=>{ relShowUTM=false; renderRelatorios(); });
-    document.querySelectorAll('[data-utm-tab]').forEach(b=>b.addEventListener('click',()=>{
-      _utmTab=b.dataset.utmTab;
-      document.querySelectorAll('[data-utm-tab]').forEach(t=>t.classList.toggle('active',t.dataset.utmTab===_utmTab));
-      document.querySelectorAll('[data-utm-panel]').forEach(p=>{ p.style.display=p.dataset.utmPanel===_utmTab?'':'none'; });
-    }));
-    return;
-  }
-
-  // ── MAIN VIEW
-  const fmtC = n => n?n.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0,maximumFractionDigits:0}):'—';
-  const cComp = _semaforo(taxaComp, REL_CONFIG.comparecimento, false);
-  const cConv = _semaforo(taxaConv,  REL_CONFIG.conversao, false);
-  const cVel  = _semaforo(velocDias, REL_CONFIG.velocidade, true);
-
-  $('relatorios-content').innerHTML = `
-
-  <!-- Bloco 0: Métricas -->
-  <div class="rel-section-head">Métricas do Período</div>
-  <div class="stats-grid rel-summary">
-    ${relStatCard('Total de Leads', base.length, _S('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'), '', 'data-drill="all" data-drill-title="Total de Leads"')}
-    ${relStatCard('Comparecimento', taxaComp+'%', _S('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'), 'accent-petro', 'data-drill="status" data-drill-value="realizada" data-drill-title="Calls Realizadas"')}
-    ${relStatCard('Conversão', taxaConv+'%', ICO_TROPHY, 'accent-green', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
-    ${relStatCard('Faturamento', 'R$\xa0'+fmtValor(faturamento), _S('<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'), 'accent-sand', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
-    ${relStatCard('Ticket Médio', ticketMedio?'R$\xa0'+fmtValor(ticketMedio):'—', _S('<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>'), 'accent-gold')}
-    ${relStatCard('Vendas', vendas.length, ICO_CHECK_CIRCLE, 'accent-gold', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
-  </div>
-
-  <!-- Bloco 1: Saúde por Origem -->
-  <div class="rel-section-head">Saúde por Origem</div>
-  <div class="rel-block">
-    <table class="rel-table rel-origem-table">
-      <thead><tr>
-        <th>Canal</th><th>Leads</th><th>Qualificados</th><th>Conversão</th><th></th>
-      </tr></thead>
-      <tbody>${funnelByOrigin.map(r => {
-        const dot = r.conv>0 ? 'var(--green)' : r.qualif>0 ? 'var(--gold)' : '#d06070';
-        const volW = Math.round(r.total/maxLeadsOrig*100);
-        return `<tr class="rel-drill-row" data-drill="origem" data-drill-value="${esc(r.o)}" data-drill-title="Canal: ${esc(r.o)}">
-          <td>
-            <div class="roi-nome">${esc(r.o)}</div>
-            <div class="roi-bar"><div style="width:${volW}%;background:var(--petro-l);height:3px;border-radius:2px;transition:width .5s"></div></div>
-          </td>
-          <td>${r.total}</td>
-          <td>${r.qualif} <span class="roi-pct">(${r.qualifPct}%)</span></td>
-          <td style="color:${r.conv>0?'var(--green)':'var(--t3)'};font-weight:${r.conv>0?700:400}">${r.conv}%</td>
-          <td><span class="roi-dot" style="background:${dot}"></span></td>
-        </tr>`;
-      }).join('')}</tbody>
-    </table>
-  </div>
-
-  <!-- Bloco 2: Funil SVG -->
-  <div class="rel-section-head">Funil de Conversão</div>
-  <div class="rel-block" style="padding:28px;display:flex;gap:32px;align-items:center">
-    <div style="flex:0 0 320px">${_svgFunil(funnelStages)}</div>
-    <div style="flex:1;display:flex;flex-direction:column;gap:12px">
-      ${funnelStages.map((s,i)=>{
-        const next=funnelStages[i+1];
-        const adv=next&&s.val?pct(next.val,s.val):null;
-        return `<div class="rel-funil-row">
-          <span class="rel-funil-lbl">${s.label}</span>
-          <span class="rel-funil-n">${s.val}</span>
-          ${adv!==null?'<span class="rel-funil-arrow">→ '+adv+'% avançaram</span>':''}
         </div>`;
       }).join('')}
-      ${velocDias>0?'<div class="rel-funil-tempo">Tempo médio lead → call: <strong>'+velocDias+' dias</strong></div>':''}
     </div>
-  </div>
 
-  <!-- Bloco 3: Canais -->
-  <div class="rel-section-head">Canais — Ranqueados por Conversão</div>
-  ${topCanal?'<div class="rel-top-canal">⭐ Top canal: <strong>'+esc(topCanal.o)+'</strong> — '+topCanal.total+' leads, '+topCanal.conv+'% de conversão</div>':''}
-  <div class="rel-block">
-    <table class="rel-table">
-      <thead><tr>
-        <th>Canal</th><th>Volume + Conversão</th><th>Perfil qualificado %
-          <span class="rel-th-tooltip" title="Leads com renda ≥ R$ ${(REL_CONFIG.rendaThreshold).toLocaleString('pt-BR')}">?</span>
-        </th><th>Leads</th><th>Conv.</th>
-      </tr></thead>
-      <tbody>${canalRanking.map((r,i)=>
-        `<tr class="rel-drill-row" data-drill="origem" data-drill-value="${esc(r.o)}" data-drill-title="Canal: ${esc(r.o)}">
-          <td>${i===0?'⭐ ':''}<strong>${esc(r.o)}</strong></td>
-          <td>${_dualBar(r.total,maxVol,r.conv,100)}</td>
-          <td><span class="rel-qual-pct" style="color:${r.qualifPct>=50?'var(--green)':r.qualifPct>=25?'var(--gold)':'var(--t3)'}">${r.qualifPct}%</span></td>
-          <td>${r.total}</td>
-          <td>${r.conv}%</td>
-        </tr>`).join('')}
-      </tbody>
-    </table>
-  </div>
+    <div class="rel-section-head">Performance por Closer</div>
+    <div class="rel-block">
+      <div class="rel-table-wrap"><table class="rel-table">
+        <thead><tr><th>Closer</th><th>Agend.</th><th>Calls</th><th>Vendas</th><th>Conv. %</th><th>Fat. R$</th></tr></thead>
+        <tbody>${Object.entries(closerMap).sort((a, b) => b[1].ve - a[1].ve).map(([c, d]) => {
+          const conv = d.re ? pct(d.ve, d.re) : 0;
+          return `<tr>
+            <td><strong>${esc(CLOSERS[c]?.name || c)}</strong></td>
+            <td>${d.ag}</td><td>${d.re}</td><td>${d.ve}</td>
+            <td>${convBadge(conv)}</td>
+            <td>${d.val ? 'R$\xa0'+fmtValor(d.val) : '—'}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div>
+    </div>`;
 
-  <!-- Bloco 4: Perfil do Público — barras horizontais -->
-  <div class="rel-section-head" style="display:flex;align-items:center;gap:12px">
-    Perfil do Público
-    <div class="rel-perfil-filter">
-      <button class="rel-pf-btn active" data-pf="todos">Todos os leads</button>
-      <button class="rel-pf-btn" data-pf="compradores">Apenas compradores</button>
+  const topProfMax  = topProfV[0]?.[1] || 1;
+  const topRendaMax = topRendaV[0]?.[1] || 1;
+  const motivosMax  = motivosEntries[0]?.[1] || 1;
+
+  const mkHBarsSimple = (entries, maxVal, color) => {
+    if (!entries.length) return '<p style="color:rgba(232,228,220,0.35);font-size:12px;margin:0">Sem dados</p>';
+    return entries.map(([name, count]) => `<div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="font-size:12px;color:rgba(232,228,220,0.8);max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(name)}">${esc(name)}</span>
+        <span style="font-size:12px;font-weight:700;color:${color}">${count}</span>
+      </div>
+      <div style="height:6px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden">
+        <div style="width:${Math.round(count / maxVal * 100)}%;height:100%;background:${color};border-radius:4px"></div>
+      </div>
+    </div>`).join('');
+  };
+
+  const viewOperacional = `
+    <div class="rel-section-head">Saúde por Origem</div>
+    <div class="rel-block">
+      <div class="rel-table-wrap"><table class="rel-table rel-origem-table">
+        <thead><tr><th>Origem</th><th>Leads</th><th>Qualificados</th><th>Conv. %</th></tr></thead>
+        <tbody>${funnelByOrigin.map(r => `<tr>
+          <td><strong>${esc(r.o)}</strong></td>
+          <td>${r.total}</td><td>${r.qualif}</td>
+          <td>${convBadge(r.conv)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
     </div>
-  </div>
-  <div class="rel-hbars-grid" id="rel-hbars-grid"></div>
 
-  <!-- Bloco 5: Equipe (duas tabelas lado a lado) -->
-  <div class="rel-section-head">Performance da Equipe</div>
-  <div class="rel-equipe-grid">
-    ${relTable('Por Closer',['Closer','Agend.','C.Real.','No Shows','Vendas','Fat.','Conv.'],
-      Object.entries(closerMap).map(([c,d])=>[CLOSERS[c]?.name||c,d.ag,d.re,d.ns,d.ve,d.val?'R$\xa0'+fmtValor(d.val):'—',d.re?pct(d.ve,d.re)+'%':'—']),
-      i=>{const e=Object.entries(closerMap);return {type:'closer',value:e[i][0],title:'Closer: '+(CLOSERS[e[i][0]]?.name||e[i][0])};}
+    <div class="rel-section-head">Perfil de Quem Compra</div>
+    <div class="rel-block" style="padding:20px 24px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px">
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:rgba(232,228,220,0.45);margin-bottom:12px">Por Profissão</div>
+          ${mkHBarsSimple(topProfV, topProfMax, '#1D9E75')}
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:rgba(232,228,220,0.45);margin-bottom:12px">Por Faixa de Renda</div>
+          ${mkHBarsSimple(topRendaV, topRendaMax, '#1D9E75')}
+        </div>
+      </div>
+    </div>
+
+    <div class="rel-section-head">Histórico Mensal</div>
+    ${relTable('', ['Mês','Leads','Calls Realizadas','No Shows','Vendas','Faturamento'],
+      mesEntries.map(([m, d]) => [fmtMes(m), d.total, d.re, d.ns, d.ve, d.val ? 'R$\xa0'+fmtValor(d.val) : '—']),
+      i => { const e = mesEntries; return { type: 'mes', value: e[i][0], title: 'Mês: '+fmtMes(e[i][0]) }; }
     )}
-    ${relTable('Por Responsável',['Responsável','Agend.','Realizadas','Vendas'],
-      Object.entries(respMap).map(([r,d])=>[r,d.ag,d.re,d.ve]),
-      i=>{const e=Object.entries(respMap);return {type:'resp',value:e[i][0],title:'Resp.: '+e[i][0]};}
-    )}
-  </div>
 
-  <!-- Bloco 6: Histórico mensal -->
-  <div class="rel-section-head">Histórico Mensal</div>
-  ${relTable('',['Mês','Leads','C. Realizadas','No Shows','Vendas','Faturamento'],
-    mesEntries.map(([m,d])=>[fmtMes(m),d.total,d.re,d.ns,d.ve,d.val?'R$\xa0'+fmtValor(d.val):'—']),
-    i=>{const e=mesEntries;return {type:'mes',value:e[i][0],title:'Mês: '+fmtMes(e[i][0])};}
-  )}
+    <div class="rel-section-head">Motivos de Perda</div>
+    <div class="rel-block" style="padding:20px 24px">
+      ${motivosEntries.length
+        ? motivosEntries.map(([name, count]) => `<div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:13px;color:rgba(232,228,220,0.8)">${esc(name)}</span>
+              <span style="font-size:13px;font-weight:700;color:#E24B4A">${count}</span>
+            </div>
+            <div style="height:7px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden">
+              <div style="width:${Math.round(count / motivosMax * 100)}%;height:100%;background:#E24B4A;border-radius:4px"></div>
+            </div>
+          </div>`).join('')
+        : '<p style="color:rgba(232,228,220,0.35);font-size:13px;text-align:center;padding:8px 0;margin:0">Nenhum motivo registrado ainda</p>'}
+    </div>
 
-  <!-- UTM card de destaque -->
-  ${hasUTM&&topCanal?'<div class="rel-utm-cta rel-drill-row" id="rel-btn-utm">📡 Análise de Tráfego — '+esc(topCanal.o)+' trouxe '+topCanal.total+' leads · <u>ver análise completa</u></div>':''}
+    <div class="rel-section-head">Por Responsável</div>
+    ${relTable('', ['Responsável','Agend.','Calls','Vendas'],
+      Object.entries(respMap).sort((a, b) => b[1].ve - a[1].ve).map(([r, d]) => [r, d.ag, d.re, d.ve]),
+      null
+    )}`;
 
-  ${!base.length?'<div class="agenda-empty"><h3>Sem dados</h3><p>Adicione leads ou ajuste os filtros.</p></div>':''}
+  $('relatorios-content').innerHTML = `
+    ${_relView === 'executivo' ? viewExecutivo : viewOperacional}
+    ${!base.length ? '<div class="agenda-empty"><h3>Sem dados</h3><p>Adicione leads ou ajuste os filtros.</p></div>' : ''}
   `;
 
   lucide.createIcons();
-
-  // Bloco 4: barras horizontais — sem Chart.js
-  function _mkHBars(field, color, label, pool) {
-    const m = {};
-    pool.forEach(l => { const v = (l[field]||'Não inf.').slice(0,30); m[v]=(m[v]||0)+1; });
-    const entries = Object.entries(m).sort((a,b)=>b[1]-a[1]);
-    const total   = entries.reduce((s,[,v])=>s+v,0);
-    const maxVal  = entries[0]?.[1]||1;
-    const show = entries.slice(0,10);
-    const rest = entries.slice(10);
-    const barRow = ([name,count]) => `
-      <div class="rel-hbar-row">
-        <div class="rel-hbar-name" title="${esc(name)}">${esc(name)}</div>
-        <div class="rel-hbar-track">
-          <div class="rel-hbar-fill" style="width:${Math.round(count/maxVal*100)}%;background:${color}"></div>
-        </div>
-        <span class="rel-hbar-count">${count}</span>
-        <span class="rel-hbar-pct">${total?Math.round(count/total*100):0}%</span>
-      </div>`;
-    return `<div class="rel-hbar-block">
-      <div class="rel-donut-title">${label}</div>
-      <div class="rel-hbar-list">${show.map(barRow).join('')}</div>
-      ${rest.length ? `
-        <div class="rel-hbar-more" id="hbar-more-${field}" style="display:none">${rest.map(barRow).join('')}</div>
-        <button class="btn-ghost btn-sm rel-hbar-toggle" data-field="${field}" data-count="${rest.length}" style="margin-top:8px;font-size:11px">Ver todos (${rest.length} mais)</button>` : ''}
-    </div>`;
-  }
-
-  function _renderHBars(pfFilter) {
-    const pool = pfFilter==='compradores' ? vendas : base;
-    const grid = document.getElementById('rel-hbars-grid');
-    if (!grid) return;
-    grid.innerHTML = _mkHBars('profissao','var(--gold)','Por Profissão', pool)
-                   + _mkHBars('renda','var(--petro-l)','Por Faixa de Renda', pool);
-    grid.querySelectorAll('.rel-hbar-toggle').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const more = document.getElementById(`hbar-more-${btn.dataset.field}`);
-        if (!more) return;
-        const open = more.style.display !== 'none';
-        more.style.display = open ? 'none' : '';
-        btn.textContent = open ? `Ver todos (${btn.dataset.count} mais)` : 'Recolher';
-      });
-    });
-  }
-  _renderHBars('todos');
-
-  // Profile filter pills
-  document.querySelectorAll('.rel-pf-btn').forEach(b=>b.addEventListener('click',()=>{
-    document.querySelectorAll('.rel-pf-btn').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active');
-    _renderHBars(b.dataset.pf);
-  }));
-
-  // UTM CTA
-  document.getElementById('rel-btn-utm')?.addEventListener('click',()=>{ relShowUTM=true; renderRelatorios(); });
-
-  // Drill-down delegation (existing)
 }
 
 // ── Funções auxiliares dos relatórios (globais para uso compartilhado)
@@ -11291,9 +11141,19 @@ function bindEvents() {
   });
 
   // ── Exportação de relatórios
-  $('rel-utm-toggle')?.addEventListener('click', () => { relShowUTM = !relShowUTM; renderRelatorios(); });
   $('rel-export-csv')?.addEventListener('click', exportRelatoriosCSV);
-  $('rel-export-pdf')?.addEventListener('click', exportRelatoriosPDF);
+  document.querySelectorAll('#rel-view-toggle .rel-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _relView = btn.dataset.view;
+      document.querySelectorAll('#rel-view-toggle .rel-toggle-btn').forEach(b => {
+        const active = b.dataset.view === _relView;
+        b.style.background = active ? 'rgba(206,146,33,0.12)' : 'transparent';
+        b.style.border     = active ? '0.5px solid rgba(206,146,33,0.4)' : '0.5px solid transparent';
+        b.style.color      = active ? '#CE9221' : 'rgba(232,228,220,0.5)';
+      });
+      renderRelatorios();
+    });
+  });
 
   // ── Drill-down de relatórios
   $('drill-close')    ?.addEventListener('click', closeDrillDown);
@@ -11304,14 +11164,6 @@ function bindEvents() {
 
   // Delegação: qualquer [data-drill] dentro de #relatorios-content
   $('relatorios-content')?.addEventListener('click', e => {
-    // UTM tabs — troca sem re-render
-    const utmTab = e.target.closest('[data-utm-tab]');
-    if (utmTab) {
-      _utmTab = utmTab.dataset.utmTab;
-      document.querySelectorAll('[data-utm-tab]').forEach(t => t.classList.toggle('active', t.dataset.utmTab === _utmTab));
-      document.querySelectorAll('[data-utm-panel]').forEach(p => { p.style.display = p.dataset.utmPanel === _utmTab ? '' : 'none'; });
-      return;
-    }
     const el = e.target.closest('[data-drill]');
     if (!el) return;
     const mesFilt    = $('rel-filter-mes')?.value    || '';
