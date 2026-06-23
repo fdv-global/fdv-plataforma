@@ -3624,7 +3624,10 @@ function renderAgendadosOverview() {
   const nVendas      = leadsDoMes.filter(l => l.status_closer === 'venda_ganha').length;
   const nProximas    = allLeads.filter(l => l.status === 'agendado' && (l.dataagendamento || '') >= today).length;
   const mesLbl       = MCAL_MONTHS[agendaCalMonth] + ' ' + agendaCalYear;
+  const pctComp      = nAgendados > 0 ? Math.round(nRealizadas / nAgendados * 100) : 0;
+  const pctNS        = nAgendados > 0 ? Math.round(nNoShow     / nAgendados * 100) : 0;
 
+  statsEl.className = 'stats-grid stats-grid--7';
   statsEl.innerHTML = `
     <div class="stat-card">
       <div class="stat-top"><span class="stat-label">Agendados</span><span class="stat-icon">📅</span></div>
@@ -3650,6 +3653,16 @@ function renderAgendadosOverview() {
       <div class="stat-top"><span class="stat-label">Próximas</span><span class="stat-icon">→</span></div>
       <strong class="stat-num">${nProximas}</strong>
       <span class="stat-sub">calls a realizar</span>
+    </div>
+    <div class="stat-card accent-green">
+      <div class="stat-top"><span class="stat-label">Comparecimento</span></div>
+      <strong class="stat-num">${pctComp}%</strong>
+      <span class="stat-sub">realizadas ÷ agendadas</span>
+    </div>
+    <div class="stat-card accent-marsala">
+      <div class="stat-top"><span class="stat-label">No-Show</span></div>
+      <strong class="stat-num">${pctNS}%</strong>
+      <span class="stat-sub">no show ÷ agendadas</span>
     </div>`;
 
   const proximas = allLeads
