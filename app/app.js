@@ -4845,6 +4845,7 @@ function renderKanbanMetrics() {
   const perdidosMes   = kanbanBase.filter(l => l.kanban_column === 'descartado'  && (l.kanban_column_since||'').startsWith(currentMonth)).length;
   const realizadasMes = allLeads.filter(l => l.status === 'realizada' && (l.dataagendamento||'').startsWith(currentMonth)).length;
   console.log('realizadas:', realizadasMes, 'total allLeads:', allLeads?.length);
+  console.log('taxa calculada:', vendasMes, '÷', realizadasMes, '=', Math.round(vendasMes/realizadasMes*100));
   const taxa          = realizadasMes > 0 ? Math.round(vendasMes / realizadasMes * 100) : 0;
 
   el.innerHTML = `
