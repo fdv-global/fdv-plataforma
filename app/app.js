@@ -4831,7 +4831,8 @@ function renderKanbanMetrics() {
   const origemFilt = $('kf-origem')?.value             || '';
 
   const currentMonth = new Date().toISOString().slice(0, 7);
-  const [ano, mes]   = currentMonth.split('-');
+  const monthFilter  = mesFilt || currentMonth;
+  const [ano, mes]   = monthFilter.split('-');
   const mesLabel     = new Date(Number(ano), Number(mes) - 1, 2)
     .toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
 
@@ -4850,14 +4851,13 @@ function renderKanbanMetrics() {
   const nNegociacao    = filtered.filter(l => getLeadKanbanCol(l) === 'negociacao').length;
   const nDecisao       = filtered.filter(l => getLeadKanbanCol(l) === 'decisao').length;
 
-  // Always current month — independent of mesFilt
   const vendasMes = allLeads.filter(l => {
     if (l.kanban_column !== 'venda_ganha') return false;
     const dateStr = l.kanban_column_since || l.dataagendamento || l.datachegada || '';
-    return dateStr.startsWith(currentMonth);
+    return dateStr.startsWith(monthFilter);
   }).length;
-  const perdidosMes   = kanbanBase.filter(l => l.kanban_column === 'descartado'  && (l.kanban_column_since||'').startsWith(currentMonth)).length;
-  const realizadasMes = allLeads.filter(l => l.status === 'realizada' && (l.dataagendamento||'').startsWith(currentMonth)).length;
+  const perdidosMes   = kanbanBase.filter(l => l.kanban_column === 'descartado'  && (l.kanban_column_since||'').startsWith(monthFilter)).length;
+  const realizadasMes = allLeads.filter(l => l.status === 'realizada' && (l.dataagendamento||'').startsWith(monthFilter)).length;
   const taxa          = realizadasMes > 0 ? Math.round(vendasMes / realizadasMes * 100) : 0;
 
   el.innerHTML = `
