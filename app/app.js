@@ -3256,7 +3256,10 @@ function renderQualificados() {
     const nContato2    = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) === 2).length;
     const nContato3p   = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) >= 3).length;
     const nSemResposta = allQual.filter(l => l.status_followup === 'sem_resposta').length;
-    const taxaQual     = allLeads.length > 0 ? Math.round(allQual.length / allLeads.length * 100) : 0;
+    const mesFiltQual   = $('qual-filter-mes')?.value || '';
+    const qualFiltBase  = mesFiltQual ? allQual.filter(l  => (l.datachegada||'').startsWith(mesFiltQual)) : allQual;
+    const leadsFiltBase = mesFiltQual ? allLeads.filter(l => (l.datachegada||'').startsWith(mesFiltQual)) : allLeads;
+    const taxaQual      = leadsFiltBase.length > 0 ? Math.round(qualFiltBase.length / leadsFiltBase.length * 100) : 0;
 
     const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
     const origemOpts    = uniq(allQual.map(l=>l.origem));
