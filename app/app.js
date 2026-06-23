@@ -4841,13 +4841,13 @@ function renderKanbanMetrics() {
   const nDecisao       = filtered.filter(l => getLeadKanbanCol(l) === 'decisao').length;
 
   // Always current month — independent of mesFilt
-  const todasVendas   = kanbanBase.filter(l => l.kanban_column === 'venda_ganha');
-  const vendasMes     = todasVendas.filter(l => (l.kanban_column_since||'').startsWith(currentMonth)).length;
-  console.log('todas venda_ganha:', todasVendas.map(l => ({ id: l.id, nome: l.nome, kanban_column_since: l.kanban_column_since, dataagendamento: l.dataagendamento, datachegada: l.datachegada })));
+  const vendasMes = allLeads.filter(l => {
+    if (l.kanban_column !== 'venda_ganha') return false;
+    const dateStr = l.kanban_column_since || l.dataagendamento || l.datachegada || '';
+    return dateStr.startsWith(currentMonth);
+  }).length;
   const perdidosMes   = kanbanBase.filter(l => l.kanban_column === 'descartado'  && (l.kanban_column_since||'').startsWith(currentMonth)).length;
   const realizadasMes = allLeads.filter(l => l.status === 'realizada' && (l.dataagendamento||'').startsWith(currentMonth)).length;
-  console.log('realizadas:', realizadasMes, 'total allLeads:', allLeads?.length);
-  console.log('taxa calculada:', vendasMes, '÷', realizadasMes, '=', Math.round(vendasMes/realizadasMes*100));
   const taxa          = realizadasMes > 0 ? Math.round(vendasMes / realizadasMes * 100) : 0;
 
   el.innerHTML = `
