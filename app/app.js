@@ -3255,6 +3255,7 @@ function renderQualificados() {
     const nContato2    = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) === 2).length;
     const nContato3p   = allQual.filter(l => l.status_followup === 'em_contato' && (l.contato_count||0) >= 3).length;
     const nSemResposta = allQual.filter(l => l.status_followup === 'sem_resposta').length;
+    const taxaQual     = allLeads.length > 0 ? Math.round(allQual.length / allLeads.length * 100) : 0;
 
     const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
     const origemOpts    = uniq(allQual.map(l=>l.origem));
@@ -3265,7 +3266,7 @@ function renderQualificados() {
 
     el.innerHTML = `
     <div class="filters-bar">
-      <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px">
+      <div class="stats-grid" style="grid-template-columns:repeat(6,1fr);margin-bottom:16px">
         <div class="stat-card accent-gold">
           <div class="stat-top"><span class="stat-label">Sem contato</span></div>
           <span class="stat-num">${nSemContato}</span>
@@ -3290,6 +3291,11 @@ function renderQualificados() {
           <div class="stat-top"><span class="stat-label">Sem resposta</span></div>
           <span class="stat-num">${nSemResposta}</span>
           <div class="stat-sub">resgatar ou descartar</div>
+        </div>
+        <div class="stat-card" style="border-left-color:#1D9E75;background:linear-gradient(150deg,var(--s1) 0%,rgba(29,158,117,.1) 100%)">
+          <div class="stat-top"><span class="stat-label">Taxa de Qualificação</span></div>
+          <span class="stat-num" style="color:#1D9E75">${taxaQual}%</span>
+          <div class="stat-sub">leads qualificados</div>
         </div>
       </div>
       <div class="filters-row">
