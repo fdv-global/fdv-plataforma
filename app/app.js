@@ -10788,7 +10788,7 @@ function bindEvents() {
   $('add-col-name').addEventListener('keydown', e => { if (e.key === 'Enter') confirmAddCol(); else if (e.key === 'Escape') closeAddColModal(); });
 
   // Relatórios filters
-  ['rel-filter-mes','rel-filter-origem'].forEach(id => $(id).addEventListener('change', renderRelatorios));
+  $('rel-filter-mes').addEventListener('change', renderRelatorios);
 
   // Novo lead
   $('btn-novo-lead-sub').addEventListener('click', () => openNovoLead());
@@ -11168,7 +11168,6 @@ function bindEvents() {
     const el = e.target.closest('[data-drill]');
     if (!el) return;
     const mesFilt    = $('rel-filter-mes')?.value    || '';
-    const origemFilt = $('rel-filter-origem')?.value || '';
     let base = [...allLeads];
     if (mesFilt)    base = base.filter(l => (l.datachegada||'').startsWith(mesFilt));
     if (origemFilt) base = base.filter(l => l.origem === origemFilt);
