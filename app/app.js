@@ -5890,7 +5890,7 @@ function renderRelatorios() {
 
   const fQualif = base.filter(l => !['aguardando','descartado','cancelado'].includes(l.status)).length;
   const funnelStages = [
-    { label: 'Leads',            val: base.length },
+    { label: 'Novos Leads',      val: base.length },
     { label: 'Qualificados',     val: fQualif },
     { label: 'Agendados',        val: agendados.length },
     { label: 'Calls Realizadas', val: realizadas.length },
