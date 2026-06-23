@@ -3917,6 +3917,11 @@ textarea.cip-inline-val { resize: vertical; min-height: 64px; }
   font-weight: 700;
   white-space: nowrap;
 }
+.funil-month-label {
+  font-size: 10px;
+  color: var(--t3);
+  white-space: nowrap;
+}
 
 /* Card Faturamento — hierarquia visual sobre os outros três */
 .imc--hero {

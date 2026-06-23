@@ -2422,7 +2422,8 @@ function renderInicio() {
     const d = new Date(now.getFullYear(), now.getMonth()-1, 1);
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
   })();
-  const nowTime = String(hour).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  const nowTime   = String(hour).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  const monthLabel = `${MONTHS[now.getMonth()+1].toLowerCase()} ${now.getFullYear()}`;
 
   // realizadaem é a data primária de fechamento; kanban_column_since como fallback.
   // Canceladas (status da tabela vendas) são excluídas de faturamento e contagem.
@@ -2539,19 +2540,19 @@ function renderInicio() {
         ICO20('<circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/><path d="m9 12 2 2 4-4"/>'))}
     </div>
     <div class="inicio-funil fdv-fade-up" style="animation-delay:0.38s">
-      <div class="funil-stage"><div class="funil-label">Leads</div><div class="funil-num">${fLeads}</div><div class="funil-ns-slot"></div></div>
+      <div class="funil-stage"><div class="funil-label">Leads</div><div class="funil-num">${fLeads}</div><div class="funil-ns-slot"><span class="funil-month-label">${monthLabel}</span></div></div>
       ${arrowSvg(pctQ)}
-      <div class="funil-stage"><div class="funil-label">Qualificados</div><div class="funil-num">${fQualif}</div><div class="funil-ns-slot"></div></div>
+      <div class="funil-stage"><div class="funil-label">Qualificados</div><div class="funil-num">${fQualif}</div><div class="funil-ns-slot"><span class="funil-month-label">${monthLabel}</span></div></div>
       ${arrowSvg(null)}
-      <div class="funil-stage"><div class="funil-label">Agendados</div><div class="funil-num">${fAgend}</div><div class="funil-ns-slot"></div></div>
+      <div class="funil-stage"><div class="funil-label">Agendados</div><div class="funil-num">${fAgend}</div><div class="funil-ns-slot"><span class="funil-month-label">${monthLabel}</span></div></div>
       ${arrowSvg(pctC)}
       <div class="funil-stage">
         <div class="funil-label">C. Realizadas</div>
         <div class="funil-num">${fCalls}</div>
-        <div class="funil-ns-slot">${fNoShow > 0 ? `<div class="funil-ns-inline">↓ ${fNoShow} no-show (${pctNS}%)</div>` : ''}</div>
+        <div class="funil-ns-slot">${fNoShow > 0 ? `<div class="funil-ns-inline">↓ ${fNoShow} no-show (${pctNS}%)</div>` : `<span class="funil-month-label">${monthLabel}</span>`}</div>
       </div>
       ${arrowSvg(pctV)}
-      <div class="funil-stage"><div class="funil-label">Vendas</div><div class="funil-num" style="color:var(--gold)">${fVendas}</div><div class="funil-ns-slot"></div></div>
+      <div class="funil-stage"><div class="funil-label">Vendas</div><div class="funil-num" style="color:var(--gold)">${fVendas}</div><div class="funil-ns-slot"><span class="funil-month-label">${monthLabel}</span></div></div>
     </div>
     <div class="inicio-agenda fdv-fade-up" style="animation-delay:0.44s">
       <div class="ia-header">
