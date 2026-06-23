@@ -4822,10 +4822,10 @@ function renderKanbanMetrics() {
   const nDecisao       = filtered.filter(l => getLeadKanbanCol(l) === 'decisao').length;
 
   // Always current month — independent of mesFilt
-  const vendasMes   = kanbanBase.filter(l => l.kanban_column === 'venda_ganha' && (l.kanban_column_since||'').startsWith(currentMonth)).length;
-  const perdidosMes = kanbanBase.filter(l => l.kanban_column === 'descartado'  && (l.kanban_column_since||'').startsWith(currentMonth)).length;
-  const totalMes    = kanbanBase.filter(l => (l.kanban_column_since||'').startsWith(currentMonth)).length;
-  const taxa        = totalMes > 0 ? Math.round(vendasMes / totalMes * 100) : 0;
+  const vendasMes     = kanbanBase.filter(l => l.kanban_column === 'venda_ganha' && (l.kanban_column_since||'').startsWith(currentMonth)).length;
+  const perdidosMes   = kanbanBase.filter(l => l.kanban_column === 'descartado'  && (l.kanban_column_since||'').startsWith(currentMonth)).length;
+  const realizadasMes = kanbanBase.filter(l => l.status === 'realizada' && (l.dataagendamento||'').startsWith(currentMonth)).length;
+  const taxa          = realizadasMes > 0 ? Math.round(vendasMes / realizadasMes * 100) : 0;
 
   el.innerHTML = `
     <div class="stat-card">
@@ -4856,7 +4856,7 @@ function renderKanbanMetrics() {
     <div class="stat-card accent-green">
       <div class="stat-top"><span class="stat-label">Conversão</span></div>
       <span class="stat-num">${taxa}%</span>
-      <div class="stat-sub">ganhos ÷ entradas</div>
+      <div class="stat-sub">ganhos ÷ realizadas</div>
     </div>
     <div class="stat-card accent-red">
       <div class="stat-top"><span class="stat-label">Perdidos no mês</span></div>
