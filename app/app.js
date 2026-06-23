@@ -4140,10 +4140,11 @@ function renderDescartados() {
   const origemOptsD = ['Instagram','Facebook','Indicação','Google','WhatsApp','Outros',...uniq2(allDesc.map(l=>l.origem))];
   const rendaOptsD  = uniq2(allDesc.map(l=>l.renda));
 
-  const descMesAtual = new Date().toISOString().slice(0, 7);
-  const nDescTotal   = allDesc.length;
-  const nDescMes     = allDesc.filter(l => (l.datachegada||'').startsWith(descMesAtual)).length;
-  const motivoFreq   = allDesc.reduce((acc, l) => {
+  const descMesAtual  = new Date().toISOString().slice(0, 7);
+  const nDescTotal    = allDesc.length;
+  const nDescMes      = allDesc.filter(l => (l.datachegada||'').startsWith(descMesAtual)).length;
+  const taxaDescarte  = allLeads.length > 0 ? Math.round(nDescTotal / allLeads.length * 100) : 0;
+  const motivoFreq    = allDesc.reduce((acc, l) => {
     const k = l.motivo_descarte_label || l.motivo_descarte || '—';
     acc[k] = (acc[k] || 0) + 1; return acc;
   }, {});
@@ -4153,7 +4154,7 @@ function renderDescartados() {
 
   el.innerHTML = `
     <div class="filters-bar">
-      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
         <div class="stat-card accent-marsala">
           <div class="stat-top"><span class="stat-label">Total descartados</span></div>
           <strong class="stat-num">${nDescTotal}</strong>
@@ -4168,6 +4169,11 @@ function renderDescartados() {
           <div class="stat-top"><span class="stat-label">Motivo principal</span></div>
           <strong class="stat-num">${motivoCount}</strong>
           <span class="stat-sub" title="${esc(motivoLabel)}">${esc(motivoLabel)}</span>
+        </div>
+        <div class="stat-card accent-marsala">
+          <div class="stat-top"><span class="stat-label">Taxa de Descarte</span></div>
+          <strong class="stat-num">${taxaDescarte}%</strong>
+          <span class="stat-sub">descartados ÷ total leads</span>
         </div>
       </div>
       <div class="filters-row">
