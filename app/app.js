@@ -4149,11 +4149,19 @@ function renderDescartados() {
   const uniq2 = arr => [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
   const origemOptsD = ['Instagram','Facebook','Indicação','Google','WhatsApp','Outros',...uniq2(allDesc.map(l=>l.origem))];
   const rendaOptsD  = uniq2(allDesc.map(l=>l.renda));
+  const mesOptsD    = [...new Set(allDesc.filter(l=>l.datachegada).map(l=>l.datachegada.slice(0,7)))].sort().reverse();
 
+  const descMesFilt   = $('desc-filter-mes')?.value || '';
   const descMesAtual  = new Date().toISOString().slice(0, 7);
-  const nDescTotal    = allDesc.length;
-  const nDescMes      = allDesc.filter(l => (l.datachegada||'').startsWith(descMesAtual)).length;
-  const taxaDescarte  = allLeads.length > 0 ? Math.round(nDescTotal / allLeads.length * 100) : 0;
+  const descBase      = descMesFilt ? allDesc.filter(l  => (l.datachegada||'').startsWith(descMesFilt)) : allDesc;
+  const leadsDescBase = descMesFilt ? allLeads.filter(l => (l.datachegada||'').startsWith(descMesFilt)) : allLeads;
+  const nDescTotal    = descBase.length;
+  const nDescMes      = descMesFilt ? descBase.length : allDesc.filter(l => (l.datachegada||'').startsWith(descMesAtual)).length;
+  const taxaDescarte  = leadsDescBase.length > 0 ? Math.round(nDescTotal / leadsDescBase.length * 100) : 0;
+  const descMesLabel  = descMesFilt
+    ? new Date(+descMesFilt.slice(0,4), +descMesFilt.slice(5,7)-1, 2).toLocaleDateString('pt-BR',{month:'long',year:'numeric'})
+    : new Date().toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const descTotalSub  = descMesFilt ? descMesLabel : 'todos os períodos';
   const motivoFreq    = allDesc.reduce((acc, l) => {
     const k = l.motivo_descarte_label || l.motivo_descarte || '—';
     acc[k] = (acc[k] || 0) + 1; return acc;
@@ -4168,12 +4176,12 @@ function renderDescartados() {
         <div class="stat-card accent-marsala">
           <div class="stat-top"><span class="stat-label">Total descartados</span></div>
           <strong class="stat-num">${nDescTotal}</strong>
-          <span class="stat-sub">todos os períodos</span>
+          <span class="stat-sub">${descTotalSub}</span>
         </div>
         <div class="stat-card">
           <div class="stat-top"><span class="stat-label">Este mês</span></div>
           <strong class="stat-num">${nDescMes}</strong>
-          <span class="stat-sub">${new Date().toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</span>
+          <span class="stat-sub">${descMesLabel}</span>
         </div>
         <div class="stat-card accent-gold">
           <div class="stat-top"><span class="stat-label">Motivo principal</span></div>
@@ -4187,6 +4195,17 @@ function renderDescartados() {
         </div>
       </div>
       <div class="filters-row">
+        <div class="filter-group">
+          <label class="filter-label">Mês</label>
+          <select class="filter-select" id="desc-filter-mes">
+            <option value="">Todos os meses</option>
+            ${mesOptsD.map(m => {
+              const [y,mo] = m.split('-');
+              const lbl = new Date(+y, +mo-1, 2).toLocaleDateString('pt-BR', {month:'long',year:'numeric'});
+              return `<option value="${m}"${m===descMesFilt?' selected':''}>${lbl.charAt(0).toUpperCase()+lbl.slice(1)}</option>`;
+            }).join('')}
+          </select>
+        </div>
         <div class="filter-group">
           <label class="filter-label">Origem</label>
           <select class="filter-select" id="desc-filter-origem">
@@ -4281,13 +4300,15 @@ function renderDescartados() {
   el.addEventListener('change', el._descChangeHandler);
 
   function renderDescTbody() {
-    const origem = $('desc-filter-origem')?.value || '';
-    const renda  = $('desc-filter-renda')?.value  || '';
+    const mes    = $('desc-filter-mes')?.value     || '';
+    const origem = $('desc-filter-origem')?.value  || '';
+    const renda  = $('desc-filter-renda')?.value   || '';
     const motivo = $('desc-filter-motivo')?.value  || '';
     const de     = $('desc-filter-chegada-de')?.value || '';
     const ate    = $('desc-filter-chegada-ate')?.value || '';
     const q      = ($('desc-busca').value || '').toLowerCase().trim();
     let leads = allDesc.filter(l => {
+      if (mes    && !(l.datachegada||'').startsWith(mes)) return false;
       if (origem && l.origem !== origem) return false;
       if (renda  && l.renda  !== renda)  return false;
       if (motivo && l.motivo_descarte !== motivo) return false;
@@ -4342,11 +4363,12 @@ function renderDescartados() {
   $('btn-desc-bulk-delete')?.addEventListener('click', bulkDelete);
   $('btn-desc-bulk-clear')?.addEventListener('click', () => { selectedIds.clear(); updateDescBulkBar(); renderDescTbody(); });
 
+  $('desc-filter-mes')?.addEventListener('change', renderDescartados);
   ['desc-filter-origem','desc-filter-renda','desc-filter-motivo','desc-filter-chegada-de','desc-filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', renderDescTbody); });
   $('desc-busca')?.addEventListener('input', renderDescTbody);
   $('desc-limpar')?.addEventListener('click', () => {
-    ['desc-filter-origem','desc-filter-renda','desc-filter-motivo','desc-filter-chegada-de','desc-filter-chegada-ate','desc-busca'].forEach(id=>{const el=$(id);if(el)el.value='';});
-    renderDescTbody();
+    ['desc-filter-mes','desc-filter-origem','desc-filter-renda','desc-filter-motivo','desc-filter-chegada-de','desc-filter-chegada-ate','desc-busca'].forEach(id=>{const el=$(id);if(el)el.value='';});
+    renderDescartados();
   });
   renderDescTbody();
 }
