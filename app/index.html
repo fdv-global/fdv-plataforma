@@ -633,21 +633,15 @@
       <p>Performance comercial e conversão</p>
     </div>
     <div class="rel-filters">
-      <div class="rel-filters-left">
-        <select class="filter-select" id="rel-filter-mes">
-          <option value="">Todos os meses</option>
-        </select>
-      </div>
-      <div class="rel-filters-center">
-        <div id="rel-view-toggle" class="qual-tab-nav" style="margin-bottom:0">
-          <button class="qual-tab-btn qual-tab-btn--active" data-view="executivo">Executivo</button>
-          <button class="qual-tab-btn" data-view="operacional">Operacional</button>
-        </div>
-      </div>
-      <div class="rel-filters-right">
-        <button class="btn-ghost btn-sm" id="rel-export-csv">Exportar Planilha</button>
-      </div>
+      <select class="filter-select" id="rel-filter-mes">
+        <option value="">Todos os meses</option>
+      </select>
+      <button class="btn-ghost btn-sm" id="rel-export-csv">Exportar Planilha</button>
     </div>
+  </div>
+  <div id="rel-view-toggle" class="qual-tab-nav" style="margin-bottom:0;margin-top:12px">
+    <button class="qual-tab-btn qual-tab-btn--active" data-view="executivo">Executivo</button>
+    <button class="qual-tab-btn" data-view="operacional">Operacional</button>
   </div>
   <div id="relatorios-content"></div>
 </div><!-- /tab-relatorios -->
