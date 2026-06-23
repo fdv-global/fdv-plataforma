@@ -2405,6 +2405,12 @@ function renderInicio() {
   const el = document.getElementById('inicio-content');
   if (!el) return;
 
+  // --- DEBUG temporário: distribuição de status ---
+  const statusCount = {};
+  allLeads.forEach(l => { const s = l.status || 'sem_status'; statusCount[s] = (statusCount[s] || 0) + 1; });
+  console.log('[STATUS] total:', allLeads.length, '| distribuição:', JSON.stringify(statusCount));
+  // --- fim DEBUG ---
+
   const now    = new Date();
   const hour   = now.getHours();
   const greet  = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
