@@ -3837,8 +3837,8 @@ function renderAgendaHoje() {
   if (origemFilt)      leads = leads.filter(l => l.origem === origemFilt);
   if (agendadoporFilt) leads = leads.filter(l => l.agendadopor === agendadoporFilt);
   if (rendaFilt)       leads = leads.filter(l => l.renda === rendaFilt);
-  if (chegadaDe)       leads = leads.filter(l => (l.datachegada||'') >= chegadaDe);
-  if (chegadaAte)      leads = leads.filter(l => (l.datachegada||'') <= chegadaAte);
+  if (chegadaDe)       leads = leads.filter(l => (l.dataagendamento||'') >= chegadaDe);
+  if (chegadaAte)      leads = leads.filter(l => (l.dataagendamento||'') <= chegadaAte);
   if (busca)           leads = leads.filter(l => (l.nome||'').toLowerCase().includes(busca) || (l.celular||'').includes(busca));
   leads.sort((a,b) => (a.horaagendamento||'').localeCompare(b.horaagendamento||''));
 
@@ -3975,7 +3975,7 @@ function renderNoShow() {
         </select>
       </div>
       <div class="filter-group">
-        <label class="filter-label">Chegada de</label>
+        <label class="filter-label">Agend. de</label>
         <input type="date" class="filter-input filter-input--date" id="ns-filter-chegada-de">
       </div>
       <div class="filter-group">
@@ -4084,8 +4084,8 @@ function renderNoShow() {
     if (closer)     leads = leads.filter(l => l.closer === closer);
     if (agendPor)   leads = leads.filter(l => l.agendadopor === agendPor);
     if (renda)      leads = leads.filter(l => l.renda === renda);
-    if (chegadaDe)  leads = leads.filter(l => (l.datachegada||'') >= chegadaDe);
-    if (chegadaAte) leads = leads.filter(l => (l.datachegada||'') <= chegadaAte);
+    if (chegadaDe)  leads = leads.filter(l => (l.dataagendamento||'') >= chegadaDe);
+    if (chegadaAte) leads = leads.filter(l => (l.dataagendamento||'') <= chegadaAte);
     if (busca)      leads = leads.filter(l =>
       (l.nome||'').toLowerCase().includes(busca) ||
       (l.celular||'').replace(/\D/g,'').includes(busca.replace(/\D/g,''))
