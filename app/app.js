@@ -3564,7 +3564,10 @@ function renderQualificados() {
         qualPageSize = parseInt(e.target.value, 10); qualPage = 1; renderQualTab(); return;
       }
       // Filter selects
-      if (e.target.matches('#qual-filter-origem,#qual-filter-renda,#qual-filter-mes,#qual-filter-profissao,#qual-filter-etiqueta,#qual-filter-chegada-de,#qual-filter-chegada-ate')) {
+      if (e.target.id === 'qual-filter-mes') {
+        qualPage = 1; renderQualificados(); return;
+      }
+      if (e.target.matches('#qual-filter-origem,#qual-filter-renda,#qual-filter-profissao,#qual-filter-etiqueta,#qual-filter-chegada-de,#qual-filter-chegada-ate')) {
         qualPage = 1; renderQualTab(); return;
       }
       // Select-all checkbox
