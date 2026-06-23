@@ -3942,55 +3942,9 @@ function renderNoShow() {
   if (!el) return;
   nsSelectedIds.clear();
 
-  const nsAll    = allLeads.filter(l => l.status === 'noshow');
-  const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a,b) => a.localeCompare(b,'pt-BR'));
-  const closerOpts    = uniq(nsAll.map(l => l.closer));
-  const agendPorOpts  = uniq(nsAll.map(l => l.agendadopor));
-  const rendaOpts     = uniq(nsAll.map(l => l.renda));
+  const nsAll = allLeads.filter(l => l.status === 'noshow');
 
   el.innerHTML = `
-  <div class="filters-bar">
-    <div class="filters-row">
-      <div class="filter-group">
-        <label class="filter-label">Closer</label>
-        <select class="filter-select" id="ns-filter-closer">
-          <option value="">Todos</option>
-          ${closerOpts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
-        </select>
-      </div>
-      <div class="filter-group">
-        <label class="filter-label">Agendado por</label>
-        <select class="filter-select" id="ns-filter-agendadopor">
-          <option value="">Todos</option>
-          ${agendPorOpts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
-        </select>
-      </div>
-      <div class="filter-group">
-        <label class="filter-label">Renda</label>
-        <select class="filter-select" id="ns-filter-renda">
-          <option value="">Todas</option>
-          ${rendaOpts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
-        </select>
-      </div>
-      <div class="filter-group">
-        <label class="filter-label">Agend. de</label>
-        <input type="date" class="filter-input filter-input--date" id="ns-filter-chegada-de">
-      </div>
-      <div class="filter-group">
-        <label class="filter-label">até</label>
-        <input type="date" class="filter-input filter-input--date" id="ns-filter-chegada-ate">
-      </div>
-      <div class="filter-group filter-group--search">
-        <label class="filter-label">Buscar</label>
-        <div class="search-wrap">
-          <input type="text" class="filter-input" id="ns-filter-busca" placeholder="Nome ou celular…" autocomplete="off">
-          <span class="search-ico">⌕</span>
-        </div>
-      </div>
-      <button class="btn-clear" id="ns-btn-limpar">Limpar</button>
-    </div>
-  </div>
-
   <div class="bulk-bar" id="ns-bulk-bar" style="display:none">
     <span class="bulk-count" id="ns-bulk-count">0 selecionados</span>
     <div class="bulk-actions">
@@ -4069,13 +4023,13 @@ function renderNoShow() {
   el.addEventListener('change', el._nsChangeHandler);
 
   function applyNsFilters() {
-    const origem     = $('agend-filter-origem')?.value  || '';
-    const closer     = $('ns-filter-closer')?.value     || '';
-    const agendPor   = $('ns-filter-agendadopor')?.value || '';
-    const renda      = $('ns-filter-renda')?.value      || '';
-    const chegadaDe  = $('ns-filter-chegada-de')?.value  || '';
-    const chegadaAte = $('ns-filter-chegada-ate')?.value || '';
-    const busca      = ($('ns-filter-busca')?.value     || '').toLowerCase().trim();
+    const origem     = $('agend-filter-origem')?.value      || '';
+    const closer     = $('agend-filter-closer')?.value      || '';
+    const agendPor   = $('agend-filter-agendadopor')?.value || '';
+    const renda      = $('agend-filter-renda')?.value       || '';
+    const chegadaDe  = $('agend-filter-chegada-de')?.value  || '';
+    const chegadaAte = $('agend-filter-chegada-ate')?.value || '';
+    const busca      = ($('agend-filter-busca')?.value      || '').toLowerCase().trim();
 
     let leads = nsAll;
     if (origem)     leads = leads.filter(l => l.origem === origem);
@@ -4151,21 +4105,6 @@ function renderNoShow() {
     openBulkDescarteModal();
   });
   $('btn-ns-bulk-clear')?.addEventListener('click', () => { nsSelectedIds.clear(); updateNsBulkBar(); applyNsFilters(); });
-
-  ['ns-filter-closer','ns-filter-agendadopor','ns-filter-renda',
-   'ns-filter-chegada-de','ns-filter-chegada-ate'].forEach(id =>
-    $(id)?.addEventListener('change', () => { nsPage = 1; applyNsFilters(); })
-  );
-  $('ns-filter-busca')?.addEventListener('input', () => { nsPage = 1; applyNsFilters(); });
-  $('ns-btn-limpar')?.addEventListener('click', () => {
-    ['ns-filter-closer','ns-filter-agendadopor','ns-filter-renda',
-     'ns-filter-chegada-de','ns-filter-chegada-ate','ns-filter-busca'].forEach(id => {
-      const inp = $(id); if (inp) inp.value = '';
-    });
-    const origemEl = $('agend-filter-origem'); if (origemEl) origemEl.value = '';
-    nsPage = 1;
-    applyNsFilters();
-  });
 
   applyNsFilters();
 }
