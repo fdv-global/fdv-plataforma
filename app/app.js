@@ -6261,7 +6261,7 @@ function abrevRenda(r) {
   return fmt(nums[0]);
 }
 function badgeStatus(s) {
-  const labels = { aguardando:'Aguardando', qualificado:'Qualificado', agendado:'Agendado', realizada:'Call Realizada', noshow:'No Show', cancelado:'Cancelado', descartado:'Descartado' };
+  const labels = { aguardando:'Aguardando', qualificado:'Qualificado', agendado:'Agendado', realizada:'Call Realizada', noshow:'No Show', cancelado:'Cancelado', descartado:'Descartado', venda_ganha:'Venda Ganha' };
   return `<span class="badge-status ${s||''}">${labels[s]||s||'—'}</span>`;
 }
 function badgeFollowup(sf, cc) {
@@ -7787,6 +7787,7 @@ async function confirmarVendaGanha() {
     await saveLead(vgLeadId, {
       kanban_column:       'venda_ganha',
       kanban_column_since: new Date().toISOString(),
+      status:              'venda_ganha',
       venda_ganha_dados:   { valor, entrada, forma, programa, obs },
       ...(hist && { historico_kanban: hist }),
       atualizadoem: new Date().toISOString(),
@@ -9895,7 +9896,7 @@ function renderDrillDownBody() {
             : shown.map(l => `<tr>
                 <td><button class="nome-link" data-perfil="${l.id}">${esc(l.nome||'—')}</button></td>
                 <td>${fmtDate(l.datachegada)}</td>
-                <td>${badgeStatus(l.status)}</td>
+                <td>${badgeStatus(l.kanban_column === 'venda_ganha' ? 'venda_ganha' : l.status)}</td>
                 <td>${esc(l.renda||'—')}</td>
                 <td>${esc(CLOSERS[l.closer]?.name||l.closer||'—')}</td>
                 ${utmCellsFn(l)}
