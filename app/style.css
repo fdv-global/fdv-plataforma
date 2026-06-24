@@ -2086,6 +2086,8 @@ tr.row-selected td    { background: rgba(206,146,33,.04); }
 .drill-stat.ds-green .drill-stat-val { color: #4caf8e; }
 .drill-stat.ds-gold  .drill-stat-val { color: var(--gold); }
 .drill-stat-lbl { font-size: 9.5px; color: var(--t3); text-transform: uppercase; letter-spacing: .4px; margin-top: 4px; }
+.drill-stat[data-drf]    { cursor: pointer; }
+.drill-stat--active      { border-color: rgba(206,146,33,.45) !important; background: rgba(206,146,33,.10) !important; }
 
 .drill-filter-bar { display: flex; gap: 5px; margin-bottom: 12px; flex-wrap: wrap; }
 .drill-filter-bar .cqf-btn { padding: 4px 12px; font-size: 12px; }

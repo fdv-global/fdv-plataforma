@@ -9874,12 +9874,12 @@ function renderDrillDownBody() {
 
   $('drill-body').innerHTML = `
     <div class="drill-stats">
-      <div class="drill-stat"><div class="drill-stat-val">${all.length}</div><div class="drill-stat-lbl">Total</div></div>
-      <div class="drill-stat"><div class="drill-stat-val">${cnt('aguardando')}</div><div class="drill-stat-lbl">Novos</div></div>
-      <div class="drill-stat"><div class="drill-stat-val">${cnt('qualificado')}</div><div class="drill-stat-lbl">Qualif.</div></div>
-      <div class="drill-stat"><div class="drill-stat-val">${cnt('agendado')}</div><div class="drill-stat-lbl">Agend.</div></div>
-      <div class="drill-stat"><div class="drill-stat-val">${cnt('descartado')}</div><div class="drill-stat-lbl">Desc.</div></div>
-      <div class="drill-stat ds-green"><div class="drill-stat-val">${vendas}</div><div class="drill-stat-lbl">Vendas</div></div>
+      <div class="drill-stat${_drillStatusFilt===''?' drill-stat--active':''}" data-drf=""><div class="drill-stat-val">${all.length}</div><div class="drill-stat-lbl">Total</div></div>
+      <div class="drill-stat${_drillStatusFilt==='aguardando'?' drill-stat--active':''}" data-drf="aguardando"><div class="drill-stat-val">${cnt('aguardando')}</div><div class="drill-stat-lbl">Novos</div></div>
+      <div class="drill-stat${_drillStatusFilt==='qualificado'?' drill-stat--active':''}" data-drf="qualificado"><div class="drill-stat-val">${cnt('qualificado')}</div><div class="drill-stat-lbl">Qualif.</div></div>
+      <div class="drill-stat${_drillStatusFilt==='agendado'?' drill-stat--active':''}" data-drf="agendado"><div class="drill-stat-val">${cnt('agendado')}</div><div class="drill-stat-lbl">Agend.</div></div>
+      <div class="drill-stat${_drillStatusFilt==='descartado'?' drill-stat--active':''}" data-drf="descartado"><div class="drill-stat-val">${cnt('descartado')}</div><div class="drill-stat-lbl">Desc.</div></div>
+      <div class="drill-stat ds-green${_drillStatusFilt==='venda'?' drill-stat--active':''}" data-drf="venda"><div class="drill-stat-val">${vendas}</div><div class="drill-stat-lbl">Vendas</div></div>
       <div class="drill-stat ds-gold"><div class="drill-stat-val">${taxaLV}%</div><div class="drill-stat-lbl">Conv.</div></div>
     </div>
     <div class="drill-filter-bar">
