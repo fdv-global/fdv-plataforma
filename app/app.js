@@ -6019,9 +6019,13 @@ function renderRelatorios() {
   const topRendaMax = topRendaV[0]?.[1] || 1;
   const motivosMax  = motivosEntries[0]?.[1] || 1;
 
-  const mkHBarsSimple = (entries, maxVal, color) => {
+  const mkHBarsSimple = (entries, maxVal, color, drillType) => {
     if (!entries.length) return '<p style="color:rgba(232,228,220,0.35);font-size:12px;margin:0">Sem dados</p>';
-    return entries.map(([name, count]) => `<div style="margin-bottom:8px">
+    return entries.map(([name, count]) => {
+      const drillAttrs = drillType
+        ? `data-drill="${drillType}" data-drill-value="${esc(name)}" data-drill-title="Leads — ${esc(name)}" style="margin-bottom:8px;cursor:pointer" onmouseover="this.style.background='rgba(206,146,33,0.042)'" onmouseout="this.style.background=''"`
+        : `style="margin-bottom:8px"`;
+      return `<div ${drillAttrs}>
       <div style="display:flex;justify-content:space-between;margin-bottom:3px">
         <span style="font-size:12px;color:rgba(232,228,220,0.8);max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(name)}">${esc(name)}</span>
         <span style="font-size:12px;font-weight:700;color:${color}">${count}</span>
@@ -6029,7 +6033,8 @@ function renderRelatorios() {
       <div style="height:6px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden">
         <div style="width:${Math.round(count / maxVal * 100)}%;height:100%;background:${color};border-radius:4px"></div>
       </div>
-    </div>`).join('');
+    </div>`;
+    }).join('');
   };
 
   const viewOperacional = `
@@ -6037,7 +6042,7 @@ function renderRelatorios() {
     <div class="rel-block">
       <div class="rel-table-wrap"><table class="rel-table rel-table--zebra rel-origem-table">
         <thead><tr><th>Origem</th><th>Leads</th><th>Qualificados</th><th>Conv. %</th></tr></thead>
-        <tbody>${funnelByOrigin.map(r => `<tr>
+        <tbody>${funnelByOrigin.map(r => `<tr data-drill="origem" data-drill-value="${esc(r.o)}" data-drill-title="Leads — ${esc(r.o)}" style="cursor:pointer" onmouseover="this.style.background='rgba(206,146,33,0.042)'" onmouseout="this.style.background=''">
           <td><strong>${esc(r.o)}</strong></td>
           <td>${r.total}</td><td>${r.qualif}</td>
           <td>${convBadge(r.conv)}</td>
@@ -6050,11 +6055,11 @@ function renderRelatorios() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px">
         <div>
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:rgba(232,228,220,0.45);margin-bottom:12px">Por Profissão</div>
-          ${mkHBarsSimple(topProfV, topProfMax, '#1D9E75')}
+          ${mkHBarsSimple(topProfV, topProfMax, '#1D9E75', 'profissao')}
         </div>
         <div>
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:rgba(232,228,220,0.45);margin-bottom:12px">Por Faixa de Renda</div>
-          ${mkHBarsSimple(topRendaV, topRendaMax, '#1D9E75')}
+          ${mkHBarsSimple(topRendaV, topRendaMax, '#1D9E75', 'renda')}
         </div>
       </div>
     </div>
@@ -11185,6 +11190,8 @@ function bindEvents() {
     else if (drill === 'utm_source')   leads = base.filter(l => (cleanUTM(l.utm_source)||'Não identificado') === value);
     else if (drill === 'utm_campaign') leads = base.filter(l => (cleanUTM(l.utm_campaign)||'Não identificado') === value);
     else if (drill === 'utm_content')  leads = base.filter(l => (cleanUTM(l.utm_content)||'Não identificado') === value);
+    else if (drill === 'profissao')    leads = base.filter(l => (l.profissao||'Não inf.').slice(0,25) === value);
+    else if (drill === 'renda')        leads = base.filter(l => (l.renda||'Não inf.').slice(0,25) === value);
     else return;
     openDrillDown(title, leads);
   });
