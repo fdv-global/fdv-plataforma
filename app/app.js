@@ -5120,7 +5120,7 @@ function switchCloserView(view) {
   const board   = $('kanban-board');
   const subview = $('closer-subview');
 
-  document.querySelectorAll('.cvt-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  document.querySelectorAll('.qual-tab-btn[data-view]').forEach(b => b.classList.toggle('qual-tab-btn--active', b.dataset.view === view));
 
   const isKanban = view === 'kanban';
   board.style.display   = isKanban ? '' : 'none';
@@ -10767,7 +10767,7 @@ function bindEvents() {
   $('briefing-filter-busca')?.addEventListener('input', renderBriefingSub);
 
   // Closer view tabs
-  document.querySelectorAll('.cvt-btn').forEach(btn =>
+  document.querySelectorAll('.qual-tab-btn[data-view]').forEach(btn =>
     btn.addEventListener('click', () => switchCloserView(btn.dataset.view))
   );
 
