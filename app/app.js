@@ -6074,7 +6074,7 @@ function renderRelatorios() {
     <div class="rel-section-head">Motivos de Perda</div>
     <div class="rel-block" style="padding:20px 24px">
       ${motivosEntries.length
-        ? motivosEntries.map(([name, count]) => `<div style="margin-bottom:10px">
+        ? motivosEntries.map(([name, count]) => `<div data-drill="motivo_descarte" data-drill-value="${esc(name)}" data-drill-title="Leads — ${esc(name)}" style="margin-bottom:10px;cursor:pointer" onmouseover="this.style.background='rgba(206,146,33,0.042)'" onmouseout="this.style.background=''">
             <div style="display:flex;justify-content:space-between;margin-bottom:4px">
               <span style="font-size:13px;color:rgba(232,228,220,0.8)">${esc(name)}</span>
               <span style="font-size:13px;font-weight:700;color:#E24B4A">${count}</span>
@@ -11190,8 +11190,9 @@ function bindEvents() {
     else if (drill === 'utm_source')   leads = base.filter(l => (cleanUTM(l.utm_source)||'Não identificado') === value);
     else if (drill === 'utm_campaign') leads = base.filter(l => (cleanUTM(l.utm_campaign)||'Não identificado') === value);
     else if (drill === 'utm_content')  leads = base.filter(l => (cleanUTM(l.utm_content)||'Não identificado') === value);
-    else if (drill === 'profissao')    leads = base.filter(l => (l.profissao||'Não inf.').slice(0,25) === value);
-    else if (drill === 'renda')        leads = base.filter(l => (l.renda||'Não inf.').slice(0,25) === value);
+    else if (drill === 'profissao')       leads = base.filter(l => (l.profissao||'Não inf.').slice(0,25) === value);
+    else if (drill === 'renda')           leads = base.filter(l => (l.renda||'Não inf.').slice(0,25) === value);
+    else if (drill === 'motivo_descarte') leads = base.filter(l => (l.motivo_descarte_label||'') === value);
     else return;
     openDrillDown(title, leads);
   });
