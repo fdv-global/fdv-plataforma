@@ -1212,6 +1212,8 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 
 /* ── flat list (Todos os Agendamentos) ── */
 /* glass e zebra vêm de .fdv-list-container / .fdv-list-row */
+/* overflow:visible replica padrão qual-grid-wrap: dropdown não é clipado pelo container */
+.agenda-list.fdv-list-container { overflow: visible; }
 .agenda-list { display: flex; flex-direction: column; }
 .agenda-list .al-head {
   display: grid;
@@ -1223,7 +1225,9 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
   font-size: 11px; font-weight: 600; text-transform: uppercase;
   letter-spacing: 1.3px; color: rgba(255,255,255,0.4); white-space: nowrap;
   border-bottom: 1px solid var(--b0);
+  border-radius: var(--r) var(--r) 0 0;
 }
+.agenda-list .al-row:last-child { border-radius: 0 0 var(--r) var(--r); }
 .btn-res-toggle { border-radius: 20px; }
 /* scoped para não conflitar com .al-row do accordion */
 .agenda-list .al-row {
