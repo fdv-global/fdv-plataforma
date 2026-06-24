@@ -11174,10 +11174,9 @@ function bindEvents() {
   $('relatorios-content')?.addEventListener('click', e => {
     const el = e.target.closest('[data-drill]');
     if (!el) return;
-    const mesFilt    = $('rel-filter-mes')?.value    || '';
+    const mesFilt = $('rel-filter-mes')?.value || '';
     let base = [...allLeads];
-    if (mesFilt)    base = base.filter(l => (l.datachegada||'').startsWith(mesFilt));
-    if (origemFilt) base = base.filter(l => l.origem === origemFilt);
+    if (mesFilt) base = base.filter(l => (l.datachegada||'').startsWith(mesFilt));
     const drill = el.dataset.drill, value = el.dataset.drillValue || '', title = el.dataset.drillTitle || value;
     let leads;
     if      (drill === 'all')          leads = base;
