@@ -5984,14 +5984,16 @@ function renderRelatorios() {
     <div class="rel-section-head">Comportamento dos Leads</div>
     <div class="rel-block" style="padding:20px 24px">
       ${funnelStages.map((s, i) => {
-        const pctOfTotal = funnelMax ? Math.round(s.val / funnelMax * 100) : 0;
+        const pctOfBar = funnelMax ? Math.round(s.val / funnelMax * 100) : 0;
+        const prevVal = i === 0 ? s.val : funnelStages[i - 1].val;
+        const pctOfPrev = prevVal ? Math.round(s.val / prevVal * 100) : 0;
         return `<div style="margin-bottom:${i < funnelStages.length - 1 ? '14' : '0'}px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
             <span style="font-size:12px;font-weight:600;color:rgba(232,228,220,0.7)">${s.label}</span>
-            <span style="font-size:13px;font-weight:700;color:rgba(232,228,220,0.9)">${s.val}&nbsp;<span style="color:${FUNIL_COLORS[i]};font-size:11px">(${pctOfTotal}%)</span></span>
+            <span style="font-size:13px;font-weight:700;color:rgba(232,228,220,0.9)">${s.val}&nbsp;<span style="color:${FUNIL_COLORS[i]};font-size:11px">(${pctOfPrev}%)</span></span>
           </div>
           <div style="height:10px;background:rgba(255,255,255,0.06);border-radius:6px;overflow:hidden">
-            <div style="width:${pctOfTotal}%;height:100%;background:${FUNIL_COLORS[i]};border-radius:6px;transition:width .5s"></div>
+            <div style="width:${pctOfBar}%;height:100%;background:${FUNIL_COLORS[i]};border-radius:6px;transition:width .5s"></div>
           </div>
         </div>`;
       }).join('')}
