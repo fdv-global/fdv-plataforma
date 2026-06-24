@@ -924,6 +924,7 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
 .badge-status.noshow       { background: rgba(192,57,43,.09); color: #e06450; }
 .badge-status.cancelado    { background: var(--marsala-14);   color: #b07080; }
 .badge-status.descartado   { background: rgba(107,39,55,.12);  color: #c07080; }
+.badge-status.venda_ganha  { background: rgba(29,158,117,.12); color: #1D9E75; }
 
 /* ── Ações na tabela ──────────────────────────── */
 .btn-acao {
