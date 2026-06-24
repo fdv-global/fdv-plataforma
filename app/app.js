@@ -5941,8 +5941,8 @@ function renderRelatorios() {
 
   const motivosMap = {};
   base.forEach(l => {
-    if (!l.motivo_perda_label) return;
-    motivosMap[l.motivo_perda_label] = (motivosMap[l.motivo_perda_label] || 0) + 1;
+    if (!l.motivo_descarte_label) return;
+    motivosMap[l.motivo_descarte_label] = (motivosMap[l.motivo_descarte_label] || 0) + 1;
   });
   const motivosEntries = Object.entries(motivosMap).sort((a, b) => b[1] - a[1]);
 
