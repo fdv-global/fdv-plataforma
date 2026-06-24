@@ -918,9 +918,9 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   width: 5.5px; height: 5.5px; border-radius: 50%; background: currentColor;
 }
 .badge-status.aguardando   { background: var(--gold-10);  color: #d4982a; }
-.badge-status.qualificado  { background: rgba(77,181,200,.10); color: #4db5c8; }
+.badge-status.qualificado  { background: rgba(206,146,33,.12); color: #CE9221; }
 .badge-status.agendado     { background: var(--petro-10); color: #5bc0d4; }
-.badge-status.realizada    { background: var(--green-10); color: #52bd96; }
+.badge-status.realizada    { background: rgba(55,138,221,.12); color: #378ADD; }
 .badge-status.noshow       { background: rgba(192,57,43,.09); color: #e06450; }
 .badge-status.cancelado    { background: var(--marsala-14);   color: #b07080; }
 .badge-status.descartado   { background: rgba(107,39,55,.12);  color: #c07080; }
