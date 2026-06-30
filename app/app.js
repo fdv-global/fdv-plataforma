@@ -2489,7 +2489,7 @@ function renderInicio() {
   const fQualif = mesLeads.filter(l => l.status === 'qualificado').length;
   const agendMes = allLeads.filter(l => (l.dataagendamento||'').startsWith(thisMonth));
   const fAgend  = agendMes.length;
-  const fCalls  = agendMes.filter(l => l.status === 'realizada').length;
+  const fCalls  = agendMes.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha').length;
   const fNoShow = agendMes.filter(l => l.status === 'noshow').length;
   const fVendas = allLeads.filter(isVendaMes).length;
   const fRealiz = Math.max(fCalls - fNoShow, 0);
@@ -3637,7 +3637,7 @@ function renderAgendadosOverview() {
 
   const leadsDoMes   = allLeads.filter(l => (l.dataagendamento || '').startsWith(ym));
   const nAgendados   = leadsDoMes.length;
-  const nRealizadas  = leadsDoMes.filter(l => l.status === 'realizada').length;
+  const nRealizadas  = leadsDoMes.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha').length;
   const nNoShow      = leadsDoMes.filter(l => l.status === 'noshow').length;
   const nVendas      = leadsDoMes.filter(l => l.status_closer === 'venda_ganha').length;
   const nProximas    = allLeads.filter(l => l.status === 'agendado' && (l.dataagendamento || '') >= today).length;
@@ -4887,7 +4887,7 @@ function renderKanbanMetrics() {
     return dateStr.startsWith(monthFilter);
   }).length;
   const perdidosMes   = kanbanBase.filter(l => l.kanban_column === 'descartado'  && (l.kanban_column_since||'').startsWith(monthFilter)).length;
-  const realizadasMes = allLeads.filter(l => l.status === 'realizada' && (l.dataagendamento||'').startsWith(monthFilter)).length;
+  const realizadasMes = allLeads.filter(l => (['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha') && (l.dataagendamento||'').startsWith(monthFilter)).length;
   const taxa          = realizadasMes > 0 ? Math.round(vendasMes / realizadasMes * 100) : 0;
 
   el.innerHTML = `
@@ -5877,7 +5877,7 @@ function renderRelatorios() {
   let callsBase = allLeads.filter(l => l.dataagendamento);
   if (mesFilt) callsBase = callsBase.filter(l => (l.dataagendamento||'').startsWith(mesFilt));
   const agendados  = callsBase;
-  const realizadas = callsBase.filter(l => l.status === 'realizada');
+  const realizadas = callsBase.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha');
 
   let vendasBase = [...allLeads];
   if (mesFilt) vendasBase = vendasBase.filter(l => (l.realizadaem||l.kanban_column_since||l.datachegada||'').startsWith(mesFilt));
@@ -5917,7 +5917,7 @@ function renderRelatorios() {
     const r = l.agendadopor || '—';
     if (!respMap[r]) respMap[r] = { ag: 0, re: 0, ve: 0 };
     respMap[r].ag++;
-    if (l.status === 'realizada') respMap[r].re++;
+    if (['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha') respMap[r].re++;
     if (l.kanban_column === 'venda_ganha') respMap[r].ve++;
   });
   realizadas.forEach(l => {
@@ -5933,7 +5933,7 @@ function renderRelatorios() {
     const m = l.datachegada.slice(0, 7);
     if (!mesMap[m]) mesMap[m] = { total: 0, re: 0, ve: 0, ns: 0, val: 0 };
     mesMap[m].total++;
-    if (l.status === 'realizada') mesMap[m].re++;
+    if (['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha') mesMap[m].re++;
     if (l.kanban_column === 'venda_ganha') { mesMap[m].ve++; mesMap[m].val += parseValor(l.venda_ganha_dados?.valor); }
     if (l.status === 'noshow') mesMap[m].ns++;
   });
@@ -7789,6 +7789,9 @@ async function confirmarVendaGanha() {
       kanban_column_since: new Date().toISOString(),
       status:              'venda_ganha',
       venda_ganha_dados:   { valor, entrada, forma, programa, obs },
+      motivo_descarte:       null,
+      motivo_descarte_label: null,
+      motivo_descarte_obs:   null,
       ...(hist && { historico_kanban: hist }),
       atualizadoem: new Date().toISOString(),
     });
@@ -10095,7 +10098,7 @@ async function exportRelatoriosPDF() {
   // Métricas
   const vendas      = base.filter(l => l.kanban_column === 'venda_ganha');
   const agendados   = base.filter(l => l.dataagendamento);
-  const realizadas  = base.filter(l => l.status === 'realizada');
+  const realizadas  = base.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha');
   const taxaComp    = agendados.length  ? pct(realizadas.length, agendados.length)  : 0;
   const taxaConv    = realizadas.length ? pct(vendas.length,     realizadas.length) : 0;
   const fat         = vendas.reduce((s,l)=>s+parseValor(l.venda_ganha_dados?.valor),0);
@@ -10115,7 +10118,7 @@ async function exportRelatoriosPDF() {
   const respRows = Object.entries((() => {
     const m = {}; agendados.forEach(l => {
       const r=l.agendadopor||'—'; if(!m[r]) m[r]={ag:0,re:0,ve:0};
-      m[r].ag++; if(l.status==='realizada') m[r].re++; if(l.kanban_column==='venda_ganha') m[r].ve++;
+      m[r].ag++; if(['realizada','venda_ganha'].includes(l.status)||l.kanban_column==='venda_ganha') m[r].re++; if(l.kanban_column==='venda_ganha') m[r].ve++;
     }); return m;
   })()).map(([r,d])=>[r, d.ag, d.re, d.ve]);
 
