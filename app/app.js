@@ -2751,9 +2751,12 @@ function renderAgendaSub() {
 
   // Filtra por status do tab ativo (agendados | realizadas)
   const _allAgend = allLeads.filter(l => l.dataagendamento);
-  const _statusMap = { agendados: 'agendado', realizadas: 'realizada' };
-  const _targetStatus = _statusMap[agendActiveTab] || 'agendado';
-  let leads = _allAgend.filter(l => l.status === _targetStatus);
+  let leads;
+  if (agendActiveTab === 'realizadas') {
+    leads = _allAgend.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha');
+  } else {
+    leads = _allAgend.filter(l => l.status === 'agendado');
+  }
   if (dataFilt)          leads = leads.filter(l => l.dataagendamento === dataFilt);
   else if (mesFilt)      leads = leads.filter(l => (l.dataagendamento || '').startsWith(mesFilt));
   if (closerFilt)        leads = leads.filter(l => (l.closer || '') === closerFilt);
@@ -3810,11 +3813,13 @@ function renderAgendadosSub() {
   const _origemSel = $('agend-filter-origem');
   if (_origemSel) {
     const _cur = _origemSel.value;
-    const _statusMap = { agendados: 'agendado', realizadas: 'realizada', noshow: 'noshow' };
+    const _statusMap = { agendados: 'agendado', noshow: 'noshow' };
     const _status = _statusMap[agendActiveTab];
-    const _tabLeads = _status
-      ? allLeads.filter(l => l.status === _status)
-      : allLeads.filter(l => l.dataagendamento);
+    const _tabLeads = agendActiveTab === 'realizadas'
+      ? allLeads.filter(l => l.dataagendamento && (['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha'))
+      : _status
+        ? allLeads.filter(l => l.status === _status)
+        : allLeads.filter(l => l.dataagendamento);
     _origemSel.innerHTML = `<option value="">Todas</option>${_uniqAgend(_tabLeads.map(l => l.origem)).map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('')}`;
     if (_cur) _origemSel.value = _cur;
   }
@@ -3837,7 +3842,7 @@ function _renderAgendTabNav() {
   const nav = $('agend-tab-nav');
   if (!nav) return;
   const nAgendados  = allLeads.filter(l => l.status === 'agendado').length;
-  const nRealizadas = allLeads.filter(l => l.status === 'realizada').length;
+  const nRealizadas = allLeads.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha').length;
   const nNoShow     = allLeads.filter(l => l.status === 'noshow').length;
   nav.innerHTML = `<div class="qual-tab-nav">
     <button class="qual-tab-btn${agendActiveTab==='agendados'?' qual-tab-btn--active':''}" data-agend-tab="agendados">
@@ -5971,7 +5976,7 @@ function renderRelatorios() {
     <div class="rel-section-head">Métricas do Período</div>
     <div class="stats-grid rel-summary" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
       ${relStatCard('Total de Leads', base.length, _S('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'), '', 'data-drill="all" data-drill-title="Total de Leads"')}
-      ${relStatCard('Calls Realizadas', realizadas.length, _S('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'), 'accent-petro', 'data-drill="status" data-drill-value="realizada" data-drill-title="Calls Realizadas"')}
+      ${relStatCard('Calls Realizadas', realizadas.length, _S('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'), 'accent-petro', 'data-drill="realizadas" data-drill-title="Calls Realizadas"')}
       ${relStatCard('Comparecimento', taxaComp+'%', _S('<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>'), '', '')}
       ${relStatCard('Conversão', taxaConv+'%', ICO_TROPHY, 'accent-green', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
     </div>
@@ -11185,6 +11190,7 @@ function bindEvents() {
     let leads;
     if      (drill === 'all')          leads = base;
     else if (drill === 'status')       leads = base.filter(l => l.status === value);
+    else if (drill === 'realizadas')   leads = base.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha');
     else if (drill === 'venda')        leads = base.filter(l => l.kanban_column === 'venda_ganha');
     else if (drill === 'origem')       leads = base.filter(l => (l.origem||'Outros') === value);
     else if (drill === 'mes')          leads = base.filter(l => (l.datachegada||'').startsWith(value));
