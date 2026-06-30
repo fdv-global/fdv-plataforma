@@ -6385,7 +6385,7 @@ function updateStats() {
   $('stat-aguardando').textContent = base.filter(l=>l.status==='aguardando').length;
   $('stat-agendado').textContent   = base.filter(l=>l.status==='agendado').length;
   $('stat-noshow').textContent     = base.filter(l=>l.status==='noshow').length;
-  $('stat-realizada').textContent  = base.filter(l=>l.status==='realizada').length;
+  $('stat-realizada').textContent  = base.filter(l=>['realizada','venda_ganha'].includes(l.status) || l.kanban_column==='venda_ganha').length;
   $('stat-vendas').textContent     = base.filter(l=>l.kanban_column==='venda_ganha').length;
 }
 function updateCount() {
