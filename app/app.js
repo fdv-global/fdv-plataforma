@@ -2812,7 +2812,7 @@ function renderAgendaSub() {
         </div>
         <button class="al-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
         <span class="al-meta" style="color:${closerColor}">${esc(closerName)}</span>
-        ${badgeAgendStatus(l.status, l.status_closer)}
+        ${badgeAgendStatus(l.status)}
         <div class="al-actions">
           <div class="qual-acoes-dropdown-wrap">
             <button class="btn-ghost btn-sm btn-acoes-toggle" data-id="${l.id}">Ações ▾</button>
@@ -3622,10 +3622,10 @@ function renderQualificados() {
 }
 
 // ─── AGENDADOS OVERVIEW ──────────────────────────────────────────────
-function badgeAgendStatus(status, statusCloser) {
-  if (statusCloser === 'venda_ganha') return `<span class="badge-agend-status badge-agend-status--venda">🏆 Venda</span>`;
-  if (status === 'realizada') return `<span class="badge-agend-status badge-agend-status--realizada">Realizada</span>`;
-  if (status === 'noshow')    return `<span class="badge-agend-status badge-agend-status--noshow">No Show</span>`;
+function badgeAgendStatus(status) {
+  if (status === 'venda_ganha') return `<span class="badge-agend-status badge-agend-status--venda">🏆 Venda</span>`;
+  if (status === 'realizada')   return `<span class="badge-agend-status badge-agend-status--realizada">Realizada</span>`;
+  if (status === 'noshow')      return `<span class="badge-agend-status badge-agend-status--noshow">No Show</span>`;
   return `<span class="badge-agend-status badge-agend-status--agendado">Agendada</span>`;
 }
 
@@ -3703,7 +3703,7 @@ function renderAgendadosOverview() {
           <button class="proxima-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
           <span class="proxima-meta">${esc(fmtHora(l.horaagendamento))} · <span style="color:${closerColor}">${esc(closerName)}</span></span>
         </div>
-        ${badgeAgendStatus(l.status, l.status_closer)}
+        ${badgeAgendStatus(l.status)}
       </div>`;
     }).join('');
     proximasEl.querySelectorAll('[data-perfil]').forEach(b =>
@@ -3919,7 +3919,7 @@ function renderAgendaHoje() {
               ${(l.etiquetas||[]).length ? `<div class="card-etiquetas">${(l.etiquetas||[]).map(t=>etiquetaChip(t,true)).join('')}</div>` : ''}
             </div>
             <div class="agenda-card-btns">
-              ${badgeAgendStatus(l.status, l.status_closer)}
+              ${badgeAgendStatus(l.status)}
               <button class="btn-ghost btn-sm btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}" title="${l.briefing?'Ver/Editar Briefing':'Adicionar Briefing'}">${l.briefing?`${ICO_CLIPBOARD} Briefing`:'+ Briefing'}</button>
               <button class="btn-ghost btn-sm btn-editar-agend" data-id="${l.id}" title="Editar agendamento">${ICO_PENCIL}</button>
               <button class="btn-ghost btn-sm btn-destructive btn-descartar-agend" data-id="${l.id}" title="Descartar lead">${ICO_DISCARD} Descartar</button>
@@ -4107,7 +4107,7 @@ function renderNoShow() {
         </div>
         <button class="al-nome" data-perfil="${l.id}">${esc(l.nome||'—')}</button>
         <span class="al-meta" style="color:${_closerColor}">${esc(_closerName)}</span>
-        ${badgeAgendStatus(l.status, l.status_closer)}
+        ${badgeAgendStatus(l.status)}
         <div class="al-actions">
           <button class="btn-ghost btn-sm btn-wa-lead" data-id="${l.id}" title="WhatsApp">${ICO_MSG_CIRCLE}</button>
           <button class="btn-ghost btn-sm btn-reagendar-ns" data-id="${l.id}">${ICO_REFRESH} Reagendar</button>
