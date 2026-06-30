@@ -3636,15 +3636,18 @@ function renderAgendadosOverview() {
 
   if (agendaCalYear === 0) { const n = new Date(); agendaCalYear = n.getFullYear(); agendaCalMonth = n.getMonth(); }
   const today = new Date().toISOString().slice(0, 10);
-  const ym = `${agendaCalYear}-${String(agendaCalMonth + 1).padStart(2, '0')}`;
 
-  const leadsDoMes   = allLeads.filter(l => (l.dataagendamento || '').startsWith(ym));
+  const mesSel       = $('agenda-filter-mes');
+  const mesFiltUI    = mesSel?.value || '';
+  const leadsDoMes   = mesFiltUI
+    ? allLeads.filter(l => (l.dataagendamento || '').startsWith(mesFiltUI))
+    : allLeads.filter(l => l.dataagendamento);
   const nAgendados   = leadsDoMes.length;
   const nRealizadas  = leadsDoMes.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha').length;
   const nNoShow      = leadsDoMes.filter(l => l.status === 'noshow').length;
-  const nVendas      = leadsDoMes.filter(l => l.status_closer === 'venda_ganha').length;
+  const nVendas      = leadsDoMes.filter(l => l.status === 'venda_ganha' || l.kanban_column === 'venda_ganha').length;
   const nProximas    = allLeads.filter(l => l.status === 'agendado' && (l.dataagendamento || '') >= today).length;
-  const mesLbl       = MCAL_MONTHS[agendaCalMonth] + ' ' + agendaCalYear;
+  const mesLbl       = mesFiltUI ? mesSel.options[mesSel.selectedIndex].text : 'Todos os meses';
   const pctComp      = nAgendados > 0 ? Math.round(nRealizadas / nAgendados * 100) : 0;
   const pctNS        = nAgendados > 0 ? Math.round(nNoShow     / nAgendados * 100) : 0;
 
