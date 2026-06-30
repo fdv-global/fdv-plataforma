@@ -3644,6 +3644,7 @@ function renderAgendadosOverview() {
     : allLeads.filter(l => l.dataagendamento);
   const nAgendados   = leadsDoMes.length;
   const nRealizadas  = leadsDoMes.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha').length;
+  console.log('[FDV][DEBUG] renderAgendadosOverview', { mesFiltUI, leadsDoMesCount: leadsDoMes.length, nRealizadas });
   const nNoShow      = leadsDoMes.filter(l => l.status === 'noshow').length;
   const nVendas      = leadsDoMes.filter(l => l.status === 'venda_ganha' || l.kanban_column === 'venda_ganha').length;
   const nProximas    = allLeads.filter(l => l.status === 'agendado' && (l.dataagendamento || '') >= today).length;
@@ -3661,7 +3662,7 @@ function renderAgendadosOverview() {
     <div class="stat-card accent-green">
       <div class="stat-top"><span class="stat-label">Realizadas</span><span class="stat-icon">✓</span></div>
       <strong class="stat-num">${nRealizadas}</strong>
-      <span class="stat-sub">calls concluídas</span>
+      <span class="stat-sub">mes:${mesFiltUI||'todos'} leads:${leadsDoMes.length} status_ok:${nRealizadas}</span>
     </div>
     <div class="stat-card accent-marsala">
       <div class="stat-top"><span class="stat-label">No Show</span><span class="stat-icon">✗</span></div>
