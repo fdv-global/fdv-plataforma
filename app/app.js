@@ -5898,6 +5898,11 @@ function renderRelatorios() {
   const ticketMedio = vendas.length ? Math.round(faturamento / vendas.length) : 0;
 
   const fQualif = base.filter(l => !['aguardando','descartado','cancelado'].includes(l.status)).length;
+  const nNoShow = agendados.filter(l => l.status === 'noshow').length;
+  const pctNoShow = pct(nNoShow, agendados.length);
+  const pctQualif = pct(fQualif, base.length);
+  const nDescartados = base.filter(l => l.status === 'descartado' || l.kanban_column === 'descartado').length;
+  const pctDescartados = pct(nDescartados, base.length);
   const funnelStages = [
     { label: 'Novos Leads',      val: base.length },
     { label: 'Qualificados',     val: fQualif },
@@ -5978,16 +5983,19 @@ function renderRelatorios() {
 
   const viewExecutivo = `
     <div class="rel-section-head">Métricas do Período</div>
-    <div class="stats-grid rel-summary" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
+    <div class="stats-grid rel-summary" style="grid-template-columns:repeat(5,1fr);margin-bottom:14px">
       ${relStatCard('Total de Leads', base.length, _S('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'), '', 'data-drill="all" data-drill-title="Total de Leads"')}
       ${relStatCard('Calls Realizadas', realizadas.length, _S('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'), 'accent-petro', 'data-drill="realizadas" data-drill-title="Calls Realizadas"')}
       ${relStatCard('Comparecimento', taxaComp+'%', _S('<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>'), '', '')}
       ${relStatCard('Conversão', taxaConv+'%', ICO_TROPHY, 'accent-green', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
+      ${relStatCard('No-Show', nNoShow, ICO_X_CIRCLE, 'accent-red', '', pctNoShow+'% dos agendados')}
     </div>
-    <div class="stats-grid rel-summary" style="grid-template-columns:repeat(3,1fr)">
+    <div class="stats-grid rel-summary" style="grid-template-columns:repeat(5,1fr)">
       ${relStatCard('Vendas', vendas.length, ICO_CHECK_CIRCLE, 'accent-gold', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
       ${relStatCard('Faturamento', 'R$\xa0'+fmtValor(faturamento), _S('<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'), 'accent-sand', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
       ${relStatCard('Ticket Médio', ticketMedio ? 'R$\xa0'+fmtValor(ticketMedio) : '—', _S('<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>'), 'accent-gold')}
+      ${relStatCard('Qualificados', fQualif, ICO_USER_PLUS, 'accent-petro', '', pctQualif+'% do total')}
+      ${relStatCard('Descartados', nDescartados, ICO_TRASH, '', '', pctDescartados+'% do total')}
     </div>
 
     <div class="rel-section-head">Comportamento dos Leads</div>
@@ -6119,10 +6127,11 @@ function fmtValor(n) { return n.toLocaleString('pt-BR',{minimumFractionDigits:0,
 function pct(a,b)    { return b ? Math.round(a/b*100) : 0; }
 function fmtMes(m)   { if(!m) return '—'; const [y,mo]=m.split('-'); return `${MONTHS[+mo]} ${y}`; }
 
-function relStatCard(label, val, ico, accent='', drill='') {
+function relStatCard(label, val, ico, accent='', drill='', sub='') {
   return `<div class="stat-card ${accent}${drill?' rel-drill-row':''}" ${drill} style="${drill?'cursor:pointer':''}">
     <div class="stat-top"><span class="stat-label">${esc(label)}</span><span class="stat-icon">${ico}</span></div>
     <strong class="stat-num">${val}</strong>
+    ${sub?`<span class="stat-sub">${sub}</span>`:''}
   </div>`;
 }
 
