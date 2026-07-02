@@ -67,6 +67,9 @@ const CLOSERS = {
   fernanda: { name: 'Fernanda', waName: 'Fernanda Ayub',      icon: '⭐', color: '#CE9221', bg: 'rgba(206,146,33,.12)', calLink: 'https://calendar.app.google/hWWi6tVKAhoXg5cUA' },
   thomaz:   { name: 'Thomaz',   waName: 'Thomaz Empresarial', icon: '🧑', color: '#4db5c8', bg: 'rgba(77,181,200,.12)',  calLink: 'https://calendar.app.google/1heVe3395Tsk9GeM8' }
 };
+// closer é armazenado pela chave de CLOSERS (ex: 'fernanda'), nunca pelo nome de exibição —
+// normalizar aqui em todo ponto de escrita evita duplicar grupos por capitalização divergente
+function normCloser(v) { return v ? String(v).trim().toLowerCase() : null; }
 
 // ─── GOOGLE CALENDAR OAUTH ───────────────────────────────────────────
 // OAuth client: fdv-calendario (projeto annular-cogency-492721-j8)
@@ -5150,7 +5153,7 @@ async function _backfillVendas(leads) {
     const d = l.venda_ganha_dados || {};
     const { error } = await supabase.from('vendas').insert({
       lead_id:        l.id,
-      closer:         l.closer         || null,
+      closer:         normCloser(l.closer),
       programa:       d.programa       || null,
       valor:          d.valor          || null,
       valor_entrada:  d.entrada        || null,
@@ -6029,8 +6032,9 @@ function renderRelatorios() {
         <thead><tr><th>Closer</th><th>Agend.</th><th>Calls</th><th>Vendas</th><th>Conv. %</th><th>Fat. R$</th></tr></thead>
         <tbody>${Object.entries(closerMap).sort((a, b) => b[1].ve - a[1].ve).map(([c, d]) => {
           const conv = d.re ? pct(d.ve, d.re) : 0;
-          return `<tr>
-            <td><strong>${esc(CLOSERS[c]?.name || c)}</strong></td>
+          const nome = esc(CLOSERS[c]?.name || c);
+          return `<tr data-drill="closer" data-drill-value="${esc(c)}" data-drill-title="Leads — ${nome}" style="cursor:pointer" onmouseover="this.style.background='rgba(206,146,33,0.042)'" onmouseout="this.style.background=''">
+            <td><strong>${nome}</strong></td>
             <td>${d.ag}</td><td>${d.re}</td><td>${d.ve}</td>
             <td>${convBadge(conv)}</td>
             <td>${d.val ? 'R$\xa0'+fmtValor(d.val) : '—'}</td>
@@ -7549,7 +7553,7 @@ async function confirmar() {
       const obs = $('sched-obs').value.trim();
       const agendadopor = currentUser?.displayName || currentUser?.email || 'Desconhecido';
       await saveLead(currentId, {
-        status:'agendado', closer:cal.closer,
+        status:'agendado', closer:normCloser(cal.closer),
         dataagendamento:datePart, horaagendamento:timePart,
         observacoes:obs, agendadopor,
         kanban_column:null,
@@ -7807,7 +7811,7 @@ async function confirmarVendaGanha() {
     const programa = $('vg-programa').value;
     const obs      = $('vg-obs').value.trim();
     const hist     = buildHistoryEntry(vgLeadId, 'venda_ganha', 'Venda Ganha');
-    const closer   = lead?.closer || null;
+    const closer   = normCloser(lead?.closer);
 
     await saveLead(vgLeadId, {
       kanban_column:       'venda_ganha',
