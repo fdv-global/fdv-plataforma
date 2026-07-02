@@ -5995,17 +5995,17 @@ function renderRelatorios() {
     <div class="rel-section-head">Métricas do Período</div>
     <div class="stats-grid rel-summary" style="grid-template-columns:repeat(5,1fr);margin-bottom:14px">
       ${relStatCard('Total de Leads', base.length, _S('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'), '', 'data-drill="all" data-drill-title="Total de Leads"', '100%')}
-      ${relStatCard('Agendados', agendados.length, ICO_CALENDAR, 'accent-blue', '', pctAgendados+'% do total')}
+      ${relStatCard('Agendados', agendados.length, ICO_CALENDAR, 'accent-blue', 'data-drill="agendados" data-drill-title="Leads Agendados"', pctAgendados+'% do total')}
       ${relStatCard('Calls Realizadas', realizadas.length, _S('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'), 'accent-petro', 'data-drill="realizadas" data-drill-title="Calls Realizadas"', 'Comparecimento: '+taxaComp+'%')}
-      ${relStatCard('No-Show', nNoShow, ICO_X_CIRCLE, 'accent-red', '', pctNoShow+'% dos agendados')}
+      ${relStatCard('No-Show', nNoShow, ICO_X_CIRCLE, 'accent-red', 'data-drill="noshow" data-drill-title="Leads No-Show"', pctNoShow+'% dos agendados')}
       ${relStatCard('Tempo Médio até Venda', tempoMedioVenda+' dias', ICO_CALENDAR, 'accent-purple', '', '')}
     </div>
     <div class="stats-grid rel-summary" style="grid-template-columns:repeat(5,1fr)">
       ${relStatCard('Vendas', vendas.length, ICO_CHECK_CIRCLE, 'accent-gold', 'data-drill="venda" data-drill-title="Vendas Ganhas"', 'Conversão: '+taxaConv+'%')}
       ${relStatCard('Faturamento', 'R$\xa0'+fmtValor(faturamento), _S('<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'), 'accent-sand', 'data-drill="venda" data-drill-title="Vendas Ganhas"')}
       ${relStatCard('Ticket Médio', ticketMedio ? 'R$\xa0'+fmtValor(ticketMedio) : '—', _S('<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>'), 'accent-gold')}
-      ${relStatCard('Qualificados', fQualif, ICO_USER_PLUS, 'accent-petro', '', pctQualif+'% do total')}
-      ${relStatCard('Descartados', nDescartados, ICO_TRASH, '', '', pctDescartados+'% do total')}
+      ${relStatCard('Qualificados', fQualif, ICO_USER_PLUS, 'accent-petro', 'data-drill="qualificados" data-drill-title="Leads Qualificados"', pctQualif+'% do total')}
+      ${relStatCard('Descartados', nDescartados, ICO_TRASH, '', 'data-drill="descartados" data-drill-title="Leads Descartados"', pctDescartados+'% do total')}
     </div>
 
     <div class="rel-section-head">Comportamento dos Leads</div>
@@ -11210,12 +11210,18 @@ function bindEvents() {
     const mesFilt = $('rel-filter-mes')?.value || '';
     let base = [...allLeads];
     if (mesFilt) base = base.filter(l => (l.datachegada||'').startsWith(mesFilt));
+    let agendadosBase = allLeads.filter(l => l.dataagendamento);
+    if (mesFilt) agendadosBase = agendadosBase.filter(l => (l.dataagendamento||'').startsWith(mesFilt));
     const drill = el.dataset.drill, value = el.dataset.drillValue || '', title = el.dataset.drillTitle || value;
     let leads;
     if      (drill === 'all')          leads = base;
     else if (drill === 'status')       leads = base.filter(l => l.status === value);
     else if (drill === 'realizadas')   leads = base.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha');
     else if (drill === 'venda')        leads = base.filter(l => l.kanban_column === 'venda_ganha');
+    else if (drill === 'agendados')    leads = agendadosBase;
+    else if (drill === 'noshow')       leads = agendadosBase.filter(l => l.status === 'noshow');
+    else if (drill === 'qualificados') leads = base.filter(l => !['aguardando','descartado','cancelado'].includes(l.status));
+    else if (drill === 'descartados')  leads = base.filter(l => l.status === 'descartado' || l.kanban_column === 'descartado');
     else if (drill === 'origem')       leads = base.filter(l => (l.origem||'Outros') === value);
     else if (drill === 'mes')          leads = base.filter(l => (l.datachegada||'').startsWith(value));
     else if (drill === 'closer')       leads = base.filter(l => (l.closer||'_sem') === value);
