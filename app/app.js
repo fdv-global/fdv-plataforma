@@ -10776,10 +10776,10 @@ function bindEvents() {
   ['filter-status','filter-origem','filter-mes','filter-etiqueta','filter-chegada-de','filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', applyFilters); });
   ['filter-busca'].forEach(id => { const el=$(id); if(el) el.addEventListener('input', applyFilters); });
   $('filter-renda-mount')?.replaceWith((filtroRendaNovos = createFiltroDropdown({
-    labelText: 'Renda', allLabel: 'Todas', multiplo: false, onChange: applyFilters,
+    labelText: 'Renda', allLabel: 'Todas', multiplo: true, onChange: applyFilters,
   })).el);
   $('filter-profissao-mount')?.replaceWith((filtroProfissaoNovos = createFiltroDropdown({
-    labelText: 'Profissão', allLabel: 'Todas', multiplo: false, onChange: applyFilters,
+    labelText: 'Profissão', allLabel: 'Todas', multiplo: true, onChange: applyFilters,
   })).el);
   // Sort headers — Novos (thead estático, bind único)
   document.querySelector('.leads-table thead tr')?.querySelectorAll('[data-sort-col]').forEach(th => {
