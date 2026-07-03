@@ -32,7 +32,7 @@ function injectStyles() {
   box-shadow: 0 0 0 3px var(--gold-10); background: var(--s3);
 }
 .fms-panel {
-  position: absolute; top: calc(100% + 4px); left: 0; min-width: 100%; width: max-content; max-width: 320px;
+  position: absolute; top: calc(100% + 4px); left: 0; min-width: 100%; width: max-content; max-width: min(320px, calc(100vw - 32px));
   background: var(--s2); border: 1px solid var(--b0); border-radius: var(--r-sm);
   box-shadow: 0 8px 24px rgba(0,0,0,.35); z-index: 50; padding: 4px;
   max-height: 280px; overflow-y: auto; display: none;
@@ -45,6 +45,9 @@ function injectStyles() {
 .fms-opt:hover { background: var(--gold-10); }
 .fms-opt input { accent-color: var(--gold); flex-shrink: 0; }
 .fms-opt--all { border-bottom: 1px solid var(--b0); margin-bottom: 3px; padding-bottom: 9px; font-weight: 600; }
+.fms-opt-text {
+  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 `;
   document.head.appendChild(style);
 }
@@ -103,12 +106,12 @@ export function createFiltroDropdown({ labelText, allLabel, multiplo = false, on
     panel.innerHTML = `
       <label class="fms-opt fms-opt--all">
         <input type="${multiplo ? 'checkbox' : 'radio'}" name="${uid}-opt" data-all="1" ${selecionados.length === 0 ? 'checked' : ''}>
-        ${escHtml(allLabel)}
+        <span class="fms-opt-text">${escHtml(allLabel)}</span>
       </label>` +
       opcoes.map(v => `
-      <label class="fms-opt">
+      <label class="fms-opt" title="${escHtml(v)}">
         <input type="${multiplo ? 'checkbox' : 'radio'}" name="${uid}-opt" value="${escHtml(v)}" ${selecionados.includes(v) ? 'checked' : ''}>
-        ${escHtml(v)}
+        <span class="fms-opt-text">${escHtml(v)}</span>
       </label>`).join('');
 
     trigger.textContent = selecionados.length === 0
@@ -142,8 +145,13 @@ export function createFiltroDropdown({ labelText, allLabel, multiplo = false, on
 
   function open() {
     openInstances.forEach(inst => { if (inst !== api) inst.close(); });
+    panel.style.left = '0';
     panel.classList.add('fms-visible');
     trigger.classList.add('fms-open');
+    // Se o painel vazar a borda direita da viewport (telas estreitas), desloca pra dentro.
+    const rect = panel.getBoundingClientRect();
+    const overflowRight = rect.right - (window.innerWidth - 8);
+    if (overflowRight > 0) panel.style.left = `-${overflowRight}px`;
   }
   function close() {
     panel.classList.remove('fms-visible');
