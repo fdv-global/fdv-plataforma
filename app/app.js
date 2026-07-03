@@ -7,6 +7,13 @@ import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import { REL_CONFIG } from './rel-config.js';
+import { createFiltroDropdown } from './filtro-multiselect.js';
+import { listaGruposRenda, listaGruposProfissao, leadNoGrupoRenda, leadNoGrupoProfissao } from './filtros-config.js';
+
+// Instâncias dos dropdowns de Renda/Profissão por tela — criadas uma vez em bindEvents()
+// e reaproveitadas a cada populateFilterDropdowns()/renderAll().
+let filtroRendaNovos = null;
+let filtroProfissaoNovos = null;
 
 // ─── GOOGLE CALENDAR OAUTH POPUP CALLBACK ───────────────────────────
 // Roda no popup após redirect do Google — envia o code ao parent e fecha.
@@ -2599,8 +2606,8 @@ function populateFilterDropdowns() {
       values.map(v => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(v)}</option>`).join('');
   };
 
-  repopulate('filter-renda',            uniq(allLeads.map(l => l.renda)),       'Todas');
-  repopulate('filter-profissao',        uniq(allLeads.map(l => l.profissao)),   'Todas');
+  filtroRendaNovos?.setOptions(listaGruposRenda(allLeads.map(l => l.renda)));
+  filtroProfissaoNovos?.setOptions(listaGruposProfissao(allLeads.map(l => l.profissao)));
   repopulate('filter-agendadopor',      uniq(allLeads.map(l => l.agendadopor)), 'Todos');
   repopulate('filter-etiqueta',         uniq(allLeads.flatMap(l => l.etiquetas || [])), 'Todas');
   // Filtros da aba Agendados
@@ -2628,8 +2635,8 @@ function applyFilters() {
   const mes         = $('filter-mes').value;
   const busca       = $('filter-busca').value.toLowerCase().trim();
   const closer      = $('filter-closer')?.value || '';
-  const renda       = $('filter-renda')?.value || '';
-  const profissao   = $('filter-profissao')?.value || '';
+  const gruposRenda     = filtroRendaNovos?.getValue()     || [];
+  const gruposProfissao = filtroProfissaoNovos?.getValue() || [];
   const etiqueta    = $('filter-etiqueta')?.value || '';
   const kanban      = $('filter-kanban')?.value || '';
   const chegadaDe   = $('filter-chegada-de')?.value || '';
@@ -2646,8 +2653,8 @@ function applyFilters() {
       if (!n.includes(busca) && !c.includes(busca)) return false;
     }
     if (closer      && l.closer !== closer) return false;
-    if (renda       && l.renda !== renda) return false;
-    if (profissao   && l.profissao !== profissao) return false;
+    if (!leadNoGrupoRenda(l, gruposRenda)) return false;
+    if (!leadNoGrupoProfissao(l, gruposProfissao)) return false;
     if (etiqueta    && !(l.etiquetas  || []).includes(etiqueta)) return false;
     if (kanban      && l.kanban_column !== kanban) return false;
     if (chegadaDe   && (l.datachegada || '') < chegadaDe) return false;
@@ -10766,15 +10773,23 @@ function bindEvents() {
   );
 
   // Leads filters (Novos)
-  ['filter-status','filter-origem','filter-mes','filter-renda','filter-profissao','filter-etiqueta','filter-chegada-de','filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', applyFilters); });
+  ['filter-status','filter-origem','filter-mes','filter-etiqueta','filter-chegada-de','filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', applyFilters); });
   ['filter-busca'].forEach(id => { const el=$(id); if(el) el.addEventListener('input', applyFilters); });
+  $('filter-renda-mount')?.replaceWith((filtroRendaNovos = createFiltroDropdown({
+    labelText: 'Renda', allLabel: 'Todas', multiplo: false, onChange: applyFilters,
+  })).el);
+  $('filter-profissao-mount')?.replaceWith((filtroProfissaoNovos = createFiltroDropdown({
+    labelText: 'Profissão', allLabel: 'Todas', multiplo: false, onChange: applyFilters,
+  })).el);
   // Sort headers — Novos (thead estático, bind único)
   document.querySelector('.leads-table thead tr')?.querySelectorAll('[data-sort-col]').forEach(th => {
     th.addEventListener('click', () => { cycleSortState('novos', th.dataset.sortCol); applyFilters(); });
   });
   $('btn-limpar').addEventListener('click', () => {
-    ['filter-status','filter-origem','filter-mes','filter-renda','filter-profissao','filter-etiqueta'].forEach(id => { const el=$(id); if(el) el.value=''; });
+    ['filter-status','filter-origem','filter-mes','filter-etiqueta'].forEach(id => { const el=$(id); if(el) el.value=''; });
     ['filter-busca','filter-chegada-de','filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.value=''; });
+    filtroRendaNovos?.setValue([]);
+    filtroProfissaoNovos?.setValue([]);
     applyFilters();
   });
 
