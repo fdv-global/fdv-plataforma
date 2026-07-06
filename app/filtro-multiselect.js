@@ -148,6 +148,9 @@ export function createFiltroDropdown({ labelText, allLabel, multiplo = false, on
     panel.style.left = '0';
     panel.classList.add('fms-visible');
     trigger.classList.add('fms-open');
+    // close() não reseta o scroll (só esconde o painel) — sem isso, reabrir depois de
+    // rolar (comum com multiplo:true, que não fecha ao marcar) reabre no mesmo ponto.
+    panel.scrollTop = 0;
     // Se o painel vazar a borda direita da viewport (telas estreitas), desloca pra dentro.
     const rect = panel.getBoundingClientRect();
     const overflowRight = rect.right - (window.innerWidth - 8);
