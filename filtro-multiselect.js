@@ -32,9 +32,15 @@ function injectStyles() {
   box-shadow: 0 0 0 3px var(--gold-10); background: var(--s3);
 }
 .fms-panel {
-  position: absolute; top: calc(100% + 4px); left: 0; min-width: 100%; width: max-content; max-width: min(320px, calc(100vw - 32px));
+  /* position fica fixed e é calculada em JS (positionPanel) — o painel é
+     portado para document.body ao abrir para escapar de qualquer stacking
+     context criado por ancestrais da tela (ex.: backdrop-filter em
+     .filters-bar/.table-wrap). Um position:absolute comum aqui fica preso
+     ao stacking context do pai e nenhum z-index resolve isso — ver nota em
+     positionPanel(). */
+  position: fixed; width: max-content; max-width: min(320px, calc(100vw - 32px));
   background: var(--s2); border: 1px solid var(--b0); border-radius: var(--r-sm);
-  box-shadow: 0 8px 24px rgba(0,0,0,.35); z-index: 50; padding: 4px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.35); z-index: 1000; padding: 4px;
   max-height: 280px; overflow-y: auto; display: none;
 }
 .fms-panel.fms-visible { display: block; }
@@ -58,7 +64,9 @@ function bindGlobalListeners() {
   if (globalListenersBound) return;
   globalListenersBound = true;
   document.addEventListener('click', (e) => {
-    openInstances.forEach(inst => { if (!inst.el.contains(e.target)) inst.close(); });
+    openInstances.forEach(inst => {
+      if (!inst.el.contains(e.target) && !inst.panel.contains(e.target)) inst.close();
+    });
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') openInstances.forEach(inst => inst.close());
@@ -143,22 +151,42 @@ export function createFiltroDropdown({ labelText, allLabel, multiplo = false, on
     });
   }
 
-  function open() {
-    openInstances.forEach(inst => { if (inst !== api) inst.close(); });
-    panel.style.left = '0';
-    panel.classList.add('fms-visible');
-    trigger.classList.add('fms-open');
-    // close() não reseta o scroll (só esconde o painel) — sem isso, reabrir depois de
-    // rolar (comum com multiplo:true, que não fecha ao marcar) reabre no mesmo ponto.
-    panel.scrollTop = 0;
+  // Posiciona o painel em coordenadas de viewport a partir do trigger. Precisa
+  // rodar de novo a cada scroll/resize enquanto aberto porque, sendo fixed e
+  // portado para <body>, ele não segue mais o trigger automaticamente.
+  function positionPanel() {
+    const trigRect = trigger.getBoundingClientRect();
+    panel.style.minWidth = trigRect.width + 'px';
+    panel.style.left = trigRect.left + 'px';
+    panel.style.top = (trigRect.bottom + 4) + 'px';
     // Se o painel vazar a borda direita da viewport (telas estreitas), desloca pra dentro.
     const rect = panel.getBoundingClientRect();
     const overflowRight = rect.right - (window.innerWidth - 8);
-    if (overflowRight > 0) panel.style.left = `-${overflowRight}px`;
+    if (overflowRight > 0) panel.style.left = `${trigRect.left - overflowRight}px`;
+  }
+  function onViewportChange() { if (panel.classList.contains('fms-visible')) positionPanel(); }
+
+  function open() {
+    openInstances.forEach(inst => { if (inst !== api) inst.close(); });
+    // Porta o painel pra <body>: como filho de .fms-wrap ele fica preso ao
+    // stacking context de qualquer ancestral da tela (ex.: backdrop-filter
+    // em .filters-bar/.table-wrap nas telas de leads) e nenhum z-index o
+    // tira de baixo do conteúdo — ver bug de "painel atrás da tabela".
+    if (panel.parentNode !== document.body) document.body.appendChild(panel);
+    panel.classList.add('fms-visible');
+    trigger.classList.add('fms-open');
+    positionPanel();
+    // close() não reseta o scroll (só esconde o painel) — sem isso, reabrir depois de
+    // rolar (comum com multiplo:true, que não fecha ao marcar) reabre no mesmo ponto.
+    panel.scrollTop = 0;
+    window.addEventListener('scroll', onViewportChange, true);
+    window.addEventListener('resize', onViewportChange);
   }
   function close() {
     panel.classList.remove('fms-visible');
     trigger.classList.remove('fms-open');
+    window.removeEventListener('scroll', onViewportChange, true);
+    window.removeEventListener('resize', onViewportChange);
   }
 
   trigger.addEventListener('click', () => {
@@ -167,6 +195,7 @@ export function createFiltroDropdown({ labelText, allLabel, multiplo = false, on
 
   const api = {
     el: group,
+    panel,
     close,
     setOptions(novasOpcoes) {
       opcoes = [...novasOpcoes];
@@ -182,6 +211,9 @@ export function createFiltroDropdown({ labelText, allLabel, multiplo = false, on
     },
     destroy() {
       openInstances.delete(api);
+      window.removeEventListener('scroll', onViewportChange, true);
+      window.removeEventListener('resize', onViewportChange);
+      panel.remove();
       group.remove();
     },
   };
