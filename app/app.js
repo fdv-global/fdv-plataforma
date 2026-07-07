@@ -24,6 +24,11 @@ let filtroProfissaoQualificados = null;
 // recriado) — uma única instância, sem Profissão (esse filtro não existe aqui).
 let filtroRendaAgendados = null;
 
+// Descartados é isolado — sem Profissão, sem compartilhar com nenhuma outra aba.
+// #descartados-content recria o innerHTML inteiro a cada renderDescartados()
+// (mesmo padrão de Qualificados): instância módulo-level, remontada a cada render.
+let filtroRendaDescartados = null;
+
 // ─── GOOGLE CALENDAR OAUTH POPUP CALLBACK ───────────────────────────
 // Roda no popup após redirect do Google — envia o code ao parent e fecha.
 {
@@ -4191,7 +4196,6 @@ function renderDescartados() {
   }
   const uniq2 = arr => [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
   const origemOptsD = ['Instagram','Facebook','Indicação','Google','WhatsApp','Outros',...uniq2(allDesc.map(l=>l.origem))];
-  const rendaOptsD  = uniq2(allDesc.map(l=>l.renda));
   const mesOptsD    = [...new Set(allDesc.filter(l=>l.datachegada).map(l=>l.datachegada.slice(0,7)))].sort().reverse();
 
   const descMesFilt   = $('desc-filter-mes')?.value || '';
@@ -4256,13 +4260,7 @@ function renderDescartados() {
             ${[...new Set(origemOptsD)].map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
           </select>
         </div>
-        <div class="filter-group">
-          <label class="filter-label">Renda</label>
-          <select class="filter-select" id="desc-filter-renda">
-            <option value="">Todas</option>
-            ${rendaOptsD.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
-          </select>
-        </div>
+        <div id="desc-filter-renda-mount"></div>
         <div class="filter-group">
           <label class="filter-label">Motivo</label>
           <select class="filter-select" id="desc-filter-motivo">
@@ -4305,6 +4303,15 @@ function renderDescartados() {
       <tbody id="desc-tbody"></tbody>
     </table></div>`;
 
+  if (!filtroRendaDescartados) {
+    filtroRendaDescartados = createFiltroDropdown({
+      labelText: 'Renda', allLabel: 'Todas', multiplo: false,
+      onChange: () => renderDescTbody(),
+    });
+  }
+  $('desc-filter-renda-mount')?.replaceWith(filtroRendaDescartados.el);
+  filtroRendaDescartados.setOptions(listaGruposRenda(allDesc.map(l => l.renda)));
+
   if (el._descClickHandler)  el.removeEventListener('click',  el._descClickHandler);
   if (el._descChangeHandler) el.removeEventListener('change', el._descChangeHandler);
 
@@ -4345,7 +4352,7 @@ function renderDescartados() {
   function renderDescTbody() {
     const mes    = $('desc-filter-mes')?.value     || '';
     const origem = $('desc-filter-origem')?.value  || '';
-    const renda  = $('desc-filter-renda')?.value   || '';
+    const gruposRenda = filtroRendaDescartados?.getValue() || [];
     const motivo = $('desc-filter-motivo')?.value  || '';
     const de     = $('desc-filter-chegada-de')?.value || '';
     const ate    = $('desc-filter-chegada-ate')?.value || '';
@@ -4353,7 +4360,7 @@ function renderDescartados() {
     let leads = allDesc.filter(l => {
       if (mes    && !(l.datachegada||'').startsWith(mes)) return false;
       if (origem && l.origem !== origem) return false;
-      if (renda  && l.renda  !== renda)  return false;
+      if (!leadNoGrupoRenda(l, gruposRenda)) return false;
       if (motivo && l.motivo_descarte !== motivo) return false;
       if (de     && (l.datachegada||'') < de)  return false;
       if (ate    && (l.datachegada||'') > ate) return false;
@@ -4407,10 +4414,11 @@ function renderDescartados() {
   $('btn-desc-bulk-clear')?.addEventListener('click', () => { selectedIds.clear(); updateDescBulkBar(); renderDescTbody(); });
 
   $('desc-filter-mes')?.addEventListener('change', renderDescartados);
-  ['desc-filter-origem','desc-filter-renda','desc-filter-motivo','desc-filter-chegada-de','desc-filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', renderDescTbody); });
+  ['desc-filter-origem','desc-filter-motivo','desc-filter-chegada-de','desc-filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', renderDescTbody); });
   $('desc-busca')?.addEventListener('input', renderDescTbody);
   $('desc-limpar')?.addEventListener('click', () => {
-    ['desc-filter-mes','desc-filter-origem','desc-filter-renda','desc-filter-motivo','desc-filter-chegada-de','desc-filter-chegada-ate','desc-busca'].forEach(id=>{const el=$(id);if(el)el.value='';});
+    ['desc-filter-mes','desc-filter-origem','desc-filter-motivo','desc-filter-chegada-de','desc-filter-chegada-ate','desc-busca'].forEach(id=>{const el=$(id);if(el)el.value='';});
+    filtroRendaDescartados?.setValue([]);
     renderDescartados();
   });
   renderDescTbody();
