@@ -8,7 +8,7 @@ import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import { REL_CONFIG } from './rel-config.js';
 import { createFiltroDropdown } from './filtro-multiselect.js';
-import { listaGruposRenda, listaGruposProfissao, leadNoGrupoRenda, leadNoGrupoProfissao } from './filtros-config.js';
+import { listaGruposRenda, listaGruposProfissao, leadNoGrupoRenda, leadNoGrupoProfissao, getGrupoRenda, getGrupoProfissao } from './filtros-config.js';
 
 // Instâncias dos dropdowns de Renda/Profissão por tela — criadas uma vez em bindEvents()
 // e reaproveitadas a cada populateFilterDropdowns()/renderAll().
@@ -6002,9 +6002,9 @@ function renderRelatorios() {
 
   const profMapV = {}, rendaMapV = {};
   vendas.forEach(l => {
-    const p = (l.profissao || 'Não inf.').slice(0, 25);
+    const p = getGrupoProfissao(l.profissao);
     profMapV[p] = (profMapV[p] || 0) + 1;
-    const r = (l.renda || 'Não inf.').slice(0, 25);
+    const r = getGrupoRenda(l.renda);
     rendaMapV[r] = (rendaMapV[r] || 0) + 1;
   });
   const topProfV  = Object.entries(profMapV).sort((a, b) => b[1] - a[1]).slice(0, 5);
@@ -11271,8 +11271,8 @@ function bindEvents() {
     else if (drill === 'utm_source')   leads = base.filter(l => (cleanUTM(l.utm_source)||'Não identificado') === value);
     else if (drill === 'utm_campaign') leads = base.filter(l => (cleanUTM(l.utm_campaign)||'Não identificado') === value);
     else if (drill === 'utm_content')  leads = base.filter(l => (cleanUTM(l.utm_content)||'Não identificado') === value);
-    else if (drill === 'profissao')       leads = base.filter(l => (l.profissao||'Não inf.').slice(0,25) === value);
-    else if (drill === 'renda')           leads = base.filter(l => (l.renda||'Não inf.').slice(0,25) === value);
+    else if (drill === 'profissao')       leads = base.filter(l => getGrupoProfissao(l.profissao) === value);
+    else if (drill === 'renda')           leads = base.filter(l => getGrupoRenda(l.renda) === value);
     else if (drill === 'motivo_descarte') leads = base.filter(l => (l.motivo_descarte_label||'') === value);
     else return;
     openDrillDown(title, leads);
