@@ -10812,7 +10812,7 @@ function bindEvents() {
   ['agend-filter-origem','agend-filter-closer','agend-filter-agendadopor','agend-filter-chegada-de','agend-filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', renderAgendadosSub); });
   $('agend-filter-busca')?.addEventListener('input', renderAgendadosSub);
   $('agend-filter-renda-mount')?.replaceWith((filtroRendaAgendados = createFiltroDropdown({
-    labelText: 'Renda', allLabel: 'Todas', multiplo: false, onChange: renderAgendadosSub,
+    labelText: 'Renda', allLabel: 'Todas', multiplo: true, onChange: renderAgendadosSub,
   })).el);
   $('agend-btn-limpar')?.addEventListener('click', () => {
     ['agend-filter-origem','agend-filter-closer','agend-filter-agendadopor','agend-filter-chegada-de','agend-filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.value=''; });
