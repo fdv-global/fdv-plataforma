@@ -11228,6 +11228,7 @@ function bindEvents() {
 
   // ── Exportação de relatórios
   $('rel-export-csv')?.addEventListener('click', exportRelatoriosCSV);
+  $('rel-export-pdf')?.addEventListener('click', exportRelatoriosPDF);
   document.querySelectorAll('#rel-view-toggle .qual-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       _relView = btn.dataset.view;
