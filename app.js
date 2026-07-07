@@ -4305,7 +4305,7 @@ function renderDescartados() {
 
   if (!filtroRendaDescartados) {
     filtroRendaDescartados = createFiltroDropdown({
-      labelText: 'Renda', allLabel: 'Todas', multiplo: false,
+      labelText: 'Renda', allLabel: 'Todas', multiplo: true,
       onChange: () => renderDescTbody(),
     });
   }
