@@ -15,6 +15,7 @@ function injectStyles() {
   style.textContent = `
 .fms-wrap { position: relative; }
 .fms-trigger {
+  appearance: none; -webkit-appearance: none;
   background: var(--s2); border: 1px solid var(--b0);
   border-radius: var(--r-sm); font-size: 13.5px; font-weight: 500;
   padding: 9px 30px 9px 12px; width: 100%; color: var(--t1);
