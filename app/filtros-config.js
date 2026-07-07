@@ -15,6 +15,7 @@ export const MAPA_RENDA = [
   ]},
   { grupo: 'R$5.000 a R$8.000', valores: [
     '5k-a-8k', 'R$5.000 – R$8.000', 'R$ 5.000,00 a R$ 8.000,00', 'De R$ 5.000 a R$ 10.000 por mês',
+    'de_r$_5.000_a_r$_10.000_por_mês',
   ]},
   { grupo: 'R$8.000 a R$15.000', valores: [
     '8k-a-15k', 'R$8.000 – R$12.000', 'De R$8.000,00 a R$ 10.000,00',
@@ -22,6 +23,7 @@ export const MAPA_RENDA = [
   { grupo: 'R$15.000 a R$30.000', valores: [
     '15k-a-30k', 'De R$ 15.000,00 a R$ 30.000,00 por mês', 'R$12.000 – R$20.000', 'R$ 12.000,00 a R$ 20.000,00',
     '300.000,00 anual', 'mais de 300.000,00, anual', 'Menos de 300 mil', 'Menos de R$ 300.000,00 por ano',
+    'de_r$_10.000_a_r$_20.000_por_mês',
   ]},
   { grupo: 'Acima de R$30.000', valores: [
     'acima-de-30k', 'Mais de R$50.000', 'R$20.000 – R$50.000', 'Acima de 2 milhões',
@@ -36,13 +38,29 @@ export const MAPA_PROFISSAO = [
   { grupo: 'Profissional Autônoma(o)', valores: [
     'Autonoma', 'Profissional Autônoma(o)', 'Profissional Liberal',
   ]},
+  { grupo: 'Do lar', valores: [
+    'Em casa',
+  ]},
 ];
 
-const ORDEM_RENDA = MAPA_RENDA.map(m => m.grupo);
+// Chave de comparação: ignora espaçamento e capitalização, só isso — variação de
+// digitação/copy-paste no dado bruto ("R$ 2.000,00" vs "R$2.000,00", "clt" vs "CLT")
+// não pode gerar dois grupos diferentes pra mesma coisa.
+function chaveComparacao(v) {
+  return v.trim().toLowerCase().replace(/\s+/g, '');
+}
+
+// Título padrão pra valor sem mapa: só a primeira letra maiúscula, resto como veio
+// (espaçamento normalizado). Garante que "clt" e "CLT" caiam no mesmo grupo solto
+// em vez de duplicar — sem sair reescrevendo o texto inteiro em Title Case.
+function capitalizarPadrao(v) {
+  const t = v.trim().replace(/\s+/g, ' ').toLowerCase();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
 
 function buildLookup(mapa) {
   const lookup = new Map();
-  mapa.forEach(({ grupo, valores }) => valores.forEach(v => lookup.set(v.trim().toLowerCase(), grupo)));
+  mapa.forEach(({ grupo, valores }) => valores.forEach(v => lookup.set(chaveComparacao(v), grupo)));
   return lookup;
 }
 
@@ -50,35 +68,40 @@ const LOOKUP_RENDA     = buildLookup(MAPA_RENDA);
 const LOOKUP_PROFISSAO = buildLookup(MAPA_PROFISSAO);
 
 // Valor bruto do lead -> grupo de exibição/filtro.
-// Nunca retorna vazio/undefined: cai em "Não informado" ou no próprio texto original.
+// Nunca retorna vazio/undefined: cai em "Não informado" ou numa versão padronizada do texto original.
 export function getGrupoRenda(valorBruto) {
   const v = (valorBruto || '').trim();
   if (!v) return GRUPO_NAO_INFORMADO;
-  return LOOKUP_RENDA.get(v.toLowerCase()) || v;
+  return LOOKUP_RENDA.get(chaveComparacao(v)) || capitalizarPadrao(v);
 }
 
 export function getGrupoProfissao(valorBruto) {
   const v = (valorBruto || '').trim();
   if (!v) return GRUPO_NAO_INFORMADO;
-  return LOOKUP_PROFISSAO.get(v.toLowerCase()) || v;
+  return LOOKUP_PROFISSAO.get(chaveComparacao(v)) || capitalizarPadrao(v);
 }
 
-// Grupos presentes numa lista de valores brutos, na ordem de exibição:
-// faixas conhecidas em ordem crescente, depois valores fora do mapa (alfabético), depois "Não informado".
+// Grupos presentes numa lista de valores brutos, em ordem alfabética uniforme
+// (mapeados e fora-do-mapa juntos, sem bloco separado pra nenhum dos dois) —
+// só "Não informado" fica de fora do sort, sempre por último.
 export function listaGruposRenda(valoresBrutos) {
-  const presentes  = new Set(valoresBrutos.map(getGrupoRenda));
-  const conhecidos = ORDEM_RENDA.filter(g => presentes.has(g));
-  const livres      = [...presentes]
-    .filter(g => !ORDEM_RENDA.includes(g) && g !== GRUPO_NAO_INFORMADO)
-    .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const presentes    = new Set(valoresBrutos.map(getGrupoRenda));
   const naoInformado = presentes.has(GRUPO_NAO_INFORMADO) ? [GRUPO_NAO_INFORMADO] : [];
-  return [...conhecidos, ...livres, ...naoInformado];
+  const resto = [...presentes]
+    .filter(g => g !== GRUPO_NAO_INFORMADO)
+    .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  return [...resto, ...naoInformado];
 }
 
-// Grupos presentes, ordem alfabética (Profissão não tem faixa, só nome).
+// Mesma regra da Renda: mapeados e fora-do-mapa juntos em ordem alfabética,
+// "Não informado" sempre por último.
 export function listaGruposProfissao(valoresBrutos) {
-  const presentes = new Set(valoresBrutos.map(getGrupoProfissao));
-  return [...presentes].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const presentes    = new Set(valoresBrutos.map(getGrupoProfissao));
+  const naoInformado = presentes.has(GRUPO_NAO_INFORMADO) ? [GRUPO_NAO_INFORMADO] : [];
+  const resto = [...presentes]
+    .filter(g => g !== GRUPO_NAO_INFORMADO)
+    .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  return [...resto, ...naoInformado];
 }
 
 export function leadNoGrupoRenda(lead, gruposSelecionados) {
