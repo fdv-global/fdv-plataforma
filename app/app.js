@@ -3419,7 +3419,7 @@ function renderQualificados() {
 
     if (!filtroRendaQualificados) {
       filtroRendaQualificados = createFiltroDropdown({
-        labelText: 'Renda', allLabel: 'Todas', multiplo: false,
+        labelText: 'Renda', allLabel: 'Todas', multiplo: true,
         onChange: () => { qualPage = 1; renderQualTab(); },
       });
     }
@@ -3428,7 +3428,7 @@ function renderQualificados() {
 
     if (!filtroProfissaoQualificados) {
       filtroProfissaoQualificados = createFiltroDropdown({
-        labelText: 'Profissão', allLabel: 'Todas', multiplo: false,
+        labelText: 'Profissão', allLabel: 'Todas', multiplo: true,
         onChange: () => { qualPage = 1; renderQualTab(); },
       });
     }
