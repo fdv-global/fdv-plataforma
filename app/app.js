@@ -15,6 +15,11 @@ import { listaGruposRenda, listaGruposProfissao, leadNoGrupoRenda, leadNoGrupoPr
 let filtroRendaNovos = null;
 let filtroProfissaoNovos = null;
 
+// Qualificados recria o innerHTML inteiro a cada renderQualificados() — a instância
+// persiste aqui e é remontada (replaceWith) no placeholder novo a cada render.
+let filtroRendaQualificados = null;
+let filtroProfissaoQualificados = null;
+
 // ─── GOOGLE CALENDAR OAUTH POPUP CALLBACK ───────────────────────────
 // Roda no popup após redirect do Google — envia o code ao parent e fecha.
 {
@@ -3192,17 +3197,17 @@ function renderQualificados() {
     // Apply filters
     const q          = ($('qual-search-top')?.value        || '').toLowerCase().trim();
     const origem     = $('qual-filter-origem')?.value      || '';
-    const renda      = $('qual-filter-renda')?.value       || '';
+    const gruposRenda     = filtroRendaQualificados?.getValue()     || [];
     const mes        = $('qual-filter-mes')?.value         || '';
-    const profissao  = $('qual-filter-profissao')?.value   || '';
+    const gruposProfissao = filtroProfissaoQualificados?.getValue() || [];
     const etiqueta   = $('qual-filter-etiqueta')?.value    || '';
     const chegadaDe  = $('qual-filter-chegada-de')?.value  || '';
     const chegadaAte = $('qual-filter-chegada-ate')?.value || '';
     const match = l => {
       if (origem     && l.origem    !== origem)    return false;
-      if (renda      && l.renda     !== renda)     return false;
+      if (!leadNoGrupoRenda(l, gruposRenda))       return false;
       if (mes        && !(l.datachegada||'').startsWith(mes))  return false;
-      if (profissao  && l.profissao !== profissao) return false;
+      if (!leadNoGrupoProfissao(l, gruposProfissao)) return false;
       if (etiqueta   && l.etiqueta  !== etiqueta)  return false;
       if (chegadaDe  && (l.datachegada||'') < chegadaDe)  return false;
       if (chegadaAte && (l.datachegada||'') > chegadaAte) return false;
@@ -3282,8 +3287,6 @@ function renderQualificados() {
 
     const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
     const origemOpts    = uniq(allQual.map(l=>l.origem));
-    const rendaOpts     = uniq(allQual.map(l=>l.renda));
-    const profissaoOpts = uniq(allQual.map(l=>l.profissao));
     const etiquetaOpts  = ['Super Lead','Bom','Neutro','Frio'];
     const mesOpts       = [...new Set(allQual.filter(l=>l.datachegada).map(l=>l.datachegada.slice(0,7)))].sort().reverse();
 
@@ -3336,20 +3339,8 @@ function renderQualificados() {
             ${mesOpts.map(m=>{const[y,mo]=m.split('-');return`<option value="${m}">${MONTHS[+mo]} ${y}</option>`;}).join('')}
           </select>
         </div>
-        <div class="filter-group">
-          <label class="filter-label">Renda</label>
-          <select class="filter-select" id="qual-filter-renda">
-            <option value="">Todas</option>
-            ${rendaOpts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
-          </select>
-        </div>
-        <div class="filter-group">
-          <label class="filter-label">Profissão</label>
-          <select class="filter-select" id="qual-filter-profissao">
-            <option value="">Todas</option>
-            ${profissaoOpts.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
-          </select>
-        </div>
+        <div id="qual-filter-renda-mount"></div>
+        <div id="qual-filter-profissao-mount"></div>
         <div class="filter-group">
           <label class="filter-label">Etiqueta</label>
           <select class="filter-select" id="qual-filter-etiqueta">
@@ -3426,6 +3417,24 @@ function renderQualificados() {
       <div id="qual-pagination" class="qual-pagination"></div>
     </div>`;
 
+    if (!filtroRendaQualificados) {
+      filtroRendaQualificados = createFiltroDropdown({
+        labelText: 'Renda', allLabel: 'Todas', multiplo: false,
+        onChange: () => { qualPage = 1; renderQualTab(); },
+      });
+    }
+    $('qual-filter-renda-mount')?.replaceWith(filtroRendaQualificados.el);
+    filtroRendaQualificados.setOptions(listaGruposRenda(allQual.map(l => l.renda)));
+
+    if (!filtroProfissaoQualificados) {
+      filtroProfissaoQualificados = createFiltroDropdown({
+        labelText: 'Profissão', allLabel: 'Todas', multiplo: false,
+        onChange: () => { qualPage = 1; renderQualTab(); },
+      });
+    }
+    $('qual-filter-profissao-mount')?.replaceWith(filtroProfissaoQualificados.el);
+    filtroProfissaoQualificados.setOptions(listaGruposProfissao(allQual.map(l => l.profissao)));
+
     lucide.createIcons({ nodes: [el] });
 
     if (el._qualClickHandler)   el.removeEventListener('click',  el._qualClickHandler);
@@ -3463,9 +3472,11 @@ function renderQualificados() {
 
       // Limpar filtros
       if (e.target.closest('#qual-limpar')) {
-        ['qual-filter-origem','qual-filter-renda','qual-filter-mes','qual-filter-profissao',
+        ['qual-filter-origem','qual-filter-mes',
          'qual-filter-etiqueta','qual-filter-chegada-de','qual-filter-chegada-ate','qual-search-top']
           .forEach(id => { const inp=$(id); if(inp) inp.value=''; });
+        filtroRendaQualificados?.setValue([]);
+        filtroProfissaoQualificados?.setValue([]);
         qualPage = 1; renderQualTab();
         return;
       }
@@ -3586,7 +3597,7 @@ function renderQualificados() {
       if (e.target.id === 'qual-filter-mes') {
         qualPage = 1; renderQualificados(); return;
       }
-      if (e.target.matches('#qual-filter-origem,#qual-filter-renda,#qual-filter-profissao,#qual-filter-etiqueta,#qual-filter-chegada-de,#qual-filter-chegada-ate')) {
+      if (e.target.matches('#qual-filter-origem,#qual-filter-etiqueta,#qual-filter-chegada-de,#qual-filter-chegada-ate')) {
         qualPage = 1; renderQualTab(); return;
       }
       // Select-all checkbox
