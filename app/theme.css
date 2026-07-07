@@ -445,7 +445,8 @@ h1, h2, h3, h4,
 }
 /* Inputs dentro do painel — sem container próprio, fundem no painel */
 .filters-bar .filter-select,
-.filters-bar .filter-input {
+.filters-bar .filter-input,
+.filters-bar .fms-trigger {
   background: rgba(255, 255, 255, 0.05) !important;
   border: 1px solid rgba(255, 255, 255, 0.09) !important;
   backdrop-filter: none !important;
@@ -453,7 +454,9 @@ h1, h2, h3, h4,
   box-shadow: none !important;
 }
 .filters-bar .filter-select:focus,
-.filters-bar .filter-input:focus {
+.filters-bar .filter-input:focus,
+.filters-bar .fms-trigger:focus,
+.filters-bar .fms-trigger.fms-open {
   background: rgba(255, 255, 255, 0.08) !important;
   border-color: rgba(206, 146, 33, 0.45) !important;
   box-shadow: 0 0 0 3px rgba(206, 146, 33, 0.10) !important;
@@ -505,7 +508,8 @@ h1, h2, h3, h4,
 .form-ctrl,
 .filter-select,
 .filter-input,
-.chat-input {
+.chat-input,
+.fms-trigger {
   background: rgba(24, 34, 36, 0.72) !important;
   border-color: rgba(206, 146, 33, 0.14) !important;
   transition: border-color 180ms ease, background 180ms ease,
