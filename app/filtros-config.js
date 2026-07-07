@@ -18,7 +18,7 @@ export const MAPA_RENDA = [
     'de_r$_5.000_a_r$_10.000_por_mês',
   ]},
   { grupo: 'R$8.000 a R$15.000', valores: [
-    '8k-a-15k', 'R$8.000 – R$12.000', 'De R$8.000,00 a R$ 10.000,00',
+    '8k-a-15k', 'R$8.000 – R$12.000', 'De R$8.000,00 a R$ 10.000,00', 'R$ 8.000,00 a r$ 15.000,00',
   ]},
   { grupo: 'R$15.000 a R$30.000', valores: [
     '15k-a-30k', 'De R$ 15.000,00 a R$ 30.000,00 por mês', 'R$12.000 – R$20.000', 'R$ 12.000,00 a R$ 20.000,00',
@@ -58,6 +58,10 @@ function capitalizarPadrao(v) {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
+// Ordem de exibição da Renda: crescente por valor de faixa, não alfabética
+// (a ordem de declaração em MAPA_RENDA já é a ordem crescente correta).
+const ORDEM_RENDA = MAPA_RENDA.map(m => m.grupo);
+
 function buildLookup(mapa) {
   const lookup = new Map();
   mapa.forEach(({ grupo, valores }) => valores.forEach(v => lookup.set(chaveComparacao(v), grupo)));
@@ -81,16 +85,17 @@ export function getGrupoProfissao(valorBruto) {
   return LOOKUP_PROFISSAO.get(chaveComparacao(v)) || capitalizarPadrao(v);
 }
 
-// Grupos presentes numa lista de valores brutos, em ordem alfabética uniforme
-// (mapeados e fora-do-mapa juntos, sem bloco separado pra nenhum dos dois) —
-// só "Não informado" fica de fora do sort, sempre por último.
+// Grupos presentes numa lista de valores brutos, em ordem crescente de valor
+// (faixas conhecidas na ordem de MAPA_RENDA, depois fora-do-mapa em ordem
+// alfabética) — "Não informado" sempre por último, fixo, fora do sort.
 export function listaGruposRenda(valoresBrutos) {
-  const presentes    = new Set(valoresBrutos.map(getGrupoRenda));
-  const naoInformado = presentes.has(GRUPO_NAO_INFORMADO) ? [GRUPO_NAO_INFORMADO] : [];
-  const resto = [...presentes]
-    .filter(g => g !== GRUPO_NAO_INFORMADO)
+  const presentes  = new Set(valoresBrutos.map(getGrupoRenda));
+  const conhecidos = ORDEM_RENDA.filter(g => presentes.has(g));
+  const foraDoMapa = [...presentes]
+    .filter(g => !ORDEM_RENDA.includes(g) && g !== GRUPO_NAO_INFORMADO)
     .sort((a, b) => a.localeCompare(b, 'pt-BR'));
-  return [...resto, ...naoInformado];
+  const naoInformado = presentes.has(GRUPO_NAO_INFORMADO) ? [GRUPO_NAO_INFORMADO] : [];
+  return [...conhecidos, ...foraDoMapa, ...naoInformado];
 }
 
 // Mesma regra da Renda: mapeados e fora-do-mapa juntos em ordem alfabética,
