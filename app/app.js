@@ -10146,8 +10146,8 @@ async function exportRelatoriosPDF() {
 
   const profMap={}, rendaMap={};
   base.forEach(l=>{
-    const p=(l.profissao||'Não inf.').slice(0,30); profMap[p]=(profMap[p]||0)+1;
-    const r=(l.renda||'Não inf.').slice(0,30);      rendaMap[r]=(rendaMap[r]||0)+1;
+    const p=getGrupoProfissao(l.profissao); profMap[p]=(profMap[p]||0)+1;
+    const r=getGrupoRenda(l.renda);         rendaMap[r]=(rendaMap[r]||0)+1;
   });
   const profRows  = Object.entries(profMap).sort((a,b)=>b[1]-a[1]).slice(0,10)
                           .map(([n,c])=>[n, c, base.length?pct(c,base.length)+'%':'—']);
