@@ -20,6 +20,10 @@ let filtroProfissaoNovos = null;
 let filtroRendaQualificados = null;
 let filtroProfissaoQualificados = null;
 
+// Agendados/Realizadas + No Show compartilham #agend-filters-bar (estático, nunca
+// recriado) — uma única instância, sem Profissão (esse filtro não existe aqui).
+let filtroRendaAgendados = null;
+
 // ─── GOOGLE CALENDAR OAUTH POPUP CALLBACK ───────────────────────────
 // Roda no popup após redirect do Google — envia o code ao parent e fecha.
 {
@@ -2616,7 +2620,7 @@ function populateFilterDropdowns() {
   repopulate('filter-agendadopor',      uniq(allLeads.map(l => l.agendadopor)), 'Todos');
   repopulate('filter-etiqueta',         uniq(allLeads.flatMap(l => l.etiquetas || [])), 'Todas');
   // Filtros da aba Agendados
-  repopulate('agend-filter-renda',      uniq(allLeads.map(l => l.renda)),       'Todas');
+  filtroRendaAgendados?.setOptions(listaGruposRenda(allLeads.map(l => l.renda)));
   repopulate('agend-filter-agendadopor',uniq(allLeads.map(l => l.agendadopor)), 'Todos');
 
   const KANBAN_LABELS = {
@@ -2757,7 +2761,7 @@ function renderAgendaSub() {
   const closerFilt     = $('agend-filter-closer')?.value || '';
   const origemFilt     = $('agend-filter-origem')?.value || '';
   const agendadoporFilt= $('agend-filter-agendadopor')?.value || '';
-  const rendaFilt      = $('agend-filter-renda')?.value || '';
+  const gruposRenda    = filtroRendaAgendados?.getValue() || [];
   const chegadaDe      = $('agend-filter-chegada-de')?.value || '';
   const chegadaAte     = $('agend-filter-chegada-ate')?.value || '';
   const busca          = ($('agend-filter-busca')?.value || '').toLowerCase().trim();
@@ -2778,7 +2782,7 @@ function renderAgendaSub() {
   if (closerFilt)        leads = leads.filter(l => (l.closer || '') === closerFilt);
   if (origemFilt)        leads = leads.filter(l => l.origem === origemFilt);
   if (agendadoporFilt)   leads = leads.filter(l => l.agendadopor === agendadoporFilt);
-  if (rendaFilt)         leads = leads.filter(l => l.renda === rendaFilt);
+  leads = leads.filter(l => leadNoGrupoRenda(l, gruposRenda));
   if (chegadaDe)         leads = leads.filter(l => (l.dataagendamento||'') >= chegadaDe);
   if (chegadaAte)        leads = leads.filter(l => (l.dataagendamento||'') <= chegadaAte);
   if (busca)             leads = leads.filter(l => (l.nome||'').toLowerCase().includes(busca) || (l.celular||'').includes(busca));
@@ -4088,7 +4092,7 @@ function renderNoShow() {
     const origem     = $('agend-filter-origem')?.value      || '';
     const closer     = $('agend-filter-closer')?.value      || '';
     const agendPor   = $('agend-filter-agendadopor')?.value || '';
-    const renda      = $('agend-filter-renda')?.value       || '';
+    const gruposRenda = filtroRendaAgendados?.getValue()    || [];
     const chegadaDe  = $('agend-filter-chegada-de')?.value  || '';
     const chegadaAte = $('agend-filter-chegada-ate')?.value || '';
     const busca      = ($('agend-filter-busca')?.value      || '').toLowerCase().trim();
@@ -4097,7 +4101,7 @@ function renderNoShow() {
     if (origem)     leads = leads.filter(l => l.origem === origem);
     if (closer)     leads = leads.filter(l => l.closer === closer);
     if (agendPor)   leads = leads.filter(l => l.agendadopor === agendPor);
-    if (renda)      leads = leads.filter(l => l.renda === renda);
+    leads = leads.filter(l => leadNoGrupoRenda(l, gruposRenda));
     if (chegadaDe)  leads = leads.filter(l => (l.dataagendamento||'') >= chegadaDe);
     if (chegadaAte) leads = leads.filter(l => (l.dataagendamento||'') <= chegadaAte);
     if (busca)      leads = leads.filter(l =>
@@ -10805,10 +10809,14 @@ function bindEvents() {
   });
 
   // Filtros do sub Agendados (Hoje + Todos)
-  ['agend-filter-origem','agend-filter-closer','agend-filter-agendadopor','agend-filter-renda','agend-filter-chegada-de','agend-filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', renderAgendadosSub); });
+  ['agend-filter-origem','agend-filter-closer','agend-filter-agendadopor','agend-filter-chegada-de','agend-filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.addEventListener('change', renderAgendadosSub); });
   $('agend-filter-busca')?.addEventListener('input', renderAgendadosSub);
+  $('agend-filter-renda-mount')?.replaceWith((filtroRendaAgendados = createFiltroDropdown({
+    labelText: 'Renda', allLabel: 'Todas', multiplo: false, onChange: renderAgendadosSub,
+  })).el);
   $('agend-btn-limpar')?.addEventListener('click', () => {
-    ['agend-filter-origem','agend-filter-closer','agend-filter-agendadopor','agend-filter-renda','agend-filter-chegada-de','agend-filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.value=''; });
+    ['agend-filter-origem','agend-filter-closer','agend-filter-agendadopor','agend-filter-chegada-de','agend-filter-chegada-ate'].forEach(id => { const el=$(id); if(el) el.value=''; });
+    filtroRendaAgendados?.setValue([]);
     const b = $('agend-filter-busca'); if(b) b.value = '';
     renderAgendadosSub();
   });
