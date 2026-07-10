@@ -3426,6 +3426,9 @@ function renderQualificados() {
       <div id="qual-pagination" class="qual-pagination"></div>
     </div>`;
 
+    const mesSelQual = $('qual-filter-mes');
+    if (mesSelQual && mesFiltQual) mesSelQual.value = mesFiltQual;
+
     if (!filtroRendaQualificados) {
       filtroRendaQualificados = createFiltroDropdown({
         labelText: 'Renda', allLabel: 'Todas', multiplo: true,
@@ -3673,15 +3676,16 @@ function renderAgendadosOverview() {
   const leadsDoMes   = mesFiltUI
     ? allLeads.filter(l => (l.dataagendamento || '').startsWith(mesFiltUI))
     : allLeads.filter(l => l.dataagendamento);
-  const nAgendados   = leadsDoMes.length;
+  const nTotalMes    = leadsDoMes.length;
+  const nAgendados   = leadsDoMes.filter(l => !['noshow', 'cancelado', 'descartado'].includes(l.status)).length;
   const nRealizadas  = leadsDoMes.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha').length;
   console.log('[FDV][DEBUG] renderAgendadosOverview', { mesFiltUI, leadsDoMesCount: leadsDoMes.length, nRealizadas });
   const nNoShow      = leadsDoMes.filter(l => l.status === 'noshow').length;
   const nVendas      = leadsDoMes.filter(l => l.status === 'venda_ganha' || l.kanban_column === 'venda_ganha').length;
-  const nProximas    = allLeads.filter(l => l.status === 'agendado' && (l.dataagendamento || '') >= today).length;
+  const nProximas    = leadsDoMes.filter(l => l.status === 'agendado' && (l.dataagendamento || '') >= today).length;
   const mesLbl       = mesFiltUI ? mesSel.options[mesSel.selectedIndex].text : 'Todos os meses';
-  const pctComp      = nAgendados > 0 ? Math.round(nRealizadas / nAgendados * 100) : 0;
-  const pctNS        = nAgendados > 0 ? Math.round(nNoShow     / nAgendados * 100) : 0;
+  const pctComp      = nTotalMes > 0 ? Math.round(nRealizadas / nTotalMes * 100) : 0;
+  const pctNS        = nTotalMes > 0 ? Math.round(nNoShow     / nTotalMes * 100) : 0;
 
   statsEl.className = 'stats-grid stats-grid--7';
   statsEl.innerHTML = `
@@ -3876,9 +3880,13 @@ function renderAgendadosSub() {
 function _renderAgendTabNav() {
   const nav = $('agend-tab-nav');
   if (!nav) return;
-  const nAgendados  = allLeads.filter(l => l.status === 'agendado').length;
-  const nRealizadas = allLeads.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha').length;
-  const nNoShow     = allLeads.filter(l => l.status === 'noshow').length;
+  const mesFiltUI   = $('agenda-filter-mes')?.value || '';
+  const leadsDoMes  = mesFiltUI
+    ? allLeads.filter(l => (l.dataagendamento || '').startsWith(mesFiltUI))
+    : allLeads.filter(l => l.dataagendamento);
+  const nAgendados  = leadsDoMes.filter(l => !['noshow', 'cancelado', 'descartado'].includes(l.status)).length;
+  const nRealizadas = leadsDoMes.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha').length;
+  const nNoShow     = leadsDoMes.filter(l => l.status === 'noshow').length;
   nav.innerHTML = `<div class="qual-tab-nav">
     <button class="qual-tab-btn${agendActiveTab==='agendados'?' qual-tab-btn--active':''}" data-agend-tab="agendados">
       Agendados <span class="qual-tab-badge">${nAgendados}</span>
