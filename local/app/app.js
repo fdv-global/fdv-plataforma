@@ -3884,7 +3884,7 @@ function _renderAgendTabNav() {
   const leadsDoMes  = mesFiltUI
     ? allLeads.filter(l => (l.dataagendamento || '').startsWith(mesFiltUI))
     : allLeads.filter(l => l.dataagendamento);
-  const nAgendados  = leadsDoMes.filter(l => !['noshow', 'cancelado', 'descartado'].includes(l.status)).length;
+  const nAgendados  = leadsDoMes.filter(l => l.status === 'agendado').length;
   const nRealizadas = leadsDoMes.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha').length;
   const nNoShow     = leadsDoMes.filter(l => l.status === 'noshow').length;
   nav.innerHTML = `<div class="qual-tab-nav">
