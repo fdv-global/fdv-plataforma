@@ -125,6 +125,8 @@ const ROLE_PERMISSIONS = {
   ceo:           { inicio:true,  comercial:true,  alunas:true,  financeiro:true,  whatsapp_tati:false, whatsapp_fernanda:true,  whatsapp_thomaz:true,  usuarios:true  },
   cs_financeiro: { inicio:true,  comercial:false, alunas:true,  financeiro:true,  whatsapp_tati:true,  whatsapp_fernanda:false, whatsapp_thomaz:false, usuarios:false },
   comercial:     { inicio:true,  comercial:true,  alunas:false, financeiro:false, whatsapp_tati:false, whatsapp_fernanda:false, whatsapp_thomaz:false, usuarios:false },
+  closer:        { inicio:true,  comercial:true,  alunas:false, financeiro:false, whatsapp_tati:false, whatsapp_fernanda:false, whatsapp_thomaz:false, usuarios:false },
+  operacoes:     { inicio:true,  comercial:false, alunas:false, financeiro:false, whatsapp_tati:false, whatsapp_fernanda:false, whatsapp_thomaz:false, usuarios:false },
 };
 const DEFAULT_PERMISSIONS = { inicio:true, comercial:false, alunas:false, financeiro:false, whatsapp_tati:false, whatsapp_fernanda:false, whatsapp_thomaz:false, usuarios:false };
 
@@ -833,7 +835,7 @@ async function updateRoleUsuario(uid, role) {
 function openNovoUsuario() {
   ['nu-nome','nu-email','nu-senha'].forEach(id => $(id).value = '');
   $('nu-role').value = 'closer';
-  renderPermCheckboxes('nu-perm-grid', { ...ROLE_PERMISSIONS.comercial });
+  renderPermCheckboxes('nu-perm-grid', { ...(ROLE_PERMISSIONS[$('nu-role').value] || DEFAULT_PERMISSIONS) });
   $('nu-error').style.display = 'none';
   const fotoInput = $('nu-foto');
   if (fotoInput) { fotoInput.value = ''; }
