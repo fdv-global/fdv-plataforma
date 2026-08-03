@@ -85,8 +85,9 @@ const STATUS_RANK = { aguardando:0, qualificado:1, agendado:2, noshow:2, realiza
 
 // ─── CLOSERS ─────────────────────────────────────────────────────────
 const CLOSERS = {
-  fernanda: { name: 'Fernanda', waName: 'Fernanda Ayub',      icon: '⭐', color: '#CE9221', bg: 'rgba(206,146,33,.12)', calLink: 'https://calendar.app.google/hWWi6tVKAhoXg5cUA' },
-  thomaz:   { name: 'Thomaz',   waName: 'Thomaz Empresarial', icon: '🧑', color: '#4db5c8', bg: 'rgba(77,181,200,.12)',  calLink: 'https://calendar.app.google/1heVe3395Tsk9GeM8' }
+  fernanda:  { name: 'Fernanda',  waName: 'Fernanda Ayub',      icon: '⭐', color: '#CE9221', bg: 'rgba(206,146,33,.12)', calLink: 'https://calendar.app.google/hWWi6tVKAhoXg5cUA' },
+  thomaz:    { name: 'Thomaz',    waName: 'Thomaz Empresarial', icon: '🧑', color: '#4db5c8', bg: 'rgba(77,181,200,.12)',  calLink: 'https://calendar.app.google/1heVe3395Tsk9GeM8' },
+  jaqueline: { name: 'Jaqueline', waName: 'Jaqueline',          icon: '👩‍💼', color: '#6F1B3B', bg: 'rgba(111,27,59,.12)',  calLink: 'https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ2TtoygBGWApgLxuixHuVS07x7PMbf0eC4T9WWX6gTer5B-w9JpRCP90PaSvZeuCgx8dbZBBQv1' }
 };
 // closer é armazenado pela chave de CLOSERS (ex: 'fernanda'), nunca pelo nome de exibição —
 // normalizar aqui em todo ponto de escrita evita duplicar grupos por capitalização divergente
