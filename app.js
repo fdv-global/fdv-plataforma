@@ -2459,14 +2459,14 @@ function renderInicio() {
   const nowTime   = String(hour).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
   const monthLabel = `${MONTHS[now.getMonth()+1].toLowerCase()} ${now.getFullYear()}`;
 
-  // realizadaem é a data primária de fechamento; kanban_column_since como fallback.
-  // Canceladas (status da tabela vendas) são excluídas de faturamento e contagem.
+  // data_venda é a data real da venda. Canceladas (status da tabela vendas)
+  // são excluídas de faturamento e contagem.
   const isVendaMes  = l => l.kanban_column === 'venda_ganha' &&
     l.venda_ganha_dados?.status !== 'cancelada' &&
-    ((l.realizadaem||l.kanban_column_since||l.datachegada||'').startsWith(thisMonth));
+    (l.venda_ganha_dados?.data_venda||'').startsWith(thisMonth);
   const isVendaPrev = l => l.kanban_column === 'venda_ganha' &&
     l.venda_ganha_dados?.status !== 'cancelada' &&
-    ((l.realizadaem||l.kanban_column_since||l.datachegada||'').startsWith(prevMonth));
+    (l.venda_ganha_dados?.data_venda||'').startsWith(prevMonth);
   // --- DEBUG faturamento ---
   const _vendasGanha = allLeads.filter(l => l.kanban_column === 'venda_ganha');
   console.group('[Início] Diagnóstico faturamento — thisMonth:', thisMonth);
