@@ -3688,8 +3688,8 @@ function renderAgendadosOverview() {
   // Vendas conta pelo mês de data_venda (data real da venda), não dataagendamento —
   // uma venda pode fechar num mês diferente do mês em que a call foi agendada.
   const nVendas      = (mesFiltUI
-    ? allLeads.filter(l => l.kanban_column === 'venda_ganha' && (l.venda_ganha_dados?.data_venda || '').startsWith(mesFiltUI))
-    : allLeads.filter(l => l.kanban_column === 'venda_ganha')
+    ? allLeads.filter(l => l.kanban_column === 'venda_ganha' && l.venda_ganha_dados?.status !== 'cancelada' && (l.venda_ganha_dados?.data_venda || '').startsWith(mesFiltUI))
+    : allLeads.filter(l => l.kanban_column === 'venda_ganha' && l.venda_ganha_dados?.status !== 'cancelada')
   ).length;
   const nProximas    = leadsDoMes.filter(l => l.status === 'agendado' && (l.dataagendamento || '') >= today).length;
   const mesLbl       = mesFiltUI ? mesSel.options[mesSel.selectedIndex].text : 'Todos os meses';
@@ -6460,7 +6460,7 @@ function updateStats() {
   $('stat-agendado').textContent   = base.filter(l=>l.status==='agendado').length;
   $('stat-noshow').textContent     = base.filter(l=>l.status==='noshow').length;
   $('stat-realizada').textContent  = base.filter(l=>['realizada','venda_ganha'].includes(l.status) || l.kanban_column==='venda_ganha').length;
-  $('stat-vendas').textContent     = base.filter(l=>l.kanban_column==='venda_ganha').length;
+  $('stat-vendas').textContent     = base.filter(l=>l.kanban_column==='venda_ganha' && l.venda_ganha_dados?.status !== 'cancelada').length;
 }
 function updateCount() {
   const t = filteredLeads.length, a = allLeads.length;
