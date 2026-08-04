@@ -3681,7 +3681,8 @@ function renderAgendadosOverview() {
     ? allLeads.filter(l => (l.dataagendamento || '').startsWith(mesFiltUI))
     : allLeads.filter(l => l.dataagendamento);
   const nTotalMes    = leadsDoMes.length;
-  const nAgendados   = leadsDoMes.filter(l => !['noshow', 'cancelado', 'descartado'].includes(l.status)).length;
+  // Total bruto de leads com call agendada no mês, sem excluir noshow/cancelado/descartado.
+  const nAgendados   = leadsDoMes.length;
   const nRealizadas  = leadsDoMes.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha').length;
   console.log('[FDV][DEBUG] renderAgendadosOverview', { mesFiltUI, leadsDoMesCount: leadsDoMes.length, nRealizadas });
   const nNoShow      = leadsDoMes.filter(l => l.status === 'noshow').length;
