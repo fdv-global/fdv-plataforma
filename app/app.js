@@ -1017,7 +1017,7 @@ function loadLeads() {
       const [{ data: leads, error }, { data: histRows }, { data: vendasRows }] = await Promise.all([
         supabase.from('leads').select('*'),
         supabase.from('lead_historico').select('*').order('movido_em', { ascending: true }),
-        supabase.from('vendas').select('lead_id,valor,valor_entrada,forma_pagamento,programa,observacoes,status,criadoem'),
+        supabase.from('vendas').select('lead_id,valor,valor_entrada,forma_pagamento,programa,observacoes,status,criadoem,data_venda'),
       ]);
       if (error) { $('loading-layer').style.display = 'none'; showDbError(error.message); return; }
       if (!leads || leads.length === 0) {
@@ -1043,6 +1043,7 @@ function loadLeads() {
             obs:      v.observacoes     || lead.venda_ganha_dados?.obs     || '',
             status:   v.status          || null,
             criadoem: v.criadoem        || lead.venda_ganha_dados?.criadoem|| null,
+            data_venda: v.data_venda     || lead.venda_ganha_dados?.data_venda || null,
           };
         }
         return lead;
@@ -5201,6 +5202,7 @@ async function _backfillVendas(leads) {
       forma_pagamento:d.forma          || null,
       observacoes:    d.obs            || null,
       criadoem:       new Date().toISOString(),
+      data_venda:     d.data_venda     || (l.atualizadoem || l.datachegada || '').slice(0,10) || undefined,
     });
     if (error) console.warn('[FDV] backfill vendas:', l.id, error.message);
   }
@@ -5244,6 +5246,7 @@ async function renderVendasView() {
       forma_pagamento: d.forma          || null,
       observacoes:     d.obs            || null,
       criadoem:        l.atualizadoem   || l.datachegada || null,
+      data_venda:      d.data_venda     || (l.atualizadoem || l.datachegada || '').slice(0,10) || null,
       status:          'ativa',
     });
   }
@@ -5260,7 +5263,7 @@ async function renderVendasView() {
   const meses = [...new Set(
     allRows.map(r => {
       const ld = r.leads;
-      return (ld?.realizadaem||ld?.kanban_column_since||ld?.datachegada||r.criadoem||'').slice(0,7);
+      return (r.data_venda||ld?.realizadaem||ld?.kanban_column_since||ld?.datachegada||r.criadoem||'').slice(0,7);
     }).filter(m => /^\d{4}-\d{2}$/.test(m))
   )].sort().reverse();
 
@@ -5282,7 +5285,7 @@ async function renderVendasView() {
   if (flt.mes) {
     rows = rows.filter(r => {
       const ld = r.leads;
-      const dateRef = ld?.realizadaem || ld?.kanban_column_since || ld?.datachegada || r.criadoem || '';
+      const dateRef = r.data_venda || ld?.realizadaem || ld?.kanban_column_since || ld?.datachegada || r.criadoem || '';
       return dateRef.startsWith(flt.mes);
     });
   }
@@ -5510,6 +5513,7 @@ function openEditarVenda(row) {
   $('ev-lead-nome').textContent = row.leads?.nome || '—';
   $('ev-id').value              = row.id || '';
   $('ev-lead-id').value         = row.lead_id || '';
+  $('ev-data').value            = row.data_venda || (row.criadoem || '').slice(0,10) || '';
   $('ev-programa').value        = row.programa || '';
   $('ev-valor').value           = row.valor || '';
   $('ev-entrada').value         = row.valor_entrada || '';
@@ -5533,6 +5537,7 @@ async function salvarEdicaoVenda() {
   try {
     const vendaId  = $('ev-id').value;
     const leadId   = $('ev-lead-id').value;
+    const dataVenda = $('ev-data').value;
     const programa = $('ev-programa').value.trim();
     const valor    = $('ev-valor').value.trim();
     const entrada  = $('ev-entrada').value.trim();
@@ -5540,6 +5545,7 @@ async function salvarEdicaoVenda() {
     const obs      = $('ev-obs').value.trim();
 
     if (!vendaId) { toast('ID da venda não encontrado.', 'err'); btn.disabled = false; return; }
+    if (!dataVenda) { toast('Informe a data da venda.', 'err'); btn.disabled = false; return; }
 
     if (isLive) {
       const { error } = await supabase.from('vendas').update({
@@ -5547,6 +5553,7 @@ async function salvarEdicaoVenda() {
         valor_entrada:   entrada,
         forma_pagamento: forma,
         observacoes:     obs,
+        data_venda:      dataVenda,
         atualizadoem:    new Date().toISOString(),
       }).eq('id', vendaId);
       if (error) throw error;
@@ -5555,7 +5562,7 @@ async function salvarEdicaoVenda() {
     // Atualiza cache local
     const lIdx = allLeads.findIndex(l => l.id === leadId);
     if (lIdx >= 0) {
-      allLeads[lIdx].venda_ganha_dados = { valor, entrada, forma, programa, obs };
+      allLeads[lIdx].venda_ganha_dados = { valor, entrada, forma, programa, obs, data_venda: dataVenda };
     }
 
     toast('Venda atualizada!', 'ok');
@@ -5945,7 +5952,7 @@ function renderRelatorios() {
   // Agendados filtra por dataagendamento, não datachegada — lead pode chegar num mês e ser agendado em outro, isso é esperado no negócio
   const pctAgendados = pct(agendados.length, base.length);
   const tempoMedioVenda = vendas.length
-    ? Math.round(vendas.reduce((s, l) => s + (new Date(l.venda_ganha_dados?.criadoem) - new Date(l.datachegada)) / 86400000, 0) / vendas.length)
+    ? Math.round(vendas.reduce((s, l) => s + (new Date(l.venda_ganha_dados?.data_venda || l.venda_ganha_dados?.criadoem) - new Date(l.datachegada)) / 86400000, 0) / vendas.length)
     : 0;
 
   const fQualif = base.filter(l => !['aguardando','descartado','cancelado'].includes(l.status)).length;
@@ -7816,6 +7823,7 @@ function openVendaGanha(leadId) {
   vgLeadId = leadId;
   const lead = allLeads.find(l => l.id === leadId);
   $('vg-lead-nome').textContent = lead?.nome || '—';
+  $('vg-data').value     = new Date().toISOString().slice(0,10);
   $('vg-valor').value    = '';
   $('vg-entrada').value  = '';
   $('vg-forma').value    = '';
@@ -7831,7 +7839,8 @@ function openVendaGanha(leadId) {
 function vgCheckReady() {
   const ok = !!$('vg-programa').value.trim()
           && !!$('vg-valor').value.trim()
-          && !!$('vg-forma').value;
+          && !!$('vg-forma').value
+          && !!$('vg-data').value;
   $('vg-confirmar').disabled = !ok;
 }
 
@@ -7846,6 +7855,7 @@ async function confirmarVendaGanha() {
   btn.disabled = true;
   try {
     const lead  = allLeads.find(l => l.id === vgLeadId);
+    const dataVenda = $('vg-data').value;
     const valor    = $('vg-valor').value.trim();
     const entrada  = $('vg-entrada').value.trim();
     const forma    = $('vg-forma').value;
@@ -7858,7 +7868,7 @@ async function confirmarVendaGanha() {
       kanban_column:       'venda_ganha',
       kanban_column_since: new Date().toISOString(),
       status:              'venda_ganha',
-      venda_ganha_dados:   { valor, entrada, forma, programa, obs },
+      venda_ganha_dados:   { valor, entrada, forma, programa, obs, data_venda: dataVenda },
       motivo_descarte:       null,
       motivo_descarte_label: null,
       motivo_descarte_obs:   null,
@@ -7871,6 +7881,7 @@ async function confirmarVendaGanha() {
       const { error: vendaErr } = await supabase.from('vendas').insert({
         lead_id: vgLeadId, closer, programa, valor,
         valor_entrada: entrada, forma_pagamento: forma, observacoes: obs,
+        data_venda: dataVenda,
         criadoem: new Date().toISOString(),
       });
       if (vendaErr) console.error('[FDV] vendas insert falhou:', vendaErr.message, vendaErr);
@@ -11158,6 +11169,7 @@ function bindEvents() {
   $('vg-programa').addEventListener('input',  vgCheckReady);
   $('vg-valor').addEventListener('input',     vgCheckReady);
   $('vg-forma').addEventListener('change',    vgCheckReady);
+  $('vg-data').addEventListener('input',      vgCheckReady);
 
   // Editar venda
   $('ev-close').addEventListener('click', closeEditarVenda);
