@@ -1,0 +1,1796 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FDV — Plataforma Faculdade da Vida</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=31">
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <link rel="icon" type="image/png" href="assets/fdv-logo-gourado.png">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-brand">
+      <img src="fdv-logo-login.png" alt="Faculdade da Vida" class="login-logo-img">
+    </div>
+    <div>
+      <p class="login-sub">Entre com seu email e senha</p>
+    </div>
+    <div class="form-group" style="width:100%">
+      <label class="filter-label" for="login-email">Email</label>
+      <input type="email" id="login-email" class="form-ctrl" placeholder="seu@email.com" autocomplete="email">
+    </div>
+    <div class="form-group" style="width:100%">
+      <label class="filter-label" for="login-senha">Senha</label>
+      <input type="password" id="login-senha" class="form-ctrl" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-google" id="btn-login-email">Entrar</button>
+    <a href="#" id="btn-esqueci-senha" style="font-size:13px;color:#CE9221;text-align:center;text-decoration:none;opacity:.85">Esqueci minha senha</a>
+    <p class="login-error" id="login-error" style="display:none"></p>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app" style="display:none">
+
+<button id="btn-logo-home" class="floating-logo">
+  <img src="assets/fdv-logo-gourado.png" alt="Faculdade da Vida" />
+</button>
+
+<!-- ===== HEADER — pill de busca ===== -->
+<header class="app-header" id="app-header">
+  <button id="search-btn" style="display:none" aria-hidden="true"></button>
+  <div class="header-search-wrap" id="header-search-wrap">
+    <i data-lucide="search" class="header-search-icon"></i>
+    <input type="text" id="search-input" class="header-search-input"
+           placeholder="Buscar lead por nome, celular ou e-mail..."
+           autocomplete="off" spellcheck="false">
+    <div class="search-dropdown" id="search-dropdown"></div>
+  </div>
+</header>
+
+<!-- ===== ÍCONES: duplicatas + sino ===== -->
+<div class="header-icons-group">
+  <div class="notif-wrapper" id="dup-notif-wrapper">
+    <button class="notif-btn" id="dup-notif-btn" aria-label="Duplicatas encontradas" title="Duplicatas encontradas">
+      <i data-lucide="copy" style="width:18px;height:18px;stroke-width:1.75"></i>
+      <span class="notif-badge" id="dup-notif-badge" style="background:#d4a017;color:#1a0c00;display:none">0</span>
+    </button>
+  </div>
+  <div class="notif-wrapper" id="notif-wrapper">
+    <button class="notif-btn" id="notif-btn" aria-label="Notificações">
+      <i data-lucide="bell"></i>
+      <span class="notif-badge" id="notif-badge" style="display:none">0</span>
+    </button>
+    <div class="notif-panel" id="notif-panel" style="display:none">
+      <div class="notif-header">
+        <span class="notif-title">Notificações</span>
+        <button class="notif-mark-all" id="notif-mark-all">Marcar lidas</button>
+      </div>
+      <div class="notif-list" id="notif-list">
+        <div class="notif-empty">Nenhuma notificação</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== USUÁRIO ===== -->
+<div class="header-user-group">
+  <div class="user-info">
+    <img class="user-avatar" id="user-avatar" src="" alt="" style="display:none">
+    <span class="user-name" id="user-name"></span>
+  </div>
+  <span class="online-dot"></span>
+</div>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="app-sidebar" id="app-sidebar">
+  <nav class="sidebar-nav" id="sidebar-nav">
+    <button class="sidebar-item" data-tab="inicio" title="Início">
+      <i data-lucide="house" class="sidebar-icon"></i>
+      <span class="sidebar-label">Início</span>
+    </button>
+    <!-- Comercial — expansível -->
+    <div class="sidebar-group" id="sidebar-group-comercial">
+      <div class="sidebar-group-row">
+        <button class="sidebar-item sidebar-group-btn" id="sidebar-comercial-btn" data-tab="comercial" title="Comercial">
+          <i data-lucide="trees" class="sidebar-icon"></i>
+          <span class="sidebar-label">Comercial</span>
+        </button>
+        <button class="sidebar-chevron-btn" id="sidebar-comercial-chevron" title="Expandir" tabindex="-1">
+          <i data-lucide="chevron-down" class="sidebar-chevron"></i>
+        </button>
+      </div>
+      <div class="sidebar-submenu" id="sidebar-submenu-comercial">
+        <button class="sidebar-item sidebar-subitem" data-tab="agendamentos" title="Agendamentos">
+          <i data-lucide="calendar" class="sidebar-icon"></i>
+          <span class="sidebar-label">Agendamentos</span>
+        </button>
+        <button class="sidebar-item sidebar-subitem" data-tab="closer" title="Closer">
+          <i data-lucide="user" class="sidebar-icon"></i>
+          <span class="sidebar-label">Closer</span>
+        </button>
+        <button class="sidebar-item sidebar-subitem" data-tab="relatorios" title="Relatórios">
+          <i data-lucide="bar-chart-2" class="sidebar-icon"></i>
+          <span class="sidebar-label">Relatórios</span>
+        </button>
+      </div>
+      <!-- Flyout para modo recolhido (hover) -->
+      <div class="sidebar-flyout" id="sidebar-flyout-comercial">
+        <button class="sidebar-item" data-tab="agendamentos">
+          <i data-lucide="calendar" class="sidebar-icon"></i>
+          <span class="sidebar-label">Agendamentos</span>
+        </button>
+        <button class="sidebar-item" data-tab="closer">
+          <i data-lucide="user" class="sidebar-icon"></i>
+          <span class="sidebar-label">Closer</span>
+        </button>
+        <button class="sidebar-item" data-tab="relatorios">
+          <i data-lucide="bar-chart-2" class="sidebar-icon"></i>
+          <span class="sidebar-label">Relatórios</span>
+        </button>
+      </div>
+    </div>
+    <!-- Alunas — expansível -->
+    <div class="sidebar-group" id="sidebar-group-alunas">
+      <div class="sidebar-group-row">
+        <button class="sidebar-item sidebar-group-btn" id="sidebar-alunas-btn" data-tab="sucesso" title="Alunas">
+          <i data-lucide="graduation-cap" class="sidebar-icon"></i>
+          <span class="sidebar-label">Alunas</span>
+        </button>
+        <button class="sidebar-chevron-btn" id="sidebar-alunas-chevron" title="Expandir" tabindex="-1">
+          <i data-lucide="chevron-down" class="sidebar-chevron"></i>
+        </button>
+      </div>
+      <div class="sidebar-submenu" id="sidebar-submenu-alunas">
+        <button class="sidebar-item sidebar-subitem" data-tab="sucesso" title="Alunas">
+          <i data-lucide="users" class="sidebar-icon"></i>
+          <span class="sidebar-label">Alunas</span>
+        </button>
+        <button class="sidebar-item sidebar-subitem" data-tab="alunas-sessoes" title="Sessões">
+          <i data-lucide="calendar-check" class="sidebar-icon"></i>
+          <span class="sidebar-label">Sessões</span>
+        </button>
+        <button class="sidebar-item sidebar-subitem" data-tab="alunas-contratos" title="Contratos">
+          <i data-lucide="file-text" class="sidebar-icon"></i>
+          <span class="sidebar-label">Contratos</span>
+        </button>
+        <button class="sidebar-item sidebar-subitem" data-tab="alunas-relatorios" title="Relatórios">
+          <i data-lucide="bar-chart-2" class="sidebar-icon"></i>
+          <span class="sidebar-label">Relatórios</span>
+        </button>
+      </div>
+      <div class="sidebar-flyout" id="sidebar-flyout-alunas">
+        <button class="sidebar-item" data-tab="sucesso">
+          <i data-lucide="users" class="sidebar-icon"></i>
+          <span class="sidebar-label">Alunas</span>
+        </button>
+        <button class="sidebar-item" data-tab="alunas-sessoes">
+          <i data-lucide="calendar-check" class="sidebar-icon"></i>
+          <span class="sidebar-label">Sessões</span>
+        </button>
+        <button class="sidebar-item" data-tab="alunas-contratos">
+          <i data-lucide="file-text" class="sidebar-icon"></i>
+          <span class="sidebar-label">Contratos</span>
+        </button>
+        <button class="sidebar-item" data-tab="alunas-relatorios">
+          <i data-lucide="bar-chart-2" class="sidebar-icon"></i>
+          <span class="sidebar-label">Relatórios</span>
+        </button>
+      </div>
+    </div>
+    <!-- Financeiro — expansível -->
+    <div class="sidebar-group" id="sidebar-group-financeiro">
+      <div class="sidebar-group-row">
+        <button class="sidebar-item sidebar-group-btn" id="sidebar-financeiro-btn" data-tab="financeiro" title="Financeiro">
+          <i data-lucide="coins" class="sidebar-icon"></i>
+          <span class="sidebar-label">Financeiro</span>
+        </button>
+        <button class="sidebar-chevron-btn" id="sidebar-financeiro-chevron" title="Expandir" tabindex="-1">
+          <i data-lucide="chevron-down" class="sidebar-chevron"></i>
+        </button>
+      </div>
+      <div class="sidebar-submenu" id="sidebar-submenu-financeiro">
+        <button class="sidebar-item sidebar-subitem" data-tab="financeiro-inadimplencia" title="Inadimplência">
+          <i data-lucide="alert-triangle" class="sidebar-icon"></i>
+          <span class="sidebar-label">Inadimplência</span>
+        </button>
+        <button class="sidebar-item sidebar-subitem" data-tab="financeiro-pagamentos" title="Pagamentos">
+          <i data-lucide="credit-card" class="sidebar-icon"></i>
+          <span class="sidebar-label">Pagamentos</span>
+        </button>
+        <button class="sidebar-item sidebar-subitem" data-tab="financeiro-relatorios" title="Relatórios">
+          <i data-lucide="bar-chart-2" class="sidebar-icon"></i>
+          <span class="sidebar-label">Relatórios</span>
+        </button>
+      </div>
+      <div class="sidebar-flyout" id="sidebar-flyout-financeiro">
+        <button class="sidebar-item" data-tab="financeiro-inadimplencia">
+          <i data-lucide="alert-triangle" class="sidebar-icon"></i>
+          <span class="sidebar-label">Inadimplência</span>
+        </button>
+        <button class="sidebar-item" data-tab="financeiro-pagamentos">
+          <i data-lucide="credit-card" class="sidebar-icon"></i>
+          <span class="sidebar-label">Pagamentos</span>
+        </button>
+        <button class="sidebar-item" data-tab="financeiro-relatorios">
+          <i data-lucide="bar-chart-2" class="sidebar-icon"></i>
+          <span class="sidebar-label">Relatórios</span>
+        </button>
+      </div>
+    </div>
+    <button class="sidebar-item" data-tab="whatsapp" title="WhatsApp">
+      <i data-lucide="message-circle" class="sidebar-icon"></i>
+      <span class="sidebar-label">WhatsApp</span>
+    </button>
+    <button class="sidebar-item admin-only" data-tab="usuarios" title="Usuários" style="display:none">
+      <i data-lucide="settings" class="sidebar-icon"></i>
+      <span class="sidebar-label">Usuários</span>
+    </button>
+  </nav>
+</aside>
+
+<button class="sidebar-signout" id="btn-logout">
+  <i data-lucide="log-out" style="width:16px;height:16px;stroke-width:1.75;flex-shrink:0"></i>
+  Sair
+</button>
+
+<!-- ===== MAIN ===== -->
+<main class="app-main" id="app-main">
+<div id="app-breadcrumb" class="app-breadcrumb"></div>
+
+<!-- ===== TAB: INÍCIO ===== -->
+<div id="tab-inicio" class="tab-panel">
+  <div id="inicio-content"></div>
+</div>
+
+<!-- ===== TAB: AGENDAMENTOS ===== -->
+<div id="tab-agendamentos" class="tab-panel">
+
+  <div class="page-top">
+    <div class="page-title-block">
+      <h1>Agendamentos</h1>
+      <p>Pipeline pré-call — da chegada do lead até a call agendada</p>
+    </div>
+  </div>
+
+  <!-- Sub-nav principal -->
+  <div class="sub-nav">
+    <button class="sub-link active" data-sub="novos">Novos</button>
+    <button class="sub-link" data-sub="qualificados">Qualificados</button>
+    <button class="sub-link" data-sub="agendados">Agendados</button>
+    <button class="sub-link" data-sub="descartados">Descartados</button>
+  </div>
+
+  <!-- ─── SUB: NOVOS ─── -->
+  <div id="sub-novos" class="sub-panel">
+    <div class="sub-panel-top">
+      <button class="btn-primary" id="btn-novo-lead-sub">+ Novo Lead</button>
+    </div>
+
+    <div class="demo-banner" id="demo-banner" style="display:none">
+      ⚡ Modo demonstração — configure o Firebase em <code>app.js</code> para persistir dados reais.
+    </div>
+
+    <div class="leads-page-wrap">
+    <div class="filters-bar">
+      <div class="stats-grid stats-grid--6">
+        <div class="stat-card">
+          <div class="stat-top"><span class="stat-label">Total</span><span class="stat-icon"><i data-lucide="users" style="width:14px;height:14px"></i></span></div>
+          <strong class="stat-num" id="stat-total">0</strong>
+          <span class="stat-sub">leads cadastrados</span>
+        </div>
+        <div class="stat-card accent-gold">
+          <div class="stat-top"><span class="stat-label">Novos</span><span class="stat-icon"><i data-lucide="clock" style="width:14px;height:14px"></i></span></div>
+          <strong class="stat-num" id="stat-aguardando">0</strong>
+          <span class="stat-sub">aguardando qualificação</span>
+        </div>
+        <div class="stat-card accent-petro">
+          <div class="stat-top"><span class="stat-label">Agendados</span><span class="stat-icon"><i data-lucide="calendar" style="width:14px;height:14px"></i></span></div>
+          <strong class="stat-num" id="stat-agendado">0</strong>
+          <span class="stat-sub">calls marcadas</span>
+        </div>
+        <div class="stat-card accent-marsala">
+          <div class="stat-top"><span class="stat-label">No Show</span><span class="stat-icon"><i data-lucide="user-x" style="width:14px;height:14px"></i></span></div>
+          <strong class="stat-num" id="stat-noshow">0</strong>
+          <span class="stat-sub">não compareceram</span>
+        </div>
+        <div class="stat-card accent-green">
+          <div class="stat-top"><span class="stat-label">Realizadas</span><span class="stat-icon"><i data-lucide="check-circle" style="width:14px;height:14px"></i></span></div>
+          <strong class="stat-num" id="stat-realizada">0</strong>
+          <span class="stat-sub">calls concluídas</span>
+        </div>
+        <div class="stat-card accent-sand">
+          <div class="stat-top"><span class="stat-label">Vendas</span><span class="stat-icon"><i data-lucide="trophy" style="width:14px;height:14px"></i></span></div>
+          <strong class="stat-num" id="stat-vendas">0</strong>
+          <span class="stat-sub">vendas fechadas</span>
+        </div>
+      </div>
+      <div class="filters-row">
+        <!-- hidden — kept for JS compatibility; Novos sub forces status='aguardando' -->
+        <select class="filter-select" id="filter-status" style="display:none">
+          <option value="">Todos</option>
+          <option value="aguardando">Aguardando</option>
+          <option value="agendado">Agendado</option>
+          <option value="realizada">Realizada</option>
+          <option value="noshow">No Show</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+        <div class="filter-group">
+          <label class="filter-label" for="filter-origem">Origem</label>
+          <select class="filter-select" id="filter-origem">
+            <option value="">Todas</option>
+            <option value="Instagram">Instagram</option>
+            <option value="Facebook">Facebook</option>
+            <option value="Indicação">Indicação</option>
+            <option value="Google">Google</option>
+            <option value="WhatsApp">WhatsApp</option>
+            <option value="Outros">Outros</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="filter-mes">Mês</label>
+          <select class="filter-select" id="filter-mes">
+            <option value="">Todos os meses</option>
+          </select>
+        </div>
+        <div id="filter-renda-mount"></div>
+        <div id="filter-profissao-mount"></div>
+        <div class="filter-group">
+          <label class="filter-label" for="filter-etiqueta">Etiqueta</label>
+          <select class="filter-select" id="filter-etiqueta">
+            <option value="">Todas</option>
+            <option value="Super Lead">Super Lead</option>
+            <option value="Bom">Bom</option>
+            <option value="Neutro">Neutro</option>
+            <option value="Frio">Frio</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="filter-chegada-de">Chegada de</label>
+          <input type="date" class="filter-input filter-input--date" id="filter-chegada-de">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="filter-chegada-ate">até</label>
+          <input type="date" class="filter-input filter-input--date" id="filter-chegada-ate">
+        </div>
+        <div class="filter-group filter-group--search">
+          <label class="filter-label" for="filter-busca">Buscar</label>
+          <div class="search-wrap">
+            <input type="text" class="filter-input" id="filter-busca" placeholder="Nome ou celular...">
+            <span class="search-ico">⌕</span>
+          </div>
+        </div>
+        <button class="btn-clear" id="btn-limpar">Limpar</button>
+      </div>
+      <div class="results-info" id="results-info">Carregando...</div>
+    </div>
+
+    <div class="bulk-bar" id="bulk-bar" style="display:none">
+      <span class="bulk-count" id="bulk-count">0 selecionados</span>
+      <div class="bulk-actions">
+        <button class="btn-acao-inline btn-qualificar" id="btn-bulk-qualificar"><i data-lucide="check" style="width:13px;height:13px"></i> Qualificar selecionados</button>
+        <button class="btn-acao-inline btn-nao-qualificar" id="btn-bulk-descartar"><i data-lucide="x" style="width:13px;height:13px"></i> Descartar selecionados</button>
+        <button class="btn-acao-inline" id="btn-bulk-tag"><i data-lucide="tag" style="width:13px;height:13px"></i> Adicionar etiqueta</button>
+        <button class="btn-acao-inline btn-destructive" id="btn-bulk-delete"><i data-lucide="trash-2" style="width:13px;height:13px"></i> Excluir</button>
+      </div>
+      <button class="btn-ghost btn-sm" id="btn-bulk-clear"><i data-lucide="x" style="width:13px;height:13px"></i> Limpar</button>
+    </div>
+
+    <div class="table-wrap fdv-list-container" id="table-wrap">
+      <div class="loading-layer" id="loading-layer">
+        <div class="skeleton-wrap">
+          <div class="skeleton-row" style="height:44px;margin-bottom:16px;opacity:0.35"></div>
+          <div class="skeleton-row"></div>
+          <div class="skeleton-row" style="width:88%"></div>
+          <div class="skeleton-row"></div>
+          <div class="skeleton-row" style="width:93%"></div>
+          <div class="skeleton-row" style="width:80%"></div>
+        </div>
+      </div>
+      <table class="leads-table">
+        <thead>
+          <tr>
+            <th class="cell-chk"><input type="checkbox" id="chk-all" title="Selecionar todos"></th>
+            <th data-sort-col="datachegada">Chegou em</th>
+            <th data-sort-col="nome">Nome</th>
+            <th>Celular</th>
+            <th data-sort-col="origem">Origem</th>
+            <th data-sort-col="renda">Renda</th>
+            <th>Etiqueta</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="leads-tbody"></tbody>
+      </table>
+      <div class="empty-state" id="empty-state" style="display:none">
+        <i data-lucide="users" class="empty-lucide"></i>
+        <h3>Nenhum lead novo</h3>
+        <p>Novos leads chegam automaticamente da planilha.</p>
+      </div>
+    </div>
+
+    <div class="leads-cards" id="leads-cards"></div>
+    </div><!-- /leads-page-wrap -->
+  </div><!-- /sub-novos -->
+
+  <!-- ─── SUB: QUALIFICADOS ─── -->
+  <div id="sub-qualificados" class="sub-panel" style="display:none">
+    <div id="qualificados-content"></div>
+  </div>
+
+  <!-- ─── SUB: AGENDADOS ─── -->
+  <div id="sub-agendados" class="sub-panel" style="display:none">
+
+    <!-- Métricas + filtros -->
+    <div class="filters-bar" id="agend-filters-bar">
+      <div id="agend-overview-stats" class="stats-grid stats-grid--5" style="margin-bottom:16px"></div>
+      <div class="filters-row">
+        <div class="filter-group">
+          <label class="filter-label" for="agend-filter-origem">Origem</label>
+          <select class="filter-select" id="agend-filter-origem">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="agend-filter-closer">Closer</label>
+          <select class="filter-select" id="agend-filter-closer">
+            <option value="">Todos</option>
+            <option value="fernanda">Fernanda</option>
+            <option value="thomaz">Thomaz</option>
+            <option value="jaqueline">Jaqueline</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="agend-filter-agendadopor">Agendado por</label>
+          <select class="filter-select" id="agend-filter-agendadopor">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div id="agend-filter-renda-mount"></div>
+        <div class="filter-group">
+          <label class="filter-label" for="agenda-filter-mes">Mês</label>
+          <select class="filter-select" id="agenda-filter-mes">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="agend-filter-chegada-de">Data de</label>
+          <input type="date" class="filter-input filter-input--date" id="agend-filter-chegada-de">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="agend-filter-chegada-ate">até</label>
+          <input type="date" class="filter-input filter-input--date" id="agend-filter-chegada-ate">
+        </div>
+        <div class="filter-group filter-group--search">
+          <label class="filter-label" for="agend-filter-busca">Buscar</label>
+          <div class="search-wrap">
+            <input type="text" class="filter-input" id="agend-filter-busca" placeholder="Nome ou celular…" autocomplete="off">
+            <span class="search-ico">⌕</span>
+          </div>
+        </div>
+        <button class="btn-clear" id="agend-btn-limpar">Limpar</button>
+      </div>
+    </div>
+
+    <!-- Sub-abas pílulas: Agendados | Realizadas | No Show -->
+    <div id="agend-tab-nav" class="agend-tab-nav"></div>
+
+    <!-- Conteúdo: Agendados / Realizadas -->
+    <input type="date" id="agenda-filter-data" style="display:none">
+    <div id="agenda-content"></div>
+
+    <!-- Conteúdo: No Show (alimentado por renderNoShow) -->
+    <div id="noshow-content" style="display:none"></div>
+
+    <!-- Proximas calls — mantido oculto para compatibilidade com renderAgendadosOverview -->
+    <div id="agend-proximas-list" style="display:none"></div>
+
+    <!-- Briefing (acessado programaticamente) -->
+    <div id="sub-agendados-briefing" class="sub-panel--inner" style="display:none">
+      <div class="agenda-top">
+        <div class="agenda-filters">
+          <div>
+            <label class="agenda-date-label" for="briefing-filter-data">Data</label>
+            <input type="date" class="filter-input filter-input--date" id="briefing-filter-data">
+          </div>
+          <div>
+            <label class="agenda-date-label" for="briefing-filter-mes">Mês</label>
+            <select class="filter-select" id="briefing-filter-mes">
+              <option value="">Todos os meses</option>
+            </select>
+          </div>
+          <div>
+            <label class="agenda-date-label" for="briefing-filter-closer">Closer</label>
+            <select class="filter-select" id="briefing-filter-closer">
+              <option value="">Todos os closers</option>
+              <option value="fernanda">Fernanda</option>
+              <option value="thomaz">Thomaz</option>
+              <option value="jaqueline">Jaqueline</option>
+            </select>
+          </div>
+          <div class="filter-group filter-group--search" style="margin-top:0">
+            <label class="agenda-date-label" for="briefing-filter-busca">Buscar</label>
+            <div class="search-wrap">
+              <input type="text" class="filter-input" id="briefing-filter-busca"
+                     placeholder="Nome do lead…" autocomplete="off">
+              <span class="search-ico">⌕</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="briefing-content"></div>
+    </div>
+  </div><!-- /sub-agendados -->
+
+  <!-- ─── SUB: NO SHOW ─── (conteúdo movido para sub-abas de Agendados) -->
+  <div id="sub-noshow" class="sub-panel" style="display:none"></div>
+
+  <!-- ─── SUB: DESCARTADOS ─── -->
+  <div id="sub-descartados" class="sub-panel" style="display:none">
+    <div id="descartados-content"></div>
+  </div>
+
+</div><!-- /tab-agendamentos -->
+
+<!-- ===== TAB: CLOSER (KANBAN) ===== -->
+<div id="tab-closer" class="tab-panel" style="display:none">
+  <div class="kanban-page-top">
+    <div class="page-title-block">
+      <h1>Closer</h1>
+      <p>Funil de vendas — arraste os cards entre colunas</p>
+    </div>
+    <div class="closer-view-tabs qual-tab-nav">
+      <button class="qual-tab-btn qual-tab-btn--active" data-view="kanban">Kanban</button>
+      <button class="qual-tab-btn" data-view="vendas">Vendas</button>
+    </div>
+  </div>
+  <div id="kanban-filters">
+    <div class="filters-bar">
+      <div id="kanban-metrics" class="stats-grid stats-grid--7" style="margin-bottom:16px"></div>
+      <div class="filters-row">
+        <div class="filter-group">
+          <label class="filter-label">Closer</label>
+          <select class="filter-select" id="kanban-filter-closer">
+            <option value="">Todos</option>
+            <option value="fernanda">Fernanda</option>
+            <option value="thomaz">Thomaz</option>
+            <option value="jaqueline">Jaqueline</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Mês</label>
+          <select class="filter-select" id="kanban-filter-mes">
+            <option value="">Todos os meses</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Etapa</label>
+          <select class="filter-select" id="kf-etapa">
+            <option value="">Todas</option>
+            <option value="call_realizada">Call Realizada</option>
+            <option value="negociacao">Negociação</option>
+            <option value="decisao">Decisão</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Origem</label>
+          <select class="filter-select" id="kf-origem">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div class="filter-group filter-group--search">
+          <label class="filter-label">Buscar</label>
+          <div class="search-wrap">
+            <input type="text" class="filter-input" id="kf-search" placeholder="Nome ou celular…" autocomplete="off">
+            <span class="search-ico">⌕</span>
+          </div>
+        </div>
+        <button class="btn-clear" id="kf-clear">Limpar</button>
+      </div>
+    </div>
+  </div>
+  <div class="kanban-board" id="kanban-board"></div>
+  <div id="closer-subview" style="display:none"></div>
+</div><!-- /tab-closer -->
+
+<!-- ===== TAB: RELATÓRIOS ===== -->
+<div id="tab-relatorios" class="tab-panel" style="display:none">
+  <div class="page-top">
+    <div class="page-title-block">
+      <h1>Relatórios</h1>
+      <p>Performance comercial e conversão</p>
+    </div>
+    <div class="rel-filters">
+      <select class="filter-select" id="rel-filter-mes">
+        <option value="">Todos os meses</option>
+      </select>
+      <button class="btn-ghost btn-sm" id="rel-export-csv">Exportar Planilha</button>
+      <button class="btn-ghost btn-sm" id="rel-export-pdf">Exportar PDF</button>
+    </div>
+  </div>
+  <div id="rel-view-toggle" class="qual-tab-nav" style="margin-bottom:0;margin-top:12px">
+    <button class="qual-tab-btn qual-tab-btn--active" data-view="executivo">Executivo</button>
+    <button class="qual-tab-btn" data-view="operacional">Operacional</button>
+  </div>
+  <div id="relatorios-content"></div>
+</div><!-- /tab-relatorios -->
+
+<!-- ===== TAB: WHATSAPP ===== -->
+<div id="tab-whatsapp" class="tab-panel" style="display:none">
+
+  <div class="page-top">
+    <div class="page-title-block">
+      <h1>WhatsApp</h1>
+      <p>Central de chats · instâncias · respostas rápidas · etiquetas</p>
+    </div>
+    <button class="btn-primary" id="btn-nova-instancia"><i data-lucide="smartphone" style="width:14px;height:14px"></i> Instâncias WhatsApp</button>
+  </div>
+
+  <div class="sub-nav">
+    <button class="sub-link active" data-sub="chats">Central de Chats</button>
+    <button class="sub-link" data-sub="respostas">Respostas Rápidas</button>
+    <button class="sub-link" data-sub="etiquetas">Etiquetas</button>
+  </div>
+
+  <!-- ─── SUB: CENTRAL DE CHATS ─── -->
+  <div id="sub-chats" class="sub-panel sub-panel--chats">
+    <div class="chats-layout">
+
+      <!-- Sidebar: busca + filtros + lista -->
+      <div class="chats-sidebar">
+        <div class="chats-sidebar-top">
+          <div class="chats-sidebar-header">
+            <span class="csh-title">Conversas</span>
+            <button class="btn-ghost csh-new-btn" id="btn-nova-conversa" title="Nova conversa">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="9" x2="12" y2="15"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+              Nova conversa
+            </button>
+          </div>
+          <div class="chats-search-wrap">
+            <input type="text" id="chats-search" class="chats-search-input" placeholder="Buscar conversa…" autocomplete="off">
+          </div>
+          <div class="chats-filters">
+            <select id="chats-filter-instance" class="filter-select">
+              <option value="">Todas as instâncias</option>
+            </select>
+            <select id="chats-filter-status" class="filter-select">
+              <option value="">Todos os status</option>
+              <option value="aguardando">Aguardando</option>
+              <option value="agendado">Agendado</option>
+              <option value="realizada">Realizada</option>
+              <option value="noshow">No Show</option>
+            </select>
+          </div>
+          <div class="chat-quick-filters">
+            <button class="cqf-btn cqf-btn--active" data-filter="all">Todas</button>
+            <button class="cqf-btn" data-filter="unread">Não lidas</button>
+            <button class="cqf-btn" data-filter="starred">Favoritas</button>
+            <button class="cqf-btn" data-filter="archived">Arquivadas</button>
+          </div>
+        </div>
+        <div class="chats-list" id="chats-list">
+          <div class="chat-list-empty">
+            <div style="margin-bottom:10px;color:var(--t3)"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></div>
+            <p>Nenhuma conversa ainda.</p>
+          </div>
+        </div>
+        <!-- Alça de redimensionamento do painel lateral -->
+        <div class="chats-resize-handle" id="chats-resize-handle"></div>
+      </div>
+
+      <!-- Painel de chat ativo -->
+      <div class="chats-panel" id="chats-panel">
+        <div class="chats-panel-empty">
+          <div style="margin-bottom:12px;color:var(--t3)"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></div>
+          <h3>Selecione uma conversa</h3>
+          <p>Clique em um contato à esquerda para abrir o chat.</p>
+        </div>
+      </div>
+
+      <!-- Painel lateral: info do lead (abre ao clicar no nome) -->
+      <div class="chats-info-panel" id="chats-info-panel" style="display:none"></div>
+
+    </div>
+  </div>
+
+  <!-- ─── SUB: INSTÂNCIAS ─── -->
+  <div id="sub-instancias" class="sub-panel" style="display:none">
+    <div class="stats-grid" id="wa-stats"></div>
+    <div class="wa-instances-grid" id="wa-instances-grid">
+      <div class="loading-layer" id="wa-loading" style="position:static;background:none;padding:48px 0">
+        <div class="spinner"></div>
+        <span>Carregando instâncias…</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SUB: RESPOSTAS RÁPIDAS ─── -->
+  <div id="sub-respostas" class="sub-panel" style="display:none">
+    <div class="page-top" style="margin-bottom:24px">
+      <div class="page-title-block">
+        <h2>Respostas Rápidas</h2>
+        <p>Digite <code>/</code> no chat para usar. Atalhos para mensagens frequentes.</p>
+      </div>
+      <button class="btn-primary" id="btn-nova-resposta">+ Nova resposta</button>
+    </div>
+    <div id="quick-reply-form" class="qr-form" style="display:none">
+      <div class="qr-form-fields">
+        <input id="qr-titulo" class="filter-input" placeholder="Título (ex: saudacao, proposta…)">
+        <textarea id="qr-texto" class="filter-input qr-textarea" rows="3" placeholder="Texto da resposta…"></textarea>
+      </div>
+      <div class="qr-form-actions">
+        <button class="btn-ghost btn-sm" id="btn-qr-cancel">Cancelar</button>
+        <button class="btn-primary btn-sm" id="btn-qr-save">Salvar</button>
+      </div>
+    </div>
+    <div id="quick-replies-table-wrap"></div>
+  </div>
+
+  <!-- ─── SUB: ETIQUETAS ─── -->
+  <div id="sub-etiquetas" class="sub-panel" style="display:none">
+    <div class="page-top" style="margin-bottom:24px">
+      <div class="page-title-block">
+        <h2>Etiquetas</h2>
+        <p>Organize conversas com etiquetas coloridas.</p>
+      </div>
+      <button class="btn-primary" id="btn-nova-etiqueta">+ Nova etiqueta</button>
+    </div>
+    <div id="label-form" class="label-form" style="display:none">
+      <div class="label-form-fields">
+        <input id="label-nome" class="filter-input" placeholder="Nome da etiqueta">
+        <div class="label-color-wrap">
+          <span>Cor:</span>
+          <input id="label-cor" type="color" value="#CE9221" class="label-color-picker">
+        </div>
+      </div>
+      <div class="label-form-actions">
+        <button class="btn-ghost btn-sm" id="btn-label-cancel">Cancelar</button>
+        <button class="btn-primary btn-sm" id="btn-label-save">Salvar</button>
+      </div>
+    </div>
+    <div id="labels-grid" class="labels-grid"></div>
+  </div>
+
+</div><!-- /tab-whatsapp -->
+
+<!-- ===== TAB: USUÁRIOS ===== -->
+<div id="tab-usuarios" class="tab-panel" style="display:none">
+  <div class="page-top">
+    <div class="page-title-block">
+      <h1>Usuários</h1>
+      <p>Gerenciamento de acesso ao sistema</p>
+    </div>
+    <button class="btn-primary" id="btn-novo-usuario">+ Novo Usuário</button>
+  </div>
+  <div class="table-wrap">
+    <table class="leads-table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Email</th>
+          <th>Perfil</th>
+          <th>Badge</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="usuarios-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== TAB: COMERCIAL (landing) ===== -->
+<div id="tab-comercial" class="tab-panel" style="display:none">
+  <div id="comercial-content"></div>
+</div>
+
+<!-- ===== TAB: ALUNOS ===== -->
+<div id="tab-sucesso" class="tab-panel" style="display:none">
+  <div id="sucesso-content"></div>
+</div>
+
+<!-- ===== TAB: FINANCEIRO ===== -->
+<div id="tab-financeiro" class="tab-panel" style="display:none">
+  <div id="financeiro-content"></div>
+</div>
+
+</main>
+
+</div><!-- #app -->
+
+<!-- ===== MODAL AGENDAR / RESULTADO ===== -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="modal-title">Agendar Call</h2>
+        <p class="modal-subtitle" id="modal-subtitle">—</p>
+      </div>
+      <button class="modal-close" id="modal-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="lead-strip" id="lead-strip"></div>
+
+      <!-- RESULTADO DA CALL -->
+      <div id="form-resultado" style="display:none">
+
+        <div class="form-group" style="margin-bottom:18px">
+          <label class="form-lbl">Status da negociação</label>
+          <div class="toggle-group" id="toggle-closer-status">
+            <button class="toggle-opt" data-val="call_realizada">Call Realizada</button>
+            <button class="toggle-opt" data-val="followup">Follow Up</button>
+            <button class="toggle-opt" data-val="fechamento">Fechamento</button>
+            <button class="toggle-opt" data-val="venda_perdida">Venda Perdida</button>
+          </div>
+        </div>
+
+
+        <div class="form-group">
+          <label for="res-obs">Observações da call</label>
+          <textarea id="res-obs" class="form-ctrl" rows="3"
+            placeholder="Como foi a call, objeções, próximos passos…"></textarea>
+        </div>
+
+        <!-- Dados do lead (somente leitura) -->
+        <div id="form-detalhes" style="display:none">
+          <div class="detalhes-section-title">Dados do Lead</div>
+          <div class="detalhes-grid">
+            <div class="detalhes-item"><span class="detalhes-lbl">Nome</span><span class="detalhes-val" id="det-nome">—</span></div>
+            <div class="detalhes-item"><span class="detalhes-lbl">Celular</span><span class="detalhes-val" id="det-celular">—</span></div>
+            <div class="detalhes-item"><span class="detalhes-lbl">E-mail</span><span class="detalhes-val" id="det-email">—</span></div>
+            <div class="detalhes-item"><span class="detalhes-lbl">Origem</span><span class="detalhes-val" id="det-origem">—</span></div>
+            <div class="detalhes-item"><span class="detalhes-lbl">Profissão</span><span class="detalhes-val" id="det-profissao">—</span></div>
+            <div class="detalhes-item"><span class="detalhes-lbl">Renda</span><span class="detalhes-val" id="det-renda">—</span></div>
+            <div class="detalhes-item"><span class="detalhes-lbl">Closer</span><span class="detalhes-val" id="det-closer">—</span></div>
+            <div class="detalhes-item"><span class="detalhes-lbl">Data da Call</span><span class="detalhes-val" id="det-data-call">—</span></div>
+          </div>
+        </div>
+
+      </div><!-- /form-resultado -->
+
+      <!-- AGENDAR -->
+      <div id="form-agendar">
+        <div class="sched-panel" id="sched-step-1">
+          <p class="sched-hint" id="sched-hint">Selecione o closer — o link de agendamento abre em nova aba.</p>
+          <div class="closer-grid">
+            <button class="closer-card" data-closer="fernanda">
+              <div class="closer-avatar" style="color:#CE9221;background:rgba(206,146,33,.12);border-color:#CE9221">F</div>
+              <div class="closer-name">Fernanda</div>
+              <div class="closer-cal-hint">Abre link de agendamento →</div>
+            </button>
+            <button class="closer-card" data-closer="thomaz">
+              <div class="closer-avatar" style="color:#4db5c8;background:rgba(77,181,200,.12);border-color:#4db5c8">T</div>
+              <div class="closer-name">Thomaz</div>
+              <div class="closer-cal-hint">Abre link de agendamento →</div>
+            </button>
+            <button class="closer-card" data-closer="jaqueline">
+              <div class="closer-avatar" style="color:#6F1B3B;background:rgba(111,27,59,.12);border-color:#6F1B3B">J</div>
+              <div class="closer-name">Jaqueline</div>
+              <div class="closer-cal-hint">Abre link de agendamento →</div>
+            </button>
+          </div>
+          <!-- Google Calendar connect — visível apenas para admin, oculto em modo sessão -->
+          <div id="cal-connect-wrap" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+            <p style="font-size:11px;color:var(--text-muted);margin:0 0 8px;text-transform:uppercase;letter-spacing:.05em">Integração Google Calendar</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn-ghost btn-sm" id="cal-connect-fernanda" data-cal-connect="fernanda"><i data-lucide="calendar" style="width:14px;height:14px"></i> Conectar Fernanda</button>
+              <button class="btn-ghost btn-sm" id="cal-connect-thomaz"   data-cal-connect="thomaz"><i data-lucide="calendar" style="width:14px;height:14px"></i> Conectar Thomaz</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="sched-panel" id="sched-step-2" style="display:none">
+          <div class="sched-banner">
+            <span class="sched-banner-ico"><i data-lucide="calendar" style="width:20px;height:20px"></i></span>
+            <p id="sched-banner-p">Link aberto em nova aba. Confirme o horário com o lead e preencha os dados abaixo.</p>
+          </div>
+          <div class="form-group" id="sched-aluna-row" style="display:none;margin-bottom:18px">
+            <label for="sched-aluna-sel">Aluna</label>
+            <select id="sched-aluna-sel" class="form-ctrl"><option value="">Selecione a aluna…</option></select>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="sched-closer-lbl" id="sched-closer-label">Closer</label>
+              <input type="text" id="sched-closer-lbl" class="form-ctrl" readonly>
+            </div>
+            <div class="form-group">
+              <label for="sched-datetime">Data e hora</label>
+              <input type="datetime-local" id="sched-datetime" class="form-ctrl" required>
+              <p id="sched-autofill-hint" style="display:none;font-size:12px;margin:4px 0 0;color:var(--text-muted)"></p>
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:14px">
+            <label for="sched-obs">Observações</label>
+            <textarea id="sched-obs" class="form-ctrl" rows="3"
+              placeholder="Contexto, interesse demonstrado, pontos de atenção…"></textarea>
+          </div>
+        </div>
+      </div><!-- /form-agendar -->
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="btn-cancelar">Cancelar</button>
+      <button class="btn-ghost btn-back" id="btn-voltar" style="display:none">← Voltar</button>
+      <button class="btn-confirm" id="btn-confirmar">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL PERFIL DO LEAD ===== -->
+<div class="modal-backdrop" id="perfil-backdrop">
+  <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="perfil-title">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="perfil-title">—</h2>
+        <p class="modal-subtitle" id="perfil-subtitle">—</p>
+      </div>
+      <button class="modal-close" id="perfil-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="perfil-tab-nav">
+        <button class="perfil-tab active" data-perfil-tab="dados">Dados do Lead</button>
+        <button class="perfil-tab" data-perfil-tab="whatsapp">
+          WhatsApp
+          <span class="perfil-unread-badge" id="perfil-unread-badge" style="display:none">0</span>
+        </button>
+      </div>
+
+      <div id="perfil-tab-dados" class="perfil-tab-content">
+      <!-- Etiquetas -->
+      <div class="detalhes-section-title" style="margin-top:0;padding-top:0;border-top:none">Etiquetas</div>
+      <div class="etiquetas-editor">
+        <div class="etiquetas-chips" id="etiquetas-chips"></div>
+        <div class="etiquetas-defaults" id="etiquetas-defaults"></div>
+        <div class="etiqueta-add-row">
+          <input type="text" class="form-ctrl etiqueta-input" id="etiqueta-custom-input" placeholder="Nova etiqueta personalizada…" maxlength="30">
+          <button class="btn-ghost btn-sm" id="btn-add-etiqueta">Adicionar</button>
+        </div>
+      </div>
+
+      <!-- Dados pessoais -->
+      <div class="detalhes-section-title">Dados Pessoais</div>
+      <div class="perfil-grid" id="perfil-dados"></div>
+
+      <!-- Agendamento -->
+      <div id="perfil-agendamento-wrap" style="display:none">
+        <div class="detalhes-section-title">Agendamento</div>
+        <div class="perfil-grid" id="perfil-agendamento"></div>
+      </div>
+
+      <!-- Perfil -->
+      <div id="perfil-perfil-wrap" style="display:none">
+        <div class="detalhes-section-title">Perfil</div>
+        <div class="perfil-grid" id="perfil-perfil"></div>
+      </div>
+
+      <!-- Origem -->
+      <div id="perfil-origem-wrap" style="display:none">
+        <div class="detalhes-section-title">Origem</div>
+        <div class="perfil-grid" id="perfil-origem"></div>
+      </div>
+
+      <!-- Comentários -->
+      <div class="detalhes-section-title">Comentários</div>
+      <div class="perfil-obs-wrap">
+        <textarea class="form-ctrl" id="perfil-obs" rows="3"
+          placeholder="Escrever comentário…"></textarea>
+        <button class="btn-comentar-send" id="btn-comentar-perfil" title="Comentar"><i class="ti ti-send"></i></button>
+      </div>
+      <div id="perfil-comentarios" class="perfil-comentarios"></div>
+
+      <!-- Histórico -->
+      <div class="detalhes-section-title">Histórico</div>
+      <div class="perfil-historico" id="perfil-historico"></div>
+      </div><!-- /perfil-tab-dados -->
+
+      <!-- ─── TAB: WHATSAPP ─── -->
+      <div id="perfil-tab-whatsapp" class="perfil-tab-content perfil-tab-content--chat" style="display:none">
+        <div class="chat-wrap">
+          <div class="chat-toolbar">
+            <span class="chat-lead-meta" id="perfil-chat-meta">—</span>
+            <select id="perfil-chat-instance" class="filter-select chat-inst-sel">
+              <option value="">Selecionar instância…</option>
+            </select>
+          </div>
+          <div class="chat-messages" id="perfil-chat-messages">
+            <div class="chat-empty" id="perfil-chat-empty">
+              <span>Nenhuma mensagem ainda.</span>
+              <span class="chat-empty-hint">Selecione uma instância e envie a primeira mensagem.</span>
+            </div>
+          </div>
+          <div class="chat-input-bar">
+            <textarea class="chat-input" id="perfil-chat-input" placeholder="Digite uma mensagem…" rows="2"></textarea>
+            <button class="btn-primary chat-send-btn" id="btn-perfil-send">↑</button>
+          </div>
+        </div>
+      </div><!-- /perfil-tab-whatsapp -->
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="perfil-fechar">Fechar</button>
+      <button class="btn-confirm" id="btn-salvar-obs">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL NOVO / EDITAR LEAD ===== -->
+<div class="modal-backdrop" id="novo-lead-backdrop">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="novo-lead-title">Novo Lead</h2>
+        <p class="modal-subtitle">Preencha os dados do lead</p>
+      </div>
+      <button class="modal-close" id="novo-lead-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row-2">
+        <div class="form-group">
+          <label for="nl-nome">Nome <span class="req">*</span></label>
+          <input type="text" id="nl-nome" class="form-ctrl" placeholder="Nome completo">
+        </div>
+        <div class="form-group">
+          <label for="nl-celular">Celular <span class="req">*</span></label>
+          <input type="text" id="nl-celular" class="form-ctrl" placeholder="(11) 99999-9999">
+        </div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label for="nl-email">E-mail</label>
+          <input type="email" id="nl-email" class="form-ctrl" placeholder="email@exemplo.com">
+        </div>
+        <div class="form-group">
+          <label for="nl-instagram">Instagram</label>
+          <input type="text" id="nl-instagram" class="form-ctrl" placeholder="@usuario">
+        </div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label for="nl-profissao">Profissão</label>
+          <input type="text" id="nl-profissao" class="form-ctrl" placeholder="Profissão">
+        </div>
+        <div class="form-group">
+          <label for="nl-renda">Renda Mensal</label>
+          <input type="text" id="nl-renda" class="form-ctrl" placeholder="R$ 0.000">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="nl-origem">Origem</label>
+        <input type="text" id="nl-origem" class="form-ctrl" list="nl-origem-list"
+               placeholder="Ex: Instagram, Indicação…" autocomplete="off">
+        <datalist id="nl-origem-list">
+          <option value="Instagram">
+          <option value="Facebook">
+          <option value="Indicação">
+          <option value="Google">
+          <option value="WhatsApp">
+          <option value="Outros">
+        </datalist>
+      </div>
+      <div class="form-group">
+        <label for="nl-obs">Observações</label>
+        <textarea id="nl-obs" class="form-ctrl" rows="3" placeholder="Notas iniciais…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="novo-lead-cancelar">Cancelar</button>
+      <button class="btn-confirm" id="btn-salvar-lead">Cadastrar Lead</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL ADICIONAR COMO LEAD ===== -->
+<div class="modal-backdrop" id="add-lead-backdrop">
+  <div class="modal modal--add-lead" role="dialog" aria-modal="true" aria-labelledby="add-lead-title">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="add-lead-title">Adicionar como lead</h2>
+        <p class="modal-subtitle">Confirme ou edite os dados antes de criar</p>
+      </div>
+      <button class="modal-close" id="add-lead-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="add-lead-contact-id">
+      <div class="form-group">
+        <label for="add-lead-nome">Nome <span class="req">*</span></label>
+        <input type="text" id="add-lead-nome" class="form-ctrl" placeholder="Nome do contato" autocomplete="off">
+      </div>
+      <div class="form-group" style="margin-top:16px">
+        <label for="add-lead-celular">Celular <span class="req">*</span></label>
+        <input type="text" id="add-lead-celular" class="form-ctrl" placeholder="5511999999999" autocomplete="off">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="add-lead-cancel">Cancelar</button>
+      <button class="btn-primary" id="add-lead-confirm">Criar Lead</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL NOVA CONVERSA ===== -->
+<div class="modal-backdrop" id="nova-conversa-backdrop">
+  <div class="modal modal--nova-conversa" role="dialog" aria-modal="true" aria-labelledby="nova-conversa-title">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="nova-conversa-title">Nova conversa</h2>
+        <p class="modal-subtitle">Digite o número para iniciar o chat</p>
+      </div>
+      <button class="modal-close" id="nova-conversa-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="nova-conversa-numero">Número (com DDD) <span class="req">*</span></label>
+        <input type="text" id="nova-conversa-numero" class="form-ctrl" placeholder="(11) 99999-9999" autocomplete="off">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="nova-conversa-cancel">Cancelar</button>
+      <button class="btn-primary" id="nova-conversa-confirm">Abrir chat</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL INSTÂNCIAS WHATSAPP ===== -->
+<div class="modal-backdrop" id="instancias-modal-backdrop">
+  <div class="modal modal--instancias" role="dialog" aria-modal="true" aria-labelledby="instancias-modal-title">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="instancias-modal-title">Instâncias WhatsApp</h2>
+        <p class="modal-subtitle">Gerencie os números conectados ao sistema</p>
+      </div>
+      <button class="modal-close" id="instancias-modal-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-body">
+      <div id="instancias-modal-list" class="im-list"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="instancias-modal-cancel">Fechar</button>
+      <button class="btn-primary" id="instancias-modal-connect">+ Conectar novo número</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL QR CODE ===== -->
+<div class="modal-backdrop" id="qr-backdrop">
+  <div class="modal modal--qr" role="dialog" aria-modal="true" aria-labelledby="qr-title">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="qr-title">Conectar número</h2>
+        <p class="modal-subtitle" id="qr-subtitle">Preencha os dados da instância</p>
+      </div>
+      <button class="modal-close" id="qr-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-body">
+
+      <!-- STEP 1: Formulário nova instância -->
+      <div id="qr-step-form">
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="qr-display-name">Nome de exibição <span class="req">*</span></label>
+            <input type="text" id="qr-display-name" class="form-ctrl" placeholder="Ex: Captação Principal">
+          </div>
+          <div class="form-group">
+            <label for="qr-instance-name">ID da instância <span class="req">*</span></label>
+            <input type="text" id="qr-instance-name" class="form-ctrl" placeholder="Ex: fdv-captacao">
+          </div>
+        </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="qr-responsavel">Responsável</label>
+            <select id="qr-responsavel" class="form-ctrl">
+              <option value="">Selecione…</option>
+              <option value="muy">Muyane</option>
+              <option value="fernanda">Fernanda</option>
+              <option value="thomaz">Thomaz</option>
+              <option value="tati">Tati</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="qr-funil">Funil que atende</label>
+            <select id="qr-funil" class="form-ctrl">
+              <option value="">Selecione…</option>
+              <option value="captacao">Captação</option>
+              <option value="closer">Closer</option>
+              <option value="pos-venda">Pós-venda</option>
+              <option value="geral">Geral</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: QR Code -->
+      <div id="qr-step-qr" style="display:none">
+        <div class="qr-instruction">
+          <span class="qr-instruction-ico"><i data-lucide="smartphone" style="width:22px;height:22px"></i></span>
+          <div>
+            <strong>Abra o WhatsApp no celular</strong>
+            <p>Vá em <em>Dispositivos conectados → Conectar dispositivo</em> e escaneie o QR abaixo.</p>
+          </div>
+        </div>
+
+        <!-- carregando -->
+        <div id="qr-state-loading" class="qr-state">
+          <div class="spinner"></div>
+          <span>Gerando QR Code…</span>
+        </div>
+        <!-- aguardando scan -->
+        <div id="qr-state-waiting" class="qr-state" style="display:none">
+          <div class="qr-image-wrap">
+            <img id="qr-img" src="" alt="QR Code" class="qr-img">
+            <div class="qr-timer-ring">
+              <span id="qr-timer-count" class="qr-timer-num">60</span>
+              <span class="qr-timer-label">seg</span>
+            </div>
+          </div>
+        </div>
+        <!-- conectado -->
+        <div id="qr-state-connected" class="qr-state" style="display:none">
+          <div class="qr-result-ico qr-result-ico--ok"><i data-lucide="check" style="width:22px;height:22px"></i></div>
+          <strong>Conectado com sucesso!</strong>
+          <p id="qr-connected-phone" style="color:var(--t2);font-size:13px;margin-top:6px"></p>
+        </div>
+        <!-- expirado -->
+        <div id="qr-state-expired" class="qr-state" style="display:none">
+          <div class="qr-result-ico qr-result-ico--warn">⏱</div>
+          <strong>QR expirado</strong>
+          <p style="color:var(--t2);font-size:13px;margin-top:6px">O código expirou. Gere um novo para continuar.</p>
+          <button class="btn-ghost btn-sm" id="btn-regenerate-qr" style="margin-top:14px">Gerar novo QR</button>
+        </div>
+        <!-- erro -->
+        <div id="qr-state-error" class="qr-state" style="display:none">
+          <div class="qr-result-ico qr-result-ico--err"><i data-lucide="x" style="width:22px;height:22px"></i></div>
+          <strong>Erro ao conectar</strong>
+          <p id="qr-error-msg" style="color:var(--t2);font-size:13px;margin-top:6px">Não foi possível conectar. Tente novamente.</p>
+          <button class="btn-ghost btn-sm" id="btn-retry-qr" style="margin-top:14px">Tentar novamente</button>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="qr-cancelar">Cancelar</button>
+      <button class="btn-confirm" id="qr-confirmar">Avançar →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL NOVO USUÁRIO ===== -->
+<div class="modal-backdrop" id="novo-usuario-backdrop">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">Novo Usuário</h2>
+        <p class="modal-subtitle">Preencha os dados de acesso</p>
+      </div>
+      <button class="modal-close" id="novo-usuario-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-body">
+      <!-- Foto -->
+      <div class="form-group nu-foto-group">
+        <label class="filter-label">Foto do usuário</label>
+        <div class="nu-foto-row">
+          <img id="nu-foto-preview" src="" alt="" class="nu-foto-preview" style="display:none">
+          <label class="nu-foto-label" for="nu-foto">
+            <span id="nu-foto-label-text">Escolher foto…</span>
+            <input type="file" id="nu-foto" accept="image/*" class="nu-foto-input">
+          </label>
+        </div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label for="nu-nome">Nome <span class="req">*</span></label>
+          <input type="text" id="nu-nome" class="form-ctrl" placeholder="Nome completo">
+        </div>
+        <div class="form-group">
+          <label for="nu-email">Email <span class="req">*</span></label>
+          <input type="email" id="nu-email" class="form-ctrl" placeholder="email@faculdadedavida.com.br">
+        </div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label for="nu-role">Perfil</label>
+          <select id="nu-role" class="form-ctrl">
+            <option value="admin">Admin</option>
+            <option value="closer" selected>Closer</option>
+            <option value="operacoes">Operações</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="nu-senha">Senha temporária <span class="req">*</span></label>
+          <input type="password" id="nu-senha" class="form-ctrl" placeholder="Mínimo 6 caracteres">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Permissões</label>
+        <div class="perm-grid" id="nu-perm-grid"></div>
+      </div>
+      <p class="login-error" id="nu-error" style="display:none;margin-top:8px"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="novo-usuario-cancelar">Cancelar</button>
+      <button class="btn-confirm" id="btn-salvar-usuario">Criar Usuário</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL EDITAR USUÁRIO ===== -->
+<div class="modal-backdrop" id="editar-usuario-backdrop">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">Editar Usuário</h2>
+        <p class="modal-subtitle">Atualize os dados do usuário</p>
+      </div>
+      <button class="modal-close" id="editar-usuario-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="eu-uid">
+      <div class="form-group nu-foto-group">
+        <label class="filter-label">Foto do usuário</label>
+        <div class="nu-foto-row">
+          <img id="eu-foto-preview" src="" alt="" class="nu-foto-preview" style="display:none">
+          <label class="nu-foto-label" for="eu-foto">
+            <span id="eu-foto-label-text">Trocar foto…</span>
+            <input type="file" id="eu-foto" accept="image/*" class="nu-foto-input">
+          </label>
+        </div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label for="eu-nome">Nome <span class="req">*</span></label>
+          <input type="text" id="eu-nome" class="form-ctrl" placeholder="Nome completo">
+        </div>
+        <div class="form-group">
+          <label for="eu-email">Email <span class="req">*</span></label>
+          <input type="email" id="eu-email" class="form-ctrl" placeholder="email@faculdadedavida.com.br">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="eu-role">Perfil</label>
+        <select id="eu-role" class="form-ctrl">
+          <option value="admin">Admin</option>
+          <option value="closer">Closer</option>
+          <option value="operacoes">Operações</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Permissões</label>
+        <div class="perm-grid" id="eu-perm-grid"></div>
+      </div>
+      <p class="login-error" id="eu-error" style="display:none;margin-top:8px"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="editar-usuario-cancelar">Cancelar</button>
+      <button class="btn-confirm" id="btn-salvar-editar-usuario">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MOTIVO DE PERDA ===== -->
+<div class="modal-backdrop" id="motivo-perda-backdrop" style="display:none">
+  <div class="modal modal-wide" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">Motivo da Perda</h2>
+        <p class="modal-subtitle" id="mp-lead-nome">—</p>
+      </div>
+      <button class="modal-close" id="mp-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-body" id="mp-body"></div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="mp-cancelar">Cancelar</button>
+      <button class="btn-confirm" id="mp-confirmar" disabled>Confirmar Perda</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== VENDA GANHA MODAL ===== -->
+<div class="modal-backdrop" id="venda-ganha-backdrop" style="display:none">
+  <div class="modal modal-wide" role="dialog" aria-modal="true" style="border-top:3px solid #2ecc71">
+    <div class="modal-header" style="background:rgba(46,204,113,0.08)">
+      <div style="display:flex;align-items:center;gap:12px">
+        <i data-lucide="trophy" style="width:28px;height:28px;color:#2ecc71;flex-shrink:0"></i>
+        <div>
+          <h2 class="modal-title" style="color:#2ecc71">Venda Ganha! <i data-lucide="sparkles" style="width:20px;height:20px;vertical-align:middle;color:#2ecc71"></i></h2>
+          <p class="modal-subtitle" id="vg-lead-nome">—</p>
+        </div>
+      </div>
+      <button class="modal-close" id="vg-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="vg-data">Data da venda <span style="color:var(--marsala)">*</span></label>
+        <input type="date" id="vg-data" class="form-ctrl">
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="vg-valor">Valor (R$) <span style="color:var(--marsala)">*</span></label>
+        <input type="text" id="vg-valor" class="form-ctrl" placeholder="Ex: 3.500">
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="vg-entrada">Entrada (R$)</label>
+        <input type="text" id="vg-entrada" class="form-ctrl" placeholder="Deixe em branco se não houver">
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="vg-programa">Programa <span style="color:var(--marsala)">*</span></label>
+        <input type="text" id="vg-programa" class="form-ctrl" placeholder="Ex: Comunidade 1 ano">
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="vg-forma">Forma de pagamento <span style="color:var(--marsala)">*</span></label>
+        <select id="vg-forma" class="form-ctrl">
+          <option value="">Selecione…</option>
+          <option value="parcelado_cartao">Parcelado — Cartão</option>
+          <option value="parcelado_boleto">Parcelado — Boleto</option>
+          <option value="avista">À vista</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="vg-obs">Observações</label>
+        <textarea id="vg-obs" class="form-ctrl" rows="3" placeholder="Detalhes adicionais…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="vg-cancelar">Cancelar</button>
+      <button class="btn-confirm" id="vg-confirmar" disabled style="background:#2ecc71;color:#0d1a1c;border:none">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DESCARTE MODAL ===== -->
+<div class="modal-backdrop" id="descarte-backdrop" style="display:none">
+  <div class="modal" role="dialog" aria-modal="true" style="border-top:3px solid var(--marsala)">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">Descartar Lead</h2>
+        <p class="modal-subtitle" id="descarte-lead-nome">—</p>
+      </div>
+      <button class="modal-close" id="descarte-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-body" id="descarte-body"></div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="descarte-cancelar">Cancelar</button>
+      <button class="btn-confirm btn-destructive" id="descarte-confirmar" disabled>Confirmar Descarte</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EDITAR VENDA MODAL ===== -->
+<div class="modal-backdrop" id="ev-backdrop" style="display:none">
+  <div class="modal modal-wide" role="dialog" aria-modal="true" style="border-top:3px solid var(--gold)">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">Editar Venda</h2>
+        <p class="modal-subtitle" id="ev-lead-nome">—</p>
+      </div>
+      <button class="modal-close" id="ev-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ev-id">
+      <input type="hidden" id="ev-lead-id">
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="ev-data">Data da venda</label>
+        <input type="date" id="ev-data" class="form-ctrl">
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="ev-programa">Programa</label>
+        <input type="text" id="ev-programa" class="form-ctrl" placeholder="Ex: Comunidade 1 ano">
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="ev-valor">Valor (R$)</label>
+        <input type="text" id="ev-valor" class="form-ctrl" placeholder="Ex: 3.500">
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="ev-entrada">Entrada (R$)</label>
+        <input type="text" id="ev-entrada" class="form-ctrl" placeholder="Deixe em branco se não houver">
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="ev-forma">Forma de pagamento</label>
+        <select id="ev-forma" class="form-ctrl">
+          <option value="">Selecione…</option>
+          <option value="parcelado_cartao">Parcelado — Cartão</option>
+          <option value="parcelado_boleto">Parcelado — Boleto</option>
+          <option value="avista">À vista</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="ev-obs">Observações</label>
+        <textarea id="ev-obs" class="form-ctrl" rows="3" placeholder="Detalhes adicionais…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="ev-cancelar">Cancelar</button>
+      <button class="btn-confirm" id="ev-salvar">Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== VOLTAR PARA KANBAN MODAL ===== -->
+<div class="modal-backdrop" id="vk-backdrop" style="display:none">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:420px;border-top:3px solid var(--petro-bright)">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">Voltar para Kanban</h2>
+        <p class="modal-subtitle" id="vk-lead-nome">—</p>
+      </div>
+      <button class="modal-close" id="vk-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="vk-col">Selecione a coluna de destino</label>
+        <select id="vk-col" class="form-ctrl">
+          <option value="">Selecione a coluna…</option>
+        </select>
+      </div>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:10px">O lead será movido para a coluna selecionada no Kanban e removido da tela de Vendas.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="vk-cancelar">Cancelar</button>
+      <button class="btn-confirm" id="vk-confirmar" disabled>Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL ALUNA ===== -->
+<div class="modal-backdrop" id="am-backdrop" style="display:none">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:560px">
+    <div class="modal-header">
+      <h2 id="am-title">Nova Aluna</h2>
+      <button class="modal-close" id="am-close" aria-label="Fechar"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="am-foto-section">
+        <div class="am-foto-preview" id="am-foto-preview"><i data-lucide="user"></i></div>
+        <div>
+          <label class="btn-ghost btn-sm am-foto-upload-label">
+            <i data-lucide="upload" style="width:14px;height:14px;margin-right:6px"></i>Adicionar foto
+            <input type="file" id="am-foto-file" accept="image/*" style="display:none">
+          </label>
+          <p class="am-foto-info">JPG, PNG ou WebP · máx. 2 MB</p>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Nome *<input type="text" class="form-ctrl" id="am-nome" placeholder="Nome completo"></label>
+        <label class="form-label">Celular<input type="text" class="form-ctrl" id="am-celular" placeholder="(11) 99999-9999"></label>
+      </div>
+      <div class="form-row">
+        <label class="form-label">E-mail<input type="email" class="form-ctrl" id="am-email" placeholder="email@exemplo.com"></label>
+        <label class="form-label">Produto
+          <select class="form-ctrl" id="am-produto">
+            <option value="">Selecione…</option>
+            <option>Individual</option><option>Comunidade +3</option><option>Comunidade +1</option>
+            <option>Reprogramação Mensal</option><option>Águia Club</option><option>PRM</option>
+          </select>
+        </label>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Status
+          <select class="form-ctrl" id="am-status">
+            <option>Nova compra</option><option>Dentro do Prazo</option><option>Migrou</option>
+            <option>Finalizado</option><option>Cancelado</option><option>Cliente Off</option>
+            <option>Reembolso</option><option>Inadimplente</option>
+          </select>
+        </label>
+        <label class="form-label">Está no grupo?<input type="text" class="form-ctrl" id="am-nome-grupo" placeholder="Nome do grupo…"></label>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Data de inscrição<input type="date" class="form-ctrl" id="am-data-inscricao"></label>
+        <label class="form-label">Data de término<input type="date" class="form-ctrl" id="am-data-termino"></label>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Total de sessões<input type="number" class="form-ctrl" id="am-sessoes-total" min="0" value="0"></label>
+        <label class="form-label">Sessões realizadas<input type="number" class="form-ctrl" id="am-sessoes-realizadas" min="0" value="0"></label>
+      </div>
+      <label class="form-label">Observações<textarea class="form-ctrl" id="am-obs" rows="3" placeholder="Observações gerais…"></textarea></label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="am-cancelar">Cancelar</button>
+      <button class="btn-confirm" id="am-salvar">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL SESSÃO ===== -->
+<div class="modal-backdrop" id="sm-backdrop" style="display:none">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:480px">
+    <div class="modal-header">
+      <h2 id="sm-title">Nova Sessão</h2>
+      <button class="modal-close" id="sm-close" aria-label="Fechar"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <label class="form-label">Aluna *
+        <select class="form-ctrl" id="sm-aluna"><option value="">Selecione a aluna…</option></select>
+      </label>
+      <div class="form-row">
+        <label class="form-label">Data<input type="date" class="form-ctrl" id="sm-data"></label>
+        <label class="form-label">Hora<input type="time" class="form-ctrl" id="sm-hora"></label>
+      </div>
+      <label class="form-label">Status
+        <select class="form-ctrl" id="sm-status">
+          <option>Aguardando</option><option>Marcada</option><option>Realizada</option>
+          <option>Cancelada</option><option>Em contato</option><option>Falta</option><option>Inadimplente</option>
+        </select>
+      </label>
+      <label class="form-label">Observações<textarea class="form-ctrl" id="sm-obs" rows="3" placeholder="Notas da sessão…"></textarea></label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="sm-cancelar">Cancelar</button>
+      <button class="btn-confirm" id="sm-salvar">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL CONTRATO ===== -->
+<div class="modal-backdrop" id="cm-backdrop" style="display:none">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:500px">
+    <div class="modal-header">
+      <h2 id="cm-title">Novo Contrato</h2>
+      <button class="modal-close" id="cm-close" aria-label="Fechar"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <label class="form-label">Aluna *
+        <select class="form-ctrl" id="cm-aluna"><option value="">Selecione a aluna…</option></select>
+      </label>
+      <label class="form-label">Produto
+        <select class="form-ctrl" id="cm-produto">
+          <option value="">Selecione…</option>
+          <option>Individual</option><option>Comunidade +3</option><option>Comunidade +1</option>
+          <option>Reprogramação Mensal</option><option>Águia Club</option><option>PRM</option>
+        </select>
+      </label>
+      <div class="form-row">
+        <label class="form-label">Data de início<input type="date" class="form-ctrl" id="cm-data-inicio"></label>
+        <label class="form-label">Data de vencimento<input type="date" class="form-ctrl" id="cm-data-vencimento"></label>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Contrato assinado?
+          <label class="toggle-switch" style="margin-top:8px"><input type="checkbox" id="cm-assinado"><span class="toggle-slider"></span></label>
+        </label>
+        <label class="form-label">Está no grupo?
+          <label class="toggle-switch" style="margin-top:8px"><input type="checkbox" id="cm-no-grupo"><span class="toggle-slider"></span></label>
+        </label>
+      </div>
+      <label class="form-label">Observações<textarea class="form-ctrl" id="cm-obs" rows="3" placeholder="Notas do contrato…"></textarea></label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="cm-cancelar">Cancelar</button>
+      <button class="btn-confirm" id="cm-salvar">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL BRIEFING ===== -->
+<div class="modal-backdrop" id="briefing-backdrop">
+  <div class="modal modal--wide" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">Briefing</h2>
+        <p class="modal-subtitle" id="briefing-lead-name">—</p>
+      </div>
+      <button class="modal-close" id="briefing-close" aria-label="Fechar"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <textarea class="form-ctrl" id="briefing-textarea" rows="14"
+                placeholder="Cole ou escreva o briefing do lead aqui…"
+                style="min-height:280px;resize:vertical"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="briefing-cancelar">Cancelar</button>
+      <button class="btn-primary" id="btn-salvar-briefing">Salvar Briefing</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DUP WARNING MODAL ===== -->
+<div class="modal-backdrop" id="dup-warn-backdrop">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:420px;border-top:3px solid #CE9221">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:12px">
+        <i data-lucide="alert-triangle" style="width:24px;height:24px;color:#CE9221;flex-shrink:0"></i>
+        <div>
+          <h2 class="modal-title">Possível Duplicata</h2>
+          <p class="modal-subtitle" id="dup-warn-msg">Este lead pode já existir no sistema.</p>
+        </div>
+      </div>
+      <button class="modal-close" id="dup-warn-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn-ghost" id="dup-warn-ver">Ver lead existente</button>
+      <button class="btn-confirm" id="dup-warn-salvar">Salvar mesmo assim</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DUP COMPARE MODAL ===== -->
+<div class="modal-backdrop" id="dup-compare-backdrop">
+  <div class="modal dcc-modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">Comparar Leads Duplicados</h2>
+        <p class="modal-subtitle" id="dup-compare-subtitle">Verifique se são a mesma pessoa</p>
+      </div>
+      <button class="modal-close" id="dup-compare-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-body" id="dup-compare-body"></div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn-ghost" id="dup-nao-duplicata">Não são duplicatas</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost" id="dup-merge-all" title="Mesclar todos os pares automaticamente">Mesclar todas</button>
+        <button class="btn-confirm" id="dup-merge">Mesclar registros</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DRILL-DOWN MODAL ===== -->
+<div class="modal-backdrop" id="drill-backdrop">
+  <div class="modal drill-modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="drill-title">Drill-down</h2>
+        <p class="modal-subtitle" id="drill-subtitle"></p>
+      </div>
+      <button class="modal-close" id="drill-close" aria-label="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+    </div>
+    <div class="modal-body drill-body" id="drill-body"></div>
+    <div class="modal-footer">
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost" id="drill-export-csv">Exportar planilha (CSV)</button>
+        <button class="btn-ghost" id="drill-export-pdf">Exportar PDF</button>
+      </div>
+      <button class="btn-ghost" id="drill-close-btn">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- search-overlay mantido vazio para compatibilidade com closeSearch() no JS -->
+<div id="search-overlay" style="display:none" aria-hidden="true"></div>
+
+<!-- ===== MODAL: NOVA COLUNA KANBAN ===== -->
+<div class="modal-backdrop" id="add-col-backdrop">
+  <div class="modal" style="max-width:400px" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div>
+        <h3 class="modal-title">Nova Coluna</h3>
+        <p class="modal-subtitle">Adicionar coluna ao funil Kanban</p>
+      </div>
+      <button class="modal-close" id="add-col-cancel-x" aria-label="Fechar">×</button>
+    </div>
+    <div class="modal-body">
+      <label class="filter-label" for="add-col-name">Nome da coluna</label>
+      <input type="text" id="add-col-name" class="filter-input" placeholder="Ex: Follow-up" autocomplete="off" style="margin-top:6px">
+      <div id="add-col-error" style="display:none;color:var(--danger,#e05c5c);font-size:12px;margin-top:6px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="add-col-cancel">Cancelar</button>
+      <button class="btn-confirm" id="add-col-confirm" style="background:var(--gold);color:#1a0c00">Criar Coluna</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOASTS ===== -->
+<div class="toast-dock" id="toast-dock"></div>
+
+<script type="module" src="app.js?v=4"></script>
+<script>lucide.createIcons();</script>
+</body>
+</html>
+
+<!-- cache-bust: 2026-07-02 -->
