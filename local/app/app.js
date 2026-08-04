@@ -5318,9 +5318,9 @@ async function renderVendasView() {
     const closerName = r.closer ? (CLOSERS[r.closer]?.name || r.closer) : '—';
     return '<tr data-id="' + idAttr + '" data-lead="' + leadAttr + '" data-search="' + searchAttr + '">'
       + '<td class="cell-chk"><input type="checkbox" class="vv-chk-row row-chk" data-id="' + idAttr + '" data-lead="' + leadAttr + '"></td>'
+      + '<td>' + fmtDate(r.data_venda) + '</td>'
       + '<td><button class="link-btn" data-perfil-venda="' + leadAttr + '">' + esc(nome) + '</button></td>'
       + '<td>' + esc(r.programa || '—') + '</td>'
-      + '<td>' + fmtDate(r.data_venda) + '</td>'
       + '<td class="vendas-valor">' + fmtBRL(r.valor) + '</td>'
       + '<td>' + fmtBRL(r.valor_entrada) + '</td>'
       + '<td>' + fmtForma(r.forma_pagamento) + '</td>'
@@ -5338,7 +5338,7 @@ async function renderVendasView() {
         <table class="rel-table vv-table">
           <thead><tr>
             <th class="cell-chk"><input type="checkbox" id="vv-chk-all" class="row-chk" title="Selecionar todos"></th>
-            <th data-sort-col="_nome">Lead</th><th data-sort-col="programa">Programa</th><th data-sort-col="data_venda">Data da Venda</th><th data-sort-col="valor">Valor</th><th>Entrada</th><th>Forma Pgto</th><th data-sort-col="closer">Closer</th><th>Ações</th>
+            <th data-sort-col="data_venda">Data da Venda</th><th data-sort-col="_nome">Lead</th><th data-sort-col="programa">Programa</th><th data-sort-col="valor">Valor</th><th>Entrada</th><th>Forma Pgto</th><th data-sort-col="closer">Closer</th><th>Ações</th>
           </tr></thead>
           <tbody>${rowsHtml}</tbody>
         </table>
