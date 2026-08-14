@@ -92,6 +92,13 @@ const CLOSERS = {
 // closer é armazenado pela chave de CLOSERS (ex: 'fernanda'), nunca pelo nome de exibição —
 // normalizar aqui em todo ponto de escrita evita duplicar grupos por capitalização divergente
 function normCloser(v) { return v ? String(v).trim().toLowerCase() : null; }
+// Options de <select> de closer reaproveitadas nos pontos de reatribuição (card do Kanban,
+// tabela de Vendas) — fonte única (CLOSERS) para não divergir das listas hardcoded antigas.
+function closerSelectOptions(selected) {
+  const opts = Object.entries(CLOSERS).map(([k, c]) =>
+    `<option value="${k}"${selected === k ? ' selected' : ''}>${esc(c.name)}</option>`).join('');
+  return `<option value=""${selected ? '' : ' selected'}>—</option>${opts}`;
+}
 
 // ─── GOOGLE CALENDAR OAUTH ───────────────────────────────────────────
 // OAuth client: fdv-calendario (projeto annular-cogency-492721-j8)
@@ -4874,6 +4881,12 @@ function renderKanban() {
     });
   });
 
+  // Reatribuir closer: dropdown
+  board.querySelectorAll('.kc-closer-sel').forEach(sel => {
+    sel.addEventListener('mousedown', e => e.stopPropagation());
+    sel.addEventListener('change', e => updateLeadCloser(e.target.dataset.id, e.target.value));
+  });
+
   // Histórico toggle
   board.querySelectorAll('.kc-hist-toggle').forEach(btn => {
     btn.addEventListener('click', e => {
@@ -5023,7 +5036,7 @@ function populateKanbanFilters() {
 }
 
 function kanbanCard(l, cols) {
-  const closerName  = l.closer ? (CLOSERS[l.closer]?.name||l.closer) : null;
+  const closerSelHtml = `<select class="kc-closer-sel" data-id="${l.id}">${closerSelectOptions(l.closer||'')}</select>`;
   const etiquetas   = (l.etiquetas||[]).slice(0,2);
   const isAgendado  = l.status === 'agendado';
   const unreadCount = l.unreadCount || 0;
@@ -5065,7 +5078,7 @@ function kanbanCard(l, cols) {
     </div>
     ${l.dataagendamento ? `<div class="kc-datetime"><i data-lucide="calendar" class="kc-cal-icon"></i>${fmtDateHora(l.dataagendamento,l.horaagendamento)}</div>` : ''}
     <div class="kc-meta">
-      ${closerName ? `<span class="kc-closer">${esc(closerName)}</span>` : ''}
+      ${closerSelHtml}
       ${l.agendadopor ? `<span class="kc-resp">via ${esc(l.agendadopor)}</span>` : ''}
       ${badgeOrigem(l.origem)}
     </div>
@@ -5142,6 +5155,24 @@ async function moveLeadToCol(leadId, colId) {
     if (lIdx >= 0) allLeads[lIdx] = { ...allLeads[lIdx], kanban_column: prevCol };
     renderKanban();
     toast('Erro ao mover card.', 'err');
+  }
+}
+
+async function updateLeadCloser(leadId, closerKey) {
+  const closer = normCloser(closerKey);
+  const lIdx = allLeads.findIndex(l => l.id === leadId);
+  const prevCloser = lIdx >= 0 ? allLeads[lIdx].closer : null;
+  // Update otimista: reflete a troca de closer imediatamente na UI
+  if (lIdx >= 0) allLeads[lIdx] = { ...allLeads[lIdx], closer };
+  try {
+    await saveLead(leadId, { closer, atualizadoem: new Date().toISOString() });
+    renderKanban();
+    toast('Closer atualizado.', 'ok');
+  } catch(e) {
+    console.error(e);
+    if (lIdx >= 0) allLeads[lIdx] = { ...allLeads[lIdx], closer: prevCloser };
+    renderKanban();
+    toast('Erro ao atualizar closer.', 'err');
   }
 }
 
@@ -5321,7 +5352,6 @@ async function renderVendasView() {
     const nome       = r.leads?.nome || r.lead_id || '—';
     const celular    = r.leads?.celular || '';
     const searchAttr = ((nome + '|' + celular).toLowerCase()).replace(/"/g,'');
-    const closerName = r.closer ? (CLOSERS[r.closer]?.name || r.closer) : '—';
     return '<tr data-id="' + idAttr + '" data-lead="' + leadAttr + '" data-search="' + searchAttr + '">'
       + '<td class="cell-chk"><input type="checkbox" class="vv-chk-row row-chk" data-id="' + idAttr + '" data-lead="' + leadAttr + '"></td>'
       + '<td>' + fmtDate(r.data_venda) + '</td>'
@@ -5330,7 +5360,7 @@ async function renderVendasView() {
       + '<td class="vendas-valor">' + fmtBRL(r.valor) + '</td>'
       + '<td>' + fmtBRL(r.valor_entrada) + '</td>'
       + '<td>' + fmtForma(r.forma_pagamento) + '</td>'
-      + '<td>' + esc(closerName) + '</td>'
+      + '<td><select class="filter-select vv-closer-sel" data-id="' + idAttr + '"' + (!hasId ? ' disabled' : '') + '>' + closerSelectOptions(r.closer || '') + '</select></td>'
       + '<td class="cell-acoes">'
         + '<button class="btn-ghost btn-sm btn-edit-venda" data-id="' + idAttr + '" data-lead="' + leadAttr + '" title="Editar"' + (!hasId ? ' disabled' : '') + '>' + ICO_EDIT2 + '</button>'
         + '<button class="btn-ghost btn-sm btn-del-venda btn-destructive" data-id="' + idAttr + '" data-lead="' + leadAttr + '" title="Excluir">' + ICO_TRASH + '</button>'
@@ -5502,7 +5532,8 @@ async function renderVendasView() {
     if (e.target.matches('#vv-programa')) { flt.programa = e.target.value; renderVendasView(); return; }
     if (e.target.matches('#vv-forma'))    { flt.forma    = e.target.value; renderVendasView(); return; }
     if (e.target.matches('#vv-chk-all'))  { el.querySelectorAll('.vv-chk-row').forEach(c=>{c.checked=e.target.checked;}); updateBulkBar(); return; }
-    if (e.target.closest('.vv-chk-row'))  { updateBulkBar(); }
+    if (e.target.closest('.vv-chk-row'))  { updateBulkBar(); return; }
+    if (e.target.matches('.vv-closer-sel')) { updateVendaCloser(e.target.dataset.id, e.target.value); return; }
   };
   el.addEventListener('change', el._vvChangeHandler);
 
@@ -5603,6 +5634,29 @@ async function excluirVenda(vendaId, leadId) {
   } catch(e) {
     console.error(e);
     toast('Erro ao excluir venda.', 'err');
+  }
+}
+
+async function updateVendaCloser(vendaId, closerKey) {
+  if (!vendaId) return;
+  const closer = normCloser(closerKey);
+  const row = allRows.find(r => r.id === vendaId);
+  const prevCloser = row ? row.closer : null;
+  // Update otimista: reflete a troca de closer imediatamente na UI
+  if (row) row.closer = closer;
+  try {
+    if (isLive) {
+      const { error } = await supabase.from('vendas')
+        .update({ closer, atualizadoem: new Date().toISOString() }).eq('id', vendaId);
+      if (error) throw error;
+    }
+    toast('Closer atualizado.', 'ok');
+    renderVendasView();
+  } catch(e) {
+    console.error(e);
+    if (row) row.closer = prevCloser;
+    renderVendasView();
+    toast('Erro ao atualizar closer.', 'err');
   }
 }
 
