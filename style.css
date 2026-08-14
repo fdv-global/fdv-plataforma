@@ -823,6 +823,10 @@ input, select, textarea { font-family: inherit; color: var(--t1); }
   background: var(--s3);
 }
 .filter-select option  { background: var(--s2); }
+.vv-closer-sel {
+  width: auto; min-width: 110px; padding: 5px 26px 5px 9px; font-size: 12.5px;
+  background-position: right 9px center;
+}
 .search-wrap           { position: relative; }
 .search-ico            { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--t3); font-size: 15px; pointer-events: none; }
 .filter-input          { padding-right: 34px; }
@@ -1563,11 +1567,17 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
 .kc-etiquetas    { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
 .kc-datetime     { font-size: 11.5px; font-weight: 700; color: var(--petro-l); margin-bottom: 8px; }
 .kc-meta         { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-.kc-closer {
+.kc-closer, .kc-closer-sel {
   font-size: 10.5px; font-weight: 700; color: #d4982a;
   background: var(--gold-10); border: 1px solid var(--gold-22);
   padding: 2px 8px; border-radius: var(--r-pill);
 }
+.kc-closer-sel {
+  font-family: inherit; cursor: pointer; appearance: none; -webkit-appearance: none;
+  max-width: 100%; transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+.kc-closer-sel:hover  { background: var(--gold-22); }
+.kc-closer-sel option { background: var(--s2); color: var(--t1); }
 .kc-resp     { font-size: 10px; color: var(--t3); }
 .kc-foot     { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 2px; padding-top: 10px; border-top: 1px solid var(--b0); }
 
