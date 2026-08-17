@@ -83,6 +83,15 @@ const MERGE_FIELDS = [
 ];
 const STATUS_RANK = { aguardando:0, qualificado:1, agendado:2, noshow:2, realizada:3, cancelado:0, descartado:0 };
 
+// A call "aconteceu" (comparecimento) se realizadaem foi preenchido ou status_closer
+// chegou a valer 'call_realizada' — independente do status atual do lead. Um lead pode
+// ser descartado DEPOIS da call (ex: sem perfil financeiro) e continua tendo comparecido;
+// só não vira status='realizada' no pipeline porque o pipeline avançou para descarte.
+// Usar isto SOMENTE para métricas de comparecimento (Realizadas, Comparecimento %) —
+// NUNCA para vendas/conversão, que devem continuar olhando kanban_column==='venda_ganha'.
+const leadCallRealizada = l => !!l.realizadaem || l.status_closer === 'call_realizada'
+  || ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha';
+
 // ─── CLOSERS ─────────────────────────────────────────────────────────
 const CLOSERS = {
   fernanda:  { name: 'Fernanda',  waName: 'Fernanda Ayub',      icon: '⭐', color: '#CE9221', bg: 'rgba(206,146,33,.12)', calLink: 'https://calendar.app.google/hWWi6tVKAhoXg5cUA' },
@@ -2525,7 +2534,7 @@ function renderInicio() {
   const fQualif = mesLeads.filter(l => l.status === 'qualificado').length;
   const agendMes = allLeads.filter(l => (l.dataagendamento||'').startsWith(thisMonth));
   const fAgend  = agendMes.length;
-  const fCalls  = agendMes.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha').length;
+  const fCalls  = agendMes.filter(leadCallRealizada).length;
   const fNoShow = agendMes.filter(l => l.status === 'noshow').length;
   const fVendas = allLeads.filter(isVendaMes).length;
   const fRealiz = Math.max(fCalls - fNoShow, 0);
@@ -2789,7 +2798,7 @@ function renderAgendaSub() {
   const _allAgend = allLeads.filter(l => l.dataagendamento);
   let leads;
   if (agendActiveTab === 'realizadas') {
-    leads = _allAgend.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha');
+    leads = _allAgend.filter(leadCallRealizada);
   } else {
     leads = _allAgend.filter(l => l.status === 'agendado');
   }
@@ -3690,7 +3699,7 @@ function renderAgendadosOverview() {
   const nTotalMes    = leadsDoMes.length;
   // Total bruto de leads com call agendada no mês, sem excluir noshow/cancelado/descartado.
   const nAgendados   = leadsDoMes.length;
-  const nRealizadas  = leadsDoMes.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha').length;
+  const nRealizadas  = leadsDoMes.filter(leadCallRealizada).length;
   console.log('[FDV][DEBUG] renderAgendadosOverview', { mesFiltUI, leadsDoMesCount: leadsDoMes.length, nRealizadas });
   const nNoShow      = leadsDoMes.filter(l => l.status === 'noshow').length;
   // Vendas conta pelo mês de data_venda (data real da venda), não dataagendamento —
@@ -3872,7 +3881,7 @@ function renderAgendadosSub() {
     const _statusMap = { agendados: 'agendado', noshow: 'noshow' };
     const _status = _statusMap[agendActiveTab];
     const _tabLeads = agendActiveTab === 'realizadas'
-      ? allLeads.filter(l => l.dataagendamento && (['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha'))
+      ? allLeads.filter(l => l.dataagendamento && leadCallRealizada(l))
       : _status
         ? allLeads.filter(l => l.status === _status)
         : allLeads.filter(l => l.dataagendamento);
@@ -3902,7 +3911,7 @@ function _renderAgendTabNav() {
     ? allLeads.filter(l => (l.dataagendamento || '').startsWith(mesFiltUI))
     : allLeads.filter(l => l.dataagendamento);
   const nAgendados  = leadsDoMes.filter(l => l.status === 'agendado').length;
-  const nRealizadas = leadsDoMes.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha').length;
+  const nRealizadas = leadsDoMes.filter(leadCallRealizada).length;
   const nNoShow     = leadsDoMes.filter(l => l.status === 'noshow').length;
   nav.innerHTML = `<div class="qual-tab-nav">
     <button class="qual-tab-btn${agendActiveTab==='agendados'?' qual-tab-btn--active':''}" data-agend-tab="agendados">
@@ -5999,7 +6008,7 @@ function renderRelatorios() {
   let callsBase = allLeads.filter(l => l.dataagendamento);
   if (mesFilt) callsBase = callsBase.filter(l => (l.dataagendamento||'').startsWith(mesFilt));
   const agendados  = callsBase;
-  const realizadas = callsBase.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha');
+  const realizadas = callsBase.filter(leadCallRealizada);
 
   let vendasBase = [...allLeads];
   if (mesFilt) vendasBase = vendasBase.filter(l => (l.realizadaem||l.kanban_column_since||l.datachegada||'').startsWith(mesFilt));
@@ -6050,7 +6059,7 @@ function renderRelatorios() {
     const r = l.agendadopor || '—';
     if (!respMap[r]) respMap[r] = { ag: 0, re: 0, ve: 0 };
     respMap[r].ag++;
-    if (['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha') respMap[r].re++;
+    if (leadCallRealizada(l)) respMap[r].re++;
     if (l.kanban_column === 'venda_ganha') respMap[r].ve++;
   });
   realizadas.forEach(l => {
@@ -6066,7 +6075,7 @@ function renderRelatorios() {
     const m = l.datachegada.slice(0, 7);
     if (!mesMap[m]) mesMap[m] = { total: 0, re: 0, ve: 0, ns: 0, val: 0 };
     mesMap[m].total++;
-    if (['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha') mesMap[m].re++;
+    if (leadCallRealizada(l)) mesMap[m].re++;
     if (l.kanban_column === 'venda_ganha') { mesMap[m].ve++; mesMap[m].val += parseValor(l.venda_ganha_dados?.valor); }
     if (l.status === 'noshow') mesMap[m].ns++;
   });
@@ -10240,7 +10249,7 @@ async function exportRelatoriosPDF() {
   // Métricas
   const vendas      = base.filter(l => l.kanban_column === 'venda_ganha');
   const agendados   = base.filter(l => l.dataagendamento);
-  const realizadas  = base.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha');
+  const realizadas  = base.filter(leadCallRealizada);
   const taxaComp    = agendados.length  ? pct(realizadas.length, agendados.length)  : 0;
   const taxaConv    = realizadas.length ? pct(vendas.length,     realizadas.length) : 0;
   const fat         = vendas.reduce((s,l)=>s+parseValor(l.venda_ganha_dados?.valor),0);
@@ -11343,7 +11352,7 @@ function bindEvents() {
     let leads;
     if      (drill === 'all')          leads = base;
     else if (drill === 'status')       leads = base.filter(l => l.status === value);
-    else if (drill === 'realizadas')   leads = base.filter(l => ['realizada', 'venda_ganha'].includes(l.status) || l.kanban_column === 'venda_ganha');
+    else if (drill === 'realizadas')   leads = base.filter(leadCallRealizada);
     else if (drill === 'venda')        leads = base.filter(l => l.kanban_column === 'venda_ganha');
     else if (drill === 'agendados')    leads = agendadosBase;
     else if (drill === 'noshow')       leads = agendadosBase.filter(l => l.status === 'noshow');
