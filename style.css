@@ -1612,7 +1612,7 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
   transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
 .kc-move-select:hover { background: rgba(255,255,255,.08); border-color: var(--b2); }
-.btn-kc-venda, .btn-kc-descartar {
+.btn-kc-venda, .btn-kc-descartar, .btn-kc-voltar {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
   padding: 6px 18px; border-radius: 20px;
   font-size: 11px; font-weight: 700; font-family: inherit;
@@ -1627,7 +1627,12 @@ textarea.form-ctrl { resize: vertical; min-height: 82px; line-height: 1.6; }
   background: rgba(192,57,43,.08); color: #e06450; border-color: rgba(192,57,43,.2);
 }
 .btn-kc-descartar:hover { background: rgba(192,57,43,.18); }
-.btn-kc-venda svg, .btn-kc-descartar svg { width: 12px; height: 12px; flex-shrink: 0; }
+.btn-kc-voltar {
+  background: var(--petro-10); color: var(--petro-l); border-color: var(--petro-18);
+}
+.btn-kc-voltar:hover { background: var(--petro-18); }
+.btn-kc-venda svg, .btn-kc-descartar svg, .btn-kc-voltar svg,
+.btn-kc-venda i, .btn-kc-descartar i, .btn-kc-voltar i { width: 12px; height: 12px; flex-shrink: 0; }
 
 /* ============================================================
    AGENDAR MODAL
