@@ -2869,6 +2869,7 @@ function renderAgendaSub() {
               </div>
               <button class="qual-acoes-opt btn-briefing-open${l.briefing?' has-briefing':''}" data-id="${l.id}">Briefing</button>
               <button class="qual-acoes-opt btn-editar-agend" data-id="${l.id}">Editar</button>
+              ${l.status === 'agendado' ? `<button class="qual-acoes-opt btn-voltar-etapa-agend" data-id="${l.id}" title="Corrige erro operacional — volta para Qualificados">↩ Voltar para Qualificados</button>` : ''}
               <button class="qual-acoes-opt qual-acoes-opt--danger btn-descartar-agend" data-id="${l.id}">Descartar</button>
               <button class="qual-acoes-opt qual-acoes-opt--danger btn-excluir-agend" data-id="${l.id}">Excluir</button>
             </div>
@@ -2943,6 +2944,9 @@ function renderAgendaSub() {
     // Editar
     const editar = e.target.closest('.btn-editar-agend');
     if (editar) { const l = allLeads.find(x => x.id === editar.dataset.id); if (l) openEditarAgendamento(l); return; }
+    // Voltar para Qualificados
+    const voltarAgend = e.target.closest('.btn-voltar-etapa-agend');
+    if (voltarAgend) { closeAllDrops(); voltarEtapa(voltarAgend.dataset.id, 'agendado_qualificado'); return; }
     // Descartar
     const descartar = e.target.closest('.btn-descartar-agend');
     if (descartar) { openDescarteModal(descartar.dataset.id); return; }
@@ -3083,6 +3087,7 @@ function renderQualificados() {
         <button class="qual-acoes-opt qual-acoes-opt--agendar" data-agendar="${id}">Agendar Call</button>
         <button class="qual-acoes-opt btn-wa-lead" data-id="${id}">WhatsApp</button>
         <button class="qual-acoes-opt" data-perfil="${id}">Editar</button>
+        <button class="qual-acoes-opt" data-voltar-etapa="${id}" title="Corrige erro operacional — volta para Aguardando">↩ Voltar para Aguardando</button>
         <button class="qual-acoes-opt qual-acoes-opt--danger" data-descartar="${id}">Descartar</button>
       </div>
     </div>`;
@@ -3596,7 +3601,7 @@ function renderQualificados() {
       }
 
       // Row action buttons
-      const t = e.target.closest('[data-fp-resgatar],[data-agendar],[data-perfil],[data-descartar],.btn-wa-lead');
+      const t = e.target.closest('[data-fp-resgatar],[data-agendar],[data-perfil],[data-descartar],[data-voltar-etapa],.btn-wa-lead');
       if (!t || !t.closest('.followup-row')) return;
       if (t.dataset.fpResgatar) {
         (async () => {
@@ -3605,9 +3610,10 @@ function renderQualificados() {
         })();
         return;
       }
-      if (t.dataset.agendar)   { const l=allLeads.find(x=>x.id===t.dataset.agendar); if(l) openAgendar(l); return; }
-      if (t.dataset.perfil)    { const l=allLeads.find(x=>x.id===t.dataset.perfil); if(l) openPerfil(l); return; }
-      if (t.dataset.descartar) { openDescarteModal(t.dataset.descartar); return; }
+      if (t.dataset.agendar)     { const l=allLeads.find(x=>x.id===t.dataset.agendar); if(l) openAgendar(l); return; }
+      if (t.dataset.perfil)      { const l=allLeads.find(x=>x.id===t.dataset.perfil); if(l) openPerfil(l); return; }
+      if (t.dataset.descartar)   { openDescarteModal(t.dataset.descartar); return; }
+      if (t.dataset.voltarEtapa) { voltarEtapa(t.dataset.voltarEtapa, 'qualificado_aguardando'); return; }
       if (t.classList.contains('btn-wa-lead')) { openWaChatFromLead(t.dataset.id); return; }
     };
     el.addEventListener('click', el._qualClickHandler);
@@ -4579,6 +4585,62 @@ async function reativarLead(id) {
   } catch(e) { toast('Erro: ' + e.message, 'err'); }
 }
 
+// ─── VOLTAR ETAPA ────────────────────────────────────────────────────
+// Corrige erro operacional (agendamento duplicado, pessoa errada, closer clicou
+// errado) recuando o lead um passo no funil — nunca o esconde de métrica nenhuma,
+// só reposiciona. Cobre apenas os 5 estágios "em andamento"; Descartado, Venda
+// Ganha e Venda Perdida ficam de fora (múltiplos pontos de entrada possíveis,
+// sem "um passo atrás" único — decisão registrada em 2026-08-17).
+//
+// Cada payload desfaz EXATAMENTE os campos que a transição para frente
+// correspondente setou (ver handlePostCall/confirmar()) — nenhum campo a mais,
+// nenhum a menos. Isso é o que evita o lead cair num limbo tipo o dos 5 de agosto.
+const VOLTAR_ETAPA = {
+  decisao_negociacao: {
+    payload: { status_closer: 'fechamento', kanban_column: 'fechamento' },
+    destino: 'negociacao', label: 'Negociação',
+  },
+  negociacao_realizada: {
+    payload: { status_closer: 'call_realizada', kanban_column: 'call_realizada' },
+    destino: 'call_realizada', label: 'Call Realizada',
+  },
+  // A mais arriscada: desfaz status_closer/kanban_column (como as outras) mas
+  // também status e realizadaem — sem isso, leadCallRealizada() continua
+  // contando a call como realizada mesmo com o lead de volta em "Agendado".
+  realizada_agendado: {
+    payload: { status: 'agendado', kanban_column: null, status_closer: null, realizadaem: null },
+    destino: 'agendado', label: 'Agendado',
+  },
+  agendado_qualificado: {
+    payload: { status: 'qualificado', dataagendamento: null, horaagendamento: null, closer: null, agendadopor: null },
+    destino: 'qualificado', label: 'Qualificado',
+  },
+  qualificado_aguardando: {
+    payload: { status: 'aguardando' },
+    destino: 'aguardando', label: 'Aguardando',
+  },
+};
+
+async function voltarEtapa(leadId, transicaoKey) {
+  const transicao = VOLTAR_ETAPA[transicaoKey];
+  if (!transicao) { console.error('[FDV] voltarEtapa: transição desconhecida:', transicaoKey); return; }
+  const lead = allLeads.find(l => l.id === leadId);
+  if (!lead) return;
+  try {
+    const hist = buildHistoryEntry(leadId, transicao.destino, `↩ Voltou para ${transicao.label}`);
+    await saveLead(leadId, {
+      ...transicao.payload,
+      ...(hist && { historico_kanban: hist }),
+      atualizadoem: new Date().toISOString(),
+    });
+    toast(`${lead.nome} voltou para ${transicao.label}.`, 'ok');
+    renderAll();
+  } catch(e) {
+    console.error('[FDV] voltarEtapa:', e);
+    toast('Erro ao voltar etapa.', 'err');
+  }
+}
+
 // ─── ABRIR WHATSAPP PELO LEAD ─────────────────────────────────────────
 function openWaChatFromLead(leadId) {
   const lead = allLeads.find(l => l.id === leadId);
@@ -4912,6 +4974,9 @@ function renderKanban() {
   board.querySelectorAll('.btn-kc-descartar').forEach(btn => {
     btn.addEventListener('click', e => { e.stopPropagation(); openKanbanDescarte(btn.dataset.id); });
   });
+  board.querySelectorAll('.btn-kc-voltar').forEach(btn => {
+    btn.addEventListener('click', e => { e.stopPropagation(); voltarEtapa(btn.dataset.id, btn.dataset.transicao); });
+  });
 
   // Delete column (only shown when empty)
   board.querySelectorAll('.kc-del-col').forEach(btn => {
@@ -5066,6 +5131,15 @@ function kanbanCard(l, cols) {
   const moveOpts  = allCols.filter(c => c.id !== currentCol)
     .map(c => `<option value="${c.id}">${esc(c.label)}</option>`).join('');
 
+  // Voltar uma etapa — só nos 3 estágios "em andamento" que vivem no Kanban.
+  // Ação dedicada (voltarEtapa), não o select "Mover" — este último só mexe em
+  // kanban_column e deixaria status/status_closer/realizadaem desalinhados.
+  const VOLTAR_KEY_POR_COL = { decisao: 'decisao_negociacao', negociacao: 'negociacao_realizada', call_realizada: 'realizada_agendado' };
+  const voltarKey = VOLTAR_KEY_POR_COL[currentCol];
+  const voltarBtn = voltarKey
+    ? `<button class="btn-kc-voltar" data-id="${l.id}" data-transicao="${voltarKey}" title="Voltar uma etapa (corrige erro operacional)"><i data-lucide="undo-2"></i> Voltar</button>`
+    : '';
+
   // History (last 3, newest first)
   const hist = (l.historico_kanban || []).slice(-3).reverse();
   const histHtml = hist.length ? `
@@ -5102,6 +5176,7 @@ function kanbanCard(l, cols) {
         <option value="">Mover</option>
         ${moveOpts}
       </select>
+      ${voltarBtn}
       <button class="btn-kc-venda" data-id="${l.id}" title="Registrar venda ganha"><i data-lucide="trophy"></i> Venda Ganha</button>
       <button class="btn-kc-descartar" data-id="${l.id}" title="Descartar lead"><i data-lucide="archive-x"></i> Descartar</button>
     </div>
