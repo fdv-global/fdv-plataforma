@@ -507,8 +507,10 @@ function updateBreadcrumb() {
 
 // ─── AUTH ────────────────────────────────────────────────────────────
 function initAuth() {
-  // Bypass de autenticação para validação visual local — ativado via ?preview na URL
-  if (new URLSearchParams(location.search).has('preview')) {
+  // Bypass de autenticação para validação visual local — ativado via ?preview na URL.
+  // Só vale em localhost/127.0.0.1; em produção a query string é ignorada.
+  const isLocalHost = ['localhost', '127.0.0.1'].includes(location.hostname);
+  if (isLocalHost && new URLSearchParams(location.search).has('preview')) {
     supabase = createClient(SB_URL, SB_SERVICE_KEY);
     currentRole = 'admin';
     currentPermissions = { ...ROLE_PERMISSIONS.admin };
