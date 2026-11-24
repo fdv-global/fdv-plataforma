@@ -7,8 +7,8 @@ const SB_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
 const supabase = createClient(SB_URL, SB_KEY);
 
-const EVO_URL = Deno.env.get('EVOLUTION_API_URL') ?? 'https://ayub-evolution.8z6sbs.easypanel.host';
-const EVO_KEY = Deno.env.get('EVOLUTION_API_KEY') ?? '943BFEBDE2188DF38D176E5FC8AFD';
+const EVO_URL = Deno.env.get('EVOLUTION_API_URL')!;
+const EVO_KEY = Deno.env.get('EVOLUTION_API_KEY')!;
 
 // Fetch media as base64 data URL via Evolution API (stickers, audio PTT)
 async function getMediaBase64(
@@ -292,42 +292,6 @@ Deno.serve(async (req: Request) => {
       if (error) console.error('[whatsapp_instances update]', error.message);
 
       return new Response(JSON.stringify({ ok: true, instance, state: newStatus }), {
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    // ── PRESENCE UPDATE ────────────────────────────────────────────────────
-    if (event === 'presence.update' || event === 'PRESENCE_UPDATE') {
-      const data      = (body.data ?? {}) as Record<string, unknown>;
-      const presences = (data.presences ?? {}) as Record<string, Record<string, unknown>>;
-      const jid       = Object.keys(presences)[0];
-      if (!jid) return new Response(JSON.stringify({ ok: true, skipped: 'no_jid' }), {
-        headers: { 'Content-Type': 'application/json' },
-      });
-      const presData = presences[jid] ?? {};
-      const status   = (presData.lastKnownPresence as string) ?? 'unavailable';
-      const phone    = normalizePhone(jid);
-      if (!phone) return new Response(JSON.stringify({ ok: true, skipped: 'no_phone' }), {
-        headers: { 'Content-Type': 'application/json' },
-      });
-      const lead    = await findLeadByPhone(phone);
-      const contact = lead ? null : await findContactByPhone(phone);
-      const targetId = lead?.id ?? contact?.id;
-      if (!targetId) return new Response(JSON.stringify({ ok: true, skipped: 'no_target' }), {
-        headers: { 'Content-Type': 'application/json' },
-      });
-      await fetch(`${SB_URL}/realtime/v1/api/broadcast`, {
-        method:  'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': `Bearer ${SB_KEY}`,
-          'apikey':        SB_KEY,
-        },
-        body: JSON.stringify({
-          messages: [{ topic: `realtime:typing:${targetId}`, event: 'presence', payload: { status } }],
-        }),
-      });
-      return new Response(JSON.stringify({ ok: true, targetId, status }), {
         headers: { 'Content-Type': 'application/json' },
       });
     }
