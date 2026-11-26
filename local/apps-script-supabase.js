@@ -45,10 +45,42 @@ var CONFIG = {
 
   FLAG_COLUMN_FORMACAO: 'U',   // coluna 21
 
+  // Mapeamento de colunas — Sessão de Mapeamento
+  // Colunas 1–15 idênticas (mesmo campo, mesma posição) às de WEBNARIO_COLUMNS.
+  // A partir da 16 divergem: aqui tem "Já é aluna" (17) que Webnário não tem.
+  SESSAO_MAPEAMENTO_COLUMNS: {
+    origem: 1, data: 2, nome: 3, status: 4, telefone: 5,
+    instagram: 6, email: 7, faixaEtaria: 8, profissao: 9, renda: 10,
+    decisaoFinanceira: 11, desafio: 12, tempoPadrao: 13, jaFezDesenvolvimento: 14,
+    comoConheceu: 15, tempoConhece: 16, jaEAluna: 17, periodoPreferido: 19,
+    // col 18 ("Como funciona a Sessão de Mapeamento") propositalmente fora do
+    // mapeamento — é texto informativo mostrado ao lead, não resposta dele.
+  },
+
+  // Mapeamento de colunas — Webnário
+  // Colunas 1–15 idênticas às de SESSAO_MAPEAMENTO_COLUMNS. Da 16 em diante diverge:
+  // não tem "Já é aluna"; col 16 é "Quantas aulas já assistiu" (pergunta diferente).
+  WEBNARIO_COLUMNS: {
+    origem: 1, data: 2, nome: 3, status: 4, telefone: 5,
+    instagram: 6, email: 7, faixaEtaria: 8, profissao: 9, renda: 10,
+    decisaoFinanceira: 11, desafio: 12, tempoPadrao: 13, jaFezDesenvolvimento: 14,
+    comoConheceu: 15, aulasAssistidas: 16, periodoPreferido: 18,
+    // col 17 ("Como funciona a Sessão de Mapeamento") fora, mesmo motivo acima.
+  },
+
+  FLAG_COLUMN_SESSAO_MAPEAMENTO: 'T',   // coluna 20 — confirmado por Muy
+  FLAG_COLUMN_WEBNARIO: 'S',   // coluna 19 — confirmado por Muy
+
   // Linhas iniciais de cada aba (ignora histórico antigo)
   START_ROW_ISCAS: 2038,
   START_ROW_RESPONDI: 1153,
   START_ROW_FORMACAO: 2,
+  // Sessão de Mapeamento e Webnário são abas novas (sem histórico de milhares de
+  // linhas) — syncLeads() já pode varrer a partir da linha 2. Linhas antigas
+  // acumuladas antes da integração recebem ✅ via backfillLeadsQualificacao()
+  // (preserva a coluna Data original), então syncLeads() as pula normalmente.
+  START_ROW_SESSAO_MAPEAMENTO: 2,
+  START_ROW_WEBNARIO: 2,
 
   // Data de corte para o backfill (inclusive)
   BACKFILL_FROM: new Date(2026, 4, 25), // 25 de maio de 2026 — data de corte do reset
@@ -66,6 +98,8 @@ function syncLeads() {
   processSheet('Iscas', CONFIG.ISCAS_COLUMNS, CONFIG.FLAG_COLUMN_ISCAS, 'Iscas', CONFIG.START_ROW_ISCAS);
   processSheet('Respondi.app', CONFIG.RESPONDI_COLUMNS, CONFIG.FLAG_COLUMN_RESPONDI, 'Respondi.app', CONFIG.START_ROW_RESPONDI);
   processSheetFormacao('Formação', CONFIG.FORMACAO_COLUMNS, CONFIG.FLAG_COLUMN_FORMACAO, 'Formação', CONFIG.START_ROW_FORMACAO);
+  processSheetQualificacao('Sessão de Mapeamento', CONFIG.SESSAO_MAPEAMENTO_COLUMNS, CONFIG.FLAG_COLUMN_SESSAO_MAPEAMENTO, 'Sessão de Mapeamento', CONFIG.START_ROW_SESSAO_MAPEAMENTO);
+  processSheetQualificacao('Webnário', CONFIG.WEBNARIO_COLUMNS, CONFIG.FLAG_COLUMN_WEBNARIO, 'Webnário', CONFIG.START_ROW_WEBNARIO);
 }
 
 // ─── PROCESSAR ABA ───────────────────────────────────────────────────
@@ -232,6 +266,194 @@ function buildLeadFormacao(row, cols, fonte) {
     utm_source:   get(cols.utmSource)   || null,
   };
 }
+
+// ─── ABAS SESSÃO DE MAPEAMENTO / WEBNÁRIO ───────────────────────────
+// Histórico acumulado das duas abas já foi importado via
+// backfillLeadsQualificacao() (preserva a coluna Data de cada linha,
+// confirmado limpo por Muy). Por isso syncLeads() já chama
+// processSheetQualificacao(...) pras duas — cobertura contínua a cada 5 min,
+// igual às outras abas. NÃO rodar backfillLeadsQualificacao() de novo sem
+// necessidade: linhas antigas já estão flagadas ✅, reprocessar é redundante.
+function processSheetQualificacao(sheetName, cols, flagCol, fonte, startRow) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    Logger.log('Aba "' + sheetName + '" não encontrada — pulando.');
+    return;
+  }
+
+  var lastRow = sheet.getLastRow();
+  if (lastRow < startRow) return;
+
+  var flagColIdx = columnLetterToIndex(flagCol);
+  var data = sheet.getRange(startRow, 1, lastRow - startRow + 1, flagColIdx).getValues();
+
+  data.forEach(function (row, i) {
+    var rowNumber = i + startRow;
+    var flagCell = sheet.getRange(rowNumber, flagColIdx);
+    var flag = String(flagCell.getValue()).trim();
+
+    if (flag === CONFIG.FLAG_OK || flag === CONFIG.FLAG_ERR) return;
+
+    var lead = buildLeadQualificacao(row, cols, fonte);
+    var success = sendToSupabase(lead);
+
+    flagCell.setValue(success ? CONFIG.FLAG_OK : CONFIG.FLAG_ERR);
+    SpreadsheetApp.flush();
+  });
+}
+
+function buildLeadQualificacao(row, cols, fonte) {
+  function get(colNum) {
+    return colNum ? String(row[colNum - 1] || '').trim() : '';
+  }
+
+  // Campos extras — guardados em observacoes como JSON, mesmo padrão de
+  // buildLead() (Iscas/Respondi.app). Só entra a chave se a coluna existir
+  // no mapeamento da aba (é assim que "jaEAluna" some pra Webnário e
+  // "aulasAssistidas" some pra Sessão de Mapeamento, sem função separada).
+  var extras = {};
+  if (cols.faixaEtaria && get(cols.faixaEtaria)) extras.faixaEtaria = get(cols.faixaEtaria);
+  if (cols.decisaoFinanceira && get(cols.decisaoFinanceira)) extras.decisaoFinanceira = get(cols.decisaoFinanceira);
+  if (cols.desafio && get(cols.desafio)) extras.desafio = get(cols.desafio);
+  if (cols.tempoPadrao && get(cols.tempoPadrao)) extras.tempoPadrao = get(cols.tempoPadrao);
+  if (cols.jaFezDesenvolvimento && get(cols.jaFezDesenvolvimento)) extras.jaFezDesenvolvimento = get(cols.jaFezDesenvolvimento);
+  if (cols.comoConheceu && get(cols.comoConheceu)) extras.comoConheceu = get(cols.comoConheceu);
+  if (cols.tempoConhece && get(cols.tempoConhece)) extras.tempoConhece = get(cols.tempoConhece);
+  if (cols.aulasAssistidas && get(cols.aulasAssistidas)) extras.aulasAssistidas = get(cols.aulasAssistidas);
+  if (cols.jaEAluna && get(cols.jaEAluna)) extras.jaEAluna = get(cols.jaEAluna);
+  if (cols.periodoPreferido && get(cols.periodoPreferido)) extras.periodoPreferido = get(cols.periodoPreferido);
+
+  return {
+    nome: get(cols.nome),
+    celular: get(cols.telefone),
+    email: get(cols.email),
+    instagram: get(cols.instagram),
+    profissao: get(cols.profissao),
+    renda: get(cols.renda),
+    origem: get(cols.origem) || fonte,
+    status: 'aguardando',
+    datachegada: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'),
+    observacoes: Object.keys(extras).length > 0 ? JSON.stringify(extras) : null,
+    etiquetas: [],
+  };
+}
+
+// ─── BACKFILL — SESSÃO DE MAPEAMENTO / WEBNÁRIO (executar UMA VEZ) ──
+/**
+ * Importação das linhas já acumuladas nas duas abas novas, preservando a
+ * coluna Data original de cada linha (evita datachegada=hoje em massa).
+ * Antes de rodar de verdade: rode previewSessaoMapeamento()/previewWebnario()
+ * pra conferir o mapeamento nas primeiras linhas, sem gravar nada no Supabase.
+ *
+ * Execute UMA VEZ manualmente: selecione "backfillLeadsQualificacao" → ▶ Executar
+ */
+function backfillLeadsQualificacao() {
+  Logger.log('=== BACKFILL SESSÃO DE MAPEAMENTO / WEBNÁRIO INICIADO ===');
+  var existing = fetchExistingContacts();
+  Logger.log('Contatos já no Supabase: ' + existing.count);
+
+  backfillSheetQualificacao('Sessão de Mapeamento', CONFIG.SESSAO_MAPEAMENTO_COLUMNS, CONFIG.FLAG_COLUMN_SESSAO_MAPEAMENTO, 'Sessão de Mapeamento', existing);
+  backfillSheetQualificacao('Webnário', CONFIG.WEBNARIO_COLUMNS, CONFIG.FLAG_COLUMN_WEBNARIO, 'Webnário', existing);
+
+  Logger.log('=== BACKFILL SESSÃO DE MAPEAMENTO / WEBNÁRIO CONCLUÍDO ===');
+}
+
+/**
+ * Percorre a aba desde a linha 2 e insere no Supabase os leads ausentes,
+ * usando a coluna Data de cada linha como datachegada (nunca a data de hoje).
+ * Linha sem data válida na coluna Data é pulada (logada), não fica sem sync
+ * silenciosamente com data errada.
+ */
+function backfillSheetQualificacao(sheetName, cols, flagCol, fonte, existing) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    Logger.log('Aba "' + sheetName + '" não encontrada — pulando.');
+    return;
+  }
+
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return;
+
+  var flagColIdx = columnLetterToIndex(flagCol);
+  var inserted = 0;
+  var skipped = 0;
+  var semData = 0;
+
+  var data = sheet.getRange(2, 1, lastRow - 1, flagColIdx).getValues();
+
+  data.forEach(function (row, i) {
+    var rowNumber = i + 2;
+    var flagCell = sheet.getRange(rowNumber, flagColIdx);
+    var flag = String(flagCell.getValue()).trim();
+
+    if (flag === CONFIG.FLAG_OK) { skipped++; return; }
+
+    var rowDate = row[cols.data - 1];
+    if (!(rowDate instanceof Date) || isNaN(rowDate.getTime())) {
+      Logger.log('Linha ' + rowNumber + ' de "' + sheetName + '" sem data válida na coluna Data — pulando (não preenche com data de hoje).');
+      semData++;
+      skipped++;
+      return;
+    }
+
+    var celular = String(row[cols.telefone - 1] || '').trim();
+    var email = String(row[cols.email - 1] || '').trim();
+
+    if (!celular && !email) { skipped++; return; }
+
+    if ((celular && existing.phones[celular]) || (email && existing.emails[email])) {
+      flagCell.setValue(CONFIG.FLAG_OK);
+      skipped++;
+      return;
+    }
+
+    var lead = buildLeadQualificacao(row, cols, fonte);
+    lead.datachegada = Utilities.formatDate(rowDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+
+    var success = sendToSupabase(lead);
+    flagCell.setValue(success ? CONFIG.FLAG_OK : CONFIG.FLAG_ERR);
+    SpreadsheetApp.flush();
+
+    if (success) {
+      if (celular) existing.phones[celular] = true;
+      if (email) existing.emails[email] = true;
+      inserted++;
+    }
+  });
+
+  Logger.log(sheetName + ': ' + inserted + ' inseridos, ' + skipped + ' ignorados (' + semData + ' sem data válida).');
+}
+
+// ─── PREVIEW (dry-run — não grava nada no Supabase) ─────────────────
+/**
+ * Mostra nos logs como as primeiras linhas ficariam montadas como lead,
+ * incluindo qual datachegada seria usada. Rode ANTES do backfill real
+ * pra conferir visualmente o mapeamento de coluna.
+ */
+function previewQualificacao(sheetName, cols, fonte, maxRows) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) { Logger.log('Aba "' + sheetName + '" não encontrada.'); return; }
+
+  var lastRow = sheet.getLastRow();
+  var n = Math.min(maxRows || 5, Math.max(lastRow - 1, 0));
+  if (n === 0) { Logger.log('Aba "' + sheetName + '" não tem linhas de dado.'); return; }
+
+  var data = sheet.getRange(2, 1, n, sheet.getLastColumn()).getValues();
+  data.forEach(function (row, i) {
+    var lead = buildLeadQualificacao(row, cols, fonte);
+    var rowDate = row[cols.data - 1];
+    lead.datachegada = (rowDate instanceof Date && !isNaN(rowDate.getTime()))
+      ? Utilities.formatDate(rowDate, Session.getScriptTimeZone(), 'yyyy-MM-dd')
+      : '(SEM DATA VÁLIDA — esta linha seria PULADA no backfill real)';
+    Logger.log('Linha ' + (i + 2) + ': ' + JSON.stringify(lead));
+  });
+}
+
+function previewSessaoMapeamento() { previewQualificacao('Sessão de Mapeamento', CONFIG.SESSAO_MAPEAMENTO_COLUMNS, 'Sessão de Mapeamento', 5); }
+function previewWebnario() { previewQualificacao('Webnário', CONFIG.WEBNARIO_COLUMNS, 'Webnário', 5); }
 
 // ─── UTILITÁRIOS ─────────────────────────────────────────────────────
 function columnLetterToIndex(letters) {
@@ -466,5 +688,23 @@ function testConnection() {
 //
 //  8. PAUSAR A SYNC
 //     Execute "deleteTimeTrigger" para remover o trigger.
+//
+//  9. SESSÃO DE MAPEAMENTO / WEBNÁRIO — ABAS NOVAS COM HISTÓRICO ACUMULADO
+//     Já integradas em syncLeads() (cobertura automática a cada 5 min).
+//     Sequência que foi seguida pra chegar até aqui (referência futura, caso
+//     precise integrar uma aba nova parecida):
+//       9.1. "previewSessaoMapeamento" → ▶ Executar — confere nos logs se o
+//            mapeamento de coluna saiu certo nas 5 primeiras linhas (não
+//            grava nada no Supabase).
+//       9.2. "previewWebnario" → ▶ Executar — mesma checagem pra Webnário.
+//       9.3. Confirmado que os dois preview saíram corretos, execute
+//            "backfillLeadsQualificacao" → ▶ Executar. Importa as linhas já
+//            acumuladas nas duas abas, usando a coluna Data de cada linha
+//            (nunca a data de hoje). Linha sem data válida é pulada e
+//            logada — não gravada com data errada.
+//       9.4. FEITO — backfill confirmado limpo por Muy; syncLeads() já
+//            chama processSheetQualificacao(...) pras duas abas. Cobertura
+//            contínua automática a cada 5 minutos, igual às outras abas.
+//            Não precisa repetir o backfillLeadsQualificacao().
 //
 // ============================================================
